@@ -1,0 +1,223 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Organizational user account, staff credential, or welfare member profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "FINANCE_OFFICER", "REGIONAL_OFFICER", "MEMBER"] },
+        "country": { "type": "string", "maxLength": 80 },
+        "stateProvince": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "tehsil": { "type": "string", "maxLength": 100 },
+        "cityTown": { "type": "string", "maxLength": 100 },
+        "unionCouncil": { "type": "string", "maxLength": 120 },
+        "region": { "type": "string", "maxLength": 100 },
+        "membershipId": { "type": "string", "maxLength": 50 },
+        "membershipStatus": { "type": "string", "enum": ["ACTIVE", "PENDING", "REJECTED", "EXPIRED"] },
+        "avatarUrl": { "type": "string", "maxLength": 300 },
+        "cnic": { "type": "string", "maxLength": 20 },
+        "address": { "type": "string", "maxLength": 300 },
+        "joinDate": { "type": "string", "maxLength": 30 },
+        "validUntil": { "type": "string", "maxLength": 30 },
+        "monthlyPledge": { "type": "number" },
+        "annualPledge": { "type": "number" },
+        "totalContributed": { "type": "number" },
+        "isStaff": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "name", "email", "role", "membershipStatus", "isStaff"]
+    },
+    "MembershipApplication": {
+      "title": "MembershipApplication",
+      "description": "Applicant onboarding requests evaluated via 2-stage verification workflow",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "applicantName": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "cnic": { "type": "string", "maxLength": 20 },
+        "country": { "type": "string", "maxLength": 80 },
+        "stateProvince": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "tehsil": { "type": "string", "maxLength": 100 },
+        "cityTown": { "type": "string", "maxLength": 100 },
+        "unionCouncil": { "type": "string", "maxLength": 120 },
+        "region": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 300 },
+        "submittedAt": { "type": "string", "maxLength": 40 },
+        "status": { "type": "string", "enum": ["PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION", "ACTIVE", "REJECTED"] },
+        "isOldMemberVerification": { "type": "boolean" },
+        "oldMembershipNo": { "type": "string", "maxLength": 50 },
+        "regionalOfficerId": { "type": "string", "maxLength": 128 },
+        "regionalOfficerName": { "type": "string", "maxLength": 120 },
+        "regionalRecommendation": { "type": "string", "enum": ["APPROVE", "REJECT"] },
+        "regionalRemarks": { "type": "string", "maxLength": 500 },
+        "regionalReviewedAt": { "type": "string", "maxLength": 40 },
+        "superAdminRemarks": { "type": "string", "maxLength": 500 },
+        "superAdminApprovedAt": { "type": "string", "maxLength": 40 },
+        "generatedMembershipId": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "applicantName", "email", "phone", "cnic", "address", "submittedAt", "status", "isOldMemberVerification"]
+    },
+    "PaymentTransaction": {
+      "title": "PaymentTransaction",
+      "description": "Contribution receipts and audit ledger records verified by Finance Officers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "receiptNumber": { "type": "string", "maxLength": 50 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 120 },
+        "userMembershipId": { "type": "string", "maxLength": 50 },
+        "country": { "type": "string", "maxLength": 80 },
+        "stateProvince": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "tehsil": { "type": "string", "maxLength": 100 },
+        "cityTown": { "type": "string", "maxLength": 100 },
+        "unionCouncil": { "type": "string", "maxLength": 120 },
+        "userRegion": { "type": "string", "maxLength": 100 },
+        "amount": { "type": "number" },
+        "fundCategory": { "type": "string", "maxLength": 100 },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "referenceNumber": { "type": "string", "maxLength": 80 },
+        "date": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "enum": ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"] },
+        "proofNote": { "type": "string", "maxLength": 300 },
+        "verifiedBy": { "type": "string", "maxLength": 120 },
+        "verifiedAt": { "type": "string", "maxLength": 40 },
+        "rejectionReason": { "type": "string", "maxLength": 300 }
+      },
+      "required": ["id", "receiptNumber", "userId", "userName", "amount", "fundCategory", "paymentMethod", "referenceNumber", "date", "status"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Grievance desk tickets routed to regional officers and central welfare desk",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ticketNumber": { "type": "string", "maxLength": 50 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 120 },
+        "userRole": { "type": "string", "maxLength": 50 },
+        "country": { "type": "string", "maxLength": 80 },
+        "stateProvince": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "tehsil": { "type": "string", "maxLength": 100 },
+        "cityTown": { "type": "string", "maxLength": 100 },
+        "unionCouncil": { "type": "string", "maxLength": 120 },
+        "region": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 100 },
+        "subject": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"] },
+        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "createdAt": { "type": "string", "maxLength": 40 },
+        "assignedOfficerName": { "type": "string", "maxLength": 120 },
+        "responseNote": { "type": "string", "maxLength": 500 },
+        "resolvedAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["id", "ticketNumber", "userId", "userName", "category", "subject", "description", "status", "priority", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Official notices and policy bulletins scoped regionally or nationally",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "targetScope": { "type": "string", "enum": ["ALL", "PROVINCE", "DISTRICT"] },
+        "targetStateProvince": { "type": "string", "maxLength": 100 },
+        "targetDistrict": { "type": "string", "maxLength": 100 },
+        "targetRegion": { "type": "string", "maxLength": 100 },
+        "publishedBy": { "type": "string", "maxLength": 120 },
+        "publisherRole": { "type": "string", "maxLength": 50 },
+        "publishedAt": { "type": "string", "maxLength": 40 },
+        "isPinned": { "type": "boolean" },
+        "urgency": { "type": "string", "enum": ["NORMAL", "URGENT"] }
+      },
+      "required": ["id", "title", "content", "publishedBy", "publishedAt", "isPinned", "urgency"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable compliance and governance activity trail records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 120 },
+        "actorRole": { "type": "string", "maxLength": 50 },
+        "action": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "enum": ["MEMBERSHIP", "FINANCIAL", "REGIONAL", "SECURITY", "ROLE_MANAGEMENT"] },
+        "country": { "type": "string", "maxLength": 80 },
+        "stateProvince": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "tehsil": { "type": "string", "maxLength": 100 },
+        "cityTown": { "type": "string", "maxLength": 100 },
+        "unionCouncil": { "type": "string", "maxLength": 120 },
+        "region": { "type": "string", "maxLength": 100 },
+        "targetEntity": { "type": "string", "maxLength": 150 },
+        "details": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "timestamp", "actorId", "actorName", "actorRole", "action", "category", "targetEntity", "details"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Real-time alerts and state update notifications dispatched to users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "maxLength": 50 },
+        "title": { "type": "string", "maxLength": 120 },
+        "message": { "type": "string", "maxLength": 500 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "read": { "type": "boolean" },
+        "targetUserId": { "type": "string", "maxLength": 128 },
+        "targetRole": { "type": "string", "maxLength": 50 },
+        "targetRegion": { "type": "string", "maxLength": 100 },
+        "targetStateProvince": { "type": "string", "maxLength": 100 },
+        "targetDistrict": { "type": "string", "maxLength": 100 },
+        "linkTab": { "type": "string", "maxLength": 50 },
+        "entityId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "type", "title", "message", "timestamp", "read"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles, roles, and administrative credentials"
+    },
+    "/applications/{applicationId}": {
+      "schema": { "$ref": "#/entities/MembershipApplication" },
+      "description": "Membership registration pipeline"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentTransaction" },
+      "description": "Financial ledger of contributions and verified receipts"
+    },
+    "/complaints/{complaintId}": {
+      "schema": { "$ref": "#/entities/Complaint" },
+      "description": "Grievance desk tickets and resolution records"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Organizational notices and regional bulletins"
+    },
+    "/audit_logs/{auditId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Append-only immutable governance audit trail"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "Role-gated alert messages"
+    }
+  }
+}
