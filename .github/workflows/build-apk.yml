@@ -27,6 +27,7 @@ jobs:
       - name: Install dependencies and build web app
         run: |
           npm install --legacy-peer-deps
+          npm install react-is --legacy-peer-deps
           npm run build
 
       - name: Convert Web App to Android with Capacitor
