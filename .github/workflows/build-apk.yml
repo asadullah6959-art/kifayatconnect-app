@@ -33,7 +33,8 @@ jobs:
       - name: Convert Web App to Android with Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
-          npx cap init "Kifayat Connect" "com.kifayatconnect.app" --web-dir=dist || true
+          rm -f capacitor.config.ts capacitor.config.json
+          echo '{"appId": "com.kifayatconnect.app", "appName": "Kifayat Connect", "webDir": "dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
 
