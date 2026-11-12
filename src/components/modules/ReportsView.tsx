@@ -47,14 +47,15 @@ export const ReportsView: React.FC = () => {
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const isMember = currentUser.role === 'MEMBER';
 
   const [filterProvince, setFilterProvince] = useState<string>(
-    isRegionalOfficer ? (currentUser.stateProvince || mapLegacyRegionToHierarchy(currentUser.region).stateProvince) : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isRegionalOfficer ? (currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district) : 'ALL'
+    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
   );
 
   const handlePrint = () => {
@@ -68,9 +69,13 @@ export const ReportsView: React.FC = () => {
     const pProv = p.stateProvince || fallback.stateProvince;
     const pDist = p.district || fallback.district;
 
-    if (isRegionalOfficer) {
-      const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
       return pDist === myDist || p.userRegion === currentUser.region;
+    }
+    if (isCoAdmin) {
+      const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+      return pProv === myProv;
     }
 
     if (filterProvince !== 'ALL' && pProv !== filterProvince) return false;
@@ -109,9 +114,13 @@ export const ReportsView: React.FC = () => {
       const fb = mapLegacyRegionToHierarchy(stat.region);
       const prov = stat.stateProvince || fb.stateProvince;
       const dist = stat.district || fb.district;
-      if (isRegionalOfficer) {
-        const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+      if (isDistrictAdmin) {
+        const myDist = currentUser.assignedDistrict || currentUser.district;
         return dist === myDist || stat.region === currentUser.region;
+      }
+      if (isCoAdmin) {
+        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+        return prov === myProv;
       }
       if (filterProvince !== 'ALL' && prov !== filterProvince) return false;
       if (filterDistrict !== 'ALL' && dist !== filterDistrict) return false;
@@ -189,7 +198,8 @@ export const ReportsView: React.FC = () => {
             <span className="text-xs text-slate-500">
               {isSuperAdmin && 'Master Organization Report'}
               {isFinanceOfficer && 'Central Financial Statement'}
-              {isRegionalOfficer && `${currentUser.region} Regional Statement`}
+              {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} District Statement`}
+              {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`}
               {isMember && 'Personal Welfare Contribution Summary'}
             </span>
           </div>
@@ -494,9 +504,9 @@ export const ReportsView: React.FC = () => {
                   Audited Growth Index
                 </span>
                 <p className="text-slate-500">
-                  {currentUser.role === 'REGIONAL_OFFICER' 
-                    ? `${currentUser.region} is currently operating at 94% active membership quota.` 
-                    : 'Collections have expanded by 2.6x across all 7 regional Secretariats since Q2.'}
+                  {currentUser.role === 'ADMIN' 
+                    ? `${currentUser.assignedDistrict || currentUser.district} is operating at high compliance quota.` 
+                    : 'Collections have expanded across all provincial Secretariats.'}
                 </p>
               </div>
             </div>
@@ -516,7 +526,7 @@ export const ReportsView: React.FC = () => {
                 </p>
               </div>
 
-              {!isRegionalOfficer && (
+              {!isDistrictAdmin && !isCoAdmin && (
                 <div className="flex items-center gap-2 no-print">
                   <select
                     value={filterProvince}
@@ -567,21 +577,25 @@ export const ReportsView: React.FC = () => {
                       const fb = mapLegacyRegionToHierarchy(s.region);
                       const sProv = s.stateProvince || fb.stateProvince;
                       const sDist = s.district || fb.district;
-                      if (isRegionalOfficer) {
-                        const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+                      if (isDistrictAdmin) {
+                        const myDist = currentUser.assignedDistrict || currentUser.district;
                         return sDist === myDist || s.region === currentUser.region;
+                      }
+                      if (isCoAdmin) {
+                        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+                        return sProv === myProv;
                       }
                       if (filterProvince !== 'ALL' && sProv !== filterProvince) return false;
                       if (filterDistrict !== 'ALL' && sDist !== filterDistrict) return false;
                       return true;
                     })
-                    .map(stat => {
+                    .map((stat, idx) => {
                       const fb = mapLegacyRegionToHierarchy(stat.region);
                       const sDist = stat.district || fb.district;
                       const sProv = stat.stateProvince || fb.stateProvince;
 
                       return (
-                        <tr key={stat.region}>
+                        <tr key={sDist ? `${sProv}-${sDist}` : `rep-${idx}`}>
                           <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                             <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
                             <span>{sDist}</span>

@@ -10,7 +10,11 @@ import {
   MapPin,
   UserCheck,
   Send,
-  Layers
+  Layers,
+  Paperclip,
+  FileText,
+  FileCheck,
+  Eye
 } from 'lucide-react';
 import { MembershipApplication } from '../../types';
 import { 
@@ -20,6 +24,7 @@ import {
   formatShortLocation, 
   mapLegacyRegionToHierarchy 
 } from '../../data/locationData';
+import { DocumentUploadModal } from './DocumentUploadModal';
 
 export const ApprovalWorkflow: React.FC = () => {
   const { 
@@ -32,7 +37,7 @@ export const ApprovalWorkflow: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
 
   const [activeTabFilter, setActiveTabFilter] = useState<'PENDING_REGIONAL' | 'RECOMMENDED' | 'ACTIVE' | 'REJECTED'>(
     isSuperAdmin ? 'RECOMMENDED' : 'PENDING_REGIONAL'
@@ -41,7 +46,7 @@ export const ApprovalWorkflow: React.FC = () => {
   const [filterProvince, setFilterProvince] = useState<string>('ALL');
   const [filterDistrict, setFilterDistrict] = useState<string>('ALL');
 
-  // Recommendation interaction state (Regional Officer)
+  // Recommendation interaction state (District Admin)
   const [reviewingApp, setReviewingApp] = useState<MembershipApplication | null>(null);
   const [recommendationChoice, setRecommendationChoice] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [regionalNotes, setRegionalNotes] = useState('');
@@ -49,6 +54,9 @@ export const ApprovalWorkflow: React.FC = () => {
   // Final Approval interaction state (Super Admin)
   const [finalApprovingApp, setFinalApprovingApp] = useState<MembershipApplication | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+
+  // Supporting Documents Dossier modal state
+  const [activeDocAppId, setActiveDocAppId] = useState<string | null>(null);
 
   // Bulk processing interaction state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -58,11 +66,11 @@ export const ApprovalWorkflow: React.FC = () => {
 
   // Helper to determine if an application is actionable for current user role
   const isActionable = (app: MembershipApplication) => {
-    if (isRegionalOfficer) {
-      return app.status === 'PENDING_REGIONAL_REVIEW';
+    if (isDistrictAdmin) {
+      return (app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW';
     }
     if (isSuperAdmin) {
-      return app.status === 'RECOMMENDED_BY_REGION' || app.status === 'PENDING_REGIONAL_REVIEW';
+      return (app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT' || (app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW';
     }
     return false;
   };
@@ -73,9 +81,9 @@ export const ApprovalWorkflow: React.FC = () => {
     const appProv = app.stateProvince || fallback.stateProvince;
     const appDist = app.district || fallback.district;
 
-    // If Regional Officer: only see applications in assigned district / region
-    if (isRegionalOfficer) {
-      const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+    // If District Admin: only see applications in assigned district
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
       if (appDist !== myDist && app.region !== currentUser.region) {
         return false;
       }
@@ -89,10 +97,10 @@ export const ApprovalWorkflow: React.FC = () => {
     }
 
     if (activeTabFilter === 'PENDING_REGIONAL') {
-      return app.status === 'PENDING_REGIONAL_REVIEW';
+      return (app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW';
     }
     if (activeTabFilter === 'RECOMMENDED') {
-      return app.status === 'RECOMMENDED_BY_REGION';
+      return (app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT';
     }
     if (activeTabFilter === 'ACTIVE') {
       return app.status === 'ACTIVE';
@@ -149,20 +157,20 @@ export const ApprovalWorkflow: React.FC = () => {
       
       for (const app of selectedApps) {
         if (bulkAction === 'APPROVE') {
-          if (isRegionalOfficer || (isSuperAdmin && app.status === 'PENDING_REGIONAL_REVIEW')) {
+          if (isDistrictAdmin || (isSuperAdmin && ((app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW'))) {
             await recommendApplication(
               app.id, 
               'APPROVE', 
               bulkRemarks.trim() || 'Bulk verification & recommendation approved.'
             );
-          } else if (isSuperAdmin && app.status === 'RECOMMENDED_BY_REGION') {
+          } else if (isSuperAdmin && ((app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT')) {
             await finalApproveApplication(
               app.id, 
               bulkRemarks.trim() || 'Bulk final approval granted under bylaws.'
             );
           }
         } else if (bulkAction === 'REJECT') {
-          if (isRegionalOfficer) {
+          if (isDistrictAdmin) {
             await recommendApplication(
               app.id, 
               'REJECT', 
@@ -214,7 +222,7 @@ export const ApprovalWorkflow: React.FC = () => {
             <span>Registration</span>
           </div>
           <span className="text-slate-400">→</span>
-          <div className={`flex items-center gap-1.5 font-medium ${isRegionalOfficer ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500'}`}>
+          <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500'}`}>
             <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-[10px] font-bold">2</span>
             <span>Regional Verify</span>
           </div>
@@ -242,7 +250,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            Stage 1: Pending Review ({applications.filter(a => (isRegionalOfficer ? a.region === currentUser.region : true) && a.status === 'PENDING_REGIONAL_REVIEW').length})
+            Stage 1: Pending Review ({applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'PENDING_REGIONAL_REVIEW' || (a.status as any) === 'PENDING_DISTRICT_REVIEW')).length})
           </button>
 
           <button
@@ -253,7 +261,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            Stage 2: Recommended ({applications.filter(a => (isRegionalOfficer ? a.region === currentUser.region : true) && a.status === 'RECOMMENDED_BY_REGION').length})
+            Stage 2: Recommended ({applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'RECOMMENDED_BY_REGION' || (a.status as any) === 'RECOMMENDED_BY_DISTRICT')).length})
           </button>
 
           <button
@@ -403,7 +411,7 @@ export const ApprovalWorkflow: React.FC = () => {
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded ${
                           app.status === 'ACTIVE'
                             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                            : app.status === 'RECOMMENDED_BY_REGION'
+                            : (app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT'
                             ? 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                             : app.status === 'REJECTED'
                             ? 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
@@ -480,10 +488,61 @@ export const ApprovalWorkflow: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Supporting Documents Dossier Section */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <Paperclip className="w-3 h-3 text-amber-500" />
+                          <span>Supporting Files:</span>
+                        </span>
+
+                        {(app.supportingDocuments && app.supportingDocuments.length > 0) ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {app.supportingDocuments.map(doc => (
+                              <button
+                                key={doc.id}
+                                type="button"
+                                onClick={() => setActiveDocAppId(app.id)}
+                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                  doc.verificationStatus === 'VERIFIED'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                                    : doc.verificationStatus === 'FLAGGED'
+                                    ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                                }`}
+                                title={`${doc.name} (${doc.type}) - Click to inspect`}
+                              >
+                                <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : doc.type === 'EXPENSE_RECEIPT' || doc.type === 'DEPOSIT_SLIP' ? '🧾' : '📄'}</span>
+                                <span className="max-w-[120px] truncate">{doc.name}</span>
+                                {doc.verificationStatus === 'VERIFIED' && <span className="text-emerald-600 font-bold">✓</span>}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">
+                            No documents attached yet
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveDocAppId(app.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 transition-colors"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-amber-600" />
+                        <span>
+                          {app.supportingDocuments && app.supportingDocuments.length > 0 
+                            ? `Manage Dossier (${app.supportingDocuments.length})` 
+                            : '+ Attach Supporting Files'}
+                        </span>
+                      </button>
+                    </div>
+
                     {/* Action Buttons depending on role & status */}
                     <div className="pt-2 flex flex-wrap items-center justify-end gap-2">
-                      {/* Regional Officer Action (Stage 1) */}
-                      {isRegionalOfficer && app.status === 'PENDING_REGIONAL_REVIEW' && (
+                      {/* District Admin Action (Stage 1) */}
+                      {isDistrictAdmin && ((app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW') && (
                         <button
                           onClick={() => {
                             setReviewingApp(app);
@@ -493,12 +552,12 @@ export const ApprovalWorkflow: React.FC = () => {
                           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded shadow-xs transition-colors"
                         >
                           <CheckSquare className="w-3.5 h-3.5" />
-                          <span>Submit Regional Recommendation</span>
+                          <span>Submit District Recommendation</span>
                         </button>
                       )}
 
                       {/* Super Admin Action (Stage 2) */}
-                      {isSuperAdmin && app.status === 'RECOMMENDED_BY_REGION' && (
+                      {isSuperAdmin && ((app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT') && (
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => rejectApplication(app.id, 'Does not satisfy central bylaws criteria.')}
@@ -541,6 +600,41 @@ export const ApprovalWorkflow: React.FC = () => {
               <p className="text-xs text-slate-500">
                 District: <strong>{reviewingApp.district || 'General'}</strong> · Tehsil: <strong>{reviewingApp.tehsil || 'Central'}</strong> · UC: <strong>{reviewingApp.unionCouncil || 'UC-01'}</strong>
               </p>
+            </div>
+
+            {/* Supporting Dossier Quick Check */}
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Supporting Documents:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveDocAppId(reviewingApp.id)}
+                  className="text-amber-600 dark:text-amber-400 font-bold hover:underline text-[11px]"
+                >
+                  Manage Dossier ({reviewingApp.supportingDocuments?.length || 0})
+                </button>
+              </div>
+
+              {(!reviewingApp.supportingDocuments || reviewingApp.supportingDocuments.length === 0) ? (
+                <p className="text-[11px] text-slate-500 italic">No supporting documents uploaded yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {reviewingApp.supportingDocuments.map(doc => (
+                    <span 
+                      key={doc.id}
+                      onClick={() => setActiveDocAppId(reviewingApp.id)}
+                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-1 hover:border-amber-400"
+                    >
+                      <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : '🧾'}</span>
+                      <span className="truncate max-w-[100px]">{doc.name}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${doc.verificationStatus === 'VERIFIED' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -638,6 +732,43 @@ export const ApprovalWorkflow: React.FC = () => {
               </span>
             </div>
 
+            {/* Supporting Dossier Quick Check */}
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Dossier Verification Audit:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveDocAppId(finalApprovingApp.id)}
+                  className="text-amber-600 dark:text-amber-400 font-bold hover:underline text-[11px]"
+                >
+                  Inspect All ({finalApprovingApp.supportingDocuments?.length || 0})
+                </button>
+              </div>
+
+              {(!finalApprovingApp.supportingDocuments || finalApprovingApp.supportingDocuments.length === 0) ? (
+                <p className="text-[11px] text-slate-500 italic">No supporting documents uploaded yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {finalApprovingApp.supportingDocuments.map(doc => (
+                    <span 
+                      key={doc.id}
+                      onClick={() => setActiveDocAppId(finalApprovingApp.id)}
+                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-1 hover:border-amber-400"
+                    >
+                      <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : '🧾'}</span>
+                      <span className="truncate max-w-[120px]">{doc.name}</span>
+                      <span className={`text-[9px] font-bold ${doc.verificationStatus === 'VERIFIED' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        ({doc.verificationStatus || 'PENDING'})
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Super Admin Remarks / Minute Entry
@@ -702,7 +833,7 @@ export const ApprovalWorkflow: React.FC = () => {
             <button
               onClick={() => {
                 setBulkRemarks(
-                  isRegionalOfficer 
+                  isDistrictAdmin 
                     ? 'Bulk rejection: Did not satisfy regional field verification criteria.'
                     : 'Bulk rejection: Central bylaws non-compliance.'
                 );
@@ -717,7 +848,7 @@ export const ApprovalWorkflow: React.FC = () => {
             <button
               onClick={() => {
                 setBulkRemarks(
-                  isRegionalOfficer 
+                  isDistrictAdmin 
                     ? 'Bulk regional recommendation: Address and credentials verified.'
                     : 'Bulk final approval granted under Kifayat Connect bylaws.'
                 );
@@ -726,7 +857,7 @@ export const ApprovalWorkflow: React.FC = () => {
               className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Bulk {isRegionalOfficer ? 'Recommend' : 'Approve'}</span>
+              <span>Bulk {isDistrictAdmin ? 'Recommend' : 'Approve'}</span>
             </button>
           </div>
         </aside>
@@ -742,7 +873,7 @@ export const ApprovalWorkflow: React.FC = () => {
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
                 {bulkAction === 'APPROVE' 
-                  ? (isRegionalOfficer ? 'Bulk Regional Recommendation' : 'Bulk Final Approval & Card Generation')
+                  ? (isDistrictAdmin ? 'Bulk Regional Recommendation' : 'Bulk Final Approval & Card Generation')
                   : 'Bulk Rejection of Applications'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -806,6 +937,18 @@ export const ApprovalWorkflow: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL: SUPPORTING DOCUMENT UPLOAD & AUDIT VIEWER */}
+      {activeDocAppId && (() => {
+        const targetApp = applications.find(a => a.id === activeDocAppId);
+        if (!targetApp) return null;
+        return (
+          <DocumentUploadModal
+            application={targetApp}
+            onClose={() => setActiveDocAppId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };

@@ -9,24 +9,22 @@
         "name": { "type": "string", "maxLength": 120 },
         "email": { "type": "string", "maxLength": 120 },
         "phone": { "type": "string", "maxLength": 30 },
-        "role": { "type": "string", "enum": ["SUPER_ADMIN", "FINANCE_OFFICER", "REGIONAL_OFFICER", "MEMBER"] },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "FINANCE_OFFICER", "ADMIN", "CO_ADMIN", "MEMBER"] },
         "country": { "type": "string", "maxLength": 80 },
         "stateProvince": { "type": "string", "maxLength": 100 },
         "district": { "type": "string", "maxLength": 100 },
         "tehsil": { "type": "string", "maxLength": 100 },
         "cityTown": { "type": "string", "maxLength": 100 },
         "unionCouncil": { "type": "string", "maxLength": 120 },
-        "region": { "type": "string", "maxLength": 100 },
+        "assignedDistrict": { "type": "string", "maxLength": 100 },
+        "assignedStateProvince": { "type": "string", "maxLength": 100 },
+        "assignedOfficeTitle": { "type": "string", "maxLength": 120 },
         "membershipId": { "type": "string", "maxLength": 50 },
         "membershipStatus": { "type": "string", "enum": ["ACTIVE", "PENDING", "REJECTED", "EXPIRED"] },
-        "avatarUrl": { "type": "string", "maxLength": 300 },
+        "avatar": { "type": "string", "maxLength": 300 },
         "cnic": { "type": "string", "maxLength": 20 },
         "address": { "type": "string", "maxLength": 300 },
         "joinDate": { "type": "string", "maxLength": 30 },
-        "validUntil": { "type": "string", "maxLength": 30 },
-        "monthlyPledge": { "type": "number" },
-        "annualPledge": { "type": "number" },
-        "totalContributed": { "type": "number" },
         "isStaff": { "type": "boolean" },
         "notes": { "type": "string", "maxLength": 500 }
       },
@@ -45,23 +43,11 @@
         "country": { "type": "string", "maxLength": 80 },
         "stateProvince": { "type": "string", "maxLength": 100 },
         "district": { "type": "string", "maxLength": 100 },
-        "tehsil": { "type": "string", "maxLength": 100 },
-        "cityTown": { "type": "string", "maxLength": 100 },
-        "unionCouncil": { "type": "string", "maxLength": 120 },
-        "region": { "type": "string", "maxLength": 100 },
         "address": { "type": "string", "maxLength": 300 },
         "submittedAt": { "type": "string", "maxLength": 40 },
         "status": { "type": "string", "enum": ["PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION", "ACTIVE", "REJECTED"] },
         "isOldMemberVerification": { "type": "boolean" },
-        "oldMembershipNo": { "type": "string", "maxLength": 50 },
-        "regionalOfficerId": { "type": "string", "maxLength": 128 },
-        "regionalOfficerName": { "type": "string", "maxLength": 120 },
-        "regionalRecommendation": { "type": "string", "enum": ["APPROVE", "REJECT"] },
-        "regionalRemarks": { "type": "string", "maxLength": 500 },
-        "regionalReviewedAt": { "type": "string", "maxLength": 40 },
-        "superAdminRemarks": { "type": "string", "maxLength": 500 },
-        "superAdminApprovedAt": { "type": "string", "maxLength": 40 },
-        "generatedMembershipId": { "type": "string", "maxLength": 50 }
+        "oldMembershipNo": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "applicantName", "email", "phone", "cnic", "address", "submittedAt", "status", "isOldMemberVerification"]
     },
@@ -74,120 +60,90 @@
         "receiptNumber": { "type": "string", "maxLength": 50 },
         "userId": { "type": "string", "maxLength": 128 },
         "userName": { "type": "string", "maxLength": 120 },
-        "userMembershipId": { "type": "string", "maxLength": 50 },
-        "country": { "type": "string", "maxLength": 80 },
-        "stateProvince": { "type": "string", "maxLength": 100 },
-        "district": { "type": "string", "maxLength": 100 },
-        "tehsil": { "type": "string", "maxLength": 100 },
-        "cityTown": { "type": "string", "maxLength": 100 },
-        "unionCouncil": { "type": "string", "maxLength": 120 },
-        "userRegion": { "type": "string", "maxLength": 100 },
         "amount": { "type": "number" },
         "fundCategory": { "type": "string", "maxLength": 100 },
         "paymentMethod": { "type": "string", "maxLength": 50 },
         "referenceNumber": { "type": "string", "maxLength": 80 },
         "date": { "type": "string", "maxLength": 30 },
-        "status": { "type": "string", "enum": ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"] },
-        "proofNote": { "type": "string", "maxLength": 300 },
-        "verifiedBy": { "type": "string", "maxLength": 120 },
-        "verifiedAt": { "type": "string", "maxLength": 40 },
-        "rejectionReason": { "type": "string", "maxLength": 300 }
+        "status": { "type": "string", "enum": ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"] }
       },
       "required": ["id", "receiptNumber", "userId", "userName", "amount", "fundCategory", "paymentMethod", "referenceNumber", "date", "status"]
     },
     "Complaint": {
       "title": "Complaint",
-      "description": "Grievance desk tickets routed to regional officers and central welfare desk",
+      "description": "Grievance desk tickets routed to district administrators and central leadership",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "ticketNumber": { "type": "string", "maxLength": 50 },
         "userId": { "type": "string", "maxLength": 128 },
         "userName": { "type": "string", "maxLength": 120 },
-        "userRole": { "type": "string", "maxLength": 50 },
-        "country": { "type": "string", "maxLength": 80 },
-        "stateProvince": { "type": "string", "maxLength": 100 },
-        "district": { "type": "string", "maxLength": 100 },
-        "tehsil": { "type": "string", "maxLength": 100 },
-        "cityTown": { "type": "string", "maxLength": 100 },
-        "unionCouncil": { "type": "string", "maxLength": 120 },
-        "region": { "type": "string", "maxLength": 100 },
-        "category": { "type": "string", "maxLength": 100 },
         "subject": { "type": "string", "maxLength": 150 },
         "description": { "type": "string", "maxLength": 1000 },
         "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"] },
-        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
-        "createdAt": { "type": "string", "maxLength": 40 },
-        "assignedOfficerName": { "type": "string", "maxLength": 120 },
-        "responseNote": { "type": "string", "maxLength": 500 },
-        "resolvedAt": { "type": "string", "maxLength": 40 }
+        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] }
       },
-      "required": ["id", "ticketNumber", "userId", "userName", "category", "subject", "description", "status", "priority", "createdAt"]
+      "required": ["id", "ticketNumber", "userId", "userName", "subject", "description", "status", "priority"]
     },
-    "Announcement": {
-      "title": "Announcement",
-      "description": "Official notices and policy bulletins scoped regionally or nationally",
+    "OfficeBearer": {
+      "title": "OfficeBearer",
+      "description": "Proposed organizational leadership seats appointed by Super Admin",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
-        "title": { "type": "string", "maxLength": 150 },
-        "content": { "type": "string", "maxLength": 2000 },
-        "targetScope": { "type": "string", "enum": ["ALL", "PROVINCE", "DISTRICT"] },
-        "targetStateProvince": { "type": "string", "maxLength": 100 },
-        "targetDistrict": { "type": "string", "maxLength": 100 },
-        "targetRegion": { "type": "string", "maxLength": 100 },
-        "publishedBy": { "type": "string", "maxLength": 120 },
-        "publisherRole": { "type": "string", "maxLength": 50 },
-        "publishedAt": { "type": "string", "maxLength": 40 },
-        "isPinned": { "type": "boolean" },
-        "urgency": { "type": "string", "enum": ["NORMAL", "URGENT"] }
-      },
-      "required": ["id", "title", "content", "publishedBy", "publishedAt", "isPinned", "urgency"]
-    },
-    "AuditLog": {
-      "title": "AuditLog",
-      "description": "Immutable compliance and governance activity trail records",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "maxLength": 128 },
-        "timestamp": { "type": "string", "maxLength": 40 },
-        "actorId": { "type": "string", "maxLength": 128 },
-        "actorName": { "type": "string", "maxLength": 120 },
-        "actorRole": { "type": "string", "maxLength": 50 },
-        "action": { "type": "string", "maxLength": 100 },
-        "category": { "type": "string", "enum": ["MEMBERSHIP", "FINANCIAL", "REGIONAL", "SECURITY", "ROLE_MANAGEMENT"] },
-        "country": { "type": "string", "maxLength": 80 },
-        "stateProvince": { "type": "string", "maxLength": 100 },
-        "district": { "type": "string", "maxLength": 100 },
-        "tehsil": { "type": "string", "maxLength": 100 },
-        "cityTown": { "type": "string", "maxLength": 100 },
-        "unionCouncil": { "type": "string", "maxLength": 120 },
-        "region": { "type": "string", "maxLength": 100 },
-        "targetEntity": { "type": "string", "maxLength": 150 },
-        "details": { "type": "string", "maxLength": 500 }
-      },
-      "required": ["id", "timestamp", "actorId", "actorName", "actorRole", "action", "category", "targetEntity", "details"]
-    },
-    "AppNotification": {
-      "title": "AppNotification",
-      "description": "Real-time alerts and state update notifications dispatched to users",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "maxLength": 128 },
-        "type": { "type": "string", "maxLength": 50 },
         "title": { "type": "string", "maxLength": 120 },
-        "message": { "type": "string", "maxLength": 500 },
-        "timestamp": { "type": "string", "maxLength": 40 },
-        "read": { "type": "boolean" },
-        "targetUserId": { "type": "string", "maxLength": 128 },
-        "targetRole": { "type": "string", "maxLength": 50 },
-        "targetRegion": { "type": "string", "maxLength": 100 },
-        "targetStateProvince": { "type": "string", "maxLength": 100 },
-        "targetDistrict": { "type": "string", "maxLength": 100 },
-        "linkTab": { "type": "string", "maxLength": 50 },
-        "entityId": { "type": "string", "maxLength": 128 }
+        "seatNumber": { "type": "number" },
+        "totalSeatsForTitle": { "type": "number" },
+        "status": { "type": "string", "enum": ["APPOINTED", "VACANT"] },
+        "appointedUserId": { "type": "string", "maxLength": 128 },
+        "appointedUserName": { "type": "string", "maxLength": 120 },
+        "appointedDate": { "type": "string", "maxLength": 40 },
+        "term": { "type": "string", "maxLength": 50 },
+        "jurisdiction": { "type": "string", "maxLength": 100 }
       },
-      "required": ["id", "type", "title", "message", "timestamp", "read"]
+      "required": ["id", "title", "seatNumber", "totalSeatsForTitle", "status"]
+    },
+    "AppUpdate": {
+      "title": "AppUpdate",
+      "description": "Mobile application releases, APK links, and version change logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "version": { "type": "string", "maxLength": 30 },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "releaseDate": { "type": "string", "maxLength": 40 },
+        "apkDownloadUrl": { "type": "string", "maxLength": 500 },
+        "isPublished": { "type": "boolean" },
+        "isMandatory": { "type": "boolean" }
+      },
+      "required": ["id", "version", "title", "description", "releaseDate", "isPublished", "isMandatory"]
+    },
+    "ChatConversation": {
+      "title": "ChatConversation",
+      "description": "One-to-one private conversation threads between community members and officers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "participantIds": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string", "maxLength": 500 },
+        "lastMessageTimestamp": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["id", "participantIds"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Direct messages with photo/document attachments and timestamps",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "status": { "type": "string", "enum": ["SENT", "DELIVERED", "READ"] }
+      },
+      "required": ["id", "senderId", "recipientId", "text", "timestamp", "status"]
     }
   },
   "firestore": {
@@ -207,17 +163,21 @@
       "schema": { "$ref": "#/entities/Complaint" },
       "description": "Grievance desk tickets and resolution records"
     },
-    "/announcements/{announcementId}": {
-      "schema": { "$ref": "#/entities/Announcement" },
-      "description": "Organizational notices and regional bulletins"
+    "/office_bearers/{seatId}": {
+      "schema": { "$ref": "#/entities/OfficeBearer" },
+      "description": "Organizational leadership seats and appointments"
     },
-    "/audit_logs/{auditId}": {
-      "schema": { "$ref": "#/entities/AuditLog" },
-      "description": "Append-only immutable governance audit trail"
+    "/app_updates/{updateId}": {
+      "schema": { "$ref": "#/entities/AppUpdate" },
+      "description": "Mobile app updates and direct APK releases"
     },
-    "/notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/AppNotification" },
-      "description": "Role-gated alert messages"
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatConversation" },
+      "description": "Private 1-to-1 chat threads"
+    },
+    "/chat_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Chat messages and attachments"
     }
   }
 }

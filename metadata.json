@@ -1,6 +1,6 @@
 {
   "name": "Kifayat Connect – Role-Based Governance & Welfare System",
-  "description": "Multi-tier role-based access management system for Kifayat Connect welfare organization with Super Admin, Finance, Regional, and Member dashboards, payment verifications, and approvals.",
+  "description": "Multi-tier role-based access management system for Kifayat Connect welfare organization with Super Admin, Finance Officer, District Admin, State Co-Admin, and Member dashboards, Office-Bearers, and Chat.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

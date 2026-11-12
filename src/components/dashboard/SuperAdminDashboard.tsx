@@ -10,9 +10,16 @@ import {
   ShieldCheck, 
   TrendingUp, 
   ArrowUpRight,
-  Clock
+  Clock,
+  Sparkles,
+  Award,
+  Building2,
+  Settings,
+  Download,
+  AlertCircle,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
-
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 
 export const SuperAdminDashboard: React.FC = () => {
@@ -22,14 +29,26 @@ export const SuperAdminDashboard: React.FC = () => {
     payments, 
     complaints, 
     regionalStats, 
+    officeBearers,
+    appUpdates,
+    latestPublishedUpdate,
+    appSettings,
     setActiveTab, 
     language,
-    setSelectedCardUser
+    setSelectedCardUser,
+    setInspectedUserProfile
   } = useApp();
 
   const totalMembers = users.filter(u => u.role === 'MEMBER').length;
   const activeMembers = users.filter(u => u.role === 'MEMBER' && u.membershipStatus === 'ACTIVE').length;
   
+  const totalDistrictAdmins = users.filter(u => u.role === 'ADMIN').length;
+  const totalStateCoAdmins = users.filter(u => u.role === 'CO_ADMIN').length;
+  const totalFinanceOfficers = users.filter(u => u.role === 'FINANCE_OFFICER').length;
+
+  const appointedOfficeBearers = officeBearers.filter(ob => ob.status === 'ACTIVE').length;
+  const vacantOfficeBearers = officeBearers.filter(ob => ob.status === 'VACANT').length;
+
   const pendingApprovals = applications.filter(a => a.status === 'RECOMMENDED_BY_REGION');
   const pendingPayments = payments.filter(p => p.status === 'PENDING_VERIFICATION');
   const openComplaints = complaints.filter(c => c.status === 'OPEN' || c.status === 'UNDER_REVIEW');
@@ -37,160 +56,235 @@ export const SuperAdminDashboard: React.FC = () => {
   // Financial totals
   const verifiedPayments = payments.filter(p => p.status === 'VERIFIED');
   const totalVerifiedFunds = verifiedPayments.reduce((acc, curr) => acc + curr.amount, 0);
-  const monthlyFunds = verifiedPayments
-    .filter(p => p.fundCategory === 'Monthly Contribution')
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  const annualFunds = verifiedPayments
-    .filter(p => p.fundCategory === 'Annual Welfare Fund')
-    .reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner with Executive Status */}
+      {/* Top Banner with Executive Status & Quick Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
               {language === 'ur' ? 'مرکزی انتظام' : 'Super Admin Authority'}
             </span>
             <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">Organization-Wide Command & Oversight</span>
+            <span className="text-xs text-slate-400 font-mono">asadullah6959@gmail.com</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-            {language === 'ur' ? 'مرکزی گورننس ڈیش بورڈ' : 'Executive Governance Dashboard'}
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2.5">
+            <ShieldCheck className="w-6 h-6 text-amber-500 shrink-0" />
+            <span>{language === 'ur' ? 'مرکزی گورننس ڈیش بورڈ' : 'Executive Governance Dashboard'}</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Full organizational jurisdiction across administrative districts, provinces, central treasury, and official appointments.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Full organizational jurisdiction across administrative districts, provinces, central treasury, office-bearer appointments, and mobile app updates.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        {/* Quick Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setActiveTab('approvals')}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors"
+            onClick={() => setActiveTab('manage_app')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-amber-500/15 transition-all cursor-pointer"
           >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Review Approvals ({pendingApprovals.length})</span>
+            <Settings className="w-4 h-4" />
+            <span>Manage App Console</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('staff')}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md border border-slate-700 transition-colors"
+            onClick={() => setActiveTab('office_bearers')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl border border-amber-500/30 transition-colors cursor-pointer"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Staff Roles & RBAC</span>
+            <Award className="w-4 h-4 text-amber-400" />
+            <span>Office-Bearers ({appointedOfficeBearers}/13)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('approvals')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <CheckSquare className="w-4 h-4" />
+            <span>Approvals ({pendingApprovals.length})</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Primary KPI Metric Cards (6-Stat Grid) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Total Members */}
         <div 
           onClick={() => setActiveTab('members')}
-          className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition-colors cursor-pointer group"
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Registered Members</span>
-            <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Members</span>
+            <Users className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="mt-2">
+            <span className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
               {totalMembers}
             </span>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
-              {activeMembers} Active <ArrowUpRight className="w-3 h-3" />
-            </span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
-            <span>All Districts</span>
-            <span>·</span>
-            <span>{applications.length} Total Submissions</span>
+          <div className="mt-1 text-[10px] text-emerald-500 font-medium">
+            {activeMembers} Active
           </div>
         </div>
 
-        {/* Total Collections */}
+        {/* Total District Admins */}
         <div 
-          onClick={() => setActiveTab('funds')}
-          className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition-colors cursor-pointer group"
+          onClick={() => setActiveTab('staff')}
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Total Verified Funds</span>
-            <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">District Admins</span>
+            <MapPin className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              PKR {totalVerifiedFunds.toLocaleString()}
+          <div className="mt-2">
+            <span className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {totalDistrictAdmins}
             </span>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Audited</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
-            <span>Monthly: PKR {monthlyFunds.toLocaleString()}</span>
-            <span>·</span>
-            <span>Annual: PKR {annualFunds.toLocaleString()}</span>
+          <div className="mt-1 text-[10px] text-slate-400">
+            Max 10 per District
           </div>
         </div>
 
-        {/* Pending Approvals */}
+        {/* Total State Co-Admins */}
         <div 
-          onClick={() => setActiveTab('approvals')}
-          className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 transition-colors cursor-pointer group"
+          onClick={() => setActiveTab('staff')}
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Final Approval Queue</span>
-            <CheckSquare className="w-4 h-4 text-amber-500" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">State Co-Admins</span>
+            <Building2 className="w-4 h-4 text-indigo-400" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {pendingApprovals.length}
-            </span>
-            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-              Regional Verified
+          <div className="mt-2">
+            <span className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {totalStateCoAdmins}
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500">
-            Awaiting Super Admin final authorization
+          <div className="mt-1 text-[10px] text-slate-400">
+            Max 3 per Province
           </div>
         </div>
 
-        {/* Pending Payments & Grievances */}
+        {/* Finance Officers */}
         <div 
           onClick={() => setActiveTab('verification')}
-          className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition-colors cursor-pointer group"
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Pending Tasks</span>
-            <Receipt className="w-4 h-4 text-blue-500" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Finance Desk</span>
+            <Receipt className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {pendingPayments.length + openComplaints.length}
+          <div className="mt-2">
+            <span className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {totalFinanceOfficers}
             </span>
-            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">In Queue</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
-            <span>{pendingPayments.length} Payments</span>
-            <span>·</span>
-            <span>{openComplaints.length} Complaints</span>
+          <div className="mt-1 text-[10px] text-emerald-400">
+            Treasury Officers
+          </div>
+        </div>
+
+        {/* Office-Bearers */}
+        <div 
+          onClick={() => setActiveTab('office_bearers')}
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Office-Bearers</span>
+            <Award className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {appointedOfficeBearers}/13
+            </span>
+          </div>
+          <div className="mt-1 text-[10px] text-amber-400">
+            {vacantOfficeBearers} Vacant Seats
+          </div>
+        </div>
+
+        {/* Central Treasury Total */}
+        <div 
+          onClick={() => setActiveTab('funds')}
+          className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-colors cursor-pointer group shadow-xs"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total Treasury</span>
+            <Coins className="w-4 h-4 text-amber-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-sm font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              PKR {(totalVerifiedFunds / 1000).toFixed(0)}k
+            </span>
+          </div>
+          <div className="mt-1 text-[10px] text-emerald-400">
+            Audited & Verified
           </div>
         </div>
       </div>
 
-      {/* Main Grid: District & Province Governance Matrix & Pending Approvals */}
+      {/* App Updates Spotlight Card (Prompt Requirement #13) */}
+      <div className="bg-gradient-to-r from-[#0a192f] via-slate-900 to-slate-900 p-5 rounded-2xl border border-amber-500/30 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                App Updates & APK Release System
+              </span>
+              {latestPublishedUpdate && (
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Live: {latestPublishedUpdate.version}
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              {latestPublishedUpdate ? latestPublishedUpdate.title : 'Kifayat Connect Mobile Release Center'}
+            </h3>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Automatic broadcast of updates to users with in-app notifications and mandatory update blocking. Direct APK download link is configured and hosted via GitHub Releases.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {latestPublishedUpdate?.apkDownloadUrl && (
+              <a
+                href={latestPublishedUpdate.apkDownloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download APK ({latestPublishedUpdate.version})</span>
+              </a>
+            )}
+
+            <button
+              onClick={() => setActiveTab('manage_app')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+            >
+              <span>Manage Releases</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid: District & Province Governance Matrix & Office-Bearers Quick Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: District & Province Governance Matrix */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                District & Province Governance Matrix
+                <MapPin className="w-4 h-4 text-amber-500" />
+                Pakistan Geographic & Governance Hierarchy
               </h3>
               <p className="text-xs text-slate-500">
-                Audited membership counts and total welfare collections per administrative hierarchy
+                Audited membership counts and total welfare collections per administrative district
               </p>
             </div>
-            <span className="text-xs text-slate-400 font-mono">ALL JURISDICTIONS</span>
+            <span className="text-xs text-amber-500 font-mono font-semibold">ALL DISTRICTS</span>
           </div>
 
           <div className="overflow-x-auto mt-3">
@@ -199,21 +293,21 @@ export const SuperAdminDashboard: React.FC = () => {
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-medium">
                   <th className="py-2.5 px-3">District</th>
                   <th className="py-2.5 px-3">State / Province</th>
-                  <th className="py-2.5 px-3">Officer in Charge</th>
-                  <th className="py-2.5 px-3 text-right">Total Members</th>
-                  <th className="py-2.5 px-3 text-right">Active %</th>
-                  <th className="py-2.5 px-3 text-right">Total Funds (PKR)</th>
-                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-3">District Admin</th>
+                  <th className="py-2.5 px-3 text-right">Members</th>
+                  <th className="py-2.5 px-3 text-right">Quota</th>
+                  <th className="py-2.5 px-3 text-right">Funds (PKR)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {regionalStats.map(stat => {
+                {regionalStats.map((stat, idx) => {
                   const fb = mapLegacyRegionToHierarchy(stat.region);
                   const dist = stat.district || fb.district;
                   const prov = stat.stateProvince || fb.stateProvince;
+                  const adminCount = users.filter(u => u.role === 'ADMIN' && (u.assignedDistrict === dist || u.district === dist)).length;
 
                   return (
-                    <tr key={stat.region} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr key={dist ? `${prov}-${dist}` : `reg-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
                         {dist}
                       </td>
@@ -226,16 +320,13 @@ export const SuperAdminDashboard: React.FC = () => {
                       <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-800 dark:text-slate-200">
                         {stat.totalMembers}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
-                        {Math.round((stat.activeMembers / stat.totalMembers) * 100)}%
+                      <td className="py-2.5 px-3 text-right">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-400">
+                          {adminCount}/10 Admins
+                        </span>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">
                         {stat.totalCollected.toLocaleString()}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                          Operational
-                        </span>
                       </td>
                     </tr>
                   );
@@ -245,104 +336,57 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Col: Approvals Needing Super Admin Final Signature */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between">
+        {/* Right 1 Col: Office-Bearers Quick Overview */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Approvals Requiring Final Sign-off
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  Office-Bearers
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Recommended by Regional Officers
+                <p className="text-[11px] text-slate-500">
+                  10 Proposed Titles · 13 Constitutional Seats
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                {pendingApprovals.length} PENDING
-              </span>
+              <button
+                onClick={() => setActiveTab('office_bearers')}
+                className="text-xs text-amber-500 hover:text-amber-400 font-semibold cursor-pointer"
+              >
+                View All →
+              </button>
             </div>
 
-            <div className="mt-3 space-y-3">
-              {pendingApprovals.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No applications currently awaiting final Super Admin approval.
-                </div>
-              ) : (
-                pendingApprovals.map(app => (
-                  <div 
-                    key={app.id} 
-                    className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 text-xs"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-slate-100">
-                          {app.applicantName}
-                        </h4>
-                        <p className="text-slate-500 text-[11px]">
-                          {app.district || mapLegacyRegionToHierarchy(app.region).district}, {app.stateProvince || mapLegacyRegionToHierarchy(app.region).stateProvince} · CNIC: {app.cnic}
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold uppercase">
-                        Recommended
-                      </span>
-                    </div>
-
-                    <div className="mt-2 text-[11px] text-slate-600 dark:text-slate-300 italic bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-800">
-                      "{app.regionalRemarks}"
-                      <span className="block text-[9px] text-slate-400 not-italic mt-0.5">
-                        By: {app.regionalOfficerName}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setActiveTab('approvals')}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] rounded transition-colors"
-                      >
-                        Authorize & Grant ID
-                      </button>
-                    </div>
+            <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800/60 max-h-72 overflow-y-auto space-y-1">
+              {officeBearers.slice(0, 5).map(seat => (
+                <div key={seat.id} className="py-2 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{seat.title}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {seat.status === 'ACTIVE' ? (
+                        <span className="text-slate-300">{seat.assignedUserName}</span>
+                      ) : (
+                        <span className="text-amber-500/80 font-medium italic">Vacant Seat</span>
+                      )}
+                    </p>
                   </div>
-                ))
-              )}
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    seat.status === 'ACTIVE'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  }`}>
+                    {seat.status}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <button
-            onClick={() => setActiveTab('approvals')}
-            className="w-full mt-4 py-2 text-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
-          >
-            Open Full Approvals Center →
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Member Spotlight Card */}
-      <div className="p-4 bg-slate-900 text-white rounded-lg border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/src/assets/images/kifayat_emblem_logo_1794225902501.jpg" 
-            alt="Emblem" 
-            className="w-12 h-12 rounded-lg object-cover border border-emerald-400"
-          />
-          <div>
-            <h4 className="font-bold text-sm text-emerald-300">
-              Role Authority Rule #1: Super Admin Integrity
-            </h4>
-            <p className="text-xs text-slate-300 mt-0.5 max-w-2xl">
-              Super Admin possesses ultimate approval authority for staff creation and membership issuance. All financial modifications are immutably logged into the audit ledger.
+          <div className="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+            <p className="leading-relaxed">
+              Appointments preserve historical record and require Super Admin approval.
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setActiveTab('audit')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 rounded transition-colors"
-          >
-            <Clock className="w-3.5 h-3.5 text-emerald-400" />
-            <span>View Full Audit Logs</span>
-          </button>
         </div>
       </div>
     </div>

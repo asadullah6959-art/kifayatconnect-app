@@ -83,7 +83,6 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
       tehsil,
       cityTown,
       unionCouncil,
-      region: `${district} Central`,
       address: address.trim(),
       isOldMember,
       oldMembershipNo: isOldMember ? oldMembershipNo.trim() : undefined

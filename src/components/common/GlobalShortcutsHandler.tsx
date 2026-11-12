@@ -97,10 +97,10 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
         }
         if (e.key === '#' || e.key === '3') {
           e.preventDefault();
-          const regional = users.find(u => u.role === 'REGIONAL_OFFICER');
-          if (regional) {
-            switchUser(regional.id);
-            showToast(`Switched to Regional Officer: Bilal Ahmed (${regional.region})`);
+          const districtAdmin = users.find(u => u.role === 'ADMIN');
+          if (districtAdmin) {
+            switchUser(districtAdmin.id);
+            showToast(`Switched to District Admin: ${districtAdmin.name}`);
           }
           return;
         }
@@ -109,7 +109,7 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
           const member = users.find(u => u.role === 'MEMBER');
           if (member) {
             switchUser(member.id);
-            showToast('Switched to Member: Hamza Malik');
+            showToast('Switched to Member: Ayesha Bibi');
           }
           return;
         }
@@ -134,7 +134,7 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
             break;
           case '3':
             e.preventDefault();
-            if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'REGIONAL_OFFICER') {
+            if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') {
               setActiveTab('approvals');
               showToast('Navigated to Approvals Center (Alt+3)');
             } else {

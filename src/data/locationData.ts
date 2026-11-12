@@ -217,7 +217,32 @@ export function getMajorCitiesForDistrict(province: string, district: string): s
   const pData = PROVINCES_DATA[province];
   if (!pData) return [];
   const dData = pData.districts.find(d => d.name.toLowerCase() === district.toLowerCase());
-  return dData ? dData.majorCities : [];
+  return dData && dData.majorCities && dData.majorCities.length > 0 ? dData.majorCities : [district];
+}
+
+export function getAllDistricts(): { province: string; district: string }[] {
+  const results: { province: string; district: string }[] = [];
+  Object.entries(PROVINCES_DATA).forEach(([prov, data]) => {
+    data.districts.forEach(d => {
+      results.push({ province: prov, district: d.name });
+    });
+  });
+  return results;
+}
+
+export function addCustomDistrict(province: string, districtName: string, majorCity?: string) {
+  if (!PROVINCES_DATA[province]) {
+    PROVINCES_DATA[province] = { name: province, districts: [] };
+  }
+  const existing = PROVINCES_DATA[province].districts.find(d => d.name.toLowerCase() === districtName.toLowerCase());
+  if (!existing) {
+    PROVINCES_DATA[province].districts.push({
+      name: districtName,
+      tehsils: [`${districtName} City`],
+      majorCities: majorCity ? [majorCity] : [districtName],
+      sampleUCs: ['UC-01 Central']
+    });
+  }
 }
 
 export interface LocationHierarchyFields {
@@ -371,3 +396,14 @@ export function mapLegacyRegionToHierarchy(region?: string): {
     unionCouncil: 'UC-01 Central'
   };
 }
+
+export const PAKISTAN_LOCATION_DATA = Object.entries(PROVINCES_DATA).map(([stateProvince, pData]) => ({
+  stateProvince,
+  districts: pData.districts.map(d => ({
+    district: d.name,
+    tehsils: d.tehsils,
+    cities: d.majorCities,
+    sampleUCs: d.sampleUCs
+  }))
+}));
+

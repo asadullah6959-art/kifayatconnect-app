@@ -35,7 +35,8 @@ export const GlobalSearchBar: React.FC = () => {
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const isMember = currentUser.role === 'MEMBER';
 
   // Keyboard shortcut listener (Cmd+K / Ctrl+K or /)
@@ -86,10 +87,14 @@ export const GlobalSearchBar: React.FC = () => {
       const uTeh = user.tehsil || uFb.tehsil || '';
       const uUC = user.unionCouncil || uFb.unionCouncil || '';
 
-      // Regional Officer is strictly restricted to assigned district / jurisdiction
-      if (isRegionalOfficer) {
-        const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+      // District Admin is strictly restricted to assigned district
+      if (isDistrictAdmin) {
+        const myDist = currentUser.assignedDistrict || currentUser.district;
         if (uDist !== myDist && user.region !== currentUser.region) return false;
+      }
+      if (isCoAdmin) {
+        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+        if (uProv !== myProv) return false;
       }
       
       const q = query.toLowerCase();
@@ -115,10 +120,14 @@ export const GlobalSearchBar: React.FC = () => {
 
       // Members only see their own transactions
       if (isMember && tx.userId !== currentUser.id) return false;
-      // Regional Officers only see transactions from their district
-      if (isRegionalOfficer) {
-        const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+      // District Admins only see transactions from their district
+      if (isDistrictAdmin) {
+        const myDist = currentUser.assignedDistrict || currentUser.district;
         if (txDist !== myDist && tx.userRegion !== currentUser.region) return false;
+      }
+      if (isCoAdmin) {
+        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+        if (txProv !== myProv) return false;
       }
 
       const q = query.toLowerCase();
@@ -174,12 +183,12 @@ export const GlobalSearchBar: React.FC = () => {
       });
     }
 
-    if (isSuperAdmin || isRegionalOfficer) {
+    if (isSuperAdmin || isDistrictAdmin || isCoAdmin) {
       reportsCatalog.push({
         id: 'rep_regional_quota',
-        title: `${isRegionalOfficer ? currentUser.region : 'Regional'} Quota & Verification Report`,
-        type: 'Regional Report',
-        description: `Active member onboarding and compliance in ${isRegionalOfficer ? currentUser.region : 'all 7 divisions'}`,
+        title: `${isDistrictAdmin ? (currentUser.assignedDistrict || 'District') : isCoAdmin ? (currentUser.assignedStateProvince || 'State') : 'Administrative'} Quota & Verification Report`,
+        type: 'Governance Report',
+        description: `Active member onboarding and compliance statistics`,
         targetTab: 'reports'
       });
     }
@@ -203,9 +212,13 @@ export const GlobalSearchBar: React.FC = () => {
       const aDist = app.district || aFb.district;
       const aProv = app.stateProvince || aFb.stateProvince;
 
-      if (isRegionalOfficer) {
-        const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+      if (isDistrictAdmin) {
+        const myDist = currentUser.assignedDistrict || currentUser.district;
         if (aDist !== myDist && app.region !== currentUser.region) return false;
+      }
+      if (isCoAdmin) {
+        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+        if (aProv !== myProv) return false;
       }
 
       const q = query.toLowerCase();
@@ -263,14 +276,16 @@ export const GlobalSearchBar: React.FC = () => {
   const getScopeDescription = () => {
     if (isSuperAdmin) return 'Super Admin Scope: Organization-Wide Search';
     if (isFinanceOfficer) return 'Finance Scope: Treasury, Transactions & Financial Reports';
-    if (isRegionalOfficer) return `Regional Scope: Strictly ${currentUser.district || currentUser.region || 'Assigned District'} Records`;
+    if (isDistrictAdmin) return `District Scope: Strictly ${currentUser.assignedDistrict || currentUser.district || 'Assigned District'} Records`;
+    if (isCoAdmin) return `State Scope: Strictly ${currentUser.assignedStateProvince || currentUser.stateProvince || 'Assigned State'} Records`;
     return 'Member Scope: Personal Receipts & Welfare Reports';
   };
 
   const getPlaceholder = () => {
     if (isSuperAdmin) return 'Search members, receipts, reports (⌘K)...';
     if (isFinanceOfficer) return 'Search transactions, receipts, reports (⌘K)...';
-    if (isRegionalOfficer) return `Search ${(currentUser.district || currentUser.region || 'District').split(' ')[0]} records (⌘K)...`;
+    if (isDistrictAdmin) return `Search ${(currentUser.assignedDistrict || currentUser.district || 'District')} records (⌘K)...`;
+    if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records (⌘K)...`;
     return 'Search my receipts & reports (⌘K)...';
   };
 
@@ -371,9 +386,9 @@ export const GlobalSearchBar: React.FC = () => {
                     Note: Members can only search their personal receipts and public reports.
                   </p>
                 )}
-                {isRegionalOfficer && (
+                {isDistrictAdmin && (
                   <p className="text-[11px] text-slate-500">
-                    Note: Regional Officer search is strictly scoped to {currentUser.region}.
+                    Note: District Admin search is strictly scoped to {currentUser.assignedDistrict || currentUser.district}.
                   </p>
                 )}
               </div>

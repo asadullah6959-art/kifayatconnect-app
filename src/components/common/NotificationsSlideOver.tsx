@@ -73,7 +73,8 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     if (activeFilter === 'UNREAD') return !n.read;
     if (activeFilter === 'MEMBERSHIPS') {
       return (
-        n.type === 'MEMBERSHIP_PENDING_REGIONAL' ||
+        n.type === 'MEMBERSHIP_PENDING_DISTRICT' ||
+        (n.type as any) === 'MEMBERSHIP_PENDING_REGIONAL' ||
         n.type === 'MEMBERSHIP_RECOMMENDED' ||
         n.type === 'MEMBERSHIP_APPROVED' ||
         n.type === 'MEMBERSHIP_REJECTED'
@@ -93,6 +94,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     switch (type) {
       case 'MEMBERSHIP_APPROVED':
         return <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+      case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':
         return <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
@@ -118,6 +120,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
       case 'MEMBERSHIP_APPROVED':
       case 'PAYMENT_VERIFIED':
         return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+      case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':
         return 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';

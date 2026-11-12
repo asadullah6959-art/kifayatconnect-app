@@ -36,7 +36,8 @@ export const FundsAndPayments: React.FC = () => {
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const isMember = currentUser.role === 'MEMBER';
 
   const canVerify = isSuperAdmin || isFinanceOfficer;
@@ -45,10 +46,10 @@ export const FundsAndPayments: React.FC = () => {
   const [filterFund, setFilterFund] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterProvince, setFilterProvince] = useState<string>(
-    isRegionalOfficer ? (currentUser.stateProvince || mapLegacyRegionToHierarchy(currentUser.region).stateProvince) : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isRegionalOfficer ? (currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district) : 'ALL'
+    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
   );
 
   // Submit payment modal (for Members or manual desk entry)
@@ -62,10 +63,15 @@ export const FundsAndPayments: React.FC = () => {
   // Scoped transactions
   const visibleTransactions = payments.filter(p => {
     if (isMember) return p.userId === currentUser.id;
-    if (isRegionalOfficer) {
-      const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
       const txDist = p.district || mapLegacyRegionToHierarchy(p.userRegion).district;
       return txDist === myDist || p.userRegion === currentUser.region;
+    }
+    if (isCoAdmin) {
+      const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+      const txProv = p.stateProvince || mapLegacyRegionToHierarchy(p.userRegion).stateProvince;
+      return txProv === myProv;
     }
     return true;
   });
@@ -146,7 +152,7 @@ export const FundsAndPayments: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              {isMember ? 'Personal Ledger' : isRegionalOfficer ? `${currentUser.region} Funds` : 'Central Treasury Ledger'}
+              {isMember ? 'Personal Ledger' : isDistrictAdmin ? `${currentUser.assignedDistrict || currentUser.district} Funds` : isCoAdmin ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Funds` : 'Central Treasury Ledger'}
             </span>
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">Audited Financial Contributions</span>
@@ -158,8 +164,10 @@ export const FundsAndPayments: React.FC = () => {
           <p className="text-xs text-slate-500 mt-0.5">
             {canVerify 
               ? 'Authorized to verify bank slips, clear transactions, and issue certified digital vouchers.' 
-              : isRegionalOfficer 
-              ? `Regional view-only summary of welfare contributions from ${currentUser.region}.`
+              : isDistrictAdmin 
+              ? `District view-only summary of welfare contributions from ${currentUser.assignedDistrict || currentUser.district}.`
+              : isCoAdmin
+              ? `Provincial view-only summary of welfare contributions from ${currentUser.assignedStateProvince || currentUser.stateProvince}.`
               : 'Detailed history of your membership dues and welfare funds.'}
           </p>
         </div>
@@ -317,7 +325,7 @@ export const FundsAndPayments: React.FC = () => {
               <option value="REJECTED">Rejected</option>
             </select>
 
-            {!isRegionalOfficer && (
+            {!isDistrictAdmin && !isCoAdmin && (
               <>
                 <select
                   value={filterProvince}

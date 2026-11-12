@@ -12,10 +12,23 @@ import {
   FileText, 
   IdCard,
   Building2,
-  Clock
+  Clock,
+  MessageSquare,
+  Award,
+  Settings,
+  Sparkles,
+  Download,
+  X
 } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  isMobileDrawer?: boolean;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => {
   const { 
     currentUser, 
     activeTab, 
@@ -23,6 +36,8 @@ export const Sidebar: React.FC = () => {
     applications, 
     payments, 
     complaints, 
+    chats,
+    appUpdates,
     language,
     setSelectedCardUser
   } = useApp();
@@ -30,8 +45,8 @@ export const Sidebar: React.FC = () => {
   // Pending counts
   const pendingApprovalsCount = currentUser.role === 'SUPER_ADMIN'
     ? applications.filter(a => a.status === 'RECOMMENDED_BY_REGION').length
-    : currentUser.role === 'REGIONAL_OFFICER'
-    ? applications.filter(a => a.region === currentUser.region && a.status === 'PENDING_REGIONAL_REVIEW').length
+    : currentUser.role === 'ADMIN'
+    ? applications.filter(a => (a.district === (currentUser.assignedDistrict || currentUser.district)) && a.status === 'PENDING_REGIONAL_REVIEW').length
     : 0;
 
   const pendingPaymentsCount = (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER')
@@ -40,11 +55,15 @@ export const Sidebar: React.FC = () => {
 
   const openComplaintsCount = currentUser.role === 'SUPER_ADMIN'
     ? complaints.filter(c => c.status === 'OPEN' || c.status === 'UNDER_REVIEW').length
-    : currentUser.role === 'REGIONAL_OFFICER'
-    ? complaints.filter(c => c.region === currentUser.region && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length
+    : currentUser.role === 'ADMIN'
+    ? complaints.filter(c => (c.district === (currentUser.assignedDistrict || currentUser.district)) && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length
+    : currentUser.role === 'CO_ADMIN'
+    ? complaints.filter(c => (c.stateProvince === (currentUser.assignedStateProvince || currentUser.stateProvince)) && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length
     : currentUser.role === 'MEMBER'
     ? complaints.filter(c => c.userId === currentUser.id && c.status === 'OPEN').length
     : 0;
+
+  const totalUnreadMessages = chats.reduce((acc, c) => acc + (c.unreadCount || (c.unreadCounts && c.unreadCounts[currentUser.id]) || 0), 0);
 
   // Nav item list tailored to role
   const navItems = [
@@ -55,11 +74,27 @@ export const Sidebar: React.FC = () => {
       visible: true
     },
     {
+      id: 'chat',
+      label: language === 'ur' ? 'پیغامات و چیٹ' : 'Chat & Messages',
+      icon: MessageSquare,
+      visible: true,
+      badge: totalUnreadMessages > 0 ? totalUnreadMessages : null,
+      badgeColor: 'bg-amber-500 text-slate-950 font-bold'
+    },
+    {
+      id: 'office_bearers',
+      label: language === 'ur' ? 'عہدیداران تنظیم' : 'Office-Bearers',
+      icon: Award,
+      visible: true
+    },
+    {
       id: 'members',
       label: language === 'ur' 
         ? 'ممبر ڈائریکٹری' 
-        : currentUser.role === 'REGIONAL_OFFICER' 
-        ? `${(currentUser.district || currentUser.region || 'District').split(' ')[0]} Members` 
+        : currentUser.role === 'ADMIN'
+        ? `${currentUser.assignedDistrict || currentUser.district || 'District'} Members`
+        : currentUser.role === 'CO_ADMIN'
+        ? `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Directory`
         : 'Member Directory',
       icon: Users,
       visible: currentUser.role !== 'MEMBER',
@@ -71,11 +106,11 @@ export const Sidebar: React.FC = () => {
         ? 'رکنیت منظوریاں' 
         : currentUser.role === 'SUPER_ADMIN' 
         ? 'Final Approvals' 
-        : 'Regional Verification',
+        : 'District Verification',
       icon: CheckSquare,
-      visible: currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'REGIONAL_OFFICER',
+      visible: currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN',
       badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : null,
-      badgeColor: 'bg-amber-500 text-white'
+      badgeColor: 'bg-amber-500 text-slate-950 font-bold'
     },
     {
       id: 'funds',
@@ -126,6 +161,14 @@ export const Sidebar: React.FC = () => {
       visible: currentUser.role === 'SUPER_ADMIN'
     },
     {
+      id: 'manage_app',
+      label: language === 'ur' ? 'ایپ سیٹنگز و اپڈیٹس' : 'Manage App Console',
+      icon: Settings,
+      visible: currentUser.role === 'SUPER_ADMIN',
+      badge: 'Admin',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+    },
+    {
       id: 'reports',
       label: language === 'ur' ? 'مالیاتی و علاقائی رپورٹس' : 'Statements & Reports',
       icon: FileText,
@@ -140,22 +183,50 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 border-r border-slate-800 flex flex-col shrink-0 select-none">
+    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0a192f] overflow-hidden">
+      {/* Mobile Drawer Header with Close Button */}
+      {(isMobileDrawer || onClose) && (
+        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-slate-800 bg-slate-950 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold font-serif text-sm shadow-sm">
+              KC
+            </div>
+            <div>
+              <span className="font-bold text-sm text-white block leading-tight">
+                {language === 'ur' ? 'کفایت کنیکٹ' : 'Kifayat Connect'}
+              </span>
+              <span className="text-[10px] text-amber-400 font-medium">
+                {language === 'ur' ? 'شعبہ جاتی مینو' : 'Navigation Menu'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5 text-amber-400" />
+          </button>
+        </div>
+      )}
+
       {/* Scope / Role Identity Indicator */}
-      <div className="p-4 border-b border-slate-800/80 bg-slate-950/40">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+      <div className="p-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Building2 className="w-4 h-4 text-amber-400 shrink-0" />
           <div className="truncate">
             <span className="text-[11px] font-semibold text-slate-200 block truncate">
-              {currentUser.role === 'SUPER_ADMIN' && 'Headquarters Executive'}
+              {currentUser.role === 'SUPER_ADMIN' && 'Central Headquarters'}
               {currentUser.role === 'FINANCE_OFFICER' && 'Central Treasury Desk'}
-              {currentUser.role === 'REGIONAL_OFFICER' && `${currentUser.region} Office`}
-              {currentUser.role === 'MEMBER' && 'Member Self-Service Portal'}
+              {currentUser.role === 'ADMIN' && `${currentUser.assignedDistrict || currentUser.district || 'District'} Admin`}
+              {currentUser.role === 'CO_ADMIN' && `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Co-Admin`}
+              {currentUser.role === 'MEMBER' && 'Member Self-Service'}
             </span>
-            <span className="text-[10px] text-slate-400 block truncate">
+            <span className="text-[10px] text-amber-400/90 block truncate font-mono">
               {currentUser.role === 'MEMBER' 
                 ? `ID: ${currentUser.membershipId || 'KC-PENDING'}` 
-                : `Role: ${currentUser.role}`}
+                : currentUser.assignedOfficeTitle ? currentUser.assignedOfficeTitle : `Role: ${currentUser.role}`}
             </span>
           </div>
         </div>
@@ -180,20 +251,24 @@ export const Sidebar: React.FC = () => {
                 } else {
                   setActiveTab(item.id);
                 }
+                // Automatically close sidebar on mobile so dashboard takes full screen width
+                if (onClose) {
+                  onClose();
+                }
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-md transition-colors text-left ${
+              className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left cursor-pointer ${
                 isActive
-                  ? 'bg-emerald-600 text-white font-medium shadow-xs'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/15'
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400/80'}`} />
                 <span className="truncate">{item.label}</span>
               </div>
 
               {item.badge !== null && item.badge !== undefined && (
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-slate-700 text-white'}`}>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-slate-800 text-white'}`}>
                   {item.badge}
                 </span>
               )}
@@ -202,19 +277,16 @@ export const Sidebar: React.FC = () => {
         })}
       </div>
 
-      {/* Quick Security & Authority Rules Callout */}
-      <div className="p-3.5 border-t border-slate-800 bg-slate-950/60 text-[11px] text-slate-400">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-semibold text-slate-300">Access Authority</span>
-          <span className="text-[10px] text-emerald-400 font-mono">ENFORCED</span>
+      {/* PWA & Install Callout in Sidebar Footer */}
+      <div className="p-3 border-t border-slate-800 bg-slate-950/80 space-y-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold text-slate-400">Mobile & Desktop App</span>
+          <PWAInstallButton compact />
         </div>
-        <p className="text-[10px] text-slate-400 leading-relaxed">
-          {currentUser.role === 'SUPER_ADMIN' && 'Full organization control & final approval rights.'}
-          {currentUser.role === 'FINANCE_OFFICER' && 'Financial transactions & receipt generation only.'}
-          {currentUser.role === 'REGIONAL_OFFICER' && `Restricted to ${currentUser.region} regional data.`}
-          {currentUser.role === 'MEMBER' && 'Personal membership, receipts, and grievance filing.'}
+        <p className="text-[10px] text-slate-400 leading-tight">
+          Installable PWA & Direct Android APK build ready.
         </p>
       </div>
-    </aside>
+    </div>
   );
 };

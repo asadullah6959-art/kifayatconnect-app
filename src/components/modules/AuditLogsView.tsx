@@ -18,7 +18,8 @@ export const AuditLogsView: React.FC = () => {
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const isMember = currentUser.role === 'MEMBER';
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,10 +31,15 @@ export const AuditLogsView: React.FC = () => {
     if (isFinanceOfficer) {
       return log.category === 'FINANCIAL'; // Finance officer sees only financial logs
     }
-    if (isRegionalOfficer) {
-      const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
       const logDist = log.district || (log.region ? mapLegacyRegionToHierarchy(log.region).district : '');
       return logDist === myDist || log.region === currentUser.region || log.category === 'REGIONAL';
+    }
+    if (isCoAdmin) {
+      const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+      const logProv = log.stateProvince || (log.region ? mapLegacyRegionToHierarchy(log.region).stateProvince : '');
+      return logProv === myProv;
     }
     if (isMember) {
       return log.actorId === currentUser.id || log.targetEntity.includes(currentUser.name); // Own activity only
@@ -89,7 +95,8 @@ export const AuditLogsView: React.FC = () => {
             <span className="text-xs text-slate-500">
               {isSuperAdmin && 'Master Organization Audit Trail'}
               {isFinanceOfficer && 'Financial Ledger Audit Trail'}
-              {isRegionalOfficer && `${currentUser.region} Activity Audit Trail`}
+              {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} Activity Audit Trail`}
+              {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`}
               {isMember && 'My Personal Account Activity Trail'}
             </span>
           </div>

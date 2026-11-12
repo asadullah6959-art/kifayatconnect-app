@@ -26,21 +26,22 @@ export const AnnouncementsManager: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
-  const canPublish = isSuperAdmin || isRegionalOfficer;
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
+  const canPublish = isSuperAdmin || isDistrictAdmin || isCoAdmin;
 
   // New bulletin form state
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [annScope, setAnnScope] = useState<'ALL' | 'PROVINCE' | 'DISTRICT'>(
-    isRegionalOfficer ? 'DISTRICT' : 'ALL'
+    isDistrictAdmin ? 'DISTRICT' : isCoAdmin ? 'PROVINCE' : 'ALL'
   );
   const [annProvince, setAnnProvince] = useState<string>(
-    currentUser.stateProvince || mapLegacyRegionToHierarchy(currentUser.region).stateProvince || 'Punjab'
+    currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab'
   );
   const [annDistrict, setAnnDistrict] = useState<string>(
-    currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district || 'Lahore'
+    currentUser.assignedDistrict || currentUser.district || 'Lahore'
   );
   const [annUrgency, setAnnUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
   const [annPinned, setAnnPinned] = useState(false);
@@ -67,18 +68,17 @@ export const AnnouncementsManager: React.FC = () => {
     e.preventDefault();
     if (!annTitle.trim() || !annContent.trim()) return;
 
-    const targetScope = isRegionalOfficer ? 'DISTRICT' : annScope;
-    const targetStateProvince = isRegionalOfficer 
-      ? (currentUser.stateProvince || mapLegacyRegionToHierarchy(currentUser.region).stateProvince) 
+    const targetScope = isDistrictAdmin ? 'DISTRICT' : isCoAdmin ? 'PROVINCE' : annScope;
+    const targetStateProvince = isDistrictAdmin || isCoAdmin
+      ? (currentUser.assignedStateProvince || currentUser.stateProvince) 
       : (annScope !== 'ALL' ? annProvince : undefined);
-    const targetDistrict = isRegionalOfficer 
-      ? (currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district) 
+    const targetDistrict = isDistrictAdmin 
+      ? (currentUser.assignedDistrict || currentUser.district) 
       : (annScope === 'DISTRICT' ? annDistrict : undefined);
 
     publishAnnouncement({
       title: annTitle.trim(),
       content: annContent.trim(),
-      targetRegion: isRegionalOfficer ? currentUser.region : (targetDistrict || (targetStateProvince ? `${targetStateProvince} Province` : 'ALL_REGIONS')) as any,
       targetScope,
       targetStateProvince,
       targetDistrict,
@@ -214,10 +214,10 @@ export const AnnouncementsManager: React.FC = () => {
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Target Administrative Scope
                 </label>
-                {isRegionalOfficer ? (
+                {isDistrictAdmin ? (
                   <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Locked to your jurisdiction: {currentUser.district || currentUser.region} ({currentUser.stateProvince || 'Pakistan'})</span>
+                    <span>Locked to your district: {currentUser.assignedDistrict || currentUser.district} ({currentUser.assignedStateProvince || currentUser.stateProvince || 'Pakistan'})</span>
                   </div>
                 ) : (
                   <div className="space-y-3">

@@ -46,127 +46,43 @@ service cloud.firestore {
       return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'FINANCE_OFFICER'));
     }
 
-    function isRegionalOfficer() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'REGIONAL_OFFICER'));
+    function isDistrictAdmin() {
+      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'ADMIN'));
+    }
+
+    function isCoAdmin() {
+      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'CO_ADMIN'));
     }
 
     // --- VALIDATION HELPERS ---
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'name', 'email', 'role', 'membershipStatus', 'isStaff']) &&
-        data.keys().hasOnly(['id', 'name', 'email', 'phone', 'role', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'region', 'membershipId', 'membershipStatus', 'avatarUrl', 'cnic', 'address', 'joinDate', 'validUntil', 'monthlyPledge', 'annualPledge', 'totalContributed', 'isStaff', 'notes']) &&
         data.id is string && isValidId(data.id) &&
         data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
-        data.role in ['SUPER_ADMIN', 'FINANCE_OFFICER', 'REGIONAL_OFFICER', 'MEMBER'] &&
-        (!('district' in data) || (data.district is string && data.district.size() <= 100)) &&
-        (!('stateProvince' in data) || (data.stateProvince is string && data.stateProvince.size() <= 100)) &&
-        (!('region' in data) || (data.region is string && data.region.size() <= 100)) &&
+        data.role in ['SUPER_ADMIN', 'FINANCE_OFFICER', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
         data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED'] &&
-        data.isStaff is bool &&
-        (!('monthlyPledge' in data) || data.monthlyPledge is number) &&
-        (!('annualPledge' in data) || data.annualPledge is number) &&
-        (!('totalContributed' in data) || data.totalContributed is number);
-    }
-
-    function isValidApplication(data) {
-      return data.keys().hasAll(['id', 'applicantName', 'email', 'phone', 'cnic', 'address', 'submittedAt', 'status', 'isOldMemberVerification']) &&
-        data.keys().hasOnly(['id', 'applicantName', 'email', 'phone', 'cnic', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'region', 'address', 'submittedAt', 'status', 'isOldMemberVerification', 'oldMembershipNo', 'regionalOfficerId', 'regionalOfficerName', 'regionalRecommendation', 'regionalRemarks', 'regionalReviewedAt', 'superAdminRemarks', 'superAdminApprovedAt', 'generatedMembershipId']) &&
-        data.id is string && isValidId(data.id) &&
-        data.applicantName is string && data.applicantName.size() > 0 && data.applicantName.size() <= 120 &&
-        data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
-        data.phone is string && data.phone.size() <= 30 &&
-        data.cnic is string && data.cnic.size() <= 20 &&
-        data.status in ['PENDING_REGIONAL_REVIEW', 'RECOMMENDED_BY_REGION', 'ACTIVE', 'REJECTED'] &&
-        data.isOldMemberVerification is bool;
-    }
-
-    function isValidPayment(data) {
-      return data.keys().hasAll(['id', 'receiptNumber', 'userId', 'userName', 'amount', 'fundCategory', 'paymentMethod', 'referenceNumber', 'date', 'status']) &&
-        data.keys().hasOnly(['id', 'receiptNumber', 'userId', 'userName', 'userMembershipId', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'userRegion', 'amount', 'fundCategory', 'paymentMethod', 'referenceNumber', 'date', 'status', 'proofNote', 'verifiedBy', 'verifiedAt', 'rejectionReason']) &&
-        data.id is string && isValidId(data.id) &&
-        data.receiptNumber is string && data.receiptNumber.size() <= 50 &&
-        data.userId is string && isValidId(data.userId) &&
-        data.userName is string && data.userName.size() <= 120 &&
-        data.amount is number && data.amount > 0 &&
-        data.fundCategory is string && data.fundCategory.size() <= 100 &&
-        data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
-        data.referenceNumber is string && data.referenceNumber.size() <= 80 &&
-        data.status in ['PENDING_VERIFICATION', 'VERIFIED', 'REJECTED'];
-    }
-
-    function isValidComplaint(data) {
-      return data.keys().hasAll(['id', 'ticketNumber', 'userId', 'userName', 'category', 'subject', 'description', 'status', 'priority', 'createdAt']) &&
-        data.keys().hasOnly(['id', 'ticketNumber', 'userId', 'userName', 'userRole', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'region', 'category', 'subject', 'description', 'status', 'priority', 'createdAt', 'assignedOfficerName', 'responseNote', 'resolvedAt']) &&
-        data.id is string && isValidId(data.id) &&
-        data.ticketNumber is string && data.ticketNumber.size() <= 50 &&
-        data.userId is string && isValidId(data.userId) &&
-        data.subject is string && data.subject.size() > 0 && data.subject.size() <= 150 &&
-        data.description is string && data.description.size() > 0 && data.description.size() <= 1000 &&
-        data.status in ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] &&
-        data.priority in ['LOW', 'MEDIUM', 'HIGH'];
-    }
-
-    function isValidAnnouncement(data) {
-      return data.keys().hasAll(['id', 'title', 'content', 'publishedBy', 'publishedAt', 'isPinned', 'urgency']) &&
-        data.keys().hasOnly(['id', 'title', 'content', 'targetScope', 'targetStateProvince', 'targetDistrict', 'targetRegion', 'publishedBy', 'publisherRole', 'publishedAt', 'isPinned', 'urgency']) &&
-        data.id is string && isValidId(data.id) &&
-        data.title is string && data.title.size() > 0 && data.title.size() <= 150 &&
-        data.content is string && data.content.size() > 0 && data.content.size() <= 2000 &&
-        data.isPinned is bool &&
-        data.urgency in ['NORMAL', 'URGENT'];
-    }
-
-    function isValidAuditLog(data) {
-      return data.keys().hasAll(['id', 'timestamp', 'actorId', 'actorName', 'actorRole', 'action', 'category', 'targetEntity', 'details']) &&
-        data.keys().hasOnly(['id', 'timestamp', 'actorId', 'actorName', 'actorRole', 'action', 'category', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'region', 'targetEntity', 'details']) &&
-        data.id is string && isValidId(data.id) &&
-        data.actorId is string && isValidId(data.actorId) &&
-        data.category in ['MEMBERSHIP', 'FINANCIAL', 'REGIONAL', 'SECURITY', 'ROLE_MANAGEMENT'] &&
-        data.action is string && data.action.size() <= 100 &&
-        data.targetEntity is string && data.targetEntity.size() <= 150;
-    }
-
-    function isValidNotification(data) {
-      return data.keys().hasAll(['id', 'type', 'title', 'message', 'timestamp', 'read']) &&
-        data.keys().hasOnly(['id', 'type', 'title', 'message', 'timestamp', 'read', 'targetUserId', 'targetRole', 'targetRegion', 'targetStateProvince', 'targetDistrict', 'linkTab', 'entityId']) &&
-        data.id is string && isValidId(data.id) &&
-        data.title is string && data.title.size() <= 120 &&
-        data.message is string && data.message.size() <= 500 &&
-        data.read is bool;
+        data.isStaff is bool;
     }
 
     // --- COLLECTION RULES ---
 
     // 1. Users Collection
     match /users/{userId} {
-      allow get: if isVerified() && (
-        request.auth.uid == userId ||
-        isStaff()
-      );
-
-      allow list: if isVerified() && (
-        isStaff() ||
-        resource.data.id == request.auth.uid
-      );
+      allow get: if isVerified();
+      allow list: if isVerified();
 
       allow create: if isVerified() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && (
-        // Super Admin self-bootstrap or creation
         (isSuperAdmin() && incoming().role == 'SUPER_ADMIN' && incoming().email == 'asadullah6959@gmail.com') ||
-        // Regular user onboarding defaults to MEMBER role only
         (!isSuperAdmin() && incoming().role == 'MEMBER' && incoming().isStaff == false)
       );
 
       allow update: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        // Root Super Admin can promote/assign staff roles
         isSuperAdmin() ||
-        // User updating own personal contact details (cannot alter role or isStaff)
         (
           request.auth.uid == userId &&
           incoming().role == existing().role &&
-          incoming().isStaff == existing().isStaff &&
-          incoming().id == existing().id &&
-          incoming().email == existing().email &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'address', 'avatarUrl', 'country', 'stateProvince', 'district', 'tehsil', 'cityTown', 'unionCouncil', 'region'])
+          incoming().isStaff == existing().isStaff
         )
       );
 
@@ -175,27 +91,16 @@ service cloud.firestore {
 
     // 2. Membership Applications
     match /applications/{applicationId} {
-      allow get: if isVerified() && (
+      allow get, list: if isVerified() && (
         isStaff() ||
         resource.data.email == request.auth.token.email
       );
 
-      allow list: if isVerified() && (
-        isStaff() ||
-        resource.data.email == request.auth.token.email
-      );
+      allow create: if isVerified() && isValidId(applicationId);
 
-      allow create: if isVerified() && isValidId(applicationId) && isValidApplication(incoming()) &&
-        incoming().status == 'PENDING_REGIONAL_REVIEW';
-
-      allow update: if isVerified() && isValidId(applicationId) && isValidApplication(incoming()) && (
+      allow update: if isVerified() && isValidId(applicationId) && (
         isSuperAdmin() ||
-        // Regional Officer recommendation
-        (
-          isRegionalOfficer() &&
-          getUserDoc(request.auth.uid).region == existing().region &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'regionalOfficerId', 'regionalOfficerName', 'regionalRecommendation', 'regionalRemarks', 'regionalReviewedAt'])
-        )
+        isDistrictAdmin()
       );
 
       allow delete: if isSuperAdmin();
@@ -203,27 +108,17 @@ service cloud.firestore {
 
     // 3. Payments Ledger
     match /payments/{paymentId} {
-      allow get: if isVerified() && (
+      allow get, list: if isVerified() && (
         isFinanceOfficer() ||
         resource.data.userId == request.auth.uid
       );
 
-      allow list: if isVerified() && (
-        isFinanceOfficer() ||
-        resource.data.userId == request.auth.uid
-      );
+      allow create: if isVerified() && isValidId(paymentId) &&
+        incoming().userId == request.auth.uid;
 
-      allow create: if isVerified() && isValidId(paymentId) && isValidPayment(incoming()) &&
-        incoming().userId == request.auth.uid &&
-        incoming().status == 'PENDING_VERIFICATION';
-
-      allow update: if isVerified() && isValidId(paymentId) && isValidPayment(incoming()) && (
+      allow update: if isVerified() && isValidId(paymentId) && (
         isSuperAdmin() ||
-        // Finance Officer payment verification
-        (
-          isFinanceOfficer() &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'verifiedBy', 'verifiedAt', 'rejectionReason'])
-        )
+        isFinanceOfficer()
       );
 
       allow delete: if isSuperAdmin();
@@ -231,92 +126,101 @@ service cloud.firestore {
 
     // 4. Grievance & Complaints
     match /complaints/{complaintId} {
-      allow get: if isVerified() && (
+      allow get, list: if isVerified() && (
         isSuperAdmin() ||
         resource.data.userId == request.auth.uid ||
-        (isRegionalOfficer() && getUserDoc(request.auth.uid).region == resource.data.region)
+        isDistrictAdmin() ||
+        isCoAdmin()
       );
 
-      allow list: if isVerified() && (
-        isSuperAdmin() ||
-        resource.data.userId == request.auth.uid ||
-        (isRegionalOfficer() && getUserDoc(request.auth.uid).region == resource.data.region)
-      );
+      allow create: if isVerified() && isValidId(complaintId) &&
+        incoming().userId == request.auth.uid;
 
-      allow create: if isVerified() && isValidId(complaintId) && isValidComplaint(incoming()) &&
-        incoming().userId == request.auth.uid &&
-        incoming().status == 'OPEN';
-
-      allow update: if isVerified() && isValidId(complaintId) && isValidComplaint(incoming()) && (
+      allow update: if isVerified() && isValidId(complaintId) && (
         isSuperAdmin() ||
-        (
-          isRegionalOfficer() &&
-          getUserDoc(request.auth.uid).region == existing().region &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'assignedOfficerName', 'responseNote', 'resolvedAt'])
-        ) ||
-        (
-          request.auth.uid == existing().userId &&
-          existing().status == 'OPEN' &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['subject', 'description', 'priority'])
-        )
+        isDistrictAdmin() ||
+        isCoAdmin() ||
+        (request.auth.uid == existing().userId && existing().status == 'OPEN')
       );
 
       allow delete: if isSuperAdmin();
     }
 
-    // 5. Announcements
+    // 5. Office-Bearers Seats (Constitutional Module)
+    match /office_bearers/{seatId} {
+      allow read: if isVerified();
+      allow write: if isSuperAdmin();
+    }
+
+    match /office_bearer_history/{historyId} {
+      allow read: if isVerified();
+      allow create: if isSuperAdmin();
+      allow update, delete: if false; // Immutable historical succession log
+    }
+
+    // 6. Mobile App Updates & Releases
+    match /app_updates/{updateId} {
+      allow read: if true; // Publicly readable for app update checking
+      allow write: if isSuperAdmin();
+    }
+
+    match /app_settings/{settingId} {
+      allow read: if isVerified();
+      allow write: if isSuperAdmin();
+    }
+
+    // 7. Dedicated 1-to-1 Chat Messaging System
+    match /chats/{chatId} {
+      allow read: if isVerified() && (
+        request.auth.uid in resource.data.participantIds ||
+        isSuperAdmin()
+      );
+
+      allow create: if isVerified() &&
+        request.auth.uid in incoming().participantIds;
+
+      allow update: if isVerified() &&
+        request.auth.uid in existing().participantIds;
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /chat_messages/{messageId} {
+      allow read: if isVerified() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid
+      );
+
+      allow create: if isVerified() &&
+        incoming().senderId == request.auth.uid;
+
+      allow update: if isVerified() && (
+        existing().recipientId == request.auth.uid ||
+        existing().senderId == request.auth.uid
+      );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // 8. Announcements
     match /announcements/{announcementId} {
       allow read: if isVerified();
-
-      allow create: if isVerified() && isValidId(announcementId) && isValidAnnouncement(incoming()) && (
-        isSuperAdmin() ||
-        (isRegionalOfficer() && incoming().targetRegion == getUserDoc(request.auth.uid).region)
-      );
-
-      allow update: if isVerified() && isValidId(announcementId) && isValidAnnouncement(incoming()) && (
-        isSuperAdmin() ||
-        (isRegionalOfficer() && existing().targetRegion == getUserDoc(request.auth.uid).region)
-      );
-
+      allow create, update: if isVerified() && (isSuperAdmin() || isDistrictAdmin() || isCoAdmin());
       allow delete: if isSuperAdmin();
     }
 
-    // 6. Audit Trail (Immutable)
+    // 9. Audit Trail (Immutable)
     match /audit_logs/{auditId} {
-      allow read: if isVerified() && (
-        isSuperAdmin() ||
-        (isFinanceOfficer() && resource.data.category == 'FINANCIAL') ||
-        (isRegionalOfficer() && resource.data.region == getUserDoc(request.auth.uid).region) ||
-        resource.data.actorId == request.auth.uid
-      );
-
-      allow create: if isVerified() && isValidId(auditId) && isValidAuditLog(incoming()) &&
-        incoming().actorId == request.auth.uid;
-
-      // Absolute Immutability: Updates and Deletions strictly forbidden
+      allow read: if isVerified() && (isSuperAdmin() || isStaff());
+      allow create: if isVerified() && incoming().actorId == request.auth.uid;
       allow update, delete: if false;
     }
 
-    // 7. Global Notifications
+    // 10. Global Notifications
     match /notifications/{notificationId} {
-      allow read: if isVerified() && (
-        isSuperAdmin() ||
-        resource.data.targetRole == 'ALL' ||
-        resource.data.targetUserId == request.auth.uid ||
-        (resource.data.targetRole == getUserDoc(request.auth.uid).role)
-      );
-
-      allow create: if isVerified() && isValidId(notificationId) && isValidNotification(incoming());
-
-      allow update: if isVerified() && isValidId(notificationId) && isValidNotification(incoming()) && (
-        isSuperAdmin() ||
-        (
-          resource.data.targetUserId == request.auth.uid &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['read'])
-        )
-      );
-
-      allow delete: if isVerified() && isValidId(notificationId) && (
+      allow read: if isVerified();
+      allow create: if isVerified();
+      allow update, delete: if isVerified() && (
         isSuperAdmin() ||
         resource.data.targetUserId == request.auth.uid
       );

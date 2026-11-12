@@ -37,7 +37,7 @@ export const StaffManagement: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formCnic, setFormCnic] = useState('');
-  const [formRole, setFormRole] = useState<UserRole>('REGIONAL_OFFICER');
+  const [formRole, setFormRole] = useState<UserRole>('ADMIN');
   const [formStateProvince, setFormStateProvince] = useState('Punjab');
   const [formDistrict, setFormDistrict] = useState('Lahore');
   const [formTehsil, setFormTehsil] = useState('');
@@ -67,7 +67,7 @@ export const StaffManagement: React.FC = () => {
     setFormEmail('');
     setFormPhone('+92 300 ');
     setFormCnic('');
-    setFormRole('REGIONAL_OFFICER');
+    setFormRole('ADMIN');
     setFormStateProvince('Punjab');
     setFormDistrict('Lahore');
     setFormTehsil('');
@@ -333,7 +333,8 @@ export const StaffManagement: React.FC = () => {
                     onChange={(e) => setFormRole(e.target.value as UserRole)}
                     className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
                   >
-                    <option value="REGIONAL_OFFICER">Regional Officer (Division Authority)</option>
+                    <option value="ADMIN">District Admin (Max 10 per District)</option>
+                    <option value="CO_ADMIN">State Co-Admin (Max 3 per Province)</option>
                     <option value="FINANCE_OFFICER">Finance Officer (Treasury & Receipts)</option>
                     <option value="SUPER_ADMIN">Super Admin (Central Governance)</option>
                   </select>

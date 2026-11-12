@@ -29,17 +29,18 @@ export const ComplaintsManager: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isRegionalOfficer = currentUser.role === 'REGIONAL_OFFICER';
+  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
   const isMember = currentUser.role === 'MEMBER';
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [filterProvince, setFilterProvince] = useState<string>(
-    isRegionalOfficer ? (currentUser.stateProvince || mapLegacyRegionToHierarchy(currentUser.region).stateProvince) : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isRegionalOfficer ? (currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district) : 'ALL'
+    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
   );
 
   // Submit modal state
@@ -61,9 +62,13 @@ export const ComplaintsManager: React.FC = () => {
     const cDist = cmp.district || fb.district;
     const cProv = cmp.stateProvince || fb.stateProvince;
 
-    if (isRegionalOfficer) {
-      const myDist = currentUser.district || mapLegacyRegionToHierarchy(currentUser.region).district;
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
       return cDist === myDist || cmp.region === currentUser.region;
+    }
+    if (isCoAdmin) {
+      const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+      return cProv === myProv;
     }
     if (isFinanceOfficer) return false;
     return true; // Super Admin sees all
@@ -136,7 +141,7 @@ export const ComplaintsManager: React.FC = () => {
             </span>
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">
-              {isMember ? 'My Tickets' : isRegionalOfficer ? `${currentUser.region} Division` : 'Central Desk'}
+              {isMember ? 'My Tickets' : isDistrictAdmin ? `${currentUser.assignedDistrict || currentUser.district || 'District'} Desk` : isCoAdmin ? `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Desk` : 'Central Desk'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
@@ -219,7 +224,7 @@ export const ComplaintsManager: React.FC = () => {
             <option value="General">General</option>
           </select>
 
-          {!isRegionalOfficer && (
+          {!isDistrictAdmin && !isCoAdmin && (
             <>
               <select
                 value={filterProvince}
@@ -325,7 +330,7 @@ export const ComplaintsManager: React.FC = () => {
               )}
 
               {/* Action buttons */}
-              {(isSuperAdmin || isRegionalOfficer) && (
+              {(isSuperAdmin || isDistrictAdmin || isCoAdmin) && (
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                   <button
                     onClick={() => handleOpenResponse(cmp)}
