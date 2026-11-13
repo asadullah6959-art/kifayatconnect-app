@@ -232,7 +232,7 @@ async function hashOTP(email: string, code: string): Promise<string> {
   return `h_${Math.abs(hash)}`;
 }
 
-const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7l';
+const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7i';
 const EMAILJS_DEFAULT_TEMPLATE_ID = 'template_ibzfyx7';
 const EMAILJS_DEFAULT_PUBLIC_KEY = 'kzxuOJCacRGWQ5nVb';
 
