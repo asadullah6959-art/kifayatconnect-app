@@ -33,11 +33,11 @@ export const GlobalSearchBar: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
-  const isCoAdmin = currentUser.role === 'CO_ADMIN';
-  const isMember = currentUser.role === 'MEMBER';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
+  const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isMember = currentUser?.role === 'MEMBER';
 
   // Keyboard shortcut listener (Cmd+K / Ctrl+K or /)
   useEffect(() => {
@@ -203,7 +203,7 @@ export const GlobalSearchBar: React.FC = () => {
     );
   };
 
-  // 4. Applications / Approvals search (for Super Admin & Regional Officer):
+  // 4. Applications / Approvals search (for Super Admin & District Admin):
   const searchApplications = (): MembershipApplication[] => {
     if (isMember || isFinanceOfficer) return [];
 
@@ -288,6 +288,8 @@ export const GlobalSearchBar: React.FC = () => {
     if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records (⌘K)...`;
     return 'Search my receipts & reports (⌘K)...';
   };
+
+  if (!currentUser) return null;
 
   return (
     <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">

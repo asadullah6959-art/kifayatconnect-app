@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { RoleSwitcherBar } from './components/common/RoleSwitcherBar';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
+import { AuthWelcomeGate } from './components/auth/AuthWelcomeGate';
 
 // Dashboards
 import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard';
@@ -36,16 +36,21 @@ import { NotificationsSlideOver } from './components/common/NotificationsSlideOv
 import { AppUpdateModal } from './components/common/AppUpdateModal';
 import { MemberProfileModal } from './components/modules/MemberProfileModal';
 
+import { LayoutDashboard, MessageSquare, Coins, Megaphone, User as UserIcon } from 'lucide-react';
+
 const MainLayout: React.FC = () => {
   const { 
     currentUser, 
     activeTab, 
+    setActiveTab,
     selectedReceipt, 
     setSelectedReceipt,
     selectedCardUser,
     setSelectedCardUser,
     inspectedUserProfile,
-    setInspectedUserProfile
+    setInspectedUserProfile,
+    chats,
+    language
   } = useApp();
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -54,71 +59,79 @@ const MainLayout: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Clean signed-out gate when no session exists (zero dummy users)
+  if (!currentUser) {
+    return (
+      <>
+        <AuthWelcomeGate onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+        <RegisterModal
+          isOpen={isRegisterModalOpen}
+          onClose={() => setIsRegisterModalOpen(false)}
+        />
+      </>
+    );
+  }
+
+  const totalUnreadMessages = chats.reduce(
+    (acc, c) => acc + (c.unreadCount || (c.unreadCounts && c.unreadCounts[currentUser.id]) || 0),
+    0
+  );
+
   // Render content based on current active tab & role
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        if (currentUser.role === 'SUPER_ADMIN') {
-          return <SuperAdminDashboard />;
-        } else if (currentUser.role === 'FINANCE_OFFICER') {
-          return <FinanceOfficerDashboard />;
-        } else if (currentUser.role === 'ADMIN') {
-          return <AdminDashboard />;
-        } else if (currentUser.role === 'CO_ADMIN') {
-          return <CoAdminDashboard />;
-        } else {
-          return <MemberDashboard />;
-        }
+        if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
+        if (currentUser.role === 'FINANCE_OFFICER') return <FinanceOfficerDashboard />;
+        if (currentUser.role === 'ADMIN') return <AdminDashboard />;
+        if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
+        return <MemberDashboard />;
 
       case 'chat':
         return <ChatModule />;
-
       case 'office_bearers':
         return <OfficeBearersModule />;
-
       case 'manage_app':
         return <ManageAppModule />;
-
       case 'members':
         return <MemberDirectory />;
-
       case 'approvals':
         return <ApprovalWorkflow />;
-
       case 'funds':
         return <FundsAndPayments />;
-
       case 'verification':
         return <FinanceOfficerDashboard />;
-
       case 'complaints':
         return <ComplaintsManager />;
-
       case 'announcements':
         return <AnnouncementsManager />;
-
       case 'staff':
         return <StaffManagement />;
-
       case 'reports':
         return <ReportsView />;
-
       case 'audit':
         return <AuditLogsView />;
-
       case 'profile':
         return <ProfileSettings />;
-
       default:
-        return <SuperAdminDashboard />;
+        if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
+        if (currentUser.role === 'FINANCE_OFFICER') return <FinanceOfficerDashboard />;
+        if (currentUser.role === 'ADMIN') return <AdminDashboard />;
+        if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
+        return <MemberDashboard />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col font-sans">
-      {/* Top Demo Simulation Persona Bar */}
-      <RoleSwitcherBar />
+  const mobileNavTabs = [
+    { id: 'dashboard', label: language === 'ur' ? 'ہوم' : 'Home', icon: LayoutDashboard },
+    { id: 'chat', label: language === 'ur' ? 'چیٹ' : 'Chat', icon: MessageSquare, badge: totalUnreadMessages },
+    { id: 'funds', label: language === 'ur' ? 'ادائیگی' : 'Pay', icon: Coins },
+    { id: 'announcements', label: language === 'ur' ? 'اعلانات' : 'Elaanat', icon: Megaphone },
+    { id: 'profile', label: language === 'ur' ? 'پروفائل' : 'Profile', icon: UserIcon }
+  ];
 
+  return (
+    <div className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden bg-slate-100 dark:bg-slate-950 flex flex-col font-sans">
       {/* Global Keyboard Shortcuts Handler & Notification Toasts */}
       <GlobalShortcutsHandler
         onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
@@ -126,7 +139,7 @@ const MainLayout: React.FC = () => {
         onOpenNotifications={() => setIsNotificationsOpen(true)}
       />
 
-      {/* Top Navigation Bar complying with 3-zone contract */}
+      {/* Fixed Top Navigation Bar */}
       <Header 
         onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
@@ -136,27 +149,25 @@ const MainLayout: React.FC = () => {
         isSidebarOpen={isMobileSidebarOpen}
       />
 
-      {/* Main App Workspace */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Desktop Docked Sidebar (Permanently docked in normal flow on md+ screens, hidden on mobile) */}
+      {/* Main App Workspace: only middle main area scrolls vertically */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
+        {/* Desktop Docked Sidebar */}
         <aside className="hidden md:flex md:w-64 md:shrink-0 h-full border-r border-slate-800 bg-[#0a192f] select-none z-20">
           <Sidebar />
         </aside>
 
-        {/* Mobile Sidebar Overlay (Sits completely as an overlay on mobile screens when active, never pushing main content) */}
+        {/* Mobile Sidebar Overlay (low-RAM solid translucent backdrop, zero blur) */}
         <div className="md:hidden">
-          {/* Backdrop Dimming Layer */}
           <div 
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-black/75 backdrop-blur-xs z-50 transition-opacity duration-300 ease-in-out cursor-pointer ${
+            className={`fixed inset-0 bg-slate-950/85 z-50 transition-opacity duration-200 cursor-pointer ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
           />
 
-          {/* Slide-Over Drawer Container (Floating panel with high z-index above main content) */}
           <aside 
-            className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl border-r border-slate-800 transition-transform duration-300 ease-out transform ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl border-r border-slate-800 transition-transform duration-200 ease-out transform ${
               isMobileSidebarOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'
             }`}
             role="dialog"
@@ -170,18 +181,51 @@ const MainLayout: React.FC = () => {
           </aside>
         </div>
 
-        {/* Primary Content Viewport (Takes full 100% width on mobile, completely unpushed) */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 w-full min-w-0 relative z-10">
-          <div className="max-w-7xl mx-auto w-full">
+        {/* Scrollable Center Content Viewport */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
+          <div className="max-w-7xl mx-auto w-full min-w-0">
             {renderContent()}
           </div>
         </main>
       </div>
 
-      {/* In-App Update Modal Prompt */}
+      {/* Fixed Mobile Bottom Navigation Bar */}
+      <nav
+        aria-label="Mobile Primary Navigation"
+        className="md:hidden shrink-0 w-full max-w-full bg-[#0a192f] border-t border-slate-800 px-1.5 py-1.5 z-30 flex items-center justify-around select-none"
+      >
+        {mobileNavTabs.map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setActiveTab(tab.id);
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl text-[10px] font-semibold transition-colors cursor-pointer ${
+                isActive ? 'text-amber-400 bg-slate-900/90' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <div className="relative">
+                <Icon className="w-4 h-4 mb-0.5" />
+                {tab.badge && tab.badge > 0 ? (
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold flex items-center justify-center leading-none">
+                    {tab.badge > 9 ? '9+' : tab.badge}
+                  </span>
+                ) : null}
+              </div>
+              <span className="truncate max-w-full">{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Modals & Slide-Overs */}
       <AppUpdateModal />
 
-      {/* Member Profile Inspector Modal */}
       {inspectedUserProfile && (
         <MemberProfileModal
           user={inspectedUserProfile}
@@ -189,7 +233,6 @@ const MainLayout: React.FC = () => {
         />
       )}
 
-      {/* Global Interactive Modals & Slide-Overs */}
       <NotificationsSlideOver
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}

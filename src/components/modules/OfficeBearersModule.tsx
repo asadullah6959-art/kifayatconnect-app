@@ -31,7 +31,7 @@ export const OfficeBearersModule: React.FC = () => {
     setInspectedUserProfile
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
   const [activeSubTab, setActiveSubTab] = useState<'SEATS' | 'HISTORY'>('SEATS');
   const [filterJurisdiction, setFilterJurisdiction] = useState<'ALL' | 'NATIONAL' | 'STATE' | 'DISTRICT'>('ALL');
@@ -46,6 +46,8 @@ export const OfficeBearersModule: React.FC = () => {
   // Modal state for vacating
   const [selectedSeatForVacate, setSelectedSeatForVacate] = useState<OfficeBearer | null>(null);
   const [vacateReason, setVacateReason] = useState<string>('');
+
+  if (!currentUser) return null;
 
   const filteredSeats = officeBearers.filter(ob => {
     if (filterJurisdiction !== 'ALL' && ob.jurisdiction !== filterJurisdiction) return false;
@@ -392,7 +394,7 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Appoint Office-Bearer */}
       {selectedSeatForAppoint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div>
               <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
@@ -467,7 +469,7 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Declare Seat Vacant */}
       {selectedSeatForVacate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div>
               <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">

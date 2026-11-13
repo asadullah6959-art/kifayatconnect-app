@@ -45,18 +45,22 @@ export const ReportsView: React.FC = () => {
     language 
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
-  const isCoAdmin = currentUser.role === 'CO_ADMIN';
-  const isMember = currentUser.role === 'MEMBER';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
+  const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isMember = currentUser?.role === 'MEMBER';
 
   const [filterProvince, setFilterProvince] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab') : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
+    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'Lahore') : 'ALL'
   );
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState(false);
+  const [activeChartTab, setActiveChartTab] = useState<'TRENDS' | 'REGIONAL'>('TRENDS');
+
+  if (!currentUser) return null;
 
   const handlePrint = () => {
     window.print();
@@ -95,51 +99,139 @@ export const ReportsView: React.FC = () => {
     .filter(p => p.fundCategory === 'Annual Welfare Fund')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const [downloadSuccessToast, setDownloadSuccessToast] = useState(false);
-  const [activeChartTab, setActiveChartTab] = useState<'TRENDS' | 'REGIONAL'>('TRENDS');
+  const emergencyAmount = verifiedPayments
+    .filter(p => p.fundCategory === 'Emergency Relief')
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // 6-Month Chronological Contribution Velocity Dataset
-  const monthlyTrendData = [
-    { month: 'Jun 2026', monthlyPledges: 480000, annualFund: 210000, total: 690000 },
-    { month: 'Jul 2026', monthlyPledges: 560000, annualFund: 320000, total: 880000 },
-    { month: 'Aug 2026', monthlyPledges: 640000, annualFund: 450000, total: 1090000 },
-    { month: 'Sep 2026', monthlyPledges: 710000, annualFund: 580000, total: 1290000 },
-    { month: 'Oct 2026', monthlyPledges: 820000, annualFund: 720000, total: 1540000 },
-    { month: 'Nov 2026', monthlyPledges: 950000, annualFund: 890000, total: 1840000 },
-  ];
+  const zakatAmount = verifiedPayments
+    .filter(p => p.fundCategory === 'Zakat & Sadqah')
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Regional & District Performance Dataset (Filtered by jurisdiction)
-  const regionalChartData = regionalStats
-    .filter(stat => {
-      const fb = mapLegacyRegionToHierarchy(stat.region);
-      const prov = stat.stateProvince || fb.stateProvince;
-      const dist = stat.district || fb.district;
-      if (isDistrictAdmin) {
-        const myDist = currentUser.assignedDistrict || currentUser.district;
-        return dist === myDist || stat.region === currentUser.region;
-      }
-      if (isCoAdmin) {
-        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
-        return prov === myProv;
-      }
-      if (filterProvince !== 'ALL' && prov !== filterProvince) return false;
-      if (filterDistrict !== 'ALL' && dist !== filterDistrict) return false;
-      return true;
-    })
-    .map(stat => {
-      const fb = mapLegacyRegionToHierarchy(stat.region);
-      const dist = stat.district || fb.district;
-      const prov = stat.stateProvince || fb.stateProvince;
-      return {
-        name: dist,
-        fullRegion: `${dist}, ${prov}`,
+  const calcPct = (val: number) => totalVerifiedAmount > 0 ? Math.round((val / totalVerifiedAmount) * 100) : 0;
+
+  // Dynamic 6-Month Chronological Contribution Dataset computed from real verifiedPayments
+  const monthlyTrendData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - (5 - i));
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const monthTxs = verifiedPayments.filter(p => (p.date || '').startsWith(key));
+    const monthlyPledges = monthTxs
+      .filter(p => p.fundCategory === 'Monthly Contribution')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const annualFund = monthTxs
+      .filter(p => p.fundCategory !== 'Monthly Contribution')
+      .reduce((sum, p) => sum + p.amount, 0);
+    return {
+      month: label,
+      monthlyPledges,
+      annualFund,
+      total: monthlyPledges + annualFund
+    };
+  });
+
+  // Live District Breakdown built from real users & verified payments (falling back to regionalStats only if populated)
+  const districtMap = new Map<string, {
+    district: string;
+    stateProvince: string;
+    officerInCharge: string;
+    totalMembers: number;
+    activeMembers: number;
+    totalCollected: number;
+    pendingApprovals: number;
+    pendingComplaints: number;
+  }>();
+
+  users.forEach(u => {
+    const dist = u.district || 'Unassigned';
+    const prov = u.stateProvince || 'Pakistan';
+    const key = `${prov}__${dist}`;
+    if (!districtMap.has(key)) {
+      const distAdmin = users.find(a => a.role === 'ADMIN' && (a.assignedDistrict === dist || a.district === dist));
+      districtMap.set(key, {
         district: dist,
         stateProvince: prov,
-        totalCollected: stat.totalCollected,
-        activeMembers: stat.activeMembers,
-        targetQuota: Math.round(stat.totalCollected * 1.15)
-      };
-    });
+        officerInCharge: distAdmin?.name || 'Unassigned',
+        totalMembers: 0,
+        activeMembers: 0,
+        totalCollected: 0,
+        pendingApprovals: 0,
+        pendingComplaints: 0
+      });
+    }
+    const entry = districtMap.get(key)!;
+    if (u.role === 'MEMBER') {
+      entry.totalMembers += 1;
+      if (u.membershipStatus === 'ACTIVE') entry.activeMembers += 1;
+    }
+  });
+
+  verifiedPayments.forEach(p => {
+    const dist = p.district || 'Unassigned';
+    const prov = p.stateProvince || 'Pakistan';
+    const key = `${prov}__${dist}`;
+    if (!districtMap.has(key)) {
+      districtMap.set(key, {
+        district: dist,
+        stateProvince: prov,
+        officerInCharge: 'Unassigned',
+        totalMembers: 0,
+        activeMembers: 0,
+        totalCollected: 0,
+        pendingApprovals: 0,
+        pendingComplaints: 0
+      });
+    }
+    districtMap.get(key)!.totalCollected += p.amount;
+  });
+
+  const normalizedRows = regionalStats.length > 0
+    ? regionalStats.map(stat => {
+        const fb = mapLegacyRegionToHierarchy(stat.region);
+        return {
+          region: stat.region,
+          district: stat.district || fb.district,
+          stateProvince: stat.stateProvince || fb.stateProvince,
+          officerInCharge: stat.officerInCharge,
+          totalMembers: stat.totalMembers,
+          activeMembers: stat.activeMembers,
+          totalCollected: stat.totalCollected,
+          pendingApprovals: stat.pendingApprovals,
+          pendingComplaints: stat.pendingComplaints
+        };
+      })
+    : Array.from(districtMap.values()).map(d => ({ ...d, region: '' }));
+
+  const liveDistrictRows = normalizedRows.filter(stat => {
+    const prov = stat.stateProvince;
+    const dist = stat.district;
+    if (isDistrictAdmin) {
+      const myDist = currentUser.assignedDistrict || currentUser.district;
+      return dist === myDist || (stat.region && stat.region === currentUser.region);
+    }
+    if (isCoAdmin) {
+      const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
+      return prov === myProv;
+    }
+    if (filterProvince !== 'ALL' && prov !== filterProvince) return false;
+    if (filterDistrict !== 'ALL' && dist !== filterDistrict) return false;
+    return true;
+  });
+
+  const regionalChartData = liveDistrictRows.map(stat => {
+    const dist = stat.district;
+    const prov = stat.stateProvince;
+    return {
+      name: dist,
+      fullRegion: `${dist}, ${prov}`,
+      district: dist,
+      stateProvince: prov,
+      totalCollected: stat.totalCollected,
+      activeMembers: stat.activeMembers,
+      targetQuota: Math.round(stat.totalCollected * 1.15)
+    };
+  });
 
   // Recharts Custom Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -165,7 +257,7 @@ export const ReportsView: React.FC = () => {
 
   const handleExportCSV = () => {
     exportReportToCSV(
-      regionalStats,
+      liveDistrictRows,
       totalVerifiedAmount,
       monthlyAmount,
       annualAmount,
@@ -350,10 +442,10 @@ export const ReportsView: React.FC = () => {
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
                   {activeChartTab === 'TRENDS' 
                     ? '6-Month Contribution Velocity (PKR)' 
-                    : 'Division Collection Milestones vs Targets'}
+                    : 'District Collection Milestones vs Targets'}
                 </span>
                 <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {activeChartTab === 'TRENDS' ? '+166% Growth Since Jun' : 'Audited Breakdown'}
+                  {verifiedPayments.length} Verified Entries
                 </span>
               </div>
 
@@ -460,40 +552,48 @@ export const ReportsView: React.FC = () => {
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
                       <span className="font-medium text-slate-700 dark:text-slate-300">Monthly Subscriptions</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">42% (PKR 950k)</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                        {calcPct(monthlyAmount)}% (PKR {monthlyAmount.toLocaleString()})
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-600 rounded-full" style={{ width: '42%' }} />
+                      <div className="h-full bg-emerald-600 rounded-full transition-all" style={{ width: `${calcPct(monthlyAmount)}%` }} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-700 dark:text-slate-300">Annual Healthcare & Dispensary</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">34% (PKR 780k)</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">Annual Welfare Fund</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                        {calcPct(annualAmount)}% (PKR {annualAmount.toLocaleString()})
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 rounded-full" style={{ width: '34%' }} />
+                      <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${calcPct(annualAmount)}%` }} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-700 dark:text-slate-300">Winter Emergency Relief</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">14% (PKR 310k)</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">Emergency Relief</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                        {calcPct(emergencyAmount)}% (PKR {emergencyAmount.toLocaleString()})
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-purple-600 rounded-full" style={{ width: '14%' }} />
+                      <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${calcPct(emergencyAmount)}%` }} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-700 dark:text-slate-300">Zakat & Deserving Families</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">10% (PKR 220k)</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">Zakat & Sadqah</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                        {calcPct(zakatAmount)}% (PKR {zakatAmount.toLocaleString()})
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: '10%' }} />
+                      <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${calcPct(zakatAmount)}%` }} />
                     </div>
                   </div>
                 </div>
@@ -501,12 +601,14 @@ export const ReportsView: React.FC = () => {
 
               <div className="p-3 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 text-[11px]">
                 <span className="font-bold text-slate-900 dark:text-white block mb-0.5">
-                  Audited Growth Index
+                  Audited Treasury Status
                 </span>
                 <p className="text-slate-500">
-                  {currentUser.role === 'ADMIN' 
-                    ? `${currentUser.assignedDistrict || currentUser.district} is operating at high compliance quota.` 
-                    : 'Collections have expanded across all provincial Secretariats.'}
+                  {totalVerifiedAmount === 0
+                    ? 'Zero verified contributions recorded yet. Ledger starts at PKR 0.'
+                    : currentUser.role === 'ADMIN'
+                    ? `${currentUser.assignedDistrict || currentUser.district} live verified statement.`
+                    : `Showing ${verifiedPayments.length} verified ledger receipts.`}
                 </p>
               </div>
             </div>
@@ -572,25 +674,15 @@ export const ReportsView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {regionalStats
-                    .filter(s => {
-                      const fb = mapLegacyRegionToHierarchy(s.region);
-                      const sProv = s.stateProvince || fb.stateProvince;
-                      const sDist = s.district || fb.district;
-                      if (isDistrictAdmin) {
-                        const myDist = currentUser.assignedDistrict || currentUser.district;
-                        return sDist === myDist || s.region === currentUser.region;
-                      }
-                      if (isCoAdmin) {
-                        const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
-                        return sProv === myProv;
-                      }
-                      if (filterProvince !== 'ALL' && sProv !== filterProvince) return false;
-                      if (filterDistrict !== 'ALL' && sDist !== filterDistrict) return false;
-                      return true;
-                    })
-                    .map((stat, idx) => {
-                      const fb = mapLegacyRegionToHierarchy(stat.region);
+                  {liveDistrictRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                        No district records recorded yet. Verified members and treasury receipts will appear here automatically.
+                      </td>
+                    </tr>
+                  ) : (
+                    liveDistrictRows.map((stat, idx) => {
+                      const fb = mapLegacyRegionToHierarchy((stat as any).region);
                       const sDist = stat.district || fb.district;
                       const sProv = stat.stateProvince || fb.stateProvince;
 
@@ -619,7 +711,8 @@ export const ReportsView: React.FC = () => {
                           </td>
                         </tr>
                       );
-                    })}
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

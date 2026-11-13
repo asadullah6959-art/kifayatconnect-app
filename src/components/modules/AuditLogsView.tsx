@@ -16,14 +16,16 @@ import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 export const AuditLogsView: React.FC = () => {
   const { currentUser, auditLogs, language } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
-  const isCoAdmin = currentUser.role === 'CO_ADMIN';
-  const isMember = currentUser.role === 'MEMBER';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
+  const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isMember = currentUser?.role === 'MEMBER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+
+  if (!currentUser) return null;
 
   // Strict role-scoped audit visibility per matrix:
   const allowedLogs = auditLogs.filter(log => {
@@ -112,15 +114,15 @@ export const AuditLogsView: React.FC = () => {
         </div>
 
         {/* Search & Filter */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search audit trail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-hidden focus:ring-1 focus:ring-emerald-500 w-48 sm:w-64"
+              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-hidden focus:ring-1 focus:ring-emerald-500 w-full sm:w-64"
             />
           </div>
 
@@ -134,7 +136,7 @@ export const AuditLogsView: React.FC = () => {
               <option value="ROLE_MANAGEMENT">Role Management</option>
               <option value="FINANCIAL">Financial Verifications</option>
               <option value="MEMBERSHIP">Membership Approvals</option>
-              <option value="REGIONAL">Regional Decisions</option>
+              <option value="REGIONAL">District / State Decisions</option>
               <option value="SECURITY">Security Events</option>
             </select>
           )}

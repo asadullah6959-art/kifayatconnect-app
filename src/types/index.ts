@@ -21,9 +21,11 @@ export type FundCategory =
   | 'Zakat & Sadqah';
 
 export type PaymentMethod = 
-  | 'Bank Transfer (Meezan/HBL)' 
   | 'EasyPaisa' 
   | 'JazzCash' 
+  | 'Bank Transfer' 
+  | 'Cash'
+  | 'Bank Transfer (Meezan/HBL)' 
   | 'Raast Instant ID' 
   | 'Cash Voucher';
 
@@ -77,6 +79,9 @@ export interface User {
   assignedDistrict?: string;
   assignedStateProvince?: string;
   isSuspended?: boolean;
+  bio?: string;
+  customCity?: string;
+  verificationStatus?: 'VERIFIED' | 'PENDING' | 'UNVERIFIED';
   region?: string; // Legacy fallback
 }
 
@@ -102,6 +107,8 @@ export interface PaymentTransaction {
   verifiedAt?: string;
   rejectionReason?: string;
   proofNote?: string;
+  receiptImageUrl?: string;
+  receiptImageName?: string;
   userRegion?: string; // Legacy fallback
 }
 

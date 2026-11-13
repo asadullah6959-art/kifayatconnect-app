@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Command, Navigation, Zap, Shield, Sparkles } from 'lucide-react';
+import { X, Command, Navigation, Zap } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 interface KeyboardShortcutsModalProps {
@@ -10,26 +10,26 @@ interface KeyboardShortcutsModalProps {
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
   const { currentUser, language } = useApp();
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentUser) return null;
 
   const sections = [
     {
       title: 'Global & Search',
       icon: Command,
       shortcuts: [
-        { keys: ['Ctrl', 'K'], mac: ['⌘', 'K'], label: 'Open Global Search & Command Palette' },
+        { keys: ['Ctrl', 'K'], label: 'Open Global Search & Command Palette' },
         { keys: ['/'], label: 'Quick Focus Search Bar' },
         { keys: ['?'], label: 'Open Keyboard Shortcuts Guide' },
         { keys: ['Esc'], label: 'Close Active Modal / Clear Search' },
-        { keys: ['Ctrl', 'L'], mac: ['⌘', 'L'], label: 'Toggle Language (English / اردو)' },
+        { keys: ['Alt', 'L'], label: 'Toggle Language (English / اردو)' },
       ]
     },
     {
       title: 'Module Navigation',
       icon: Navigation,
       shortcuts: [
-        { keys: ['Alt', '1'], label: 'Dashboard Overview' },
-        { keys: ['Alt', '2'], label: 'Member Directory (Admin & Regional)' },
+        { keys: ['Alt', '1'], label: 'Overview Dashboard' },
+        { keys: ['Alt', '2'], label: 'Member Directory (Staff & Admin)' },
         { keys: ['Alt', '3'], label: 'Approvals & Verification (Stage 1 & 2)' },
         { keys: ['Alt', '4'], label: 'Funds & Contribution Ledger' },
         { keys: ['Alt', '5'], label: 'Payment Verification Queue' },
@@ -49,26 +49,15 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
         { keys: ['Alt', 'P'], label: 'Submit New Contribution / Payment' },
         { keys: ['Alt', 'C'], label: 'View Digital Membership Card' },
       ]
-    },
-    {
-      title: 'Role Simulation Hotkeys',
-      icon: Shield,
-      shortcuts: [
-        { keys: ['Alt', 'Shift', '1'], label: 'Switch to Super Admin (Tariq Khan)' },
-        { keys: ['Alt', 'Shift', '2'], label: 'Switch to Finance Officer (Ayesha Siddiqui)' },
-        { keys: ['Alt', 'Shift', '3'], label: 'Switch to Regional Officer (Bilal Ahmed)' },
-        { keys: ['Alt', 'Shift', '4'], label: 'Switch to Member (Hamza Malik)' },
-      ]
     }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6 text-xs">
-        {/* Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-6 text-xs">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-md">
+            <div className="p-1.5 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 rounded-md">
               <Command className="w-4 h-4" />
             </div>
             <div>
@@ -76,20 +65,20 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 {language === 'ur' ? 'کی بورڈ شارٹ کٹس گائیڈ' : 'Global Keyboard Shortcuts Guide'}
               </h3>
               <p className="text-[11px] text-slate-500">
-                Accelerate operational workflow efficiency for administrative officers and members
+                Operational workflow shortcuts for administrative officers and members
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Shortcuts Grid */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           {sections.map((section) => {
             const Icon = section.icon;
@@ -99,7 +88,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2.5"
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 border-b border-slate-200/60 dark:border-slate-800/80 pb-1.5">
-                  <Icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Icon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <span>{section.title}</span>
                 </div>
 
@@ -127,9 +116,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
           })}
         </div>
 
-        {/* Footer info */}
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Active Role: <strong className="text-slate-700 dark:text-slate-200">{currentUser.role}</strong> ({currentUser.region})</span>
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+          <span>Active Role: <strong className="text-slate-700 dark:text-slate-200">{currentUser.role}</strong> ({currentUser.district || 'Pakistan'})</span>
           <span className="font-mono text-[10px]">Press <kbd className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-300">Esc</kbd> to close</span>
         </div>
       </div>

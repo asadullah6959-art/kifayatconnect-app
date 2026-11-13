@@ -36,8 +36,8 @@ export const ApprovalWorkflow: React.FC = () => {
     language 
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
 
   const [activeTabFilter, setActiveTabFilter] = useState<'PENDING_REGIONAL' | 'RECOMMENDED' | 'ACTIVE' | 'REJECTED'>(
     isSuperAdmin ? 'RECOMMENDED' : 'PENDING_REGIONAL'
@@ -63,6 +63,8 @@ export const ApprovalWorkflow: React.FC = () => {
   const [bulkAction, setBulkAction] = useState<'APPROVE' | 'REJECT' | null>(null);
   const [bulkRemarks, setBulkRemarks] = useState('');
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+
+  if (!currentUser) return null;
 
   // Helper to determine if an application is actionable for current user role
   const isActionable = (app: MembershipApplication) => {
@@ -174,7 +176,7 @@ export const ApprovalWorkflow: React.FC = () => {
             await recommendApplication(
               app.id, 
               'REJECT', 
-              bulkRemarks.trim() || 'Bulk review: Rejected during regional field verification.'
+              bulkRemarks.trim() || 'Bulk review: Rejected during district field verification.'
             );
           } else {
             await rejectApplication(
@@ -211,7 +213,7 @@ export const ApprovalWorkflow: React.FC = () => {
             <span>Membership Multi-Tier Approval Center</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Stage 1: Regional Officer verification & recommendation → Stage 2: Super Admin final approval & ID issuance.
+            Stage 1: District Admin verification & recommendation → Stage 2: Super Admin final approval & ID issuance.
           </p>
         </div>
 
@@ -224,7 +226,7 @@ export const ApprovalWorkflow: React.FC = () => {
           <span className="text-slate-400">→</span>
           <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500'}`}>
             <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-[10px] font-bold">2</span>
-            <span>Regional Verify</span>
+            <span>District Verify</span>
           </div>
           <span className="text-slate-400">→</span>
           <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}`}>
@@ -465,13 +467,13 @@ export const ApprovalWorkflow: React.FC = () => {
 
                     {/* Workflow Audit Stamp Section */}
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 space-y-1.5 text-xs">
-                      {app.regionalRemarks && (
+                      {(app.districtRemarks || app.regionalRemarks) && (
                         <div className="p-2.5 rounded bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
                           <span className="font-semibold text-amber-800 dark:text-amber-300">
-                            Regional Recommendation ({app.regionalOfficerName}):
+                            District Recommendation ({app.districtAdminName || app.regionalOfficerName || 'District Admin'}):
                           </span>
                           <p className="italic text-slate-700 dark:text-slate-300 mt-0.5">
-                            "{app.regionalRemarks}"
+                            "{app.districtRemarks || app.regionalRemarks}"
                           </p>
                         </div>
                       )}
@@ -586,9 +588,9 @@ export const ApprovalWorkflow: React.FC = () => {
         )}
       </div>
 
-      {/* MODAL: REGIONAL OFFICER RECOMMENDATION DIALOG */}
+      {/* MODAL: DISTRICT ADMIN RECOMMENDATION DIALOG */}
       {reviewingApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div>
               <span className="text-xs text-amber-600 uppercase font-bold tracking-wide">
@@ -706,7 +708,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: SUPER ADMIN FINAL APPROVAL DIALOG */}
       {finalApprovingApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div>
               <span className="text-xs text-emerald-600 uppercase font-bold tracking-wide">
@@ -722,13 +724,13 @@ export const ApprovalWorkflow: React.FC = () => {
 
             <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-200 dark:border-amber-800 text-xs">
               <span className="font-semibold text-amber-800 dark:text-amber-300">
-                Regional Recommendation On File:
+                District Recommendation On File:
               </span>
               <p className="italic text-slate-700 dark:text-slate-300 mt-0.5">
-                "{finalApprovingApp.regionalRemarks}"
+                "{finalApprovingApp.districtRemarks || finalApprovingApp.regionalRemarks || 'Field review submitted.'}"
               </p>
               <span className="block text-[10px] text-slate-500 not-italic mt-1">
-                Verified by: {finalApprovingApp.regionalOfficerName}
+                Verified by: {finalApprovingApp.districtAdminName || finalApprovingApp.regionalOfficerName || 'District Admin'}
               </span>
             </div>
 
@@ -806,7 +808,7 @@ export const ApprovalWorkflow: React.FC = () => {
       {selectedIds.length > 0 && (
         <aside 
           aria-label="Bulk action bar" 
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-2rem)] bg-slate-900/95 dark:bg-slate-900/95 text-white shadow-2xl rounded-2xl px-5 py-3.5 border border-slate-700/80 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-1.5rem)] bg-slate-900 text-white shadow-2xl rounded-2xl px-4 sm:px-5 py-3.5 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs border border-emerald-500/30">
@@ -834,7 +836,7 @@ export const ApprovalWorkflow: React.FC = () => {
               onClick={() => {
                 setBulkRemarks(
                   isDistrictAdmin 
-                    ? 'Bulk rejection: Did not satisfy regional field verification criteria.'
+                    ? 'Bulk rejection: Did not satisfy district field verification criteria.'
                     : 'Bulk rejection: Central bylaws non-compliance.'
                 );
                 setBulkAction('REJECT');
@@ -849,7 +851,7 @@ export const ApprovalWorkflow: React.FC = () => {
               onClick={() => {
                 setBulkRemarks(
                   isDistrictAdmin 
-                    ? 'Bulk regional recommendation: Address and credentials verified.'
+                    ? 'Bulk district recommendation: Address and credentials verified.'
                     : 'Bulk final approval granted under Kifayat Connect bylaws.'
                 );
                 setBulkAction('APPROVE');
@@ -865,7 +867,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: BULK APPROVE / REJECT CONFIRMATION */}
       {bulkAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div>
               <span className={`text-xs uppercase font-bold tracking-wide ${bulkAction === 'APPROVE' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -873,7 +875,7 @@ export const ApprovalWorkflow: React.FC = () => {
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
                 {bulkAction === 'APPROVE' 
-                  ? (isDistrictAdmin ? 'Bulk Regional Recommendation' : 'Bulk Final Approval & Card Generation')
+                  ? (isDistrictAdmin ? 'Bulk District Recommendation' : 'Bulk Final Approval & Card Generation')
                   : 'Bulk Rejection of Applications'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">

@@ -15,10 +15,12 @@ import {
   Clock,
   IdCard,
   Send,
-  Eye
+  Upload,
+  XCircle
 } from 'lucide-react';
 import { FundCategory, PaymentMethod, ComplaintCategory } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { compressImageFile } from '../../utils/imageCompression';
 
 export const MemberDashboard: React.FC = () => {
   const { 
@@ -33,11 +35,35 @@ export const MemberDashboard: React.FC = () => {
     language 
   } = useApp();
 
+  // Submit payment modal state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState<number>(currentUser?.monthlyPledge || 2500);
+  const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
+  const [payReference, setPayReference] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [receiptImageUrl, setReceiptImageUrl] = useState('');
+  const [receiptImageName, setReceiptImageName] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [paymentSubmittedSuccess, setPaymentSubmittedSuccess] = useState(false);
+
+  // Submit complaint modal state
+  const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
+  const [cmpCategory, setCmpCategory] = useState<ComplaintCategory>('Membership Card');
+  const [cmpSubject, setCmpSubject] = useState('');
+  const [cmpDescription, setCmpDescription] = useState('');
+  const [cmpPriority, setCmpPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+
+  if (!currentUser) return null;
+
   const memLoc = mapLegacyRegionToHierarchy(currentUser.region);
   const memberDistrict = currentUser.district || memLoc.district;
   const memberProvince = currentUser.stateProvince || memLoc.stateProvince;
   const memberTehsil = currentUser.tehsil || memLoc.tehsil;
-  const memberUC = currentUser.unionCouncil || memLoc.unionCouncil;
+
+  const currentMonthLabel = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  const currentMonthShort = new Date().toLocaleString('en-US', { month: 'short' });
 
   // Scoped to member's own records only:
   const ownPayments = payments.filter(p => p.userId === currentUser.id);
@@ -56,32 +82,38 @@ export const MemberDashboard: React.FC = () => {
 
   const pendingPayments = ownPayments.filter(p => p.status === 'PENDING_VERIFICATION');
 
-  // Submit payment modal state
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [payAmount, setPayAmount] = useState<number>(currentUser.monthlyPledge || 2500);
-  const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('Bank Transfer (Meezan/HBL)');
-  const [payReference, setPayReference] = useState('');
-  const [payNote, setPayNote] = useState('');
-  const [paymentSubmittedSuccess, setPaymentSubmittedSuccess] = useState(false);
-
-  // Submit complaint modal state
-  const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
-  const [cmpCategory, setCmpCategory] = useState<ComplaintCategory>('Membership Card');
-  const [cmpSubject, setCmpSubject] = useState('');
-  const [cmpDescription, setCmpDescription] = useState('');
-  const [cmpPriority, setCmpPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+  const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImageFile(file, 800, 0.72);
+      setReceiptImageUrl(compressed.dataUrl);
+      setReceiptImageName(file.name);
+    } catch (err: any) {
+      setUploadError(err?.message || 'Unable to process receipt image.');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!payReference.trim() || payAmount <= 0) return;
+    if (payAmount <= 0) return;
+
+    const cleanRef =
+      payReference.trim() ||
+      `${payMethod.replace(/\s+/g, '').substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
     submitPayment({
       amount: Number(payAmount),
       fundCategory: payFund,
       paymentMethod: payMethod,
-      referenceNumber: payReference.trim(),
-      proofNote: payNote.trim() || undefined
+      referenceNumber: cleanRef,
+      proofNote: payNote.trim() || undefined,
+      receiptImageUrl: receiptImageUrl || undefined,
+      receiptImageName: receiptImageName || undefined
     });
 
     setPaymentSubmittedSuccess(true);
@@ -90,6 +122,8 @@ export const MemberDashboard: React.FC = () => {
       setIsPaymentModalOpen(false);
       setPayReference('');
       setPayNote('');
+      setReceiptImageUrl('');
+      setReceiptImageName('');
     }, 1500);
   };
 
@@ -153,7 +187,7 @@ export const MemberDashboard: React.FC = () => {
         {/* Left Col (5 cols): Interactive Digital Card Preview */}
         <div 
           onClick={() => setSelectedCardUser(currentUser)}
-          className="lg:col-span-5 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 rounded-xl p-5 text-white shadow-lg border border-emerald-500/30 cursor-pointer hover:border-emerald-400 transition-colors flex flex-col justify-between group relative overflow-hidden"
+          className="lg:col-span-5 bg-gradient-to-br from-[#0a192f] via-slate-900 to-[#0f294a] rounded-2xl p-5 text-white shadow-lg border border-amber-400/35 cursor-pointer hover:border-amber-400 transition-colors flex flex-col justify-between group relative overflow-hidden"
         >
           {/* Subtle watermark */}
           <div 
@@ -166,10 +200,10 @@ export const MemberDashboard: React.FC = () => {
               <img 
                 src="/src/assets/images/kifayat_emblem_logo_1794225902501.jpg" 
                 alt="Emblem" 
-                className="w-9 h-9 rounded-lg object-cover border border-emerald-400/40"
+                className="w-9 h-9 rounded-lg object-cover border border-amber-400/40"
               />
               <div>
-                <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-300">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-amber-300">
                   Kifayat Connect
                 </h4>
                 <p className="text-[10px] text-slate-300">Official Membership ID</p>
@@ -183,28 +217,34 @@ export const MemberDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3.5 my-4">
-            <img 
-              src={currentUser.avatarUrl || '/src/assets/images/member_avatar_sample_1794225903658.jpg'} 
-              alt={currentUser.name} 
-              className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-400/50 shadow-md"
-            />
+            {(currentUser.avatarUrl || currentUser.avatar) ? (
+              <img 
+                src={currentUser.avatarUrl || currentUser.avatar} 
+                alt={currentUser.name} 
+                className="w-16 h-16 rounded-xl object-cover border-2 border-amber-400/50 shadow-md"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-amber-500/15 border-2 border-amber-400/50 flex items-center justify-center text-amber-300 font-bold text-lg shadow-md shrink-0">
+                {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0">
               <h3 className="font-bold text-base text-white truncate">{currentUser.name}</h3>
-              <p className="text-[11px] font-mono text-emerald-300 mt-0.5">
-                {currentUser.membershipId || 'KC-2024-8841'}
+              <p className="text-[11px] font-mono text-amber-300 mt-0.5">
+                {currentUser.membershipId || 'KC-PENDING'}
               </p>
               <p className="text-[10px] text-slate-300 truncate">
-                {memberDistrict}, {memberProvince}{memberTehsil ? ` · ${memberTehsil}` : ''} · CNIC: {currentUser.cnic}
+                {memberDistrict}, {memberProvince}{memberTehsil ? ` · ${memberTehsil}` : ''}{currentUser.cnic ? ` · CNIC: ${currentUser.cnic}` : ''}
               </p>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-emerald-800/60 flex items-center justify-between text-[10px] text-slate-400">
+          <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between text-[10px] text-slate-400">
             <div>
               <span>VALID THRU: </span>
-              <span className="font-mono text-emerald-300 font-bold">{currentUser.validUntil || '2027-12-31'}</span>
+              <span className="font-mono text-amber-300 font-bold">{currentUser.validUntil || '2027-12-31'}</span>
             </div>
-            <span className="text-emerald-300 group-hover:underline flex items-center gap-1">
+            <span className="text-amber-300 group-hover:underline flex items-center gap-1">
               Click to view & print full card →
             </span>
           </div>
@@ -247,8 +287,8 @@ export const MemberDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-3 text-[11px] text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-2 flex items-center justify-between">
-              <span>Status: Current for Nov 2026</span>
-              <span className="text-blue-600 font-medium">Up to date</span>
+              <span>Status: Current ({currentMonthLabel})</span>
+              <span className="text-blue-600 font-medium">Active Schedule</span>
             </div>
           </div>
 
@@ -268,7 +308,7 @@ export const MemberDashboard: React.FC = () => {
             </div>
             <div className="mt-3 text-[11px] text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-2 flex items-center justify-between">
               <span>Education & Healthcare Dispensary</span>
-              <span className="text-purple-600 font-medium">Fulfillable in Nov</span>
+              <span className="text-purple-600 font-medium">Cycle: {currentMonthShort}</span>
             </div>
           </div>
 
@@ -352,12 +392,23 @@ export const MemberDashboard: React.FC = () => {
                     {tx.amount.toLocaleString()}
                   </td>
                   <td className="py-2.5 px-3 text-center">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
                       tx.status === 'VERIFIED'
                         ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : tx.status === 'REJECTED'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                         : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                     }`}>
-                      {tx.status === 'VERIFIED' ? 'Verified' : 'Verification Pending'}
+                      {tx.status === 'VERIFIED' ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : tx.status === 'REJECTED' ? (
+                        <XCircle className="w-3 h-3" />
+                      ) : (
+                        <Clock className="w-3 h-3" />
+                      )}
+                      <span>
+                        {tx.status === 'VERIFIED' ? 'Approved' : tx.status === 'REJECTED' ? 'Rejected' : 'Pending'}
+                      </span>
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-right">
@@ -370,11 +421,20 @@ export const MemberDashboard: React.FC = () => {
                         <span>Print Receipt</span>
                       </button>
                     ) : (
-                      <span className="text-[10px] text-slate-400">Processing</span>
+                      <span className="text-[10px] text-slate-400">
+                        {tx.status === 'REJECTED' ? 'Declined' : 'Processing'}
+                      </span>
                     )}
                   </td>
                 </tr>
               ))}
+              {ownPayments.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                    No contributions submitted yet. Click "Make New Payment" to submit your first contribution.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -390,7 +450,7 @@ export const MemberDashboard: React.FC = () => {
                 Support Tickets & Grievances
               </h3>
               <p className="text-xs text-slate-500">
-                Direct communication with your Regional Officer ({currentUser.region})
+                Direct communication with your District Admin ({memberDistrict}, {memberProvince})
               </p>
             </div>
             <button
@@ -453,40 +513,46 @@ export const MemberDashboard: React.FC = () => {
           </div>
 
           <div className="mt-3 space-y-3">
-            {relevantAnnouncements.map(ann => (
-              <div 
-                key={ann.id} 
-                className={`p-3 rounded-lg border text-xs ${
-                  ann.urgency === 'URGENT'
-                    ? 'border-rose-200 dark:border-rose-900 bg-rose-50/40 dark:bg-rose-950/20'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100">
-                    {ann.title}
-                  </h4>
-                  {ann.urgency === 'URGENT' && (
-                    <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wide">Urgent</span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-                  {ann.content}
-                </p>
-                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-200 dark:border-slate-800/60 pt-1.5">
-                  <span>From: {ann.publishedBy}</span>
-                  <span>{new Date(ann.publishedAt).toLocaleDateString()}</span>
-                </div>
+            {relevantAnnouncements.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-400">
+                No announcements published yet.
               </div>
-            ))}
+            ) : (
+              relevantAnnouncements.map(ann => (
+                <div 
+                  key={ann.id} 
+                  className={`p-3 rounded-lg border text-xs ${
+                    ann.urgency === 'URGENT'
+                      ? 'border-rose-200 dark:border-rose-900 bg-rose-50/40 dark:bg-rose-950/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100">
+                      {ann.title}
+                    </h4>
+                    {ann.urgency === 'URGENT' && (
+                      <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wide">Urgent</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    {ann.content}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-200 dark:border-slate-800/60 pt-1.5">
+                    <span>From: {ann.publishedBy}</span>
+                    <span>{new Date(ann.publishedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {/* MODAL: SUBMIT NEW PAYMENT */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
             <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
               Submit Payment / Welfare Contribution
             </h3>
@@ -498,7 +564,7 @@ export const MemberDashboard: React.FC = () => {
                   Payment Submitted Successfully!
                 </h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Your transaction has entered the Finance Officer's verification queue. Once cleared, your official digital receipt will be automatically generated.
+                  Your transaction is pending verification by Admin / Finance Officer. Once approved, your certified receipt is automatically issued.
                 </p>
               </div>
             ) : (
@@ -510,12 +576,12 @@ export const MemberDashboard: React.FC = () => {
                   <select
                     value={payFund}
                     onChange={(e) => setPayFund(e.target.value as FundCategory)}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   >
-                    <option value="Monthly Contribution">Monthly Contribution (Subscription)</option>
-                    <option value="Annual Welfare Fund">Annual Welfare Fund (Healthcare & Education)</option>
-                    <option value="Emergency Relief">Emergency Relief & Disaster Aid</option>
-                    <option value="Zakat & Sadqah">Zakat & Sadqah Deserving Families</option>
+                    <option value="Monthly Contribution">Monthly Contribution</option>
+                    <option value="Annual Welfare Fund">Annual Welfare Fund</option>
+                    <option value="Emergency Relief">Emergency Relief</option>
+                    <option value="Zakat & Sadqah">Zakat & Sadqah</option>
                   </select>
                 </div>
 
@@ -528,58 +594,78 @@ export const MemberDashboard: React.FC = () => {
                       type="number"
                       required
                       min={100}
-                      step={100}
+                      step={50}
                       value={payAmount}
                       onChange={(e) => setPayAmount(Number(e.target.value))}
-                      className="w-full text-xs font-mono font-bold px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                      className="w-full text-xs font-mono font-bold px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                      Payment Gateway / Method
+                      Payment Method
                     </label>
                     <select
                       value={payMethod}
                       onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-                      className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                     >
-                      <option value="Bank Transfer (Meezan/HBL)">Bank Transfer (Meezan/HBL)</option>
-                      <option value="Raast Instant ID">Raast Instant ID (P2P)</option>
-                      <option value="EasyPaisa">EasyPaisa Mobile Account</option>
-                      <option value="JazzCash">JazzCash Wallet</option>
-                      <option value="Cash Voucher">Cash Voucher / Physical Desk</option>
+                      <option value="EasyPaisa">EasyPaisa</option>
+                      <option value="JazzCash">JazzCash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="Cash">Cash</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Bank Deposit Slip No. / Transaction Reference ID
+                    Transaction Reference ID / Slip No. <span className="text-slate-400 font-normal">(Optional if photo uploaded)</span>
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. MEEZAN-FT-99281726 or JC-88192039"
+                    placeholder="e.g. EP-99281726 or Bank Ref"
                     value={payReference}
                     onChange={(e) => setPayReference(e.target.value)}
-                    className="w-full text-xs font-mono px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    className="w-full text-xs font-mono px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Finance officers match this exact ID with treasury bank statements.
-                  </p>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Optional Proof Remarks / Notes
+                    Upload Payment Screenshot / Receipt Photo (Compressed)
+                  </label>
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer hover:border-amber-500 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    <Upload className="w-4 h-4 text-amber-500" />
+                    <span>
+                      {isCompressing
+                        ? 'Compressing receipt...'
+                        : receiptImageName
+                        ? `Attached: ${receiptImageName}`
+                        : 'Tap to attach receipt photo (JPG/PNG)'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReceiptFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {uploadError && (
+                    <p className="text-[11px] text-rose-500 mt-1">{uploadError}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Optional Note
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. November 2026 dues transferred from personal account"
+                    placeholder={`e.g. ${currentMonthLabel} contribution`}
                     value={payNote}
                     onChange={(e) => setPayNote(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
                 </div>
 
@@ -593,10 +679,10 @@ export const MemberDashboard: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg shadow-xs"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Submit for Finance Verification</span>
+                    <span>Submit Contribution</span>
                   </button>
                 </div>
               </form>
@@ -607,13 +693,13 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: SUBMIT SUPPORT TICKET / COMPLAINT */}
       {isComplaintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
             <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
               File Support Ticket or Grievance
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Your ticket will be routed directly to your Regional Officer in {currentUser.region}.
+              Your ticket will be routed directly to your District Admin in {memberDistrict}, {memberProvince}.
             </p>
 
             <form onSubmit={handleComplaintSubmit} className="mt-4 space-y-4">
@@ -631,7 +717,7 @@ export const MemberDashboard: React.FC = () => {
                     <option value="Receipt Inquiry">Receipt Tax / Record Correction</option>
                     <option value="Fund Allocation">Fund Allocation Transparency</option>
                     <option value="Welfare Support">Welfare Support Nomination</option>
-                    <option value="Regional Activity">Regional Activity Question</option>
+                    <option value="District Activity">District Activity Question</option>
                     <option value="General">General Inquiries</option>
                   </select>
                 </div>
@@ -659,7 +745,7 @@ export const MemberDashboard: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Inquire about physical RFID card delivery..."
+                  placeholder="e.g. Inquire about physical membership card delivery..."
                   value={cmpSubject}
                   onChange={(e) => setCmpSubject(e.target.value)}
                   className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
@@ -673,7 +759,7 @@ export const MemberDashboard: React.FC = () => {
                 <textarea
                   required
                   rows={4}
-                  placeholder="Please provide full details, addresses or reference numbers to help the regional officer assist you quickly..."
+                  placeholder="Please provide full details, addresses or reference numbers to help your District Admin assist you quickly..."
                   value={cmpDescription}
                   onChange={(e) => setCmpDescription(e.target.value)}
                   className="w-full text-xs p-3 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 resize-none"

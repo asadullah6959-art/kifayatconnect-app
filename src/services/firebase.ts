@@ -162,29 +162,34 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       return existingData;
     }
 
-    // Document does not exist yet: create verified profile in Firestore
+    // Document does not exist yet: create verified profile in Firestore starting cleanly at 0
+    const joinDate = new Date().toISOString().split('T')[0];
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 3);
+
     const newUser: User = {
       id: firebaseUser.uid,
       name: isSuperAdminEmail ? 'Asadullah (Super Admin)' : (firebaseUser.displayName || 'Registered Member'),
       email: firebaseUser.email || '',
-      phone: firebaseUser.phoneNumber || '+92 300 0000000',
+      phone: firebaseUser.phoneNumber || '',
       role: isSuperAdminEmail ? 'SUPER_ADMIN' : 'MEMBER',
       country: 'Pakistan',
       stateProvince: isSuperAdminEmail ? 'Islamabad Capital Territory' : 'Punjab',
       district: isSuperAdminEmail ? 'Islamabad' : 'Lahore',
       tehsil: isSuperAdminEmail ? 'Islamabad City' : 'Model Town',
       cityTown: isSuperAdminEmail ? 'Islamabad' : 'Lahore',
-      unionCouncil: isSuperAdminEmail ? 'UC-01 Secretariat' : 'UC-112 Model Town',
-      membershipId: isSuperAdminEmail ? 'KC-ADM-001' : `KC-MEM-${Math.floor(1000 + Math.random() * 9000)}`,
+      unionCouncil: isSuperAdminEmail ? 'UC-01 Secretariat' : '',
+      membershipId: isSuperAdminEmail ? 'KC-ADM-001' : `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       membershipStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       avatarUrl: firebaseUser.photoURL || undefined,
-      cnic: isSuperAdminEmail ? '61101-1234567-1' : '35201-0000000-1',
-      address: isSuperAdminEmail ? 'Central Secretariat, Islamabad' : 'Regional Address',
-      joinDate: new Date().toISOString().split('T')[0],
-      validUntil: '2028-12-31',
-      monthlyPledge: isSuperAdminEmail ? 10000 : 2500,
-      annualPledge: isSuperAdminEmail ? 50000 : 10000,
-      totalContributed: isSuperAdminEmail ? 240000 : 0,
+      cnic: '',
+      address: isSuperAdminEmail ? 'Central Secretariat, Islamabad' : '',
+      joinDate,
+      validUntil: expiryDate.toISOString().split('T')[0],
+      monthlyPledge: 0,
+      annualPledge: 0,
+      totalContributed: 0,
       isStaff: isSuperAdminEmail,
       notes: isSuperAdminEmail ? 'Verified Root Super Admin authorized via Google Identity' : 'Authenticated Member'
     };
@@ -197,11 +202,11 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 }
 
 // ----------------------------------------------------
-// Secure 6-Digit Email OTP System
+// Secure 6-Digit Email OTP System (Hashed + EmailJS)
 // ----------------------------------------------------
 interface StoredOTP {
   email: string;
-  code: string;
+  codeHash: string;
   expiresAt: number; // 5-minute TTL
   attempts: number; // max 3 attempts
   lastSentAt: number; // 60s cooldown
@@ -209,17 +214,53 @@ interface StoredOTP {
 
 const otpStore = new Map<string, StoredOTP>();
 
+async function hashOTP(email: string, code: string): Promise<string> {
+  const input = `${email}:${code}:kifayat_otp_v1`;
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const encoded = new TextEncoder().encode(input);
+    const buf = await crypto.subtle.digest('SHA-256', encoded);
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return `h_${Math.abs(hash)}`;
+}
+
+export function isEmailOTPConfigured(): boolean {
+  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+  return Boolean(serviceId && templateId && publicKey);
+}
+
 export interface OTPRequestResult {
   success: boolean;
   message: string;
   cooldownSeconds?: number;
-  previewCode?: string; // provided for development testing
+  unconfigured?: boolean;
 }
 
-export function requestEmailOTP(email: string): OTPRequestResult {
+export async function requestEmailOTP(email: string): Promise<OTPRequestResult> {
   const normEmail = email.trim().toLowerCase();
   if (!normEmail || !normEmail.includes('@')) {
     return { success: false, message: 'Please enter a valid email address.' };
+  }
+
+  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  if (!serviceId || !templateId || !publicKey) {
+    return {
+      success: false,
+      unconfigured: true,
+      message: 'Email OTP delivery provider is not configured (missing EmailJS environment keys). Please sign in using Google Sign-In or configure VITE_EMAILJS_* keys.'
+    };
   }
 
   const now = Date.now();
@@ -230,30 +271,70 @@ export function requestEmailOTP(email: string): OTPRequestResult {
     const remainingSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
-      message: `Please wait ${remainingSeconds} seconds before requesting a new code.`,
+      message: `Please wait ${remainingSeconds} seconds before requesting a new verification code.`,
       cooldownSeconds: remainingSeconds
     };
   }
 
-  // Generate secure random 6-digit OTP
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return {
+      success: false,
+      message: 'Internet connection is required to send Email OTP verification codes.'
+    };
+  }
+
+  // Generate random 6-digit OTP and store only its cryptographic hash
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = now + 5 * 60 * 1000; // 5 minutes validity
+  const codeHash = await hashOTP(normEmail, code);
+  const expiresAt = now + 5 * 60 * 1000;
 
-  otpStore.set(normEmail, {
-    email: normEmail,
-    code,
-    expiresAt,
-    attempts: 0,
-    lastSentAt: now
-  });
+  try {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: publicKey,
+        template_params: {
+          email: normEmail,
+          to_email: normEmail,
+          passcode: code,
+          otp: code,
+          otp_code: code,
+          app_name: 'Kifayat Connect',
+          expiry_minutes: '5'
+        }
+      })
+    });
 
-  console.info(`[Kifayat Connect Auth] Generated 6-digit OTP for ${normEmail}: ${code} (Expires in 5 min)`);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Email provider rejected request');
+      return {
+        success: false,
+        message: `Unable to dispatch verification email: ${errorText}`
+      };
+    }
 
-  return {
-    success: true,
-    message: `A 6-digit verification code has been dispatched to ${normEmail}. (Valid for 5 minutes).`,
-    previewCode: code // Provided transparently in UI test box until external SMTP is hooked up
-  };
+    // Supersede any older OTP for this email
+    otpStore.set(normEmail, {
+      email: normEmail,
+      codeHash,
+      expiresAt,
+      attempts: 0,
+      lastSentAt: now
+    });
+
+    return {
+      success: true,
+      message: `A 6-digit verification code has been sent to ${normEmail}. Check your inbox (valid for 5 minutes).`
+    };
+  } catch {
+    return {
+      success: false,
+      message: 'Network error while dispatching verification code. Please check your connection.'
+    };
+  }
 }
 
 export interface OTPVerifyResult {
@@ -262,40 +343,45 @@ export interface OTPVerifyResult {
   isSuperAdmin?: boolean;
 }
 
-export function verifyEmailOTP(email: string, code: string): OTPVerifyResult {
+export async function verifyEmailOTP(email: string, code: string): Promise<OTPVerifyResult> {
   const normEmail = email.trim().toLowerCase();
   const cleanCode = code.trim();
   const now = Date.now();
 
   const record = otpStore.get(normEmail);
   if (!record) {
-    return { success: false, message: 'No active code found for this email. Please request a new code.' };
+    return { success: false, message: 'No active verification code found. Please request a new code.' };
   }
 
   if (now > record.expiresAt) {
     otpStore.delete(normEmail);
-    return { success: false, message: 'This code has expired (5-minute limit exceeded). Please request a new code.' };
+    return { success: false, message: 'Verification code has expired (5-minute limit). Please request a new code.' };
   }
 
   if (record.attempts >= 3) {
     otpStore.delete(normEmail);
-    return { success: false, message: 'Too many incorrect attempts. This code has been invalidated for security.' };
+    return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
   }
 
-  if (record.code !== cleanCode) {
+  const candidateHash = await hashOTP(normEmail, cleanCode);
+  if (record.codeHash !== candidateHash) {
     record.attempts += 1;
     const remaining = 3 - record.attempts;
-    return { success: false, message: `Incorrect code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
+    if (remaining <= 0) {
+      otpStore.delete(normEmail);
+      return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
+    }
+    return { success: false, message: `Incorrect verification code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Code verified! Invalidate immediately so it cannot be reused
+  // Verified — immediately invalidate so it cannot be reused
   otpStore.delete(normEmail);
 
   const isSuperAdmin = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
 
   return {
     success: true,
-    message: 'Identity verified successfully.',
+    message: 'Email verified successfully.',
     isSuperAdmin
   };
 }
@@ -436,7 +522,7 @@ export async function saveChatConversationToFirestore(chat: ChatConversation): P
 export function subscribeToFirestoreCollection<T>(
   collectionName: string, 
   onData: (items: T[]) => void,
-  userConstraint?: { field: string; value: string }
+  userConstraint?: { field: string; value: string; op?: '==' | 'array-contains' }
 ): Unsubscribe {
   if (!auth.currentUser) {
     return () => {};
@@ -444,7 +530,7 @@ export function subscribeToFirestoreCollection<T>(
   const path = collectionName;
   const colRef = collection(db, collectionName);
   const targetQuery = userConstraint
-    ? query(colRef, where(userConstraint.field, '==', userConstraint.value))
+    ? query(colRef, where(userConstraint.field, userConstraint.op || '==', userConstraint.value))
     : colRef;
 
   return onSnapshot(

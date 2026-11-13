@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { X, CheckCircle2, ShieldCheck, ArrowRight, UserPlus, MapPin } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight, MapPin } from 'lucide-react';
 import { 
   PROVINCE_OPTIONS, 
   getDistrictsForProvince, 
@@ -9,6 +9,7 @@ import {
   getMajorCitiesForDistrict,
   COUNTRIES
 } from '../../data/locationData';
+import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -108,8 +109,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
   const sampleUCs = getSampleUCsForDistrict(stateProvince, district);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6 text-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 my-6 text-xs">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
@@ -143,7 +144,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               Application Submitted to {district}, {stateProvince}!
             </h4>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-              Your application has entered Stage 1 review under <span className="font-semibold text-slate-700 dark:text-slate-300">{unionCouncil}, Tehsil {tehsil}, District {district}</span>. The Field Verification Officer will inspect your residential credentials and submit a formal recommendation to the Super Admin for final membership card issuance.
+              Your application has entered Stage 1 review under <span className="font-semibold text-slate-700 dark:text-slate-300">{unionCouncil}, Tehsil {tehsil}, District {district}</span>. Your assigned District Admin will inspect your credentials and submit a recommendation to the Super Admin for final membership approval.
             </p>
           </div>
         ) : (
@@ -156,7 +157,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Asadullah Tariq"
+                  placeholder="e.g. Muhammad Usman"
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
@@ -207,17 +208,27 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               </div>
             </div>
 
-            {/* Administrative Location Hierarchy (Country → State/Province → District → Tehsil → City/Town → Union Council) */}
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700">
+            {/* Administrative Location Hierarchy */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-1 pb-2 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Administrative Location Hierarchy</span>
+                  <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Pakistan Location (All Districts & Cities)</span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Country → Province → District → Tehsil → City → UC
-                </span>
               </div>
+
+              <SearchableLocationSelect
+                label="Quick Search Any City, Tehsil, or District"
+                value={{ stateProvince, district, cityTown, tehsil }}
+                onChange={(loc) => {
+                  setStateProvince(loc.stateProvince);
+                  setDistrict(loc.district);
+                  setCityTown(loc.cityTown);
+                  if (loc.tehsil) setTehsil(loc.tehsil);
+                  const ucs = getSampleUCsForDistrict(loc.stateProvince, loc.district);
+                  setUnionCouncil(ucs[0] || 'UC-01 Central');
+                }}
+              />
 
               {/* Row 1: Country & State/Province */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -370,7 +381,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
                     className="w-full px-2.5 py-1.5 font-mono border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Regional officer will cross-check historical welfare registers.
+                    District Admin will cross-check historical membership registers.
                   </p>
                 </div>
               )}
@@ -378,7 +389,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
               <span className="text-[10px] text-slate-400">
-                Step 1 of 2: Regional verification
+                Step 1 of 2: District verification
               </span>
 
               <div className="flex items-center gap-2">

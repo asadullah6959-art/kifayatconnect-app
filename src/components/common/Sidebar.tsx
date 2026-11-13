@@ -42,14 +42,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     setSelectedCardUser
   } = useApp();
 
+  if (!currentUser) return null;
+
   // Pending counts
   const pendingApprovalsCount = currentUser.role === 'SUPER_ADMIN'
-    ? applications.filter(a => a.status === 'RECOMMENDED_BY_REGION').length
+    ? applications.filter(a => a.status === 'RECOMMENDED_BY_DISTRICT' || a.status === 'RECOMMENDED_BY_REGION').length
     : currentUser.role === 'ADMIN'
-    ? applications.filter(a => (a.district === (currentUser.assignedDistrict || currentUser.district)) && a.status === 'PENDING_REGIONAL_REVIEW').length
+    ? applications.filter(a => (a.district === (currentUser.assignedDistrict || currentUser.district)) && (a.status === 'PENDING_DISTRICT_REVIEW' || a.status === 'PENDING_REGIONAL_REVIEW')).length
     : 0;
 
-  const pendingPaymentsCount = (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER')
+  const pendingPaymentsCount = (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER' || currentUser.role === 'ADMIN')
     ? payments.filter(p => p.status === 'PENDING_VERIFICATION').length
     : 0;
 

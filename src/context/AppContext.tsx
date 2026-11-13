@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   User, 
   UserRole, 
@@ -59,12 +59,44 @@ import {
   subscribeToFirestoreCollection,
   requestEmailOTP,
   verifyEmailOTP,
+  OTPRequestResult,
+  OTPVerifyResult,
   FirebaseUser,
   ROOT_SUPER_ADMIN_EMAIL
 } from '../services/firebase';
+import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
+
+const STORAGE_KEYS = {
+  USERS: 'kifayat_users_v3',
+  CURRENT_USER_ID: 'kifayat_current_user_v3',
+  APPLICATIONS: 'kifayat_applications_v3',
+  PAYMENTS: 'kifayat_payments_v3',
+  COMPLAINTS: 'kifayat_complaints_v3',
+  ANNOUNCEMENTS: 'kifayat_announcements_v3',
+  AUDIT_LOGS: 'kifayat_audit_logs_v3',
+  NOTIFICATIONS: 'kifayat_notifications_v3',
+  OFFICE_BEARERS: 'kifayat_office_bearers_v3',
+  OFFICE_BEARER_HISTORY: 'kifayat_office_bearer_history_v3',
+  APP_UPDATES: 'kifayat_app_updates_v3',
+  ACK_VERSION: 'kifayat_ack_update_version_v3',
+  APP_SETTINGS: 'kifayat_app_settings_v3',
+  CHATS: 'kifayat_chats_v3',
+  CHAT_MESSAGES: 'kifayat_chat_messages_v3',
+  LANGUAGE: 'kifayat_lang_v3'
+};
+
+function readStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 interface AppContextType {
-  currentUser: User;
+  currentUser: User | null;
   users: User[];
   applications: MembershipApplication[];
   payments: PaymentTransaction[];
@@ -76,21 +108,20 @@ interface AppContextType {
   language: 'en' | 'ur';
   selectedReceipt: PaymentTransaction | null;
   selectedCardUser: User | null;
-  
+  isOnline: boolean;
+
   // Navigation & UI
   setActiveTab: (tab: string) => void;
   setLanguage: (lang: 'en' | 'ur') => void;
   toggleLanguage: () => void;
   setSelectedReceipt: (tx: PaymentTransaction | null) => void;
   setSelectedCardUser: (user: User | null) => void;
-  
+
   // Profile Viewer Modal
   inspectedUserProfile: User | null;
   setInspectedUserProfile: (user: User | null) => void;
 
-  // Role & Session
-  switchUser: (userId: string) => void;
-  switchRole: (role: UserRole) => void;
+  // Access Control
   canAccess: (permission: string) => boolean;
 
   // Workflows
@@ -128,6 +159,8 @@ interface AppContextType {
     paymentMethod: any;
     referenceNumber: string;
     proofNote?: string;
+    receiptImageUrl?: string;
+    receiptImageName?: string;
   }) => void;
   verifyPayment: (txId: string, approved: boolean, reason?: string) => void;
   submitComplaint: (data: {
@@ -161,11 +194,13 @@ interface AppContextType {
   chatMessages: ChatMessage[];
   activeChatUser: User | null;
   setActiveChatUser: (user: User | null) => void;
-  sendChatMessage: (recipientId: string, text: string, attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }) => void;
+  sendChatMessage: (recipientId: string, text: string, attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }) => { success: boolean; error?: string };
 
-  // App Updates Module
+  // App Updates Module & GitHub Releases
   appUpdates: AppUpdate[];
   latestPublishedUpdate: AppUpdate | null;
+  githubRelease: GitHubReleaseStatus | null;
+  refreshGitHubRelease: (force?: boolean) => Promise<void>;
   acknowledgedUpdateVersion: string | null;
   acknowledgeUpdate: (version: string) => void;
   publishAppUpdate: (updateData: Omit<AppUpdate, 'id'>) => void;
@@ -201,235 +236,127 @@ interface AppContextType {
   isCloudSyncing: boolean;
   loginWithGoogleAuth: () => Promise<User>;
   logoutFirebaseAuth: () => Promise<void>;
-  requestOTP: (email: string) => { success: boolean; message: string; cooldownSeconds?: number; previewCode?: string };
-  verifyOTP: (email: string, code: string) => { success: boolean; message: string; isSuperAdmin?: boolean };
+  requestOTP: (email: string) => Promise<OTPRequestResult>;
+  verifyOTP: (email: string, code: string) => Promise<OTPVerifyResult & { user?: User }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Persistence in localStorage
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('kifayat_users_v2');
-    if (!saved) return INITIAL_USERS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_USERS;
+  // Purge legacy v2 dummy storage once on upgrade
+  useEffect(() => {
+    if (!localStorage.getItem('kifayat_migrated_clean_v3')) {
+      [
+        'kifayat_users_v2',
+        'kifayat_current_user_v2',
+        'kifayat_applications_v2',
+        'kifayat_payments_v2',
+        'kifayat_complaints_v2',
+        'kifayat_announcements_v2',
+        'kifayat_audit_logs_v2',
+        'kifayat_notifications_v2',
+        'kifayat_office_bearers',
+        'kifayat_office_bearer_history',
+        'kifayat_app_updates',
+        'kifayat_app_settings',
+        'kifayat_chats',
+        'kifayat_chat_messages',
+        'kifayat_ack_update_version'
+      ].forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('kifayat_migrated_clean_v3', 'true');
     }
-  });
+  }, []);
 
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
-    return localStorage.getItem('kifayat_current_user_v2') || INITIAL_USERS[0].id;
-  });
-
-  const [applications, setApplications] = useState<MembershipApplication[]>(() => {
-    const saved = localStorage.getItem('kifayat_applications_v2');
-    if (!saved) return INITIAL_MEMBERSHIP_APPLICATIONS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_MEMBERSHIP_APPLICATIONS;
-    }
-  });
-
-  const [payments, setPayments] = useState<PaymentTransaction[]>(() => {
-    const saved = localStorage.getItem('kifayat_payments_v2');
-    if (!saved) return INITIAL_PAYMENTS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_PAYMENTS;
-    }
-  });
-
-  const [complaints, setComplaints] = useState<Complaint[]>(() => {
-    const saved = localStorage.getItem('kifayat_complaints_v2');
-    if (!saved) return INITIAL_COMPLAINTS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_COMPLAINTS;
-    }
-  });
-
-  const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
-    const saved = localStorage.getItem('kifayat_announcements_v2');
-    if (!saved) return INITIAL_ANNOUNCEMENTS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_ANNOUNCEMENTS;
-    }
-  });
-
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem('kifayat_audit_logs_v2');
-    if (!saved) return INITIAL_AUDIT_LOGS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_AUDIT_LOGS;
-    }
-  });
-
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const saved = localStorage.getItem('kifayat_notifications_v2');
-    if (!saved) return INITIAL_NOTIFICATIONS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_NOTIFICATIONS;
-    }
-  });
-
-  // Office-Bearers
-  const [officeBearers, setOfficeBearers] = useState<OfficeBearer[]>(() => {
-    const saved = localStorage.getItem('kifayat_office_bearers');
-    if (!saved) return INITIAL_OFFICE_BEARERS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_OFFICE_BEARERS;
-    }
-  });
-
-  const [officeBearerHistory, setOfficeBearerHistory] = useState<OfficeBearerHistory[]>(() => {
-    const saved = localStorage.getItem('kifayat_office_bearer_history');
-    if (!saved) return INITIAL_OFFICE_BEARER_HISTORY;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_OFFICE_BEARER_HISTORY;
-    }
-  });
-
-  // App Updates
-  const [appUpdates, setAppUpdates] = useState<AppUpdate[]>(() => {
-    const saved = localStorage.getItem('kifayat_app_updates');
-    if (!saved) return INITIAL_APP_UPDATES;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_APP_UPDATES;
-    }
-  });
-
-  const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => {
-    return localStorage.getItem('kifayat_ack_update_version');
-  });
-
-  // App Settings
-  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem('kifayat_app_settings');
-    if (!saved) return INITIAL_APP_SETTINGS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_APP_SETTINGS;
-    }
-  });
-
-  // Chats
-  const [chats, setChats] = useState<ChatConversation[]>(() => {
-    const saved = localStorage.getItem('kifayat_chats');
-    if (!saved) return INITIAL_CHATS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_CHATS;
-    }
-  });
-
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    const saved = localStorage.getItem('kifayat_chat_messages');
-    if (!saved) return INITIAL_CHAT_MESSAGES;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return INITIAL_CHAT_MESSAGES;
-    }
-  });
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [users, setUsers] = useState<User[]>(() => readStorage(STORAGE_KEYS.USERS, INITIAL_USERS));
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID));
+  const [applications, setApplications] = useState<MembershipApplication[]>(() => readStorage(STORAGE_KEYS.APPLICATIONS, INITIAL_MEMBERSHIP_APPLICATIONS));
+  const [payments, setPayments] = useState<PaymentTransaction[]>(() => readStorage(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS));
+  const [complaints, setComplaints] = useState<Complaint[]>(() => readStorage(STORAGE_KEYS.COMPLAINTS, INITIAL_COMPLAINTS));
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => readStorage(STORAGE_KEYS.ANNOUNCEMENTS, INITIAL_ANNOUNCEMENTS));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => readStorage(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS));
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => readStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
+  const [officeBearers, setOfficeBearers] = useState<OfficeBearer[]>(() => readStorage(STORAGE_KEYS.OFFICE_BEARERS, INITIAL_OFFICE_BEARERS));
+  const [officeBearerHistory, setOfficeBearerHistory] = useState<OfficeBearerHistory[]>(() => readStorage(STORAGE_KEYS.OFFICE_BEARER_HISTORY, INITIAL_OFFICE_BEARER_HISTORY));
+  const [appUpdates, setAppUpdates] = useState<AppUpdate[]>(() => readStorage(STORAGE_KEYS.APP_UPDATES, INITIAL_APP_UPDATES));
+  const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.ACK_VERSION));
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS));
+  const [chats, setChats] = useState<ChatConversation[]>(() => readStorage(STORAGE_KEYS.CHATS, INITIAL_CHATS));
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.CHAT_MESSAGES, INITIAL_CHAT_MESSAGES));
 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
   const [inspectedUserProfile, setInspectedUserProfile] = useState<User | null>(null);
-
   const [regionalStats] = useState<RegionalStats[]>(REGIONAL_STATS_DATA);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [language, setLanguage] = useState<'en' | 'ur'>('en');
+  const [language, setLanguage] = useState<'en' | 'ur'>(() => (localStorage.getItem(STORAGE_KEYS.LANGUAGE) === 'ur' ? 'ur' : 'en'));
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentTransaction | null>(null);
   const [selectedCardUser, setSelectedCardUser] = useState<User | null>(null);
+  const [githubRelease, setGithubRelease] = useState<GitHubReleaseStatus | null>(null);
 
   // Firebase Live Sync States
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isFirebaseLive, setIsFirebaseLive] = useState<boolean>(false);
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
 
-  // Sync to localStorage
+  // Online / Offline Connectivity Listeners & Hybrid Re-Sync
   useEffect(() => {
-    localStorage.setItem('kifayat_users_v2', JSON.stringify(users));
-  }, [users]);
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (auth.currentUser) {
+        users.forEach(u => saveUserToFirestore(u).catch(() => {}));
+        applications.forEach(a => saveApplicationToFirestore(a).catch(() => {}));
+        payments.forEach(p => savePaymentToFirestore(p).catch(() => {}));
+        complaints.forEach(c => saveComplaintToFirestore(c).catch(() => {}));
+        announcements.forEach(an => saveAnnouncementToFirestore(an).catch(() => {}));
+      }
+      fetchLatestGitHubRelease(false).then(setGithubRelease).catch(() => {});
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [users, applications, payments, complaints, announcements]);
+
+  // Initial GitHub Release fetch
+  const refreshGitHubRelease = useCallback(async (force = false) => {
+    const status = await fetchLatestGitHubRelease(force);
+    setGithubRelease(status);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('kifayat_current_user_v2', currentUserId);
+    refreshGitHubRelease(false);
+  }, [refreshGitHubRelease]);
+
+  // Sync collections to localStorage
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); }, [users]);
+  useEffect(() => {
+    if (currentUserId) localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
+    else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
   }, [currentUserId]);
-
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(applications)); }, [applications]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); }, [payments]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints)); }, [complaints]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements)); }, [announcements]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)); }, [notifications]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARERS, JSON.stringify(officeBearers)); }, [officeBearers]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARER_HISTORY, JSON.stringify(officeBearerHistory)); }, [officeBearerHistory]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APP_UPDATES, JSON.stringify(appUpdates)); }, [appUpdates]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); }, [appSettings]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); }, [chats]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); }, [chatMessages]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.LANGUAGE, language); }, [language]);
   useEffect(() => {
-    localStorage.setItem('kifayat_applications_v2', JSON.stringify(applications));
-  }, [applications]);
+    if (acknowledgedUpdateVersion) {
+      localStorage.setItem(STORAGE_KEYS.ACK_VERSION, acknowledgedUpdateVersion);
+    }
+  }, [acknowledgedUpdateVersion]);
 
-  useEffect(() => {
-    localStorage.setItem('kifayat_payments_v2', JSON.stringify(payments));
-  }, [payments]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_complaints_v2', JSON.stringify(complaints));
-  }, [complaints]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_announcements_v2', JSON.stringify(announcements));
-  }, [announcements]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_audit_logs_v2', JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_notifications_v2', JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_office_bearers', JSON.stringify(officeBearers));
-  }, [officeBearers]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_office_bearer_history', JSON.stringify(officeBearerHistory));
-  }, [officeBearerHistory]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_app_updates', JSON.stringify(appUpdates));
-  }, [appUpdates]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_app_settings', JSON.stringify(appSettings));
-  }, [appSettings]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_chats', JSON.stringify(chats));
-  }, [chats]);
-
-  useEffect(() => {
-    localStorage.setItem('kifayat_chat_messages', JSON.stringify(chatMessages));
-  }, [chatMessages]);
-
-  if (acknowledgedUpdateVersion) {
-    localStorage.setItem('kifayat_ack_update_version', acknowledgedUpdateVersion);
-  }
-
-  // Active current user resolution
-  const currentUser = users.find(u => u.id === currentUserId) || users[0];
-
-  // Derived: Latest published update
+  const currentUser = currentUserId ? (users.find(u => u.id === currentUserId) || null) : null;
   const latestPublishedUpdate = appUpdates.find(u => u.isPublished) || null;
 
   // Firebase Auth Lifecycle & Subscriptions
@@ -457,16 +384,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCurrentUserId(syncedProfile.id);
           }
 
-          // Subscriptions to live collections
-          const unsubApps = subscribeToFirestoreCollection<MembershipApplication>('applications', (remote) => {
-            if (remote && remote.length > 0) setApplications(remote);
+          const role = syncedProfile?.role || 'MEMBER';
+          const uid = syncedProfile?.id || fbUser.uid;
+          const userEmail = syncedProfile?.email || fbUser.email || '';
+
+          const unsubUsers = subscribeToFirestoreCollection<User>('users', (remote) => {
+            if (remote && remote.length > 0) setUsers(remote);
           });
-          const unsubPayments = subscribeToFirestoreCollection<PaymentTransaction>('payments', (remote) => {
-            if (remote && remote.length > 0) setPayments(remote);
-          });
-          const unsubComplaints = subscribeToFirestoreCollection<Complaint>('complaints', (remote) => {
-            if (remote && remote.length > 0) setComplaints(remote);
-          });
+          const unsubApps = subscribeToFirestoreCollection<MembershipApplication>(
+            'applications',
+            (remote) => {
+              if (remote && remote.length > 0) setApplications(remote);
+            },
+            syncedProfile?.isStaff ? undefined : { field: 'email', value: userEmail }
+          );
+          const unsubPayments = subscribeToFirestoreCollection<PaymentTransaction>(
+            'payments',
+            (remote) => {
+              if (remote && remote.length > 0) setPayments(remote);
+            },
+            (role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN')
+              ? undefined
+              : { field: 'userId', value: uid }
+          );
+          const unsubComplaints = subscribeToFirestoreCollection<Complaint>(
+            'complaints',
+            (remote) => {
+              if (remote && remote.length > 0) setComplaints(remote);
+            },
+            (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN')
+              ? undefined
+              : { field: 'userId', value: uid }
+          );
           const unsubAnnounce = subscribeToFirestoreCollection<Announcement>('announcements', (remote) => {
             if (remote && remote.length > 0) setAnnouncements(remote);
           });
@@ -476,8 +425,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
             if (remote && remote.length > 0) setOfficeBearers(remote);
           });
+          const unsubChats = subscribeToFirestoreCollection<ChatConversation>(
+            'chats',
+            (remote) => {
+              if (remote && remote.length > 0) setChats(remote);
+            },
+            role === 'SUPER_ADMIN'
+              ? undefined
+              : { field: 'participantIds', value: uid, op: 'array-contains' }
+          );
 
-          unsubs = [unsubApps, unsubPayments, unsubComplaints, unsubAnnounce, unsubUpdates, unsubOB];
+          const mergeMessages = (incoming: ChatMessage[]) => {
+            if (!incoming || incoming.length === 0) return;
+            setChatMessages(prev => {
+              const map = new Map<string, ChatMessage>();
+              prev.forEach(m => map.set(m.id, m));
+              incoming.forEach(m => map.set(m.id, m));
+              return Array.from(map.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+            });
+          };
+
+          const unsubMsgsSent = subscribeToFirestoreCollection<ChatMessage>(
+            'chat_messages',
+            mergeMessages,
+            { field: 'senderId', value: uid }
+          );
+          const unsubMsgsRecv = subscribeToFirestoreCollection<ChatMessage>(
+            'chat_messages',
+            mergeMessages,
+            { field: 'recipientId', value: uid }
+          );
+
+          unsubs = [unsubUsers, unsubApps, unsubPayments, unsubComplaints, unsubAnnounce, unsubUpdates, unsubOB, unsubChats, unsubMsgsSent, unsubMsgsRecv];
         } catch (err) {
           console.warn('Firestore live sync init warning:', err);
         } finally {
@@ -499,14 +478,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogleAuth = async (): Promise<User> => {
     const fbUser = await loginWithGoogle();
     const synced = await syncUserWithFirestore(fbUser);
+    setUsers(prev => {
+      const idx = prev.findIndex(u => u.id === synced.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = synced;
+        return next;
+      }
+      return [synced, ...prev];
+    });
+    setCurrentUserId(synced.id);
+    setActiveTab('dashboard');
     return synced;
   };
 
   const logoutFirebaseAuth = async (): Promise<void> => {
-    await logoutUser();
+    try {
+      await logoutUser();
+    } catch {
+      // Ignore if signed in purely via OTP
+    }
     setFirebaseUser(null);
     setIsFirebaseLive(false);
-    setCurrentUserId(INITIAL_USERS[0].id);
+    setCurrentUserId(null);
+    setActiveChatUser(null);
+    setActiveTab('dashboard');
+  };
+
+  const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
+    const res = await verifyEmailOTP(email, code);
+    if (!res.success) return res;
+
+    const normEmail = email.trim().toLowerCase();
+    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+
+    if (normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+      // Security rule: Never grant Super Admin solely because frontend email matches.
+      // Only allow if already authenticated via trusted Firebase backend session or existing server-verified Super Admin record.
+      if (existing && existing.role === 'SUPER_ADMIN' && auth.currentUser?.email?.toLowerCase() === normEmail) {
+        setCurrentUserId(existing.id);
+        setActiveTab('dashboard');
+        return { ...res, user: existing };
+      }
+      return {
+        success: false,
+        message: 'Email OTP verified, but Super Admin privileges require backend token verification. Please sign in with Google Sign-In using asadullah6959@gmail.com.'
+      };
+    }
+
+    if (existing) {
+      setCurrentUserId(existing.id);
+      setActiveTab('dashboard');
+      return { ...res, user: existing };
+    }
+
+    // Create clean Member account at zero balance
+    const joinDate = new Date().toISOString().split('T')[0];
+    const exp = new Date();
+    exp.setFullYear(exp.getFullYear() + 3);
+
+    const newMember: User = {
+      id: `usr_${Date.now()}`,
+      name: normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      email: normEmail,
+      phone: '',
+      role: 'MEMBER',
+      country: 'Pakistan',
+      stateProvince: 'Punjab',
+      district: 'Lahore',
+      tehsil: 'Model Town',
+      cityTown: 'Lahore',
+      unionCouncil: '',
+      membershipId: `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      membershipStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
+      cnic: '',
+      address: '',
+      joinDate,
+      validUntil: exp.toISOString().split('T')[0],
+      monthlyPledge: 0,
+      annualPledge: 0,
+      totalContributed: 0,
+      isStaff: false,
+      notes: 'Verified via Email OTP'
+    };
+
+    setUsers(prev => [newMember, ...prev]);
+    setCurrentUserId(newMember.id);
+    setActiveTab('dashboard');
+    saveUserToFirestore(newMember).catch(() => {});
+    return { ...res, user: newMember };
   };
 
   const logAudit = (
@@ -520,14 +581,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newLog: AuditLog = {
       id: `aud_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
-      actorId: currentUser.id,
-      actorName: currentUser.name,
-      actorRole: currentUser.role,
+      actorId: currentUser?.id || 'system_guest',
+      actorName: currentUser?.name || 'Applicant',
+      actorRole: currentUser?.role || 'MEMBER',
       action,
       category,
       country: 'Pakistan',
-      stateProvince: stateProvince || currentUser.stateProvince,
-      district: district || currentUser.district,
+      stateProvince: stateProvince || currentUser?.stateProvince || 'Pakistan',
+      district: district || currentUser?.district || '',
       targetEntity,
       details
     };
@@ -535,7 +596,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveAuditLogToFirestore(newLog).catch(() => {});
   };
 
-  // Notification methods
   const addNotification = (data: {
     type: NotificationType;
     title: string;
@@ -570,53 +630,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   };
 
-  // Filtered notifications for active user
-  const userNotifications = notifications.filter(n => {
-    if (n.targetUserId && n.targetUserId === currentUser.id) return true;
-    if (n.targetRole === 'ALL' || !n.targetRole) return true;
-    if (n.targetRole === currentUser.role) {
-      if (currentUser.role === 'ADMIN' && n.targetDistrict && n.targetDistrict !== currentUser.district) {
+  const userNotifications = currentUser
+    ? notifications.filter(n => {
+        if (n.targetUserId && n.targetUserId === currentUser.id) return true;
+        if (n.targetRole === 'ALL' || !n.targetRole) return true;
+        if (n.targetRole === currentUser.role) {
+          if (currentUser.role === 'ADMIN' && n.targetDistrict && n.targetDistrict !== currentUser.district) {
+            return false;
+          }
+          if (currentUser.role === 'CO_ADMIN' && n.targetStateProvince && n.targetStateProvince !== currentUser.stateProvince) {
+            return false;
+          }
+          return true;
+        }
         return false;
-      }
-      if (currentUser.role === 'CO_ADMIN' && n.targetStateProvince && n.targetStateProvince !== currentUser.stateProvince) {
-        return false;
-      }
-      return true;
-    }
-    return false;
-  });
+      })
+    : [];
 
   const unreadNotificationsCount = userNotifications.filter(n => !n.read).length;
-
-  const switchUser = (userId: string) => {
-    const target = users.find(u => u.id === userId);
-    if (target) {
-      setCurrentUserId(target.id);
-      setActiveTab('dashboard');
-    }
-  };
-
-  const switchRole = (role: UserRole) => {
-    let target = users.find(u => u.role === role);
-    if (!target) {
-      if (role === 'SUPER_ADMIN') target = users[0];
-      else if (role === 'FINANCE_OFFICER') target = users[1];
-      else if (role === 'ADMIN') target = users.find(u => u.role === 'ADMIN') || users[2];
-      else if (role === 'CO_ADMIN') target = users.find(u => u.role === 'CO_ADMIN') || users[3];
-      else target = users.find(u => u.role === 'MEMBER') || users[5];
-    }
-    if (target) {
-      setCurrentUserId(target.id);
-      setActiveTab('dashboard');
-    }
-  };
 
   const toggleLanguage = () => {
     setLanguage(prev => (prev === 'en' ? 'ur' : 'en'));
   };
 
-  // Permission Matrix Enforcement
   const canAccess = (permission: string): boolean => {
+    if (!currentUser) return false;
     const role = currentUser.role;
     switch (permission) {
       case 'SUPER_ADMIN_CONTROL':
@@ -639,7 +677,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       case 'MANAGE_FUNDS':
       case 'VERIFY_PAYMENTS':
-        return role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER';
+        return role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN';
 
       case 'GENERATE_RECEIPTS':
         return true;
@@ -669,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Workflow 1: District Admin Recommends Membership
   const recommendApplication = (appId: string, recommendation: 'APPROVE' | 'REJECT', remarks: string) => {
+    if (!currentUser) return;
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return;
 
@@ -679,12 +718,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       districtAdminName: currentUser.name,
       districtRecommendation: recommendation,
       districtRemarks: remarks,
-      districtReviewedAt: new Date().toISOString(),
-      // Legacy compatibility
-      regionalOfficerId: currentUser.id,
-      regionalOfficerName: currentUser.name,
-      regionalRecommendation: recommendation,
-      regionalRemarks: remarks
+      districtReviewedAt: new Date().toISOString()
     };
 
     setApplications(prev => prev.map(app => app.id === appId ? updatedApp : app));
@@ -711,10 +745,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Workflow 2: Super Admin Final Approval
   const finalApproveApplication = (appId: string, remarks?: string) => {
+    if (!currentUser) return;
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return;
 
-    const newMembershipId = `KC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newMembershipId = `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const updatedApp: MembershipApplication = {
       ...targetApp,
@@ -726,6 +761,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setApplications(prev => prev.map(app => app.id === appId ? updatedApp : app));
     saveApplicationToFirestore(updatedApp).catch(() => {});
+
+    const exp = new Date();
+    exp.setFullYear(exp.getFullYear() + 3);
 
     const newMemberUser: User = {
       id: `usr_${Date.now()}`,
@@ -741,12 +779,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unionCouncil: targetApp.unionCouncil,
       membershipId: newMembershipId,
       membershipStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       cnic: targetApp.cnic,
       address: targetApp.address,
       joinDate: new Date().toISOString().split('T')[0],
-      validUntil: '2029-12-31',
-      monthlyPledge: 2500,
-      annualPledge: 10000,
+      validUntil: exp.toISOString().split('T')[0],
+      monthlyPledge: 0,
+      annualPledge: 0,
       totalContributed: 0,
       isStaff: false,
       notes: targetApp.isOldMemberVerification 
@@ -777,6 +816,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectApplication = (appId: string, remarks: string) => {
+    if (!currentUser) return;
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return;
 
@@ -810,15 +850,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notes?: string 
     }
   ) => {
+    if (!currentUser) return { success: false, error: 'Authentication required' };
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return { success: false, error: 'Application not found' };
 
-    // Security check: validate size <= 5MB (5 * 1024 * 1024 bytes)
     if (docData.fileSize > 5 * 1024 * 1024) {
       return { success: false, error: 'File size exceeds 5MB limit.' };
     }
 
-    // Security check: mime type
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedMimes.includes(docData.fileMime) && !docData.fileMime.startsWith('image/')) {
       return { success: false, error: 'Invalid file format. Only JPG, PNG, WEBP, and PDF documents are allowed.' };
@@ -868,6 +907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeDocumentFromApplication = (appId: string, docId: string) => {
+    if (!currentUser) return { success: false };
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return { success: false };
 
@@ -898,6 +938,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     status: 'VERIFIED' | 'FLAGGED', 
     notes?: string
   ) => {
+    if (!currentUser) return { success: false };
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return { success: false };
 
@@ -962,9 +1003,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       country: data.country || 'Pakistan',
       stateProvince: prov,
       district: dist,
-      tehsil: data.tehsil || loc.tehsil,
-      cityTown: data.cityTown || loc.cityTown,
-      unionCouncil: data.unionCouncil || loc.unionCouncil,
+      tehsil: data.tehsil || data.cityTown || dist,
+      cityTown: data.cityTown || dist,
+      unionCouncil: data.unionCouncil || '',
       address: data.address,
       submittedAt: new Date().toISOString(),
       status: 'PENDING_DISTRICT_REVIEW',
@@ -1001,7 +1042,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentMethod: any;
     referenceNumber: string;
     proofNote?: string;
+    receiptImageUrl?: string;
+    receiptImageName?: string;
   }) => {
+    if (!currentUser) return;
     const newTx: PaymentTransaction = {
       id: `tx_${Date.now()}`,
       receiptNumber: `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -1020,7 +1064,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       referenceNumber: data.referenceNumber,
       date: new Date().toISOString().split('T')[0],
       status: 'PENDING_VERIFICATION',
-      proofNote: data.proofNote
+      proofNote: data.proofNote,
+      receiptImageUrl: data.receiptImageUrl,
+      receiptImageName: data.receiptImageName
     };
 
     setPayments(prev => [newTx, ...prev]);
@@ -1030,15 +1076,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'PAYMENT_SUBMITTED_FOR_VERIFICATION',
       'FINANCIAL',
       newTx.receiptNumber,
-      `Member ${currentUser.name} submitted payment voucher of PKR ${data.amount.toLocaleString()} via ${data.paymentMethod}. Ref: ${data.referenceNumber}`,
+      `Member ${currentUser.name} submitted payment of PKR ${data.amount.toLocaleString()} via ${data.paymentMethod}. Ref: ${data.referenceNumber}`,
       currentUser.district,
       currentUser.stateProvince
     );
 
     addNotification({
       type: 'PAYMENT_PENDING',
-      title: 'New Contribution Awaiting Audit',
-      message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} for verification.`,
+      title: 'New Contribution Awaiting Verification',
+      message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} (${data.paymentMethod}) for approval.`,
       targetRole: 'FINANCE_OFFICER',
       linkTab: 'funds',
       entityId: newTx.id
@@ -1046,6 +1092,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const verifyPayment = (txId: string, approved: boolean, reason?: string) => {
+    if (!currentUser) return;
     const tx = payments.find(p => p.id === txId);
     if (!tx) return;
 
@@ -1060,13 +1107,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPayments(prev => prev.map(p => p.id === txId ? updatedTx : p));
     savePaymentToFirestore(updatedTx).catch(() => {});
 
-    if (approved) {
+    if (approved && tx.status !== 'VERIFIED') {
       setUsers(prev => prev.map(u => {
         if (u.id === tx.userId) {
-          return {
+          const updatedUser = {
             ...u,
             totalContributed: (u.totalContributed || 0) + tx.amount
           };
+          saveUserToFirestore(updatedUser).catch(() => {});
+          return updatedUser;
         }
         return u;
       }));
@@ -1076,17 +1125,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       approved ? 'PAYMENT_RECEIPT_VERIFIED' : 'PAYMENT_RECEIPT_REJECTED',
       'FINANCIAL',
       tx.receiptNumber,
-      `${currentUser.name} verified receipt ${tx.receiptNumber} (${approved ? 'APPROVED' : 'REJECTED'}). Amount: PKR ${tx.amount.toLocaleString()}`,
+      `${currentUser.name} marked receipt ${tx.receiptNumber} as ${approved ? 'APPROVED' : 'REJECTED'}. Amount: PKR ${tx.amount.toLocaleString()}`,
       tx.district,
       tx.stateProvince
     );
 
     addNotification({
       type: approved ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED',
-      title: approved ? 'Payment Verified & Official Receipt Issued' : 'Payment Verification Declined',
+      title: approved ? 'Payment Approved & Receipt Issued' : 'Payment Declined',
       message: approved 
-        ? `Your payment of PKR ${tx.amount.toLocaleString()} is verified. Receipt ${tx.receiptNumber} is now available.`
-        : `Your payment was not verified. Reason: ${reason || 'Reference mismatch'}`,
+        ? `Your payment of PKR ${tx.amount.toLocaleString()} is approved. Receipt ${tx.receiptNumber} is ready.`
+        : `Your payment of PKR ${tx.amount.toLocaleString()} was declined. Reason: ${reason || 'Verification mismatch'}`,
       targetUserId: tx.userId,
       linkTab: 'funds',
       entityId: tx.id
@@ -1099,6 +1148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     description: string;
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
   }) => {
+    if (!currentUser) return;
     const newComplaint: Complaint = {
       id: `cmp_${Date.now()}`,
       ticketNumber: `TKT-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
@@ -1133,6 +1183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateComplaintStatus = (complaintId: string, status: ComplaintStatus, responseNote?: string) => {
+    if (!currentUser) return;
     const cmp = complaints.find(c => c.id === complaintId);
     if (!cmp) return;
 
@@ -1157,6 +1208,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // Announcements (Elaanat) with automatic personal inbox + notification broadcast
   const publishAnnouncement = (data: {
     title: string;
     content: string;
@@ -1166,11 +1218,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     urgency: 'NORMAL' | 'URGENT';
     isPinned: boolean;
   }) => {
+    if (!currentUser) return;
+    const scope = data.targetScope || 'ALL';
+
     const newAnnounce: Announcement = {
       id: `ann_${Date.now()}`,
       title: data.title,
       content: data.content,
-      targetScope: data.targetScope || 'ALL',
+      targetScope: scope,
       targetStateProvince: data.targetStateProvince,
       targetDistrict: data.targetDistrict,
       publishedBy: currentUser.name,
@@ -1183,11 +1238,104 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAnnouncements(prev => [newAnnounce, ...prev]);
     saveAnnouncementToFirestore(newAnnounce).catch(() => {});
 
+    // Automatically deliver notification alert to targeted users
+    addNotification({
+      type: 'ANNOUNCEMENT_NEW',
+      title: `${data.urgency === 'URGENT' ? '[URGENT] ' : ''}${data.title}`,
+      message: data.content.length > 120 ? `${data.content.substring(0, 120)}...` : data.content,
+      targetRole: 'ALL',
+      targetStateProvince: scope === 'PROVINCE' ? data.targetStateProvince : undefined,
+      targetDistrict: scope === 'DISTRICT' ? data.targetDistrict : undefined,
+      linkTab: 'announcements',
+      entityId: newAnnounce.id
+    });
+
+    // Automatically deliver personal inbox message to each targeted member
+    const recipients = users.filter(u => {
+      if (u.id === currentUser.id) return false;
+      if (scope === 'DISTRICT' && data.targetDistrict) {
+        return u.district?.toLowerCase() === data.targetDistrict.toLowerCase();
+      }
+      if (scope === 'PROVINCE' && data.targetStateProvince) {
+        return u.stateProvince?.toLowerCase() === data.targetStateProvince.toLowerCase();
+      }
+      return true;
+    });
+
+    if (recipients.length > 0) {
+      const broadcastText = `📢 OFFICIAL ELAAN: ${data.title}\n\n${data.content}`;
+      const newMessages: ChatMessage[] = [];
+      const updatedConvos: ChatConversation[] = [];
+
+      recipients.forEach((recipient, idx) => {
+        const sortedIds = [currentUser.id, recipient.id].sort();
+        const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+        const nowIso = new Date().toISOString();
+
+        const msg: ChatMessage = {
+          id: `msg_ann_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 5)}`,
+          chatId,
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderRole: currentUser.role,
+          recipientId: recipient.id,
+          recipientName: recipient.name,
+          text: broadcastText,
+          timestamp: nowIso,
+          read: false
+        };
+        newMessages.push(msg);
+        saveChatMessageToFirestore(msg).catch(() => {});
+
+        const existingConvo = chats.find(c => c.id === chatId);
+        const convo: ChatConversation = {
+          id: chatId,
+          participantIds: sortedIds,
+          participants: {
+            [currentUser.id]: {
+              id: currentUser.id,
+              name: currentUser.name,
+              role: currentUser.role,
+              avatarUrl: currentUser.avatarUrl,
+              district: currentUser.district,
+              stateProvince: currentUser.stateProvince,
+              officeTitle: currentUser.assignedOfficeTitle
+            },
+            [recipient.id]: {
+              id: recipient.id,
+              name: recipient.name,
+              role: recipient.role,
+              avatarUrl: recipient.avatarUrl,
+              district: recipient.district,
+              stateProvince: recipient.stateProvince,
+              officeTitle: recipient.assignedOfficeTitle
+            }
+          },
+          lastMessage: `📢 ${data.title}`,
+          lastMessageTime: nowIso,
+          lastMessageSenderId: currentUser.id,
+          unreadCounts: {
+            ...(existingConvo?.unreadCounts || {}),
+            [currentUser.id]: 0,
+            [recipient.id]: (existingConvo?.unreadCounts?.[recipient.id] || 0) + 1
+          }
+        };
+        updatedConvos.push(convo);
+        saveChatConversationToFirestore(convo).catch(() => {});
+      });
+
+      setChatMessages(prev => [...prev, ...newMessages]);
+      setChats(prev => {
+        const updatedIds = new Set(updatedConvos.map(c => c.id));
+        return [...updatedConvos, ...prev.filter(c => !updatedIds.has(c.id))];
+      });
+    }
+
     logAudit(
       'BROADCAST_ANNOUNCEMENT_PUBLISHED',
       'SETTINGS',
       newAnnounce.title,
-      `Published by ${currentUser.name} (${currentUser.role}). Target: ${data.targetScope || 'ALL'}`,
+      `Published by ${currentUser.name} (${currentUser.role}). Target: ${scope}. Dispatched to ${recipients.length} member inbox(es).`,
       data.targetDistrict,
       data.targetStateProvince
     );
@@ -1195,11 +1343,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Staff & Admin Management with Quotas (10 Admins/District, 3 Co-Admins/State)
   const createOrUpdateStaff = (userData: Partial<User> & { id?: string }): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
     const targetDistrict = userData.district || currentUser.district;
     const targetState = userData.stateProvince || currentUser.stateProvince;
     const requestedRole = userData.role || 'MEMBER';
 
-    // Enforce 10 Admins per District quota
     if (requestedRole === 'ADMIN') {
       const existingAdminsInDistrict = users.filter(u => 
         u.role === 'ADMIN' && 
@@ -1215,7 +1363,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Enforce 3 Co-Admins per State quota
     if (requestedRole === 'CO_ADMIN') {
       const existingCoAdminsInState = users.filter(u => 
         u.role === 'CO_ADMIN' && 
@@ -1232,7 +1379,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (userData.id) {
-      // Update existing
       const existing = users.find(u => u.id === userData.id);
       if (!existing) return { success: false, error: 'User not found.' };
 
@@ -1256,31 +1402,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return { success: true };
     } else {
-      // Create new
+      const exp = new Date();
+      exp.setFullYear(exp.getFullYear() + 3);
+
       const newUser: User = {
         id: `usr_${Date.now()}`,
         name: userData.name || 'New Appointee',
         email: userData.email || '',
-        phone: userData.phone || '+92 300 0000000',
+        phone: userData.phone || '',
         role: requestedRole,
         country: userData.country || 'Pakistan',
         stateProvince: targetState || 'Punjab',
         district: targetDistrict || 'Lahore',
-        tehsil: userData.tehsil || 'Central',
+        tehsil: userData.tehsil || targetDistrict || 'Central',
         cityTown: userData.cityTown || targetDistrict || 'Lahore',
-        unionCouncil: userData.unionCouncil || 'UC-01',
+        unionCouncil: userData.unionCouncil || '',
         membershipId: requestedRole === 'ADMIN' 
           ? `KC-ADM-${(targetDistrict || 'DIST').substring(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`
           : requestedRole === 'CO_ADMIN'
           ? `KC-COA-${(targetState || 'STATE').substring(0, 2).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`
           : `KC-STAFF-${Math.floor(100 + Math.random() * 900)}`,
         membershipStatus: 'ACTIVE',
-        cnic: userData.cnic || '00000-0000000-0',
+        verificationStatus: 'VERIFIED',
+        cnic: userData.cnic || '',
         address: userData.address || `${targetDistrict}, ${targetState}`,
         joinDate: new Date().toISOString().split('T')[0],
-        validUntil: '2028-12-31',
-        monthlyPledge: 3000,
-        annualPledge: 15000,
+        validUntil: exp.toISOString().split('T')[0],
+        monthlyPledge: 0,
+        annualPledge: 0,
         totalContributed: 0,
         isStaff: requestedRole !== 'MEMBER',
         notes: `Appointed by Super Admin ${currentUser.name}.`
@@ -1303,6 +1452,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUserProfile = (profileData: Partial<User>) => {
+    if (!currentUser) return;
     const updated: User = {
       ...currentUser,
       ...profileData
@@ -1311,9 +1461,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveUserToFirestore(updated).catch(() => {});
   };
 
-  // Office-Bearers Operations (10 Titles, 13 Seats)
+  // Office-Bearers Operations
   const appointOfficeBearer = (seatId: string, userId: string, notes?: string): { success: boolean; error?: string } => {
-    if (currentUser.role !== 'SUPER_ADMIN') {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
       return { success: false, error: 'Only Super Admin can appoint organizational office-bearers.' };
     }
     const targetSeat = officeBearers.find(ob => ob.seatId === seatId);
@@ -1322,7 +1472,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'Selected seat or candidate not found.' };
     }
 
-    // Terminate previous incumbent in history if seat was active
     if (targetSeat.status === 'ACTIVE' && targetSeat.assignedUserId) {
       const hist: OfficeBearerHistory = {
         id: `obh_${Date.now()}`,
@@ -1331,7 +1480,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         seatLabel: targetSeat.seatLabel,
         userId: targetSeat.assignedUserId,
         userName: targetSeat.assignedUserName || 'Previous Incumbent',
-        startDate: targetSeat.appointedDate || '2023-01-01',
+        startDate: targetSeat.appointedDate || new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         termYears: targetSeat.termYears,
         terminatedBy: currentUser.name,
@@ -1357,8 +1506,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setOfficeBearers(prev => prev.map(ob => ob.seatId === seatId ? updatedSeat : ob));
     saveOfficeBearerToFirestore(updatedSeat).catch(() => {});
-
-    // Update user profile with assigned office title
     setUsers(prev => prev.map(u => u.id === candidate.id ? { ...u, assignedOfficeTitle: targetSeat.title } : u));
 
     logAudit(
@@ -1381,7 +1528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const vacateOfficeBearer = (seatId: string, reason: string): { success: boolean; error?: string } => {
-    if (currentUser.role !== 'SUPER_ADMIN') {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
       return { success: false, error: 'Only Super Admin can vacate seats.' };
     }
     const targetSeat = officeBearers.find(ob => ob.seatId === seatId);
@@ -1395,7 +1542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         seatLabel: targetSeat.seatLabel,
         userId: targetSeat.assignedUserId,
         userName: targetSeat.assignedUserName || 'Incumbent',
-        startDate: targetSeat.appointedDate || '2023-01-01',
+        startDate: targetSeat.appointedDate || new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         termYears: targetSeat.termYears,
         terminatedBy: currentUser.name,
@@ -1428,16 +1575,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  // Chat Operations
+  // Chat Operations (Online required for live 1-on-1 messaging)
   const sendChatMessage = (
     recipientId: string, 
     text: string, 
     attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }
-  ) => {
+  ): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    if (!isOnline) {
+      return { success: false, error: 'Internet connection required for live messaging.' };
+    }
     const recipient = users.find(u => u.id === recipientId);
-    if (!recipient || !text.trim()) return;
+    if (!recipient || (!text.trim() && !attachment)) {
+      return { success: false, error: 'Recipient or message cannot be empty.' };
+    }
 
-    // Deterministic Chat ID for 1-to-1 conversation
+    const cleanText = text.trim() || (attachment ? `📎 ${attachment.name}` : '');
     const sortedIds = [currentUser.id, recipientId].sort();
     const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
 
@@ -1449,7 +1602,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderRole: currentUser.role,
       recipientId,
       recipientName: recipient.name,
-      text: text.trim(),
+      text: cleanText,
       timestamp: new Date().toISOString(),
       read: false,
       attachmentUrl: attachment?.url,
@@ -1460,7 +1613,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setChatMessages(prev => [...prev, newMsg]);
     saveChatMessageToFirestore(newMsg).catch(() => {});
 
-    // Update or create conversation summary
     setChats(prev => {
       const existing = prev.find(c => c.id === chatId);
       const unread = (existing?.unreadCounts[recipientId] || 0) + 1;
@@ -1488,7 +1640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             officeTitle: recipient.assignedOfficeTitle
           }
         },
-        lastMessage: text.trim(),
+        lastMessage: cleanText,
         lastMessageTime: new Date().toISOString(),
         lastMessageSenderId: currentUser.id,
         unreadCounts: {
@@ -1505,16 +1657,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addNotification({
       type: 'CHAT_MESSAGE',
       title: `Message from ${currentUser.name}`,
-      message: text.length > 60 ? `${text.substring(0, 60)}...` : text,
+      message: cleanText.length > 60 ? `${cleanText.substring(0, 60)}...` : cleanText,
       targetUserId: recipientId,
       linkTab: 'chat',
       entityId: chatId
     });
+
+    return { success: true };
   };
 
   // App Updates Management
   const publishAppUpdate = (updateData: Omit<AppUpdate, 'id'>) => {
-    if (currentUser.role !== 'SUPER_ADMIN') return;
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
 
     const newUpdate: AppUpdate = {
       id: `upd_${Date.now()}`,
@@ -1534,11 +1688,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `Published new release v${newUpdate.version} (${newUpdate.title}). Mandatory: ${newUpdate.isMandatory}`
     );
 
-    // Automatic broadcast notification to all user categories:
     addNotification({
       type: 'APP_UPDATE_AVAILABLE',
-      title: 'Kifayat Connect Mobile App Update Available',
-      message: 'Kifayat Connect ka naya update aa chuka hai. Behtar performance aur naye features ke liye app update karein.',
+      title: 'Kifayat Connect Update Available',
+      message: `Version v${newUpdate.version} (${newUpdate.title}) is now available.`,
       targetRole: 'ALL',
       actionUrl: newUpdate.apkDownloadUrl,
       linkTab: 'dashboard'
@@ -1546,7 +1699,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleUpdatePublish = (updateId: string) => {
-    if (currentUser.role !== 'SUPER_ADMIN') return;
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
     setAppUpdates(prev => prev.map(u => {
       if (u.id === updateId) {
         const nextState = !u.isPublished;
@@ -1563,7 +1716,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateAppSettings = (newSettings: Partial<AppSettings>) => {
-    if (currentUser.role !== 'SUPER_ADMIN') return;
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
     const updated: AppSettings = {
       ...appSettings,
       ...newSettings,
@@ -1582,24 +1735,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
-    localStorage.removeItem('kifayat_users_v2');
-    localStorage.removeItem('kifayat_current_user_v2');
-    localStorage.removeItem('kifayat_applications_v2');
-    localStorage.removeItem('kifayat_payments_v2');
-    localStorage.removeItem('kifayat_complaints_v2');
-    localStorage.removeItem('kifayat_announcements_v2');
-    localStorage.removeItem('kifayat_audit_logs_v2');
-    localStorage.removeItem('kifayat_notifications_v2');
-    localStorage.removeItem('kifayat_office_bearers');
-    localStorage.removeItem('kifayat_office_bearer_history');
-    localStorage.removeItem('kifayat_app_updates');
-    localStorage.removeItem('kifayat_app_settings');
-    localStorage.removeItem('kifayat_chats');
-    localStorage.removeItem('kifayat_chat_messages');
-    localStorage.removeItem('kifayat_ack_update_version');
-
+    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
     setUsers(INITIAL_USERS);
-    setCurrentUserId(INITIAL_USERS[0].id);
+    setCurrentUserId(null);
     setApplications(INITIAL_MEMBERSHIP_APPLICATIONS);
     setPayments(INITIAL_PAYMENTS);
     setComplaints(INITIAL_COMPLAINTS);
@@ -1630,6 +1768,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         language,
         selectedReceipt,
         selectedCardUser,
+        isOnline,
         setActiveTab,
         setLanguage,
         toggleLanguage,
@@ -1637,8 +1776,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedCardUser,
         inspectedUserProfile,
         setInspectedUserProfile,
-        switchUser,
-        switchRole,
         canAccess,
         recommendApplication,
         finalApproveApplication,
@@ -1666,6 +1803,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sendChatMessage,
         appUpdates,
         latestPublishedUpdate,
+        githubRelease,
+        refreshGitHubRelease,
         acknowledgedUpdateVersion,
         acknowledgeUpdate,
         publishAppUpdate,
@@ -1685,7 +1824,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginWithGoogleAuth,
         logoutFirebaseAuth,
         requestOTP: requestEmailOTP,
-        verifyOTP: verifyEmailOTP
+        verifyOTP: verifyOTP
       }}
     >
       {children}

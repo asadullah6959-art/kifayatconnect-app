@@ -1,55 +1,154 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { 
-  Users, 
-  Search, 
-  MapPin, 
-  IdCard, 
-  Coins, 
-  ShieldAlert, 
-  CheckCircle2, 
-  Filter,
-  Eye
+import {
+  Users,
+  Search,
+  MapPin,
+  IdCard,
+  ShieldAlert,
+  MessageSquare
 } from 'lucide-react';
 import { User } from '../../types';
-import { 
-  PROVINCE_OPTIONS, 
-  getDistrictsForProvince, 
-  formatFullLocationHierarchy, 
-  formatShortLocation, 
-  mapLegacyRegionToHierarchy 
+import {
+  PROVINCE_OPTIONS,
+  getDistrictsForProvince,
+  mapLegacyRegionToHierarchy
 } from '../../data/locationData';
+import { RoleBadge } from '../common/RoleBadge';
+
+interface MemberRowProps {
+  member: User;
+  isFinanceOfficer: boolean;
+  onInspect: (u: User) => void;
+  onCard: (u: User) => void;
+  onMessage: (u: User) => void;
+  onShowLocation: (u: User) => void;
+}
+
+const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
+  member,
+  isFinanceOfficer,
+  onInspect,
+  onCard,
+  onMessage
+}) => {
+  const fallback = mapLegacyRegionToHierarchy(member.region);
+  const prov = member.stateProvince || fallback.stateProvince;
+  const dist = member.district || fallback.district;
+
+  return (
+    <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5 shadow-2xs">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {member.avatarUrl ? (
+            <img
+              src={member.avatarUrl}
+              alt={member.name}
+              className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#0a192f] text-amber-400 flex items-center justify-center font-bold text-sm shrink-0">
+              {member.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">{member.name}</span>
+            <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">
+              {member.membershipId || 'KC-PENDING'}
+            </span>
+          </div>
+        </div>
+        <RoleBadge role={member.role} compact />
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-slate-500">
+        <span className="flex items-center gap-1 truncate">
+          <MapPin className="w-3 h-3 text-amber-500 shrink-0" />
+          <span className="truncate">{member.cityTown || dist}, {prov}</span>
+        </span>
+        <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
+          PKR {(member.totalContributed || 0).toLocaleString()}
+        </span>
+      </div>
+
+      {member.cnic && (
+        <div className="text-[10px] font-mono text-slate-400">
+          CNIC: {isFinanceOfficer ? `${member.cnic.slice(0, 5)}...` : member.cnic}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          onClick={() => onMessage(member)}
+          className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg"
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Message</span>
+        </button>
+        <button
+          onClick={() => onInspect(member)}
+          className="py-1.5 px-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-[11px] rounded-lg"
+        >
+          Profile
+        </button>
+        <button
+          onClick={() => onCard(member)}
+          className="py-1.5 px-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-[11px] rounded-lg"
+        >
+          Card
+        </button>
+      </div>
+    </div>
+  );
+});
+
+MemberCardMobile.displayName = 'MemberCardMobile';
 
 export const MemberDirectory: React.FC = () => {
-  const { 
-    currentUser, 
-    users, 
-    setSelectedCardUser, 
+  const {
+    currentUser,
+    users,
+    setSelectedCardUser,
     setInspectedUserProfile,
-    language 
+    setActiveChatUser,
+    setActiveTab
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
-  const isCoAdmin = currentUser.role === 'CO_ADMIN';
-  const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
+  const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvinceFilter, setSelectedProvinceFilter] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'ALL') : 'ALL'
   );
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>(
-    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
+    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'ALL') : 'ALL'
   );
   const [selectedMemberForHierarchy, setSelectedMemberForHierarchy] = useState<User | null>(null);
 
-  // Scoped members based on role
+  if (!currentUser) return null;
+
+  if (currentUser.role === 'MEMBER') {
+    return (
+      <div className="p-8 sm:p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+        <ShieldAlert className="w-10 h-10 text-rose-500 mx-auto" />
+        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
+          Access Restricted
+        </h3>
+        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+          Members are restricted from viewing the central directory containing other members&apos; private records and addresses.
+        </p>
+      </div>
+    );
+  }
+
   const allowedMembers = users.filter(u => {
     if (u.role !== 'MEMBER') return false;
     if (isDistrictAdmin) {
       const myDistrict = currentUser.assignedDistrict || currentUser.district;
       const memberDistrict = u.district || u.assignedDistrict;
-      return memberDistrict === myDistrict || u.region === currentUser.region;
+      return memberDistrict === myDistrict;
     }
     if (isCoAdmin) {
       const myProvince = currentUser.assignedStateProvince || currentUser.stateProvince;
@@ -64,18 +163,17 @@ export const MemberDirectory: React.FC = () => {
     const mDistrict = member.district || memLoc.district;
     const mTehsil = member.tehsil || memLoc.tehsil || '';
     const mCity = member.cityTown || memLoc.cityTown || '';
-    const mUC = member.unionCouncil || memLoc.unionCouncil || '';
 
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (member.membershipId && member.membershipId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      member.cnic.includes(searchTerm) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mDistrict.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mProvince.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mTehsil.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mCity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mUC.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchTerm.toLowerCase();
+    const matchesSearch =
+      member.name.toLowerCase().includes(q) ||
+      (member.membershipId && member.membershipId.toLowerCase().includes(q)) ||
+      (member.cnic && member.cnic.includes(searchTerm)) ||
+      member.email.toLowerCase().includes(q) ||
+      mDistrict.toLowerCase().includes(q) ||
+      mProvince.toLowerCase().includes(q) ||
+      mTehsil.toLowerCase().includes(q) ||
+      mCity.toLowerCase().includes(q);
 
     const matchesProvince = selectedProvinceFilter === 'ALL' || mProvince === selectedProvinceFilter;
     const matchesDistrict = selectedDistrictFilter === 'ALL' || mDistrict === selectedDistrictFilter;
@@ -83,70 +181,59 @@ export const MemberDirectory: React.FC = () => {
     return matchesSearch && matchesProvince && matchesDistrict;
   });
 
-  if (currentUser.role === 'MEMBER') {
-    return (
-      <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-        <ShieldAlert className="w-10 h-10 text-rose-500 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
-          Access Restricted
-        </h3>
-        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-          Members are restricted from viewing the central directory containing other members' private records and addresses.
-        </p>
-      </div>
-    );
-  }
+  const handleOpenMessage = (member: User) => {
+    setActiveChatUser(member);
+    setActiveTab('chat');
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              {isDistrictAdmin ? `${currentUser.assignedDistrict || currentUser.district} Registry` : isCoAdmin ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Registry` : 'Central Registry'}
-            </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">
-              {isDistrictAdmin ? 'District Member Records' : isCoAdmin ? 'State Member Records' : 'Organization-Wide Community Database'}
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              {isDistrictAdmin
+                ? `${currentUser.assignedDistrict || currentUser.district} Registry`
+                : isCoAdmin
+                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Registry`
+                : 'Central Registry'}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
+            <Users className="w-6 h-6 text-amber-500 shrink-0" />
             <span>Member Directory & Records</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isDistrictAdmin 
-              ? `Strict District Scope: Displaying verified residents within ${currentUser.assignedDistrict || currentUser.district}.` 
+            {isDistrictAdmin
+              ? `Displaying members registered in ${currentUser.assignedDistrict || currentUser.district}.`
               : isCoAdmin
-              ? `Strict State Scope: Displaying verified residents within ${currentUser.assignedStateProvince || currentUser.stateProvince}.`
-              : 'Full directory with CNIC identity verification, digital cards, profile inspection, and contribution totals.'}
+              ? `Displaying members registered across ${currentUser.assignedStateProvince || currentUser.stateProvince}.`
+              : 'Organization-wide verified member records, profiles, and direct messaging.'}
           </p>
         </div>
 
-        {/* Search & Filter Bar */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search member, ID, CNIC, District..."
+              placeholder="Search member, ID, city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-hidden focus:ring-1 focus:ring-emerald-500 w-52 sm:w-64"
+              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-amber-500 w-full sm:w-56"
             />
           </div>
 
           {!isDistrictAdmin && !isCoAdmin && (
             <>
-              {/* State/Province Filter */}
               <select
                 value={selectedProvinceFilter}
                 onChange={(e) => {
                   setSelectedProvinceFilter(e.target.value);
                   setSelectedDistrictFilter('ALL');
                 }}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
+                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               >
                 <option value="ALL">All Provinces</option>
                 {PROVINCE_OPTIONS.map(prov => (
@@ -154,16 +241,15 @@ export const MemberDirectory: React.FC = () => {
                 ))}
               </select>
 
-              {/* District Filter */}
               <select
                 value={selectedDistrictFilter}
                 onChange={(e) => setSelectedDistrictFilter(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
+                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               >
                 <option value="ALL">All Districts</option>
                 {(selectedProvinceFilter !== 'ALL'
                   ? getDistrictsForProvince(selectedProvinceFilter)
-                  : Object.values(PROVINCE_OPTIONS).flatMap(p => getDistrictsForProvince(p))
+                  : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
                 ).map(dist => (
                   <option key={dist} value={dist}>{dist}</option>
                 ))}
@@ -173,14 +259,35 @@ export const MemberDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* Directory Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {filteredMembers.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+            No registered members found yet.
+          </div>
+        ) : (
+          filteredMembers.map(member => (
+            <MemberCardMobile
+              key={member.id}
+              member={member}
+              isFinanceOfficer={isFinanceOfficer}
+              onInspect={setInspectedUserProfile}
+              onCard={setSelectedCardUser}
+              onMessage={handleOpenMessage}
+              onShowLocation={setSelectedMemberForHierarchy}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-400 font-medium">
                 <th className="py-3 px-4">Member Name & ID</th>
-                <th className="py-3 px-4">Administrative Location</th>
+                <th className="py-3 px-4">Location</th>
                 <th className="py-3 px-4">CNIC Number</th>
                 <th className="py-3 px-4">Contact</th>
                 <th className="py-3 px-4 text-right">Total Contributed</th>
@@ -192,7 +299,7 @@ export const MemberDirectory: React.FC = () => {
               {filteredMembers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    No members match your search criteria.
+                    No registered members found yet.
                   </td>
                 </tr>
               ) : (
@@ -200,24 +307,26 @@ export const MemberDirectory: React.FC = () => {
                   const fallback = mapLegacyRegionToHierarchy(member.region);
                   const prov = member.stateProvince || fallback.stateProvince;
                   const dist = member.district || fallback.district;
-                  const teh = member.tehsil || fallback.tehsil;
-                  const uc = member.unionCouncil || fallback.unionCouncil;
 
                   return (
                     <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={member.avatarUrl || '/src/assets/images/member_avatar_sample_1794225903658.jpg'} 
-                            alt={member.name}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0" 
-                          />
+                          {member.avatarUrl ? (
+                            <img
+                              src={member.avatarUrl}
+                              alt={member.name}
+                              className="w-8 h-8 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#0a192f] text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div>
-                            <span className="font-bold text-slate-900 dark:text-slate-100 block">
-                              {member.name}
-                            </span>
-                            <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                              {member.membershipId}
+                            <span className="font-bold text-slate-900 dark:text-slate-100 block">{member.name}</span>
+                            <span className="font-mono text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                              {member.membershipId || 'KC-PENDING'}
                             </span>
                           </div>
                         </div>
@@ -225,63 +334,55 @@ export const MemberDirectory: React.FC = () => {
 
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {dist}
-                          </span>
+                          <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{member.cityTown || dist}</span>
                           <span className="text-slate-400">·</span>
-                          <span className="text-slate-600 dark:text-slate-300 font-medium">
-                            {prov}
-                          </span>
+                          <span className="text-slate-600 dark:text-slate-300">{prov}</span>
                         </div>
-                        <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <span>Tehsil: <strong className="font-medium text-slate-700 dark:text-slate-300">{teh || 'N/A'}</strong></span>
-                          {uc && (
-                            <>
-                              <span className="text-slate-400">·</span>
-                              <span>UC: <strong className="font-medium text-slate-700 dark:text-slate-300">{uc}</strong></span>
-                            </>
-                          )}
-                          <button
-                            onClick={() => setSelectedMemberForHierarchy(member)}
-                            className="ml-1 text-[9px] text-emerald-600 hover:text-emerald-700 font-semibold underline"
-                          >
-                            Details
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setSelectedMemberForHierarchy(member)}
+                          className="text-[10px] text-emerald-600 hover:underline font-semibold mt-0.5"
+                        >
+                          Location Trail
+                        </button>
                       </td>
 
                       <td className="py-3 px-4 font-mono text-slate-800 dark:text-slate-200">
-                        {isFinanceOfficer ? `${member.cnic.slice(0, 5)}...` : member.cnic}
+                        {member.cnic ? (isFinanceOfficer ? `${member.cnic.slice(0, 5)}...` : member.cnic) : '—'}
                       </td>
 
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                        <div>{member.phone}</div>
-                        <div className="text-[10px] truncate max-w-[140px]">{member.email}</div>
+                        <div>{member.phone || '—'}</div>
+                        <div className="text-[10px] truncate max-w-[150px]">{member.email}</div>
                       </td>
 
                       <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100">
-                        PKR {member.totalContributed.toLocaleString()}
+                        PKR {(member.totalContributed || 0).toLocaleString()}
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] px-2 py-0.5 rounded font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          {member.membershipStatus}
-                        </span>
+                        <RoleBadge role={member.role} compact />
                       </td>
 
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => handleOpenMessage(member)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded font-bold transition-colors cursor-pointer"
+                            title="Send Direct Message"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Message</span>
+                          </button>
+                          <button
                             onClick={() => setInspectedUserProfile(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded font-medium transition-colors cursor-pointer border border-amber-500/30"
-                            title="Inspect Member Profile"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded font-medium cursor-pointer"
                           >
                             <span>Profile</span>
                           </button>
                           <button
                             onClick={() => setSelectedCardUser(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-medium transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-medium cursor-pointer"
                           >
                             <IdCard className="w-3.5 h-3.5 text-amber-500" />
                             <span>Card</span>
@@ -297,20 +398,16 @@ export const MemberDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* ADMINISTRATIVE LOCATION HIERARCHY MODAL */}
+      {/* Location Hierarchy Modal */}
       {selectedMemberForHierarchy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-emerald-600" />
+                <MapPin className="w-5 h-5 text-amber-500" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Administrative Location Hierarchy
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    {selectedMemberForHierarchy.name} ({selectedMemberForHierarchy.membershipId})
-                  </p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Administrative Location</h3>
+                  <p className="text-[11px] text-slate-500">{selectedMemberForHierarchy.name}</p>
                 </div>
               </div>
               <button
@@ -321,52 +418,25 @@ export const MemberDirectory: React.FC = () => {
               </button>
             </div>
 
-            {/* Complete 6-Level Hierarchy Flow */}
-            <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider block mb-2">
-                Verified Civic Jurisdiction Trail
-              </span>
-              {(() => {
-                const fb = mapLegacyRegionToHierarchy(selectedMemberForHierarchy.region);
-                const steps = [
-                  { label: 'Country', val: selectedMemberForHierarchy.country || fb.country || 'Pakistan' },
-                  { label: 'State / Province', val: selectedMemberForHierarchy.stateProvince || fb.stateProvince },
-                  { label: 'District', val: selectedMemberForHierarchy.district || fb.district },
-                  { label: 'Tehsil / Sub-division', val: selectedMemberForHierarchy.tehsil || fb.tehsil || 'Central' },
-                  { label: 'City / Town', val: selectedMemberForHierarchy.cityTown || fb.cityTown || fb.district },
-                  { label: 'Union Council (UC)', val: selectedMemberForHierarchy.unionCouncil || fb.unionCouncil || 'UC-01' },
-                ];
-                return (
-                  <div className="space-y-2">
-                    {steps.map((st, idx) => (
-                      <div key={st.label} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
-                        <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                          <span className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] flex items-center justify-center">
-                            {idx + 1}
-                          </span>
-                          {st.label}:
-                        </span>
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {st.val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+            <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+              {[
+                { label: 'Country', val: selectedMemberForHierarchy.country || 'Pakistan' },
+                { label: 'Province / State', val: selectedMemberForHierarchy.stateProvince || 'Punjab' },
+                { label: 'District', val: selectedMemberForHierarchy.district || 'Lahore' },
+                { label: 'City / Town', val: selectedMemberForHierarchy.customCity || selectedMemberForHierarchy.cityTown || selectedMemberForHierarchy.district },
+                { label: 'Union Council', val: selectedMemberForHierarchy.unionCouncil || '—' }
+              ].map((st) => (
+                <div key={st.label} className="flex items-center justify-between py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
+                  <span className="text-slate-500">{st.label}:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{st.val}</span>
+                </div>
+              ))}
             </div>
 
-            {selectedMemberForHierarchy.address && (
-              <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded">
-                <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Residential Street Address:</span>
-                {selectedMemberForHierarchy.address}
-              </div>
-            )}
-
-            <div className="text-right pt-2">
+            <div className="text-right">
               <button
                 onClick={() => setSelectedMemberForHierarchy(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded"
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg"
               >
                 Close
               </button>

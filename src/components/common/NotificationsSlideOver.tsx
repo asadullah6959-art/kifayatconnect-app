@@ -66,7 +66,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentUser) return null;
 
   // Filter notifications
   const filteredNotifications = userNotifications.filter(n => {
@@ -183,7 +183,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 ease-out"
+        className="fixed inset-0 bg-slate-950/75 transition-opacity duration-200 ease-out"
         onClick={onClose}
       />
 

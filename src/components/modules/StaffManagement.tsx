@@ -12,22 +12,18 @@ import {
   Edit2
 } from 'lucide-react';
 import { User, UserRole } from '../../types';
-import { 
-  PROVINCE_OPTIONS, 
-  getDistrictsForProvince, 
-  formatShortLocation, 
-  mapLegacyRegionToHierarchy 
-} from '../../data/locationData';
+import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { RoleBadge } from '../common/RoleBadge';
+import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
 
 export const StaffManagement: React.FC = () => {
   const { 
     currentUser, 
     users, 
-    createOrUpdateStaff, 
-    language 
+    createOrUpdateStaff 
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,9 +37,12 @@ export const StaffManagement: React.FC = () => {
   const [formStateProvince, setFormStateProvince] = useState('Punjab');
   const [formDistrict, setFormDistrict] = useState('Lahore');
   const [formTehsil, setFormTehsil] = useState('');
-  const [formCityTown, setFormCityTown] = useState('');
+  const [formCityTown, setFormCityTown] = useState('Lahore');
   const [formUnionCouncil, setFormUnionCouncil] = useState('');
   const [formNotes, setFormNotes] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  if (!currentUser) return null;
 
   if (!isSuperAdmin) {
     return (
@@ -70,10 +69,11 @@ export const StaffManagement: React.FC = () => {
     setFormRole('ADMIN');
     setFormStateProvince('Punjab');
     setFormDistrict('Lahore');
-    setFormTehsil('');
-    setFormCityTown('');
+    setFormTehsil('Lahore City');
+    setFormCityTown('Lahore');
     setFormUnionCouncil('');
     setFormNotes('');
+    setFormError(null);
     setIsModalOpen(true);
   };
 
@@ -88,47 +88,44 @@ export const StaffManagement: React.FC = () => {
     setFormStateProvince(staff.stateProvince || fallback.stateProvince);
     setFormDistrict(staff.district || fallback.district);
     setFormTehsil(staff.tehsil || fallback.tehsil || '');
-    setFormCityTown(staff.cityTown || fallback.cityTown || '');
+    setFormCityTown(staff.cityTown || fallback.cityTown || staff.district || '');
     setFormUnionCouncil(staff.unionCouncil || fallback.unionCouncil || '');
     setFormNotes(staff.notes || '');
+    setFormError(null);
     setIsModalOpen(true);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!formName.trim() || !formEmail.trim()) return;
 
     const locPayload = {
       country: 'Pakistan',
       stateProvince: formStateProvince,
       district: formDistrict,
+      assignedDistrict: formRole === 'ADMIN' ? formDistrict : undefined,
+      assignedStateProvince: formRole === 'ADMIN' || formRole === 'CO_ADMIN' ? formStateProvince : undefined,
       tehsil: formTehsil.trim(),
-      cityTown: formCityTown.trim(),
+      cityTown: formCityTown.trim() || formDistrict,
       unionCouncil: formUnionCouncil.trim(),
       region: `${formDistrict}, ${formStateProvince}` as any
     };
 
-    if (editingStaff) {
-      createOrUpdateStaff({
-        id: editingStaff.id,
-        name: formName.trim(),
-        email: formEmail.trim(),
-        phone: formPhone.trim(),
-        cnic: formCnic.trim(),
-        role: formRole,
-        notes: formNotes.trim(),
-        ...locPayload
-      });
-    } else {
-      createOrUpdateStaff({
-        name: formName.trim(),
-        email: formEmail.trim(),
-        phone: formPhone.trim(),
-        cnic: formCnic.trim(),
-        role: formRole,
-        notes: formNotes.trim(),
-        ...locPayload
-      });
+    const res = createOrUpdateStaff({
+      ...(editingStaff ? { id: editingStaff.id } : {}),
+      name: formName.trim(),
+      email: formEmail.trim(),
+      phone: formPhone.trim(),
+      cnic: formCnic.trim(),
+      role: formRole,
+      notes: formNotes.trim(),
+      ...locPayload
+    });
+
+    if (!res.success) {
+      setFormError(res.error || 'Unable to save staff appointment.');
+      return;
     }
 
     setIsModalOpen(false);
@@ -170,7 +167,7 @@ export const StaffManagement: React.FC = () => {
         <div className="text-xs">
           <span className="font-bold text-slate-200">Rule 8 & 10 Compliance: Backend-Enforced Permissions & Role Auditing</span>
           <p className="text-slate-400 mt-1 leading-relaxed">
-            Staff access is strictly segregated. Finance Officers cannot modify member identities or approve memberships; Regional Officers are strictly locked to their assigned geographical division. Any role promotion or region reassignment records timestamp, former role, new role, and the Super Admin's ID.
+            Staff access is strictly segregated. Finance Officers handle treasury & receipts only; District Admins are strictly locked to their assigned District (max 10/district) and State Co-Admins to their assigned Province (max 3/province). Every appointment records timestamp, former role, new role, and the Super Admin's ID.
           </p>
         </div>
       </div>
@@ -180,28 +177,20 @@ export const StaffManagement: React.FC = () => {
         {staffMembers.map(staff => (
           <div 
             key={staff.id}
-            className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-3"
+            className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-3 shadow-xs"
           >
             <div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                     {staff.name}
                   </h3>
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-[11px] font-mono text-slate-400 truncate block">
                     {staff.email}
                   </span>
                 </div>
 
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                  staff.role === 'SUPER_ADMIN'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                    : staff.role === 'FINANCE_OFFICER'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
-                    : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                }`}>
-                  {staff.role}
-                </span>
+                <RoleBadge role={staff.role} compact className="shrink-0" />
               </div>
 
               <div className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-2">
@@ -257,11 +246,17 @@ export const StaffManagement: React.FC = () => {
 
       {/* APPOINT / MODIFY STAFF MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
             <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
               {editingStaff ? `Modify Staff Assignment: ${editingStaff.name}` : 'Appoint New Official'}
             </h3>
+
+            {formError && (
+              <div className="mt-3 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 font-medium">
+                {formError}
+              </div>
+            )}
 
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -274,7 +269,7 @@ export const StaffManagement: React.FC = () => {
                     required
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Farhan Qureshi"
+                    placeholder="Full Legal Name"
                     className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
                 </div>
@@ -323,7 +318,7 @@ export const StaffManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Assigned Role
@@ -340,70 +335,22 @@ export const StaffManagement: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    State / Province
-                  </label>
-                  <select
-                    value={formStateProvince}
-                    onChange={(e) => {
-                      const newProv = e.target.value;
-                      setFormStateProvince(newProv);
-                      const dists = getDistrictsForProvince(newProv);
-                      if (dists.length > 0) setFormDistrict(dists[0]);
-                    }}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    {PROVINCE_OPTIONS.map(prov => (
-                      <option key={prov} value={prov}>{prov}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    District Jurisdiction
-                  </label>
-                  <select
-                    value={formDistrict}
-                    onChange={(e) => setFormDistrict(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    {getDistrictsForProvince(formStateProvince).map(dist => (
-                      <option key={dist} value={dist}>{dist}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Tehsil / Sub-division <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formTehsil}
-                    onChange={(e) => setFormTehsil(e.target.value)}
-                    placeholder="e.g. Lahore City, Model Town"
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    City / Town <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formCityTown}
-                    onChange={(e) => setFormCityTown(e.target.value)}
-                    placeholder="e.g. Lahore"
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  />
-                </div>
+                <SearchableLocationSelect
+                  label="Assigned Jurisdiction (District / City across Pakistan)"
+                  required
+                  value={{
+                    stateProvince: formStateProvince,
+                    district: formDistrict,
+                    cityTown: formCityTown || formDistrict,
+                    tehsil: formTehsil
+                  }}
+                  onChange={(loc) => {
+                    setFormStateProvince(loc.stateProvince);
+                    setFormDistrict(loc.district);
+                    setFormCityTown(loc.cityTown);
+                    setFormTehsil(loc.tehsil || loc.cityTown);
+                  }}
+                />
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">

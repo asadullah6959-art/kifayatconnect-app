@@ -28,19 +28,19 @@ export const ComplaintsManager: React.FC = () => {
     language 
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
-  const isCoAdmin = currentUser.role === 'CO_ADMIN';
-  const isFinanceOfficer = currentUser.role === 'FINANCE_OFFICER';
-  const isMember = currentUser.role === 'MEMBER';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
+  const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
+  const isMember = currentUser?.role === 'MEMBER';
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [filterProvince, setFilterProvince] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab') : 'ALL'
+    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab') : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isDistrictAdmin ? (currentUser.assignedDistrict || currentUser.district || 'Lahore') : 'ALL'
+    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'Lahore') : 'ALL'
   );
 
   // Submit modal state
@@ -54,6 +54,8 @@ export const ComplaintsManager: React.FC = () => {
   const [respondingTicket, setRespondingTicket] = useState<Complaint | null>(null);
   const [responseStatus, setResponseStatus] = useState<ComplaintStatus>('RESOLVED');
   const [responseRemarks, setResponseRemarks] = useState('');
+
+  if (!currentUser) return null;
 
   // Scoped complaints according to role
   const visibleComplaints = complaints.filter(cmp => {
@@ -124,7 +126,7 @@ export const ComplaintsManager: React.FC = () => {
           Module Restricted for Finance Role
         </h3>
         <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-          Per Kifayat Connect permission matrix, grievances are managed exclusively by Regional Officers for their assigned divisions and Super Admin centrally.
+          Per Kifayat Connect permission matrix, grievances are managed exclusively by District Admins & State Co-Admins for their assigned jurisdictions and Super Admin centrally.
         </p>
       </div>
     );
@@ -220,7 +222,7 @@ export const ComplaintsManager: React.FC = () => {
             <option value="Receipt Inquiry">Receipt Inquiry</option>
             <option value="Fund Allocation">Fund Allocation</option>
             <option value="Welfare Support">Welfare Support</option>
-            <option value="Regional Activity">Regional Activity</option>
+            <option value="District Activity">District Activity</option>
             <option value="General">General</option>
           </select>
 
@@ -349,7 +351,7 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: SUBMIT COMPLAINT */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
             <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
               Submit Grievance or Inquiry Ticket
@@ -370,7 +372,7 @@ export const ComplaintsManager: React.FC = () => {
                     <option value="Receipt Inquiry">Receipt Inquiry</option>
                     <option value="Fund Allocation">Fund Allocation</option>
                     <option value="Welfare Support">Welfare Support</option>
-                    <option value="Regional Activity">Regional Activity</option>
+                    <option value="District Activity">District Activity</option>
                     <option value="General">General Inquiry</option>
                   </select>
                 </div>
@@ -442,7 +444,7 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: UPDATE TICKET & RESPOND (STAFF ONLY) */}
       {respondingTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 text-xs">
             <div>
               <span className="text-slate-400 uppercase font-mono font-bold">
@@ -452,7 +454,7 @@ export const ComplaintsManager: React.FC = () => {
                 Respond to: {respondingTicket.subject}
               </h3>
               <p className="text-slate-500 mt-1">
-                Filer: {respondingTicket.userName} ({respondingTicket.region})
+                Filer: {respondingTicket.userName} ({respondingTicket.district || 'Pakistan'})
               </p>
             </div>
 

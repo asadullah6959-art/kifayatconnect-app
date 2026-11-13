@@ -8,26 +8,27 @@ import {
   Search, 
   Printer, 
   TrendingUp, 
-  AlertCircle,
   FileCheck,
   ShieldAlert,
-  MapPin
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { PaymentTransaction } from '../../types';
 
 export const FinanceOfficerDashboard: React.FC = () => {
   const { 
     payments, 
     verifyPayment, 
     setSelectedReceipt, 
-    language,
-    setActiveTab
+    language
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [rejectingTxId, setRejectingTxId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<string>('');
+  const [previewTx, setPreviewTx] = useState<PaymentTransaction | null>(null);
 
   const pendingPayments = payments.filter(p => p.status === 'PENDING_VERIFICATION');
   const verifiedPayments = payments.filter(p => p.status === 'VERIFIED');
@@ -235,6 +236,17 @@ export const FinanceOfficerDashboard: React.FC = () => {
                         Payer Note: "{tx.proofNote}"
                       </p>
                     )}
+
+                    {tx.receiptImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTx(tx)}
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>View Uploaded Receipt Photo</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Actions & Amount */}
@@ -357,7 +369,9 @@ export const FinanceOfficerDashboard: React.FC = () => {
                   </td>
                   <td className="py-2.5 px-3">
                     <span className="font-semibold text-slate-900 dark:text-slate-100 block">{tx.userName}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{tx.userMembershipId} · {tx.userRegion}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {tx.userMembershipId} · {tx.district || mapLegacyRegionToHierarchy(tx.userRegion).district}
+                    </span>
                   </td>
                   <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-medium">
                     {tx.fundCategory}
@@ -377,7 +391,7 @@ export const FinanceOfficerDashboard: React.FC = () => {
                         ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                         : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
                     }`}>
-                      {tx.status}
+                      {tx.status === 'VERIFIED' ? 'Approved' : tx.status === 'PENDING_VERIFICATION' ? 'Pending' : 'Rejected'}
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-right">
@@ -389,6 +403,14 @@ export const FinanceOfficerDashboard: React.FC = () => {
                         <Printer className="w-3 h-3 text-emerald-600" />
                         <span>Receipt</span>
                       </button>
+                    ) : tx.receiptImageUrl ? (
+                      <button
+                        onClick={() => setPreviewTx(tx)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-amber-600 hover:underline font-medium"
+                      >
+                        <ImageIcon className="w-3 h-3" />
+                        <span>Proof</span>
+                      </button>
                     ) : (
                       <span className="text-[10px] text-slate-400">Pending</span>
                     )}
@@ -399,6 +421,37 @@ export const FinanceOfficerDashboard: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Receipt Image Lightbox Modal */}
+      {previewTx && previewTx.receiptImageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  Payment Proof · {previewTx.receiptNumber}
+                </h4>
+                <p className="text-[11px] text-slate-500 truncate">
+                  {previewTx.userName} · PKR {previewTx.amount.toLocaleString()} ({previewTx.paymentMethod})
+                </p>
+              </div>
+              <button
+                onClick={() => setPreviewTx(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 flex justify-center">
+              <img
+                src={previewTx.receiptImageUrl}
+                alt={previewTx.receiptImageName || 'Payment Receipt'}
+                className="max-h-[65vh] rounded-lg object-contain border border-slate-200 dark:border-slate-800"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

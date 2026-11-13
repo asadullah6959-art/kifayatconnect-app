@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MembershipApplication, SupportingDocument, SupportingDocumentType } from '../../types';
+import { compressImageFile } from '../../utils/imageCompression';
 
 interface DocumentUploadModalProps {
   application: MembershipApplication;
@@ -76,8 +77,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
     verifyApplicationDocument 
   } = useApp();
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isDistrictAdmin = currentUser.role === 'ADMIN';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const canVerify = isSuperAdmin || isDistrictAdmin;
 
   // Form states
@@ -97,11 +98,15 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Flag note modal
+  // Flag & delete inline confirmation state (no window.alert/window.confirm)
   const [flaggingDocId, setFlaggingDocId] = useState<string | null>(null);
   const [flagReason, setFlagReason] = useState('');
+  const [flagError, setFlagError] = useState<string | null>(null);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<SupportingDocument | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (!currentUser) return null;
 
   const formatFileSize = (bytes: number): string => {
     if (!bytes || bytes === 0) return '0 B';
@@ -111,34 +116,40 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const processSelectedFile = async (file: File) => {
     setUploadError(null);
     setUploadSuccess(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    // Validate size (max 5MB)
     if (file.size > MAX_FILE_SIZE) {
       setUploadError(`File is too large (${formatFileSize(file.size)}). Maximum permitted size is 5MB.`);
       return;
     }
 
-    // Validate MIME type
     if (!ALLOWED_MIME_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
       setUploadError('Invalid format. Please upload JPG, PNG, WEBP images, or PDF documents.');
       return;
     }
 
     setFileName(file.name);
-    setFileSize(file.size);
-    setFileMime(file.type);
     if (!docName.trim()) {
-      // Auto-populate document title based on selected category & original filename
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       setDocName(cleanName);
     }
 
-    // Read as Base64 data URL
+    if (file.type.startsWith('image/')) {
+      try {
+        const compressed = await compressImageFile(file, 800, 0.72);
+        setFileDataUrl(compressed.dataUrl);
+        setFileSize(compressed.sizeBytes);
+        setFileMime('image/jpeg');
+        return;
+      } catch {
+        // fallback to FileReader if canvas fails
+      }
+    }
+
+    setFileSize(file.size);
+    setFileMime(file.type);
     const reader = new FileReader();
     reader.onload = (event) => {
       setFileDataUrl(event.target?.result as string);
@@ -149,34 +160,16 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
     reader.readAsDataURL(file);
   };
 
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void processSelectedFile(file);
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setUploadError(null);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.size > MAX_FILE_SIZE) {
-        setUploadError(`File is too large (${formatFileSize(file.size)}). Maximum permitted size is 5MB.`);
-        return;
-      }
-      if (!ALLOWED_MIME_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
-        setUploadError('Invalid format. Please upload JPG, PNG, WEBP images, or PDF documents.');
-        return;
-      }
-
-      setFileName(file.name);
-      setFileSize(file.size);
-      setFileMime(file.type);
-      if (!docName.trim()) {
-        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        setDocName(cleanName);
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFileDataUrl(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      void processSelectedFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -231,9 +224,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
   const handleConfirmFlag = (docId: string) => {
     if (!flagReason.trim()) {
-      alert('Please specify why this document is being flagged (e.g. unreadable scan, name mismatch).');
+      setFlagError('Please specify why this document is being flagged (e.g. unreadable scan, name mismatch).');
       return;
     }
+    setFlagError(null);
     verifyApplicationDocument(application.id, docId, 'FLAGGED', flagReason.trim());
     setFlaggingDocId(null);
     setFlagReason('');
@@ -245,7 +239,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const pendingCount = docs.filter(d => !d.verificationStatus || d.verificationStatus === 'PENDING').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         
         {/* Modal Header */}
@@ -592,11 +586,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                           {(isSuperAdmin || doc.uploadedBy === currentUser.id) && (
                             <button
                               type="button"
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to remove "${doc.name}" from this dossier?`)) {
-                                  removeDocumentFromApplication(application.id, doc.id);
-                                }
-                              }}
+                              onClick={() => setConfirmDeleteDoc(doc)}
                               className="p-1 text-rose-500 hover:text-rose-700 rounded"
                               title="Delete file"
                             >
@@ -671,15 +661,24 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
             </p>
             <textarea
               value={flagReason}
-              onChange={(e) => setFlagReason(e.target.value)}
+              onChange={(e) => {
+                setFlagReason(e.target.value);
+                if (flagError) setFlagError(null);
+              }}
               placeholder="Enter reason for flagging..."
               rows={3}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-rose-500"
             />
+            {flagError && (
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{flagError}</p>
+            )}
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setFlaggingDocId(null)}
+                onClick={() => {
+                  setFlaggingDocId(null);
+                  setFlagError(null);
+                }}
                 className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 Cancel
@@ -696,9 +695,43 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
         </div>
       )}
 
+      {/* SUB-MODAL 1B: DELETE CONFIRMATION (Replaces window.confirm) */}
+      {confirmDeleteDoc && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/85 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Remove Supporting File?</span>
+            </h4>
+            <p className="text-xs text-slate-500">
+              Remove <strong>"{confirmDeleteDoc.name}"</strong> from this application dossier? This action is recorded in the audit log.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteDoc(null)}
+                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeDocumentFromApplication(application.id, confirmDeleteDoc.id);
+                  setConfirmDeleteDoc(null);
+                }}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded"
+              >
+                Remove File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SUB-MODAL 2: HIGH-RESOLUTION LIGHTBOX VIEWER */}
       {viewingDoc && (
-        <div className="fixed inset-0 z-70 flex flex-col bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-70 flex flex-col bg-slate-950/95">
           {/* Lightbox Toolbar */}
           <div className="px-6 py-3.5 bg-black/60 border-b border-white/10 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">

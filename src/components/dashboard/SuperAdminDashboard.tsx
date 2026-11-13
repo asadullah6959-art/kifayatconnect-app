@@ -8,35 +8,28 @@ import {
   MapPin, 
   CheckSquare, 
   ShieldCheck, 
-  TrendingUp, 
-  ArrowUpRight,
-  Clock,
-  Sparkles,
   Award,
   Building2,
   Settings,
   Download,
-  AlertCircle,
-  ExternalLink,
+  RefreshCw,
   ChevronRight
 } from 'lucide-react';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
 
 export const SuperAdminDashboard: React.FC = () => {
   const { 
     users, 
     applications, 
     payments, 
-    complaints, 
     regionalStats, 
     officeBearers,
-    appUpdates,
     latestPublishedUpdate,
-    appSettings,
+    githubRelease,
+    refreshGitHubRelease,
     setActiveTab, 
-    language,
-    setSelectedCardUser,
-    setInspectedUserProfile
+    language
   } = useApp();
 
   const totalMembers = users.filter(u => u.role === 'MEMBER').length;
@@ -49,27 +42,91 @@ export const SuperAdminDashboard: React.FC = () => {
   const appointedOfficeBearers = officeBearers.filter(ob => ob.status === 'ACTIVE').length;
   const vacantOfficeBearers = officeBearers.filter(ob => ob.status === 'VACANT').length;
 
-  const pendingApprovals = applications.filter(a => a.status === 'RECOMMENDED_BY_REGION');
-  const pendingPayments = payments.filter(p => p.status === 'PENDING_VERIFICATION');
-  const openComplaints = complaints.filter(c => c.status === 'OPEN' || c.status === 'UNDER_REVIEW');
+  const pendingApprovals = applications.filter(
+    a => (a.status as any) === 'RECOMMENDED_BY_DISTRICT' || (a.status as any) === 'RECOMMENDED_BY_REGION'
+  );
 
-  // Financial totals
   const verifiedPayments = payments.filter(p => p.status === 'VERIFIED');
-  const totalVerifiedFunds = verifiedPayments.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalVerifiedFunds = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Dynamic District Aggregations from live users & verified payments
+  const liveDistrictMap = new Map<string, {
+    district: string;
+    stateProvince: string;
+    officerInCharge: string;
+    totalMembers: number;
+    totalCollected: number;
+  }>();
+
+  users.forEach(u => {
+    const dist = u.district || 'Unassigned';
+    const prov = u.stateProvince || 'Pakistan';
+    const key = `${prov}__${dist}`;
+    if (!liveDistrictMap.has(key)) {
+      const distAdmin = users.find(a => a.role === 'ADMIN' && (a.assignedDistrict === dist || a.district === dist));
+      liveDistrictMap.set(key, {
+        district: dist,
+        stateProvince: prov,
+        officerInCharge: distAdmin?.name || 'Unassigned',
+        totalMembers: 0,
+        totalCollected: 0
+      });
+    }
+    if (u.role === 'MEMBER') {
+      liveDistrictMap.get(key)!.totalMembers += 1;
+    }
+  });
+
+  verifiedPayments.forEach(p => {
+    const dist = p.district || 'Unassigned';
+    const prov = p.stateProvince || 'Pakistan';
+    const key = `${prov}__${dist}`;
+    if (!liveDistrictMap.has(key)) {
+      liveDistrictMap.set(key, {
+        district: dist,
+        stateProvince: prov,
+        officerInCharge: 'Unassigned',
+        totalMembers: 0,
+        totalCollected: 0
+      });
+    }
+    liveDistrictMap.get(key)!.totalCollected += p.amount;
+  });
+
+  const districtRows = regionalStats.length > 0
+    ? regionalStats.map(s => {
+        const fb = mapLegacyRegionToHierarchy(s.region);
+        return {
+          district: s.district || fb.district,
+          stateProvince: s.stateProvince || fb.stateProvince,
+          officerInCharge: s.officerInCharge,
+          totalMembers: s.totalMembers,
+          totalCollected: s.totalCollected
+        };
+      })
+    : Array.from(liveDistrictMap.values());
+
+  const hasAdminOverride = Boolean(latestPublishedUpdate?.isPublished && latestPublishedUpdate?.apkDownloadUrl);
+  const apkUrl = hasAdminOverride
+    ? latestPublishedUpdate!.apkDownloadUrl
+    : (githubRelease?.apkUrl || '');
+  const activeReleaseTag = hasAdminOverride && latestPublishedUpdate
+    ? `v${latestPublishedUpdate.version.replace(/^v/i, '')}`
+    : (githubRelease?.tagName || `v${INSTALLED_APP_VERSION}`);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       {/* Top Banner with Executive Status & Quick Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
               {language === 'ur' ? 'مرکزی انتظام' : 'Super Admin Authority'}
             </span>
             <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-400 font-mono">asadullah6959@gmail.com</span>
+            <span className="text-xs text-slate-400 font-mono truncate">asadullah6959@gmail.com</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2.5">
             <ShieldCheck className="w-6 h-6 text-amber-500 shrink-0" />
             <span>{language === 'ur' ? 'مرکزی گورننس ڈیش بورڈ' : 'Executive Governance Dashboard'}</span>
           </h1>
@@ -214,7 +271,7 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
           <div className="mt-2">
             <span className="text-sm font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              PKR {(totalVerifiedFunds / 1000).toFixed(0)}k
+              PKR {totalVerifiedFunds.toLocaleString()}
             </span>
           </div>
           <div className="mt-1 text-[10px] text-emerald-400">
@@ -223,41 +280,60 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* App Updates Spotlight Card (Prompt Requirement #13) */}
+      {/* App Updates & GitHub Releases Sync Card */}
       <div className="bg-gradient-to-r from-[#0a192f] via-slate-900 to-slate-900 p-5 rounded-2xl border border-amber-500/30 shadow-xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <Download className="w-4 h-4 text-amber-400" />
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                App Updates & APK Release System
+                App Updates & GitHub Releases Sync
               </span>
-              {latestPublishedUpdate && (
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Live: {latestPublishedUpdate.version}
-                </span>
-              )}
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {apkUrl
+                  ? `${activeReleaseTag} — APK Available`
+                  : `v${INSTALLED_APP_VERSION} — Latest Version Installed`}
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-white">
-              {latestPublishedUpdate ? latestPublishedUpdate.title : 'Kifayat Connect Mobile Release Center'}
+            <h3 className="text-base sm:text-lg font-bold text-white">
+              {hasAdminOverride && latestPublishedUpdate
+                ? latestPublishedUpdate.title
+                : (githubRelease?.apkUrl ? githubRelease.releaseTitle : 'Kifayat Connect Mobile Release Center')}
             </h3>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Automatic broadcast of updates to users with in-app notifications and mandatory update blocking. Direct APK download link is configured and hosted via GitHub Releases.
+              Automatically synced with GitHub repository releases (
+              <a
+                href="https://github.com/asadullah6959-art/kifayatconnect-app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-amber-300 hover:underline"
+              >
+                asadullah6959-art/kifayatconnect-app
+              </a>
+              ). APK links appear only when a verified release binary is published.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {latestPublishedUpdate?.apkDownloadUrl && (
+            {apkUrl && (
               <a
-                href={latestPublishedUpdate.apkDownloadUrl}
+                href={apkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>Download APK ({latestPublishedUpdate.version})</span>
+                <span>Download APK ({activeReleaseTag})</span>
               </a>
             )}
+
+            <button
+              onClick={() => refreshGitHubRelease(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Check Releases</span>
+            </button>
 
             <button
               onClick={() => setActiveTab('manage_app')}
@@ -300,37 +376,46 @@ export const SuperAdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {regionalStats.map((stat, idx) => {
-                  const fb = mapLegacyRegionToHierarchy(stat.region);
-                  const dist = stat.district || fb.district;
-                  const prov = stat.stateProvince || fb.stateProvince;
-                  const adminCount = users.filter(u => u.role === 'ADMIN' && (u.assignedDistrict === dist || u.district === dist)).length;
+                {districtRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      No district activity recorded yet. Appoint District Admins or approve members to populate district metrics.
+                    </td>
+                  </tr>
+                ) : (
+                  districtRows.map((stat, idx) => {
+                    const dist = stat.district;
+                    const prov = stat.stateProvince;
+                    const adminCount = users.filter(
+                      u => u.role === 'ADMIN' && (u.assignedDistrict === dist || u.district === dist)
+                    ).length;
 
-                  return (
-                    <tr key={dist ? `${prov}-${dist}` : `reg-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
-                        {dist}
-                      </td>
-                      <td className="py-2.5 px-3 font-medium text-slate-600 dark:text-slate-300">
-                        {prov}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
-                        {stat.officerInCharge}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-800 dark:text-slate-200">
-                        {stat.totalMembers}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-400">
-                          {adminCount}/10 Admins
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">
-                        {stat.totalCollected.toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    return (
+                      <tr key={dist ? `${prov}-${dist}` : `reg-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
+                          {dist}
+                        </td>
+                        <td className="py-2.5 px-3 font-medium text-slate-600 dark:text-slate-300">
+                          {prov}
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
+                          {stat.officerInCharge}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-800 dark:text-slate-200">
+                          {stat.totalMembers}
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-400">
+                            {adminCount}/10 Admins
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                          {stat.totalCollected.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

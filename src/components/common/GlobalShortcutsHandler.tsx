@@ -14,12 +14,9 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
 }) => {
   const { 
     currentUser, 
-    users, 
-    switchUser, 
     setActiveTab, 
     toggleLanguage,
-    setSelectedCardUser,
-    setSelectedReceipt
+    setSelectedCardUser
   } = useApp();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -32,18 +29,18 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
   };
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
       const isInput = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA' || activeElement?.tagName === 'SELECT';
 
-      // 1. Help shortcut: '?' (Shift + /) when not inside an input field
       if (!isInput && e.key === '?' && !e.altKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         onOpenShortcutsModal();
         return;
       }
 
-      // 2. Language switch: Alt+L or Ctrl+Shift+L
       if ((e.altKey && (e.key === 'l' || e.key === 'L')) || (e.ctrlKey && e.shiftKey && (e.key === 'L' || e.key === 'l'))) {
         e.preventDefault();
         toggleLanguage();
@@ -51,7 +48,6 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
         return;
       }
 
-      // 3. New Member Onboarding: Alt+N
       if (e.altKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
         onOpenRegisterModal();
@@ -59,7 +55,6 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
         return;
       }
 
-      // 4. Notifications Slide-Over: Alt+I
       if (e.altKey && (e.key === 'i' || e.key === 'I') && onOpenNotifications) {
         e.preventDefault();
         onOpenNotifications();
@@ -67,7 +62,6 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
         return;
       }
 
-      // 5. Digital Card: Alt+C
       if (e.altKey && (e.key === 'c' || e.key === 'C')) {
         e.preventDefault();
         setSelectedCardUser(currentUser);
@@ -75,47 +69,6 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
         return;
       }
 
-      // 5. Role Persona Switching: Alt + Shift + 1/2/3/4
-      if (e.altKey && e.shiftKey) {
-        if (e.key === '!' || e.key === '1') {
-          e.preventDefault();
-          const admin = users.find(u => u.role === 'SUPER_ADMIN');
-          if (admin) {
-            switchUser(admin.id);
-            showToast('Switched to Super Admin: Tariq Khan');
-          }
-          return;
-        }
-        if (e.key === '@' || e.key === '2') {
-          e.preventDefault();
-          const finance = users.find(u => u.role === 'FINANCE_OFFICER');
-          if (finance) {
-            switchUser(finance.id);
-            showToast('Switched to Finance Officer: Ayesha Siddiqui');
-          }
-          return;
-        }
-        if (e.key === '#' || e.key === '3') {
-          e.preventDefault();
-          const districtAdmin = users.find(u => u.role === 'ADMIN');
-          if (districtAdmin) {
-            switchUser(districtAdmin.id);
-            showToast(`Switched to District Admin: ${districtAdmin.name}`);
-          }
-          return;
-        }
-        if (e.key === '$' || e.key === '4') {
-          e.preventDefault();
-          const member = users.find(u => u.role === 'MEMBER');
-          if (member) {
-            switchUser(member.id);
-            showToast('Switched to Member: Ayesha Bibi');
-          }
-          return;
-        }
-      }
-
-      // 6. Navigation Hotkeys: Alt + [0-9]
       if (e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
         switch (e.key) {
           case '1':
@@ -198,15 +151,16 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentUser, users, switchUser, setActiveTab, toggleLanguage, onOpenRegisterModal, onOpenShortcutsModal, setSelectedCardUser]);
+  }, [currentUser, setActiveTab, toggleLanguage, onOpenRegisterModal, onOpenShortcutsModal, setSelectedCardUser, onOpenNotifications]);
+
+  if (!currentUser) return null;
 
   return (
     <>
-      {/* Floating shortcut toast notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 pointer-events-none transition-all duration-300 transform translate-y-0 opacity-100">
-          <div className="bg-slate-900/95 text-white text-xs px-3.5 py-2 rounded-lg shadow-xl border border-emerald-500/40 backdrop-blur-xs flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+        <div className="fixed bottom-16 md:bottom-5 right-4 z-50 pointer-events-none">
+          <div className="bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg shadow-xl border border-amber-500/40 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
             <span className="font-medium">{toastMessage}</span>
           </div>
         </div>

@@ -61,7 +61,7 @@ service cloud.firestore {
         data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
         data.role in ['SUPER_ADMIN', 'FINANCE_OFFICER', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
-        data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED'] &&
+        data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED', 'SUSPENDED', 'PENDING_DISTRICT_REVIEW', 'RECOMMENDED_BY_DISTRICT', 'PENDING_REGIONAL_REVIEW', 'RECOMMENDED_BY_REGION'] &&
         data.isStaff is bool;
     }
 
@@ -72,9 +72,9 @@ service cloud.firestore {
       allow get: if isVerified();
       allow list: if isVerified();
 
-      allow create: if isVerified() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && (
-        (isSuperAdmin() && incoming().role == 'SUPER_ADMIN' && incoming().email == 'asadullah6959@gmail.com') ||
-        (!isSuperAdmin() && incoming().role == 'MEMBER' && incoming().isStaff == false)
+      allow create: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
+        isSuperAdmin() ||
+        (request.auth.uid == userId && incoming().role == 'MEMBER' && incoming().isStaff == false)
       );
 
       allow update: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
@@ -110,6 +110,7 @@ service cloud.firestore {
     match /payments/{paymentId} {
       allow get, list: if isVerified() && (
         isFinanceOfficer() ||
+        isDistrictAdmin() ||
         resource.data.userId == request.auth.uid
       );
 
@@ -118,7 +119,8 @@ service cloud.firestore {
 
       allow update: if isVerified() && isValidId(paymentId) && (
         isSuperAdmin() ||
-        isFinanceOfficer()
+        isFinanceOfficer() ||
+        isDistrictAdmin()
       );
 
       allow delete: if isSuperAdmin();

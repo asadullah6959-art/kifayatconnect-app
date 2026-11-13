@@ -48,10 +48,12 @@ export const Header: React.FC<HeaderProps> = ({
     isFirebaseLive,
     firebaseUser,
     logoutFirebaseAuth,
-    latestPublishedUpdate
+    isOnline
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  if (!currentUser) return null;
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -71,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 md:gap-6 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 bg-[#0a192f] border-b border-slate-800 text-white shadow-md">
+    <header className="shrink-0 z-30 w-full max-w-full flex items-center justify-between gap-2 sm:gap-4 md:gap-6 px-2.5 sm:px-4 md:px-6 py-2.5 bg-[#0a192f] border-b border-slate-800 text-white shadow-md">
       {/* Zone 1: Mobile Hamburger Button (☰) & Wordmark */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Hamburger Menu Button (☰) on Mobile screens */}
@@ -187,12 +189,18 @@ export const Header: React.FC<HeaderProps> = ({
       </nav>
 
       {/* Global Role-Gated Search Bar */}
-      <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md mx-1">
+      <div className="hidden sm:block flex-1 max-w-xs md:max-w-md mx-1 min-w-0">
         <GlobalSearchBar />
       </div>
 
       {/* Zone 3: Actions & Account profile */}
-      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
+        {!isOnline && (
+          <span className="hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Offline
+          </span>
+        )}
+
         {/* PWA Install Button */}
         <div className="hidden sm:block">
           <PWAInstallButton />
@@ -202,11 +210,11 @@ export const Header: React.FC<HeaderProps> = ({
         {onOpenShortcutsModal && (
           <button
             onClick={onOpenShortcutsModal}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            className="hidden md:flex items-center gap-1 px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             title="Keyboard Shortcuts Guide (?)"
           >
             <Keyboard className="w-3.5 h-3.5 text-slate-400" />
-            <kbd className="hidden md:inline-block font-mono text-[9px] px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400">
+            <kbd className="font-mono text-[9px] px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400">
               ?
             </kbd>
           </button>
@@ -215,11 +223,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Language switch */}
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           title="Switch Language (English / اردو)"
         >
           <Languages className="w-3.5 h-3.5 text-amber-400" />
-          <span>{language === 'en' ? 'اردو' : 'English'}</span>
+          <span>{language === 'en' ? 'اردو' : 'EN'}</span>
         </button>
 
         {/* Global Notifications Bell */}
@@ -253,7 +261,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer border border-slate-800 hover:border-slate-700"
           >
             <img 
-              src={currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=0a192f&color=d4af37&size=64`}
+              src={currentUser.avatarUrl || currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=0a192f&color=d4af37&size=64`}
               alt={currentUser.name} 
               className="w-8 h-8 rounded-full object-cover border border-amber-500/30"
             />
@@ -327,19 +335,8 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              <div className="border-t border-slate-800 my-1 pt-1">
-                {isFirebaseLive ? (
-                  <button
-                    onClick={async () => {
-                      await logoutFirebaseAuth();
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-500/10 text-rose-400 text-left cursor-pointer font-medium"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out from Firebase ({firebaseUser?.email})</span>
-                  </button>
-                ) : (
+              <div className="border-t border-slate-800 my-1 pt-1 space-y-0.5">
+                {!isFirebaseLive && (
                   <button
                     onClick={() => {
                       onOpenLoginModal();
@@ -348,9 +345,19 @@ export const Header: React.FC<HeaderProps> = ({
                     className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-amber-500/10 text-amber-400 text-left cursor-pointer font-medium"
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Sign in / Verify Email OTP</span>
+                    <span>Verify with Google / Email OTP</span>
                   </button>
                 )}
+                <button
+                  onClick={async () => {
+                    await logoutFirebaseAuth();
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-500/10 text-rose-400 text-left cursor-pointer font-medium"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{isFirebaseLive ? `Sign Out (${firebaseUser?.email})` : 'Sign Out'}</span>
+                </button>
               </div>
             </div>
           )}

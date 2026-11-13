@@ -1,71 +1,52 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { 
-  User as UserIcon, 
-  Lock, 
-  CheckCircle2, 
-  ShieldCheck, 
-  AlertCircle,
+import {
+  User as UserIcon,
+  Lock,
+  CheckCircle2,
   IdCard,
   Save,
-  MapPin
+  Camera
 } from 'lucide-react';
-import { 
-  PROVINCE_OPTIONS, 
-  getDistrictsForProvince, 
-  getTehsilsForDistrict, 
-  getSampleUCsForDistrict, 
-  getMajorCitiesForDistrict,
-  COUNTRIES,
-  formatFullLocationHierarchy
-} from '../../data/locationData';
+import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
+import { RoleBadge } from '../common/RoleBadge';
+import { compressImageFile } from '../../utils/imageCompression';
 
 export const ProfileSettings: React.FC = () => {
-  const { currentUser, updateUserProfile, setSelectedCardUser, language } = useApp();
+  const { currentUser, updateUserProfile, setSelectedCardUser } = useApp();
 
-  const [name, setName] = useState(currentUser.name);
-  const [email, setEmail] = useState(currentUser.email);
-  const [phone, setPhone] = useState(currentUser.phone);
-  const [address, setAddress] = useState(currentUser.address);
-  
-  // Administrative Location Hierarchy
-  const [country, setCountry] = useState(currentUser.country || 'Pakistan');
-  const [stateProvince, setStateProvince] = useState(currentUser.stateProvince || 'Punjab');
-  const [district, setDistrict] = useState(currentUser.district || 'Lahore');
-  const [tehsil, setTehsil] = useState(currentUser.tehsil || 'Model Town');
-  const [cityTown, setCityTown] = useState(currentUser.cityTown || 'Lahore');
-  const [unionCouncil, setUnionCouncil] = useState(currentUser.unionCouncil || 'UC-112 Model Town');
+  const [name, setName] = useState(currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [phone, setPhone] = useState(currentUser?.phone || '');
+  const [address, setAddress] = useState(currentUser?.address || '');
+  const [bio, setBio] = useState(currentUser?.bio || '');
+  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
+  const [unionCouncil, setUnionCouncil] = useState(currentUser?.unionCouncil || '');
+  const [location, setLocation] = useState<SelectedLocationValue>({
+    stateProvince: currentUser?.stateProvince || 'Punjab',
+    district: currentUser?.district || 'Lahore',
+    cityTown: currentUser?.cityTown || 'Lahore',
+    tehsil: currentUser?.tehsil || 'Model Town'
+  });
 
-  const [monthlyPledge, setMonthlyPledge] = useState(currentUser.monthlyPledge);
-  const [annualPledge, setAnnualPledge] = useState(currentUser.annualPledge);
+  const [monthlyPledge, setMonthlyPledge] = useState(currentUser?.monthlyPledge || 0);
+  const [annualPledge, setAnnualPledge] = useState(currentUser?.annualPledge || 0);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
-  const handleProvinceChange = (newProvince: string) => {
-    setStateProvince(newProvince);
-    const availableDistricts = getDistrictsForProvince(newProvince);
-    const newDistrict = availableDistricts[0] || '';
-    setDistrict(newDistrict);
-    
-    const availableTehsils = getTehsilsForDistrict(newProvince, newDistrict);
-    setTehsil(availableTehsils[0] || '');
-    
-    const cities = getMajorCitiesForDistrict(newProvince, newDistrict);
-    setCityTown(cities[0] || newDistrict);
+  if (!currentUser) return null;
 
-    const ucs = getSampleUCsForDistrict(newProvince, newDistrict);
-    setUnionCouncil(ucs[0] || 'UC-01 Central');
-  };
-
-  const handleDistrictChange = (newDistrict: string) => {
-    setDistrict(newDistrict);
-    const availableTehsils = getTehsilsForDistrict(stateProvince, newDistrict);
-    setTehsil(availableTehsils[0] || '');
-
-    const cities = getMajorCitiesForDistrict(stateProvince, newDistrict);
-    setCityTown(cities[0] || newDistrict);
-
-    const ucs = getSampleUCsForDistrict(stateProvince, newDistrict);
-    setUnionCouncil(ucs[0] || 'UC-01 Central');
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError(null);
+    try {
+      const compressed = await compressImageFile(file, 400, 0.78);
+      setAvatarUrl(compressed.dataUrl);
+      updateUserProfile({ avatarUrl: compressed.dataUrl });
+    } catch (err: any) {
+      setAvatarError(err?.message || 'Unable to process selected profile image.');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,13 +56,14 @@ export const ProfileSettings: React.FC = () => {
       email: email.trim(),
       phone: phone.trim(),
       address: address.trim(),
-      country,
-      stateProvince,
-      district,
-      tehsil,
-      cityTown,
-      unionCouncil,
-      region: `${district} Central`,
+      bio: bio.trim(),
+      avatarUrl: avatarUrl || undefined,
+      country: 'Pakistan',
+      stateProvince: location.stateProvince,
+      district: location.district,
+      tehsil: location.tehsil || location.cityTown,
+      cityTown: location.cityTown,
+      unionCouncil: unionCouncil.trim(),
       monthlyPledge: Number(monthlyPledge),
       annualPledge: Number(annualPledge)
     });
@@ -90,64 +72,83 @@ export const ProfileSettings: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const availableDistricts = getDistrictsForProvince(stateProvince);
-  const availableTehsils = getTehsilsForDistrict(stateProvince, district);
-  const sampleUCs = getSampleUCsForDistrict(stateProvince, district);
-
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              Identity & Profile Security
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              Identity & Profile
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">Administrative Hierarchy & Contact</span>
+            <RoleBadge role={currentUser.role} compact />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <UserIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <span>Profile & Account Credentials</span>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
+            <UserIcon className="w-6 h-6 text-amber-500" />
+            <span>My Profile & Account</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage your verified administrative address hierarchy, contact info, and welfare commitments.
+            Update your profile photo, Pakistan location, contact info, and welfare pledge.
           </p>
         </div>
 
-        {currentUser.role === 'MEMBER' && (
-          <button
-            onClick={() => setSelectedCardUser(currentUser)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md border border-slate-700 shadow-xs transition-colors"
-          >
-            <IdCard className="w-3.5 h-3.5 text-emerald-400" />
-            <span>View Digital Membership Card</span>
-          </button>
-        )}
+        <button
+          onClick={() => setSelectedCardUser(currentUser)}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0a192f] hover:bg-slate-800 text-white text-xs font-semibold rounded-lg border border-amber-500/40 shadow-xs transition-colors self-start sm:self-auto"
+        >
+          <IdCard className="w-3.5 h-3.5 text-amber-400" />
+          <span>View Digital Card</span>
+        </button>
       </div>
 
-      {/* Role Authority Integrity Callout */}
-      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-start gap-3 text-xs">
-        <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p className="font-semibold text-slate-900 dark:text-slate-100">
-            Immutable Governance Identity Protection
-          </p>
-          <p className="text-slate-500 leading-relaxed">
-            Your National Identity Number (CNIC), Membership ID (<code className="font-mono text-emerald-600">{currentUser.membershipId || 'KC-PENDING'}</code>), and official verified appointment (<strong className="text-slate-700 dark:text-slate-300">{currentUser.district || currentUser.region}, {currentUser.stateProvince || ''}</strong>) are locked by system rules to prevent identity fraud and ensure audit integrity.
-          </p>
+      {/* Profile Photo & Identity Banner */}
+      <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={currentUser.name}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500/50"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-[#0a192f] text-amber-400 flex items-center justify-center font-bold text-2xl border-2 border-amber-500/40">
+                {currentUser.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <label className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center cursor-pointer shadow-md border-2 border-white dark:border-slate-900">
+              <Camera className="w-3.5 h-3.5" />
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+            </label>
+          </div>
+
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white truncate">{currentUser.name}</h2>
+            <p className="text-xs font-mono text-amber-600 dark:text-amber-400 font-semibold">
+              {currentUser.membershipId || 'KC-PENDING'}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Tap the camera icon to upload a compressed profile photo
+            </p>
+            {avatarError && <p className="text-[11px] text-rose-500 mt-1">{avatarError}</p>}
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 max-w-xs">
+          <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <span>CNIC and Membership ID are audit-protected and verified by leadership.</span>
         </div>
       </div>
 
       {savedSuccess && (
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 font-semibold">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 font-semibold">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>Profile changes and administrative location successfully updated!</span>
+          <span>Profile updated and synced!</span>
         </div>
       )}
 
       {/* Profile Form */}
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 space-y-4 text-xs">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4 text-xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
@@ -158,7 +159,7 @@ export const ProfileSettings: React.FC = () => {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             />
           </div>
 
@@ -169,8 +170,8 @@ export const ProfileSettings: React.FC = () => {
             <input
               type="text"
               disabled
-              value={currentUser.cnic}
-              className="w-full px-3 py-2 font-mono border border-slate-200 dark:border-slate-800 rounded bg-slate-100 dark:bg-slate-950 text-slate-500 text-xs cursor-not-allowed"
+              value={currentUser.cnic || 'Not linked'}
+              className="w-full px-3 py-2.5 font-mono border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-100 dark:bg-slate-950 text-slate-500 text-xs cursor-not-allowed"
             />
           </div>
         </div>
@@ -185,7 +186,7 @@ export const ProfileSettings: React.FC = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             />
           </div>
 
@@ -195,132 +196,46 @@ export const ProfileSettings: React.FC = () => {
             </label>
             <input
               type="text"
-              required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
+              placeholder="+92 300 1234567"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
             />
           </div>
         </div>
 
-        {/* Administrative Location Hierarchy */}
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700 gap-1">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Administrative Location Hierarchy</span>
-            </div>
-            <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-              {formatFullLocationHierarchy({ country, stateProvince, district, tehsil, cityTown, unionCouncil })}
-            </div>
-          </div>
+        <div>
+          <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+            Short Bio / Community Role
+          </label>
+          <input
+            type="text"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="e.g. Community volunteer in Lahore"
+            className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+          />
+        </div>
 
-          {/* Row 1: Country & State/Province */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Country
-              </label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-medium"
-              >
-                {COUNTRIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SearchableLocationSelect
+            value={location}
+            onChange={setLocation}
+            label="City / Tehsil / District (All Pakistan)"
+            required
+          />
 
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                State / Province <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={stateProvince}
-                onChange={(e) => handleProvinceChange(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-semibold"
-              >
-                {PROVINCE_OPTIONS.map(prov => (
-                  <option key={prov} value={prov}>{prov}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Row 2: District & Tehsil */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                District <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={district}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-semibold text-emerald-700 dark:text-emerald-400"
-              >
-                {availableDistricts.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Tehsil / Sub-Division <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                list="tehsils-profile-list"
-                value={tehsil}
-                onChange={(e) => setTehsil(e.target.value)}
-                placeholder="e.g. Model Town"
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-medium"
-              />
-              <datalist id="tehsils-profile-list">
-                {availableTehsils.map(t => (
-                  <option key={t} value={t} />
-                ))}
-              </datalist>
-            </div>
-          </div>
-
-          {/* Row 3: City/Town & Union Council */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                City / Town <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={cityTown}
-                onChange={(e) => setCityTown(e.target.value)}
-                placeholder="e.g. Lahore"
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Union Council (UC) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                list="ucs-profile-list"
-                value={unionCouncil}
-                onChange={(e) => setUnionCouncil(e.target.value)}
-                placeholder="e.g. UC-112 Model Town"
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs font-medium"
-              />
-              <datalist id="ucs-profile-list">
-                {sampleUCs.map(uc => (
-                  <option key={uc} value={uc} />
-                ))}
-              </datalist>
-            </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase tracking-wider">
+              Union Council / Sector
+            </label>
+            <input
+              type="text"
+              value={unionCouncil}
+              onChange={(e) => setUnionCouncil(e.target.value)}
+              placeholder="e.g. UC-12 Central"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            />
           </div>
         </div>
 
@@ -330,10 +245,9 @@ export const ProfileSettings: React.FC = () => {
           </label>
           <textarea
             rows={2}
-            required
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs resize-none"
+            className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white resize-none"
           />
         </div>
 
@@ -344,11 +258,11 @@ export const ProfileSettings: React.FC = () => {
             </label>
             <input
               type="number"
-              min={500}
+              min={0}
               step={100}
               value={monthlyPledge}
               onChange={(e) => setMonthlyPledge(Number(e.target.value))}
-              className="w-full px-3 py-2 font-mono font-bold border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
+              className="w-full px-3 py-2.5 font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             />
           </div>
 
@@ -358,11 +272,11 @@ export const ProfileSettings: React.FC = () => {
             </label>
             <input
               type="number"
-              min={2000}
+              min={0}
               step={500}
               value={annualPledge}
               onChange={(e) => setAnnualPledge(Number(e.target.value))}
-              className="w-full px-3 py-2 font-mono font-bold border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-xs"
+              className="w-full px-3 py-2.5 font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             />
           </div>
         </div>
@@ -370,10 +284,10 @@ export const ProfileSettings: React.FC = () => {
         <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
           <button
             type="submit"
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-xs transition-colors"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save Permitted Changes</span>
+            <Save className="w-4 h-4" />
+            <span>Save Changes</span>
           </button>
         </div>
       </form>

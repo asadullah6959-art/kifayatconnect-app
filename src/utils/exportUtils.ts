@@ -160,9 +160,9 @@ export function exportReportToCSV(
   lines.push(headers.map(escapeCSVField).join(','));
 
   regionalStats.forEach(stat => {
-    const complianceRate = Math.round((stat.activeMembers / stat.totalMembers) * 100);
+    const complianceRate = stat.totalMembers > 0 ? Math.round((stat.activeMembers / stat.totalMembers) * 100) : 0;
     const row = [
-      stat.region,
+      stat.region || `${stat.district}, ${stat.stateProvince}`,
       stat.officerInCharge,
       stat.totalMembers,
       stat.activeMembers,

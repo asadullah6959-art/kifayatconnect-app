@@ -14,6 +14,7 @@ import {
   Compass
 } from 'lucide-react';
 import { PAKISTAN_LOCATION_DATA } from '../../data/locationData';
+import { RoleBadge } from '../common/RoleBadge';
 
 export const CoAdminDashboard: React.FC = () => {
   const { 
@@ -21,7 +22,6 @@ export const CoAdminDashboard: React.FC = () => {
     users, 
     applications, 
     complaints, 
-    announcements, 
     publishAnnouncement,
     setInspectedUserProfile,
     setActiveTab,
@@ -29,7 +29,15 @@ export const CoAdminDashboard: React.FC = () => {
     language 
   } = useApp();
 
-  const assignedState = currentUser.assignedStateProvince || currentUser.stateProvince || 'Punjab';
+  const assignedState = currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab';
+
+  // State Announcement State
+  const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementContent, setAnnouncementContent] = useState('');
+  const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>('ALL');
+
+  if (!currentUser) return null;
 
   // Province-level data scoping
   const stateMembers = users.filter(u => {
@@ -39,10 +47,6 @@ export const CoAdminDashboard: React.FC = () => {
 
   const stateAdmins = users.filter(u => {
     return u.role === 'ADMIN' && (u.assignedStateProvince === assignedState || u.stateProvince === assignedState);
-  });
-
-  const stateCoAdmins = users.filter(u => {
-    return u.role === 'CO_ADMIN' && (u.assignedStateProvince === assignedState || u.stateProvince === assignedState);
   });
 
   const stateApplications = applications.filter(a => {
@@ -56,12 +60,6 @@ export const CoAdminDashboard: React.FC = () => {
   // Location hierarchy for this province
   const stateLocationInfo = PAKISTAN_LOCATION_DATA.find(s => s.stateProvince === assignedState);
   const districtList = stateLocationInfo ? stateLocationInfo.districts.map(d => d.district) : ['Lahore', 'Faisalabad', 'Rawalpindi', 'Multan'];
-
-  // State Announcement State
-  const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
-  const [announcementTitle, setAnnouncementTitle] = useState('');
-  const [announcementContent, setAnnouncementContent] = useState('');
-  const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>('ALL');
 
   const handleCreateAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,35 +210,45 @@ export const CoAdminDashboard: React.FC = () => {
               </div>
             ) : (
               stateAdmins.map(admin => (
-                <div key={admin.id} className="py-2.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={admin.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=0a192f&color=d4af37&size=64`}
-                      alt={admin.name}
-                      className="w-8 h-8 rounded-full border border-amber-500/30 object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{admin.name}</p>
-                      <p className="text-[11px] text-slate-500 font-mono">
-                        District: <strong className="text-amber-400">{admin.assignedDistrict || admin.district || 'Unassigned'}</strong>
+                <div key={admin.id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {(admin.avatarUrl || admin.avatar) ? (
+                      <img
+                        src={admin.avatarUrl || admin.avatar}
+                        alt={admin.name}
+                        className="w-8 h-8 rounded-full border border-amber-500/30 object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#0a192f] text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+                        {admin.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{admin.name}</p>
+                        <RoleBadge role={admin.role} compact />
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-mono truncate">
+                        District: <strong className="text-amber-600 dark:text-amber-400">{admin.assignedDistrict || admin.district || 'Unassigned'}</strong>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => setInspectedUserProfile(admin)}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                       title="View Admin Profile"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleOpenChat(admin)}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold bg-[#0a192f] text-amber-400 hover:bg-slate-800 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
                       title="Coordinate in Chat"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" />
+                      <MessageSquare className="w-3 h-3" />
+                      <span>Chat</span>
                     </button>
                   </div>
                 </div>
@@ -281,7 +289,7 @@ export const CoAdminDashboard: React.FC = () => {
                 <select
                   value={selectedDistrictFilter}
                   onChange={(e) => setSelectedDistrictFilter(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                 >
                   <option value="ALL">All Districts in {assignedState}</option>
                   {districtList.map(dist => (
@@ -300,7 +308,7 @@ export const CoAdminDashboard: React.FC = () => {
                   placeholder="e.g. Provincial Coordination Meeting Schedule..."
                   value={announcementTitle}
                   onChange={(e) => setAnnouncementTitle(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -314,7 +322,7 @@ export const CoAdminDashboard: React.FC = () => {
                   placeholder="Notice details for provincial and district members..."
                   value={announcementContent}
                   onChange={(e) => setAnnouncementContent(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white resize-none"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
                 />
               </div>
 
@@ -322,7 +330,7 @@ export const CoAdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreatingAnnouncement(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                  className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -336,11 +344,11 @@ export const CoAdminDashboard: React.FC = () => {
               </div>
             </form>
           ) : (
-            <div className="mt-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-2">
+            <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-2">
               <p>
-                As State Co-Admin, you represent the provincial leadership of <strong>{assignedState}</strong>.
+                As State Co-Admin, you represent the provincial leadership of <strong className="text-slate-900 dark:text-white">{assignedState}</strong>.
               </p>
-              <ul className="list-disc pl-4 space-y-1 text-slate-300">
+              <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300">
                 <li>Monitor member registration progress across all {districtList.length} districts.</li>
                 <li>Coordinate with appointed District Admins to resolve grievances.</li>
                 <li>Submit provincial recommendations to the Super Admin.</li>

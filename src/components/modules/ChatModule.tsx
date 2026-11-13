@@ -1,36 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { 
-  MessageSquare, 
-  Send, 
-  Search, 
-  Paperclip, 
-  Image, 
-  FileText, 
-  Shield, 
-  User as UserIcon, 
-  Check, 
-  CheckCheck, 
-  AlertTriangle,
+import {
+  MessageSquare,
+  Send,
+  Search,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Shield,
+  User as UserIcon,
+  CheckCheck,
   X,
-  Phone,
-  Mail,
   MapPin,
-  ExternalLink
+  WifiOff,
+  ArrowLeft
 } from 'lucide-react';
-import { User, ChatMessage } from '../../types';
+import { compressImageFile } from '../../utils/imageCompression';
+import { RoleBadge } from '../common/RoleBadge';
 
 export const ChatModule: React.FC = () => {
-  const { 
-    currentUser, 
-    users, 
-    chats, 
-    chatMessages, 
-    sendChatMessage, 
-    activeChatUser, 
+  const {
+    currentUser,
+    users,
+    chatMessages,
+    sendChatMessage,
+    activeChatUser,
     setActiveChatUser,
     setInspectedUserProfile,
-    appSettings
+    isOnline
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,8 +35,17 @@ export const ChatModule: React.FC = () => {
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; type: 'IMAGE' | 'DOCUMENT' } | null>(null);
   const [selectedUserFilterRole, setSelectedUserFilterRole] = useState<'ALL' | 'ADMIN' | 'CO_ADMIN' | 'MEMBER'>('ALL');
+  const [mobileShowThread, setMobileShowThread] = useState<boolean>(!!activeChatUser);
+  const [chatError, setChatError] = useState<string | null>(null);
 
-  // Candidate users to chat with (excluding current user)
+  useEffect(() => {
+    if (activeChatUser) {
+      setMobileShowThread(true);
+    }
+  }, [activeChatUser]);
+
+  if (!currentUser) return null;
+
   const availableUsers = users.filter(u => {
     if (u.id === currentUser.id) return false;
     if (selectedUserFilterRole !== 'ALL' && u.role !== selectedUserFilterRole) return false;
@@ -55,11 +61,9 @@ export const ChatModule: React.FC = () => {
     return true;
   });
 
-  // Selected recipient
   const activeRecipient = activeChatUser || (availableUsers.length > 0 ? availableUsers[0] : null);
 
-  // Active chat conversation messages
-  const activeChatId = activeRecipient 
+  const activeChatId = activeRecipient
     ? `chat_${[currentUser.id, activeRecipient.id].sort()[0]}_${[currentUser.id, activeRecipient.id].sort()[1]}`
     : '';
 
@@ -67,68 +71,106 @@ export const ChatModule: React.FC = () => {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
+    setChatError(null);
     if (!activeRecipient || (!messageText.trim() && !attachmentPreview)) return;
 
-    sendChatMessage(
-      activeRecipient.id, 
+    const res = sendChatMessage(
+      activeRecipient.id,
       messageText.trim() || (attachmentPreview ? `Shared ${attachmentPreview.type === 'IMAGE' ? 'an image' : 'a document'}: ${attachmentPreview.name}` : ''),
       attachmentPreview || undefined
     );
+
+    if (!res.success) {
+      setChatError(res.error || 'Unable to send message right now.');
+      return;
+    }
 
     setMessageText('');
     setAttachmentPreview(null);
   };
 
-  const handleSimulateAttachment = (type: 'IMAGE' | 'DOCUMENT') => {
-    if (type === 'IMAGE') {
+  const handleImageAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setChatError(null);
+    try {
+      const compressed = await compressImageFile(file, 800, 0.72);
       setAttachmentPreview({
-        url: '/src/assets/images/receipt_watermark_seal_1794225904149.jpg',
-        name: 'Official_Welfare_Evidence_Photo.jpg',
+        url: compressed.dataUrl,
+        name: file.name,
         type: 'IMAGE'
       });
-    } else {
+      setIsAttachmentModalOpen(false);
+    } catch (err: any) {
+      setChatError(err?.message || 'Failed to compress selected image.');
+    }
+  };
+
+  const handleDocumentAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      setChatError('Document must be under 1.5MB for fast mobile delivery.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
       setAttachmentPreview({
-        url: '#document',
-        name: 'Kifayat_Membership_Bylaws_Reference.pdf',
+        url: reader.result as string,
+        name: file.name,
         type: 'DOCUMENT'
       });
-    }
-    setIsAttachmentModalOpen(false);
+      setIsAttachmentModalOpen(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-              Real-Time Communication Network
+              Direct Messaging Network
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">Secure Direct Messaging</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-amber-500" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-amber-500 shrink-0" />
             <span>Kifayat Connect Chat</span>
           </h1>
           <p className="text-xs text-slate-500">
-            End-to-end direct coordination between Members, District Admins, State Co-Admins, and Central Leadership.
+            1-on-1 private messaging & official Elaanat inbox
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1.5 rounded-lg text-xs text-amber-800 dark:text-amber-300">
-          <Shield className="w-4 h-4 text-amber-600" />
-          <span>Strict Privacy: Private messages remain confidential between sender & recipient.</span>
+        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1.5 rounded-lg text-[11px] text-amber-800 dark:text-amber-300">
+          <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>Confidential direct messaging between sender & recipient.</span>
         </div>
       </div>
 
-      {/* Main Chat Interface Split View */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col md:flex-row h-[640px]">
-        
+      {/* Offline Restriction Banner */}
+      {!isOnline && (
+        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>Internet connection required for live messaging.</span>
+        </div>
+      )}
+
+      {chatError && (
+        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center justify-between">
+          <span>{chatError}</span>
+          <button onClick={() => setChatError(null)} className="p-1">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Chat Interface */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden flex flex-col md:flex-row h-[calc(100dvh-290px)] min-h-[440px]">
         {/* Left Side: Directory & Active Chats */}
-        <div className="w-full md:w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-950/50">
-          {/* Search and Filters */}
+        <div className={`${mobileShowThread && activeRecipient ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 flex-col bg-slate-50/50 dark:bg-slate-950/50 h-full`}>
           <div className="p-3 border-b border-slate-200 dark:border-slate-800 space-y-2">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -137,11 +179,10 @@ export const ChatModule: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search member, admin, district..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-amber-500"
               />
             </div>
 
-            {/* Role Filter Chips */}
             <div className="flex items-center gap-1 overflow-x-auto text-[11px] pb-1">
               {(['ALL', 'ADMIN', 'CO_ADMIN', 'MEMBER'] as const).map(role => (
                 <button
@@ -150,7 +191,7 @@ export const ChatModule: React.FC = () => {
                   className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
                     selectedUserFilterRole === role
                       ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:text-slate-900'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   {role === 'ALL' ? 'All Contacts' : role === 'ADMIN' ? 'District Admins' : role === 'CO_ADMIN' ? 'State Co-Admins' : 'Members'}
@@ -159,11 +200,10 @@ export const ChatModule: React.FC = () => {
             </div>
           </div>
 
-          {/* Contact List */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
             {availableUsers.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400">
-                No contacts match your search.
+                No contacts available yet. Approved members and admins will appear here.
               </div>
             ) : (
               availableUsers.map(user => {
@@ -171,7 +211,10 @@ export const ChatModule: React.FC = () => {
                 return (
                   <button
                     key={user.id}
-                    onClick={() => setActiveChatUser(user)}
+                    onClick={() => {
+                      setActiveChatUser(user);
+                      setMobileShowThread(true);
+                    }}
                     className={`w-full p-3 text-left flex items-start gap-3 transition-colors ${
                       isSelected
                         ? 'bg-amber-50/70 dark:bg-amber-950/30 border-l-4 border-amber-500'
@@ -180,47 +223,30 @@ export const ChatModule: React.FC = () => {
                   >
                     <div className="relative shrink-0">
                       {user.avatarUrl ? (
-                        <img 
-                          src={user.avatarUrl} 
-                          alt={user.name} 
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.name}
                           className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-sm">
-                          {user.name.charAt(0)}
+                        <div className="w-10 h-10 rounded-full bg-[#0a192f] text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/30">
+                          {user.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center justify-between gap-1.5">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
                           {user.name}
                         </span>
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-                          user.role === 'SUPER_ADMIN'
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                            : user.role === 'ADMIN'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                            : user.role === 'CO_ADMIN'
-                            ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
-                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                        }`}>
-                          {user.role === 'ADMIN' ? 'Dist Admin' : user.role === 'CO_ADMIN' ? 'Co-Admin' : user.role.replace('_', ' ')}
-                        </span>
+                        <RoleBadge role={user.role} compact />
                       </div>
 
                       <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 truncate">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{user.district}, {user.stateProvince}</span>
+                        <span className="truncate">{user.cityTown || user.district}, {user.stateProvince}</span>
                       </div>
-
-                      {user.assignedOfficeTitle && (
-                        <span className="inline-block text-[10px] text-amber-700 dark:text-amber-400 font-medium truncate mt-0.5">
-                          ⭐ {user.assignedOfficeTitle}
-                        </span>
-                      )}
                     </div>
                   </button>
                 );
@@ -230,81 +256,75 @@ export const ChatModule: React.FC = () => {
         </div>
 
         {/* Right Side: Message Thread Viewport */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
+        <div className={`${mobileShowThread && activeRecipient ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-white dark:bg-slate-900 h-full min-w-0`}>
           {activeRecipient ? (
             <>
-              {/* Active Conversation Top Bar */}
-              <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-950/30">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    {activeRecipient.avatarUrl ? (
-                      <img 
-                        src={activeRecipient.avatarUrl} 
-                        alt={activeRecipient.name} 
-                        className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" 
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-700 dark:text-slate-300 text-sm">
-                        {activeRecipient.name.charAt(0)}
-                      </div>
-                    )}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
-                  </div>
+              <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-950/30">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setMobileShowThread(false)}
+                    className="md:hidden p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0"
+                    title="Back to Contacts"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  {activeRecipient.avatarUrl ? (
+                    <img
+                      src={activeRecipient.avatarUrl}
+                      alt={activeRecipient.name}
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-[#0a192f] text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/30 shrink-0">
+                      {activeRecipient.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                         {activeRecipient.name}
                       </h3>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {activeRecipient.role === 'ADMIN' ? 'District Admin' : activeRecipient.role === 'CO_ADMIN' ? 'State Co-Admin' : activeRecipient.role.replace('_', ' ')}
-                      </span>
+                      <RoleBadge role={activeRecipient.role} compact />
                     </div>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>{activeRecipient.district}, {activeRecipient.stateProvince}</span>
-                      <span>·</span>
-                      <span className="font-mono">{activeRecipient.membershipId || 'Member'}</span>
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span className="truncate">{activeRecipient.cityTown || activeRecipient.district}, {activeRecipient.stateProvince}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setInspectedUserProfile(activeRecipient)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors shadow-xs"
-                    title="View user public profile"
-                  >
-                    <UserIcon className="w-3.5 h-3.5 text-amber-500" />
-                    <span>View Profile</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setInspectedUserProfile(activeRecipient)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium shrink-0"
+                >
+                  <UserIcon className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">View Profile</span>
+                </button>
               </div>
 
-              {/* Messages Thread Container */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30 dark:bg-slate-950/20">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-slate-50/30 dark:bg-slate-950/20">
                 {currentMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
                     <MessageSquare className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-2" />
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                      No message history with {activeRecipient.name} yet.
+                      No messages with {activeRecipient.name} yet.
                     </p>
                     <p className="text-[11px] text-slate-400 max-w-xs mt-1">
-                      Send a message below to begin direct private coordination.
+                      Send a direct message below to start a private conversation.
                     </p>
                   </div>
                 ) : (
                   currentMessages.map(msg => {
                     const isMine = msg.senderId === currentUser.id;
                     return (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
-                      >
+                      <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                         <div
-                          className={`max-w-md rounded-2xl px-4 py-2.5 text-xs shadow-xs space-y-1.5 ${
+                          className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2 text-xs shadow-2xs space-y-1.5 ${
                             isMine
-                              ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 rounded-br-none'
+                              ? 'bg-[#0a192f] text-white dark:bg-amber-500 dark:text-slate-950 rounded-br-none'
                               : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700/80 rounded-bl-none'
                           }`}
                         >
@@ -315,9 +335,7 @@ export const ChatModule: React.FC = () => {
                             </span>
                           </div>
 
-                          <p className="leading-relaxed whitespace-pre-wrap">
-                            {msg.text}
-                          </p>
+                          <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
 
                           {msg.attachmentUrl && (
                             <div className="pt-1.5 border-t border-white/20 dark:border-slate-700/40">
@@ -325,18 +343,21 @@ export const ChatModule: React.FC = () => {
                                 <img
                                   src={msg.attachmentUrl}
                                   alt="attachment"
-                                  className="w-48 h-32 object-cover rounded-lg border border-white/20"
+                                  className="w-48 max-w-full h-32 object-cover rounded-lg border border-white/20"
                                 />
                               ) : (
-                                <div className="flex items-center gap-2 p-2 rounded bg-black/10 dark:bg-white/10 text-[11px]">
+                                <a
+                                  href={msg.attachmentUrl}
+                                  download={msg.attachmentName || 'document'}
+                                  className="flex items-center gap-2 p-2 rounded bg-black/10 dark:bg-white/10 text-[11px] underline"
+                                >
                                   <FileText className="w-4 h-4 shrink-0" />
-                                  <span className="truncate">{msg.attachmentName || 'Document attachment'}</span>
-                                </div>
+                                  <span className="truncate">{msg.attachmentName || 'Document'}</span>
+                                </a>
                               )}
                             </div>
                           )}
                         </div>
-
                         <div className="flex items-center gap-1 mt-0.5 text-[10px] text-slate-400 px-1">
                           {isMine && <CheckCheck className="w-3 h-3 text-amber-500" />}
                         </div>
@@ -346,28 +367,24 @@ export const ChatModule: React.FC = () => {
                 )}
               </div>
 
-              {/* Attachment Preview Banner */}
               {attachmentPreview && (
                 <div className="p-2 px-4 bg-amber-50 dark:bg-amber-950/60 border-t border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
-                  <div className="flex items-center gap-2">
-                    {attachmentPreview.type === 'IMAGE' ? <Image className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                    <span className="font-medium truncate max-w-xs">{attachmentPreview.name}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {attachmentPreview.type === 'IMAGE' ? <ImageIcon className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
+                    <span className="font-medium truncate">{attachmentPreview.name}</span>
                   </div>
-                  <button
-                    onClick={() => setAttachmentPreview(null)}
-                    className="p-1 hover:bg-amber-200 dark:hover:bg-amber-900 rounded"
-                  >
+                  <button onClick={() => setAttachmentPreview(null)} className="p-1 rounded">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
 
-              {/* Input Area */}
-              <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900">
+              <form onSubmit={handleSendMessage} className="p-2.5 sm:p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900">
                 <button
                   type="button"
+                  disabled={!isOnline}
                   onClick={() => setIsAttachmentModalOpen(true)}
-                  className="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-40 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                   title="Attach photo or document"
                 >
                   <Paperclip className="w-4 h-4" />
@@ -375,66 +392,57 @@ export const ChatModule: React.FC = () => {
 
                 <input
                   type="text"
+                  disabled={!isOnline}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  placeholder={`Write a private message to ${activeRecipient.name}...`}
-                  className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  placeholder={isOnline ? `Message ${activeRecipient.name}...` : 'Connect to internet to message'}
+                  className="flex-1 min-w-0 px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-amber-500 disabled:opacity-60"
                 />
 
                 <button
                   type="submit"
-                  disabled={!messageText.trim() && !attachmentPreview}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer"
+                  disabled={!isOnline || (!messageText.trim() && !attachmentPreview)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-lg shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Send</span>
+                  <span className="hidden sm:inline">Send</span>
                 </button>
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 text-center">
               <MessageSquare className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-2" />
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Select a contact to begin chatting</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Select a contact to start chatting</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Attachment Simulation Modal */}
+      {/* Real File Attachment Modal */}
       {isAttachmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-5 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Attach File to Message</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Attach Photo or File</h3>
               <button onClick={() => setIsAttachmentModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Select an attachment type to share verification evidence, receipts, or official notices:
-            </p>
-
             <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleSimulateAttachment('IMAGE')}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 flex flex-col items-center gap-2 text-center transition-all bg-slate-50 dark:bg-slate-800/60"
-              >
-                <Image className="w-6 h-6 text-amber-500" />
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Share Image / Photo</span>
-                <span className="text-[10px] text-slate-400">JPG, PNG receipt</span>
-              </button>
+              <label className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500 flex flex-col items-center gap-2 text-center bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <ImageIcon className="w-6 h-6 text-amber-500" />
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Select Photo</span>
+                <span className="text-[10px] text-slate-400">Auto-compressed JPG</span>
+                <input type="file" accept="image/*" onChange={handleImageAttachment} className="hidden" />
+              </label>
 
-              <button
-                type="button"
-                onClick={() => handleSimulateAttachment('DOCUMENT')}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 flex flex-col items-center gap-2 text-center transition-all bg-slate-50 dark:bg-slate-800/60"
-              >
+              <label className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500 flex flex-col items-center gap-2 text-center bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
                 <FileText className="w-6 h-6 text-blue-500" />
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Share Document</span>
-                <span className="text-[10px] text-slate-400">PDF, bylaws, slips</span>
-              </button>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Select Document</span>
+                <span className="text-[10px] text-slate-400">PDF / Text (&lt;1.5MB)</span>
+                <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" onChange={handleDocumentAttachment} className="hidden" />
+              </label>
             </div>
           </div>
         </div>
