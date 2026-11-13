@@ -12,7 +12,6 @@ import {
   WifiOff,
   Lock
 } from 'lucide-react';
-import { isEmailOTPConfigured } from '../../services/firebase';
 import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
 
 interface AuthWelcomeGateProps {
@@ -42,8 +41,6 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
-
-  const otpConfigured = isEmailOTPConfigured();
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -231,11 +228,6 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
             </div>
           ) : (
             <div className="space-y-3">
-              {!otpConfigured && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-relaxed">
-                  Email OTP delivery requires EmailJS environment configuration (<span className="font-mono">VITE_EMAILJS_SERVICE_ID</span>, <span className="font-mono">VITE_EMAILJS_TEMPLATE_ID</span>, <span className="font-mono">VITE_EMAILJS_PUBLIC_KEY</span>). Use Google Sign-In or configure EmailJS to send real inbox OTPs.
-                </div>
-              )}
 
               {otpError && (
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">

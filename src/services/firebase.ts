@@ -21,6 +21,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
+import emailjs from '@emailjs/browser';
 import { 
   User, 
   MembershipApplication, 
@@ -231,10 +232,19 @@ async function hashOTP(email: string, code: string): Promise<string> {
   return `h_${Math.abs(hash)}`;
 }
 
+const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7l';
+const EMAILJS_DEFAULT_TEMPLATE_ID = 'template_ibzfyx7';
+const EMAILJS_DEFAULT_PUBLIC_KEY = 'kzxuOJCacRGWQ5nVb';
+
+function getEmailJSConfig() {
+  const serviceId = (import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim() || EMAILJS_DEFAULT_SERVICE_ID;
+  const templateId = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim() || EMAILJS_DEFAULT_TEMPLATE_ID;
+  const publicKey = (import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim() || EMAILJS_DEFAULT_PUBLIC_KEY;
+  return { serviceId, templateId, publicKey };
+}
+
 export function isEmailOTPConfigured(): boolean {
-  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+  const { serviceId, templateId, publicKey } = getEmailJSConfig();
   return Boolean(serviceId && templateId && publicKey);
 }
 
@@ -251,17 +261,7 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
     return { success: false, message: 'Please enter a valid email address.' };
   }
 
-  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-  if (!serviceId || !templateId || !publicKey) {
-    return {
-      success: false,
-      unconfigured: true,
-      message: 'Email OTP delivery provider is not configured (missing EmailJS environment keys). Please sign in using Google Sign-In or configure VITE_EMAILJS_* keys.'
-    };
-  }
+  const { serviceId, templateId, publicKey } = getEmailJSConfig();
 
   const now = Date.now();
   const existing = otpStore.get(normEmail);
@@ -289,32 +289,20 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
   const expiresAt = now + 5 * 60 * 1000;
 
   try {
-    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: serviceId,
-        template_id: templateId,
-        user_id: publicKey,
-        template_params: {
-          email: normEmail,
-          to_email: normEmail,
-          passcode: code,
-          otp: code,
-          otp_code: code,
-          app_name: 'Kifayat Connect',
-          expiry_minutes: '5'
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Email provider rejected request');
-      return {
-        success: false,
-        message: `Unable to dispatch verification email: ${errorText}`
-      };
-    }
+    await emailjs.send(
+      serviceId,
+      templateId,
+      {
+        email: normEmail,
+        to_email: normEmail,
+        passcode: code,
+        otp: code,
+        otp_code: code,
+        app_name: 'Kifayat Connect',
+        expiry_minutes: '5'
+      },
+      publicKey
+    );
 
     // Supersede any older OTP for this email
     otpStore.set(normEmail, {
@@ -329,10 +317,14 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
       success: true,
       message: `A 6-digit verification code has been sent to ${normEmail}. Check your inbox (valid for 5 minutes).`
     };
-  } catch {
+  } catch (err: unknown) {
+    const detail =
+      (err as { text?: string })?.text ||
+      (err instanceof Error ? err.message : '') ||
+      'Please check your connection.';
     return {
       success: false,
-      message: 'Network error while dispatching verification code. Please check your connection.'
+      message: `Unable to dispatch verification email: ${detail}`
     };
   }
 }

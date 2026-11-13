@@ -8,7 +8,6 @@ import {
   Loader2, 
   Mail
 } from 'lucide-react';
-import { isEmailOTPConfigured } from '../../services/firebase';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -36,8 +35,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
-
-  const otpConfigured = isEmailOTPConfigured();
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -230,11 +227,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
         {/* TAB 2: 6-Digit Email OTP Verification */}
         {activeAuthMethod === 'OTP' && (
           <div className="mt-4 space-y-4">
-            {!otpConfigured && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-relaxed">
-                Email OTP requires EmailJS keys (<span className="font-mono">VITE_EMAILJS_SERVICE_ID</span>, <span className="font-mono">VITE_EMAILJS_TEMPLATE_ID</span>, <span className="font-mono">VITE_EMAILJS_PUBLIC_KEY</span>).
-              </div>
-            )}
 
             {otpError && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
