@@ -152,14 +152,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
     setOtpError('');
     setOtpSuccess('');
 
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+    const enteredOtp = otpCode.replace(/\D/g, '');
+    const cleanEmail = (otpEmail || getPendingEmailOTP()?.email || '').trim().toLowerCase();
+
+    if (enteredOtp.length !== 6) {
       setOtpError('Please enter the full 6-digit verification code.');
       return;
     }
 
     setOtpLoading(true);
     try {
-      const res = await verifyOTP(otpEmail.trim(), otpCode.trim());
+      const res = await verifyOTP(cleanEmail, enteredOtp);
       if (res.success) {
         setOtpSuccess(res.message);
         setTimeout(() => {

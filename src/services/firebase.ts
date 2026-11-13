@@ -222,16 +222,17 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 }
 
 // ----------------------------------------------------
-// Secure 6-Digit Email OTP System (Hashed + localStorage + EmailJS)
+// Secure 6-Digit Email OTP System (State + kc_active_otp localStorage + EmailJS)
 // ----------------------------------------------------
-export const PENDING_OTP_STORAGE_KEY = 'kc_pending_email_otp';
-const OTP_TTL_MS = 10 * 60 * 1000; // 10-minute validity across mobile app switches
+export const PENDING_OTP_STORAGE_KEY = 'kc_active_otp';
+const LEGACY_PENDING_OTP_STORAGE_KEY = 'kc_pending_email_otp';
+const OTP_TTL_MS = 15 * 60 * 1000; // 15-minute validity across mobile app switches
 
 export interface StoredOTP {
   email: string;
-  otp?: string;
+  otp: string;
   codeHash: string;
-  expiresAt: number; // 10-minute TTL
+  expiresAt: number; // 15-minute TTL
   attempts: number; // max 3 attempts
   lastSentAt: number; // 60s cooldown
 }
@@ -251,6 +252,7 @@ export function clearPendingEmailOTP(): void {
   try {
     if (typeof localStorage === 'undefined') return;
     localStorage.removeItem(PENDING_OTP_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_PENDING_OTP_STORAGE_KEY);
   } catch {
     // Ignore storage remove failure
   }
@@ -259,20 +261,22 @@ export function clearPendingEmailOTP(): void {
 export function getPendingEmailOTP(): StoredOTP | null {
   try {
     if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(PENDING_OTP_STORAGE_KEY);
+    const raw =
+      localStorage.getItem(PENDING_OTP_STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_PENDING_OTP_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredOTP>;
     if (!parsed || typeof parsed.email !== 'string' || typeof parsed.expiresAt !== 'number') {
       clearPendingEmailOTP();
       return null;
     }
-    if (Date.now() > parsed.expiresAt || (parsed.attempts ?? 0) >= 3) {
+    if (Date.now() >= parsed.expiresAt || (parsed.attempts ?? 0) >= 3) {
       clearPendingEmailOTP();
       return null;
     }
     return {
       email: parsed.email.trim().toLowerCase(),
-      otp: typeof parsed.otp === 'string' ? parsed.otp : undefined,
+      otp: String(parsed.otp || '').replace(/\D/g, ''),
       codeHash: typeof parsed.codeHash === 'string' ? parsed.codeHash : '',
       expiresAt: parsed.expiresAt,
       attempts: typeof parsed.attempts === 'number' ? parsed.attempts : 0,
@@ -322,11 +326,15 @@ export interface OTPRequestResult {
   message: string;
   cooldownSeconds?: number;
   unconfigured?: boolean;
+  pendingRecord?: StoredOTP;
 }
 
-export async function requestEmailOTP(email: string): Promise<OTPRequestResult> {
-  const normEmail = email.trim().toLowerCase();
-  if (!normEmail || !normEmail.includes('@')) {
+export async function requestEmailOTP(
+  email: string,
+  onOtpPrepared?: (record: StoredOTP) => void
+): Promise<OTPRequestResult> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
     return { success: false, message: 'Please enter a valid email address.' };
   }
 
@@ -334,7 +342,7 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
 
   const now = Date.now();
   const persistedPending = getPendingEmailOTP();
-  const existing = otpStore.get(normEmail) || (persistedPending?.email === normEmail ? persistedPending : undefined);
+  const existing = otpStore.get(cleanEmail) || (persistedPending?.email === cleanEmail ? persistedPending : undefined);
 
   // Enforce 60-second cooldown
   if (existing && now - existing.lastSentAt < 60000) {
@@ -353,45 +361,51 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
     };
   }
 
-  // Generate random 6-digit OTP and store in both memory & localStorage (survives mobile app switches)
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const codeHash = await hashOTP(normEmail, code);
+  // Generate clean 6-digit OTP and store in BOTH state + kc_active_otp BEFORE calling emailjs.send()
+  const cleanOtp = String(Math.floor(100000 + Math.random() * 900000)).trim();
+  const codeHash = await hashOTP(cleanEmail, cleanOtp);
   const expiresAt = now + OTP_TTL_MS;
+
+  const pendingRecord: StoredOTP = {
+    email: cleanEmail,
+    otp: cleanOtp,
+    codeHash,
+    expiresAt,
+    attempts: 0,
+    lastSentAt: now
+  };
+
+  otpStore.set(cleanEmail, pendingRecord);
+  writePendingOTPToStorage(pendingRecord);
+  if (onOtpPrepared) {
+    onOtpPrepared(pendingRecord);
+  }
 
   try {
     await emailjs.send(
       serviceId,
       templateId,
       {
-        email: normEmail,
-        to_email: normEmail,
-        passcode: code,
-        otp: code,
-        otp_code: code,
+        email: cleanEmail,
+        to_email: cleanEmail,
+        passcode: cleanOtp,
+        otp: cleanOtp,
+        otp_code: cleanOtp,
         app_name: 'Kifayat Connect',
-        expiry_minutes: '10'
+        expiry_minutes: '15'
       },
       publicKey
     );
 
-    const pendingRecord: StoredOTP = {
-      email: normEmail,
-      otp: code,
-      codeHash,
-      expiresAt,
-      attempts: 0,
-      lastSentAt: now
-    };
-
-    // Supersede any older OTP for this email in memory and persist to localStorage
-    otpStore.set(normEmail, pendingRecord);
-    writePendingOTPToStorage(pendingRecord);
-
     return {
       success: true,
-      message: `A 6-digit verification code has been sent to ${normEmail}. Check your inbox (valid for 10 minutes).`
+      message: `A 6-digit verification code has been sent to ${cleanEmail}. Check your inbox (valid for 15 minutes).`,
+      pendingRecord
     };
   } catch (err: unknown) {
+    // Clean up failed dispatch so the user can retry immediately
+    otpStore.delete(cleanEmail);
+    clearPendingEmailOTP();
     const detail =
       (err as { text?: string })?.text ||
       (err instanceof Error ? err.message : '') ||
@@ -403,69 +417,89 @@ export async function requestEmailOTP(email: string): Promise<OTPRequestResult> 
   }
 }
 
+export const sendEmailOtp = requestEmailOTP;
+
 export interface OTPVerifyResult {
   success: boolean;
   message: string;
   isSuperAdmin?: boolean;
+  verifiedEmail?: string;
 }
 
-export async function verifyEmailOTP(email: string, code: string): Promise<OTPVerifyResult> {
-  const normEmail = email.trim().toLowerCase();
-  const cleanCode = code.trim();
+export async function verifyEmailOTP(
+  email: string,
+  otpInput: string,
+  stateOtpRecord?: StoredOTP | null
+): Promise<OTPVerifyResult> {
+  const cleanEmail = email.trim().toLowerCase();
+  const enteredOtp = String(otpInput || '').replace(/\D/g, '');
   const now = Date.now();
 
-  const persisted = getPendingEmailOTP();
-  let record = otpStore.get(normEmail);
-  if (!record && persisted && persisted.email === normEmail) {
-    record = persisted;
-    otpStore.set(normEmail, persisted);
+  if (enteredOtp.length !== 6) {
+    return { success: false, message: 'Please enter the complete 6-digit verification code.' };
   }
 
-  if (!record) {
+  const persisted = getPendingEmailOTP();
+  let saved: StoredOTP | undefined =
+    (stateOtpRecord && (!cleanEmail || stateOtpRecord.email === cleanEmail) ? stateOtpRecord : undefined) ||
+    otpStore.get(cleanEmail) ||
+    (persisted && (!cleanEmail || persisted.email === cleanEmail) ? persisted : undefined);
+
+  if (!saved && persisted && !cleanEmail) {
+    saved = persisted;
+  }
+
+  if (!saved) {
     return { success: false, message: 'No active verification code found. Please request a new code.' };
   }
 
-  if (now > record.expiresAt) {
-    otpStore.delete(normEmail);
+  const targetEmail = cleanEmail || saved.email;
+
+  if (now >= saved.expiresAt) {
+    otpStore.delete(targetEmail);
     clearPendingEmailOTP();
-    return { success: false, message: 'Verification code has expired (10-minute limit). Please request a new code.' };
+    return { success: false, message: 'Verification code has expired (15-minute limit). Please request a new code.' };
   }
 
-  if (record.attempts >= 3) {
-    otpStore.delete(normEmail);
+  if (saved.attempts >= 3) {
+    otpStore.delete(targetEmail);
     clearPendingEmailOTP();
     return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
   }
 
-  const candidateHash = await hashOTP(normEmail, cleanCode);
-  const matchesHash = record.codeHash ? record.codeHash === candidateHash : false;
-  const matchesPlain = record.otp ? record.otp === cleanCode : false;
+  const candidateHash = await hashOTP(targetEmail, enteredOtp);
+  const savedOtpClean = String(saved.otp || '').replace(/\D/g, '');
+  const matchesDirect = Boolean(savedOtpClean && enteredOtp === savedOtpClean);
+  const matchesHash = Boolean(saved.codeHash && saved.codeHash === candidateHash);
 
-  if (!matchesHash && !matchesPlain) {
-    record.attempts += 1;
-    const remaining = 3 - record.attempts;
+  if (!matchesDirect && !matchesHash) {
+    const updatedRecord: StoredOTP = { ...saved, attempts: saved.attempts + 1 };
+    const remaining = 3 - updatedRecord.attempts;
     if (remaining <= 0) {
-      otpStore.delete(normEmail);
+      otpStore.delete(targetEmail);
       clearPendingEmailOTP();
       return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
     }
-    otpStore.set(normEmail, record);
-    writePendingOTPToStorage(record);
+    otpStore.set(targetEmail, updatedRecord);
+    writePendingOTPToStorage(updatedRecord);
     return { success: false, message: `Incorrect verification code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately remove from memory and localStorage so it cannot be reused
-  otpStore.delete(normEmail);
+  // Verified — immediately clear kc_active_otp and in-memory record
+  otpStore.delete(targetEmail);
   clearPendingEmailOTP();
 
-  const isSuperAdmin = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+  const isSuperAdmin = targetEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
 
   return {
     success: true,
     message: 'Email verified successfully.',
-    isSuperAdmin
+    isSuperAdmin,
+    verifiedEmail: targetEmail
   };
 }
+
+export const verifyEmailOtp = verifyEmailOTP;
 
 // ----------------------------------------------------
 // Forgot Password / Temporary Reset Flow (EmailJS + localStorage)
@@ -507,7 +541,7 @@ export function getPendingPasswordReset(): StoredOTP | null {
     }
     return {
       email: parsed.email.trim().toLowerCase(),
-      otp: typeof parsed.otp === 'string' ? parsed.otp : undefined,
+      otp: String(parsed.otp || '').replace(/\D/g, ''),
       codeHash: typeof parsed.codeHash === 'string' ? parsed.codeHash : '',
       expiresAt: parsed.expiresAt,
       attempts: typeof parsed.attempts === 'number' ? parsed.attempts : 0,

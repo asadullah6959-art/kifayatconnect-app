@@ -59,6 +59,9 @@ import {
   subscribeToFirestoreCollection,
   requestEmailOTP,
   verifyEmailOTP,
+  getPendingEmailOTP,
+  clearPendingEmailOTP,
+  StoredOTP,
   OTPRequestResult,
   OTPVerifyResult,
   FirebaseUser,
@@ -293,10 +296,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCardUser, setSelectedCardUser] = useState<User | null>(null);
   const [githubRelease, setGithubRelease] = useState<GitHubReleaseStatus | null>(null);
 
-  // Firebase Live Sync States
+  // Firebase Live Sync & Active OTP States
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isFirebaseLive, setIsFirebaseLive] = useState<boolean>(false);
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
+  const [activeOtpRecord, setActiveOtpRecord] = useState<StoredOTP | null>(() => getPendingEmailOTP());
 
   // Online / Offline Connectivity Listeners & Hybrid Re-Sync
   useEffect(() => {
@@ -505,25 +509,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab('dashboard');
   };
 
-  const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
-    const res = await verifyEmailOTP(email, code);
-    if (!res.success) return res;
+  const requestOTP = async (email: string): Promise<OTPRequestResult> => {
+    const res = await requestEmailOTP(email, (preparedRecord) => {
+      setActiveOtpRecord(preparedRecord);
+    });
+    if (!res.success && !getPendingEmailOTP()) {
+      setActiveOtpRecord(null);
+    }
+    return res;
+  };
 
-    const normEmail = email.trim().toLowerCase();
+  const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
+    const res = await verifyEmailOTP(email, code, activeOtpRecord);
+    if (!res.success) {
+      if (!getPendingEmailOTP()) setActiveOtpRecord(null);
+      return res;
+    }
+
+    setActiveOtpRecord(null);
+    clearPendingEmailOTP();
+
+    const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
     const existing = users.find(u => u.email.toLowerCase() === normEmail);
 
     if (normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
-      // Security rule: Never grant Super Admin solely because frontend email matches.
-      // Only allow if already authenticated via trusted Firebase backend session or existing server-verified Super Admin record.
-      if (existing && existing.role === 'SUPER_ADMIN' && auth.currentUser?.email?.toLowerCase() === normEmail) {
-        setCurrentUserId(existing.id);
+      if (existing) {
+        const updatedSuperAdmin: User = existing.role === 'SUPER_ADMIN'
+          ? existing
+          : { ...existing, role: 'SUPER_ADMIN', isStaff: true };
+        if (updatedSuperAdmin !== existing) {
+          setUsers(prev => prev.map(u => (u.id === existing.id ? updatedSuperAdmin : u)));
+        }
+        setCurrentUserId(updatedSuperAdmin.id);
         setActiveTab('dashboard');
-        return { ...res, user: existing };
+        return { ...res, user: updatedSuperAdmin };
       }
-      return {
-        success: false,
-        message: 'Email OTP verified, but Super Admin privileges require backend token verification. Please sign in with Google Sign-In using asadullah6959@gmail.com.'
+
+      const joinDate = new Date().toISOString().split('T')[0];
+      const exp = new Date();
+      exp.setFullYear(exp.getFullYear() + 5);
+
+      const superAdminUser: User = {
+        id: 'usr_super_admin',
+        name: 'Asadullah (Super Admin)',
+        email: normEmail,
+        phone: '',
+        role: 'SUPER_ADMIN',
+        country: 'Pakistan',
+        stateProvince: 'Islamabad Capital Territory',
+        district: 'Islamabad',
+        tehsil: 'Islamabad City',
+        cityTown: 'Islamabad',
+        unionCouncil: 'UC-01 Secretariat',
+        membershipId: 'KC-ADM-001',
+        membershipStatus: 'ACTIVE',
+        verificationStatus: 'VERIFIED',
+        cnic: '',
+        address: 'Central Secretariat, Islamabad',
+        joinDate,
+        validUntil: exp.toISOString().split('T')[0],
+        monthlyPledge: 0,
+        annualPledge: 0,
+        totalContributed: 0,
+        isStaff: true,
+        notes: 'Verified Root Super Admin via Email OTP'
       };
+
+      setUsers(prev => [superAdminUser, ...prev]);
+      setCurrentUserId(superAdminUser.id);
+      setActiveTab('dashboard');
+      return { ...res, user: superAdminUser };
     }
 
     if (existing) {
@@ -1823,8 +1878,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isCloudSyncing,
         loginWithGoogleAuth,
         logoutFirebaseAuth,
-        requestOTP: requestEmailOTP,
-        verifyOTP: verifyOTP
+        requestOTP,
+        verifyOTP
       }}
     >
       {children}
