@@ -13,6 +13,7 @@ import {
   Lock
 } from 'lucide-react';
 import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
+import { clearPendingEmailOTP, getPendingEmailOTP, isNativeMobileRuntime } from '../../services/firebase';
 
 interface AuthWelcomeGateProps {
   onOpenRegisterModal: () => void;
@@ -30,17 +31,47 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
     latestPublishedUpdate
   } = useApp();
 
-  const [authTab, setAuthTab] = useState<'GOOGLE' | 'OTP'>('GOOGLE');
+  const isNativeMobile = isNativeMobileRuntime();
+  const [authTab, setAuthTab] = useState<'GOOGLE' | 'OTP'>('OTP');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
-  const [otpEmail, setOtpEmail] = useState('');
+  const [otpEmail, setOtpEmail] = useState(() => getPendingEmailOTP()?.email || '');
   const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpSent, setOtpSent] = useState(() => Boolean(getPendingEmailOTP()));
+  const [otpCooldown, setOtpCooldown] = useState(() => {
+    const pending = getPendingEmailOTP();
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((60000 - (Date.now() - pending.lastSentAt)) / 1000));
+  });
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+
+  // Automatically restore pending OTP when returning from Gmail/email app on mobile
+  useEffect(() => {
+    const syncPendingOtp = () => {
+      const pending = getPendingEmailOTP();
+      if (pending) {
+        setAuthTab('OTP');
+        setOtpEmail(prev => prev || pending.email);
+        setOtpSent(true);
+        const cd = Math.max(0, Math.ceil((60000 - (Date.now() - pending.lastSentAt)) / 1000));
+        setOtpCooldown(cd);
+      }
+    };
+
+    syncPendingOtp();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') syncPendingOtp();
+    };
+    window.addEventListener('focus', syncPendingOtp);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', syncPendingOtp);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -162,34 +193,50 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
           )}
 
           {/* Method Switcher */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
-            <button
-              type="button"
-              onClick={() => setAuthTab('GOOGLE')}
-              className={`py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                authTab === 'GOOGLE'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Google Sign-In</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthTab('OTP')}
-              className={`py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                authTab === 'OTP'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5" />
-              <span>Email OTP</span>
-            </button>
-          </div>
+          {!isNativeMobile && (
+            <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAuthTab('OTP')}
+                className={`py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                  authTab === 'OTP'
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email OTP</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthTab('GOOGLE')}
+                className={`py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                  authTab === 'GOOGLE'
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Google Sign-In</span>
+              </button>
+            </div>
+          )}
 
           {authTab === 'GOOGLE' ? (
+            isNativeMobile ? (
+              <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/30 text-center space-y-3">
+                <p className="text-xs text-amber-300 font-semibold">
+                  Please use Email OTP to sign in on the mobile app.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAuthTab('OTP')}
+                  className="px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer"
+                >
+                  Continue with Email OTP
+                </button>
+              </div>
+            ) : (
             <div className="space-y-4">
               {googleError && (
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
@@ -226,6 +273,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                 Super Admin and appointed District/Finance officers receive backend-verified permissions automatically upon Google sign-in.
               </p>
             </div>
+            )
           ) : (
             <div className="space-y-3">
 
@@ -294,6 +342,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                     <button
                       type="button"
                       onClick={() => {
+                        clearPendingEmailOTP();
                         setOtpSent(false);
                         setOtpCode('');
                       }}

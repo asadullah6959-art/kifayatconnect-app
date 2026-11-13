@@ -6,8 +6,21 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Loader2, 
-  Mail
+  Mail,
+  KeyRound,
+  ArrowLeft,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import {
+  clearPendingEmailOTP,
+  clearPendingPasswordReset,
+  getPendingEmailOTP,
+  getPendingPasswordReset,
+  isNativeMobileRuntime,
+  requestPasswordReset,
+  verifyPasswordReset
+} from '../../services/firebase';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -23,18 +36,72 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
     isOnline
   } = useApp();
 
-  const [activeAuthMethod, setActiveAuthMethod] = useState<'OTP' | 'GOOGLE'>('GOOGLE');
+  const isNativeMobile = isNativeMobileRuntime();
+  const [activeAuthMethod, setActiveAuthMethod] = useState<'OTP' | 'GOOGLE'>('OTP');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleSuccess, setGoogleSuccess] = useState<string | null>(null);
 
-  const [otpEmail, setOtpEmail] = useState('');
+  const [otpEmail, setOtpEmail] = useState(() => getPendingEmailOTP()?.email || '');
   const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpSent, setOtpSent] = useState(() => Boolean(getPendingEmailOTP()));
+  const [otpCooldown, setOtpCooldown] = useState(() => {
+    const pending = getPendingEmailOTP();
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((60000 - (Date.now() - pending.lastSentAt)) / 1000));
+  });
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+
+  // Forgot Password / Account Recovery State
+  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(() => Boolean(getPendingPasswordReset()));
+  const [resetEmail, setResetEmail] = useState(() => getPendingPasswordReset()?.email || '');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(() => Boolean(getPendingPasswordReset()));
+  const [resetCooldown, setResetCooldown] = useState(() => {
+    const pending = getPendingPasswordReset();
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((60000 - (Date.now() - pending.lastSentAt)) / 1000));
+  });
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+
+  useEffect(() => {
+    const syncPendingAuthStates = () => {
+      const pendingOtp = getPendingEmailOTP();
+      if (pendingOtp) {
+        setActiveAuthMethod('OTP');
+        setOtpEmail(prev => prev || pendingOtp.email);
+        setOtpSent(true);
+        const cd = Math.max(0, Math.ceil((60000 - (Date.now() - pendingOtp.lastSentAt)) / 1000));
+        setOtpCooldown(cd);
+      }
+
+      const pendingReset = getPendingPasswordReset();
+      if (pendingReset) {
+        setIsForgotPasswordMode(true);
+        setResetEmail(prev => prev || pendingReset.email);
+        setResetSent(true);
+        const rcd = Math.max(0, Math.ceil((60000 - (Date.now() - pendingReset.lastSentAt)) / 1000));
+        setResetCooldown(rcd);
+      }
+    };
+
+    if (isOpen) syncPendingAuthStates();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') syncPendingAuthStates();
+    };
+    window.addEventListener('focus', syncPendingAuthStates);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', syncPendingAuthStates);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -43,6 +110,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
     }, 1000);
     return () => clearInterval(timer);
   }, [otpCooldown]);
+
+  useEffect(() => {
+    if (resetCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResetCooldown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resetCooldown]);
 
   if (!isOpen) return null;
 
@@ -120,6 +195,69 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
     }
   };
 
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+
+    if (!resetEmail.trim() || !resetEmail.includes('@')) {
+      setResetError('Please enter a valid registered email address.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const res = await requestPasswordReset(resetEmail.trim());
+      if (res.success) {
+        setResetSent(true);
+        setResetCooldown(res.cooldownSeconds || 60);
+        setResetSuccess(res.message);
+      } else {
+        setResetError(res.message);
+        if (res.cooldownSeconds) setResetCooldown(res.cooldownSeconds);
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleVerifyReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+
+    if (resetCode.trim().length !== 6) {
+      setResetError('Please enter the 6-digit temporary reset code.');
+      return;
+    }
+
+    if (newPassword.trim().length < 6) {
+      setResetError('New password must be at least 6 characters.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const res = await verifyPasswordReset(resetEmail.trim(), resetCode.trim(), newPassword.trim());
+      if (res.success) {
+        setResetSuccess(res.message);
+        setOtpEmail(resetEmail.trim());
+        setTimeout(() => {
+          setIsForgotPasswordMode(false);
+          setResetSent(false);
+          setResetCode('');
+          setNewPassword('');
+          setActiveAuthMethod('OTP');
+          setOtpSuccess(res.message);
+        }, 1200);
+      } else {
+        setResetError(res.message);
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-xs text-white">
@@ -148,37 +286,204 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
           </button>
         </div>
 
-        {/* Auth Method Navigation Tabs */}
-        <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl mt-4 border border-slate-800">
-          <button
-            type="button"
-            onClick={() => setActiveAuthMethod('GOOGLE')}
-            className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeAuthMethod === 'GOOGLE'
-                ? 'bg-amber-500 text-slate-950 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Google Sign-In</span>
-          </button>
+        {/* Auth Method Navigation Tabs (hidden during Forgot Password recovery) */}
+        {!isForgotPasswordMode && !isNativeMobile && (
+          <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl mt-4 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setActiveAuthMethod('OTP')}
+              className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeAuthMethod === 'OTP'
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Email OTP</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveAuthMethod('OTP')}
-            className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeAuthMethod === 'OTP'
-                ? 'bg-amber-500 text-slate-950 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Email OTP</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setActiveAuthMethod('GOOGLE')}
+              className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeAuthMethod === 'GOOGLE'
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Google Sign-In</span>
+            </button>
+          </div>
+        )}
+
+        {/* FORGOT PASSWORD RECOVERY FLOW */}
+        {isForgotPasswordMode ? (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                <KeyRound className="w-4 h-4" />
+                <span>Reset Account Password</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPasswordMode(false);
+                  setResetError('');
+                  setResetSuccess('');
+                }}
+                className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-white cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Sign-In</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Enter your registered email address to receive a temporary 6-digit reset code via EmailJS.
+            </p>
+
+            {resetError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {resetSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            {!resetSent ? (
+              <form onSubmit={handleRequestReset} className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    Registered Email Address
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-amber-400 outline-none"
+                    />
+                    <Mail className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={resetCooldown > 0 || resetLoading || !isOnline}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{resetCooldown > 0 ? `Resend Reset Code in ${resetCooldown}s` : 'Send Temporary Reset Code'}</span>
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyReset} className="space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-300">
+                      6-Digit Reset Code
+                    </label>
+                    <span className="text-[10px] text-slate-400 truncate max-w-[180px]">
+                      Sent to: <strong className="text-white">{resetEmail}</strong>
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="••••••"
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2 bg-slate-950 border border-amber-500/50 rounded-xl text-amber-400 focus:border-amber-400 outline-none font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    New Account Password (min 6 chars)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 pr-9 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-amber-400 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(v => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearPendingPasswordReset();
+                      setResetSent(false);
+                      setResetCode('');
+                      setNewPassword('');
+                    }}
+                    className="text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    Change Email
+                  </button>
+                  <button
+                    type="button"
+                    disabled={resetCooldown > 0 || resetLoading}
+                    onClick={handleRequestReset}
+                    className="text-amber-400 hover:underline disabled:opacity-50 cursor-pointer"
+                  >
+                    {resetCooldown > 0 ? `Resend in ${resetCooldown}s` : 'Resend Reset Code'}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Verify Code & Reset Password</span>
+                </button>
+              </form>
+            )}
+          </div>
+        ) : (
+        <>
 
         {/* TAB 1: Google Sign-In */}
         {activeAuthMethod === 'GOOGLE' && (
+          isNativeMobile ? (
+            <div className="mt-4 p-4 rounded-xl bg-slate-950 border border-amber-500/30 text-center space-y-3">
+              <p className="text-xs text-amber-300 font-semibold">
+                Please use Email OTP to sign in on the mobile app.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveAuthMethod('OTP')}
+                className="px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer"
+              >
+                Continue with Email OTP
+              </button>
+            </div>
+          ) : (
           <div className="mt-4 space-y-4">
             <p className="text-[11px] text-slate-400 leading-relaxed">
               Authenticate directly with Firebase Google Sign-In for backend-verified role permissions and cloud synchronization.
@@ -222,6 +527,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               )}
             </button>
           </div>
+          )
         )}
 
         {/* TAB 2: 6-Digit Email OTP Verification */}
@@ -269,6 +575,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                   {otpLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{otpCooldown > 0 ? `Resend Code in ${otpCooldown}s` : 'Send 6-Digit Email OTP'}</span>
                 </button>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetEmail(otpEmail);
+                      setResetError('');
+                      setResetSuccess('');
+                      setIsForgotPasswordMode(true);
+                    }}
+                    className="text-[11px] text-amber-400 hover:underline font-medium cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </form>
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-3">
@@ -296,6 +617,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                   <button
                     type="button"
                     onClick={() => {
+                      clearPendingEmailOTP();
                       setOtpSent(false);
                       setOtpCode('');
                     }}
@@ -324,6 +646,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               </form>
             )}
           </div>
+        )}
+        </>
         )}
 
         {/* Footer switch to register */}
