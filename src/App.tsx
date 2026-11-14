@@ -198,7 +198,7 @@ const MainLayout: React.FC = () => {
 
   return (
     <div
-      className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden flex flex-col font-sans text-slate-100"
+      className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-slate-100"
       style={{ backgroundColor: 'var(--kc-bg, #0A0D12)' }}
     >
       {/* Global Keyboard Shortcuts Handler */}
@@ -231,10 +231,10 @@ const MainLayout: React.FC = () => {
         </aside>
 
         {/* Mobile Sidebar Overlay (zero blur) */}
-        <div className="md:hidden">
+        <div className="md:hidden overscroll-none touch-pan-y">
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-[#0A0D12]/85 z-50 transition-opacity duration-200 cursor-pointer ${
+            className={`fixed inset-0 bg-[#0A0D12]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
@@ -243,7 +243,7 @@ const MainLayout: React.FC = () => {
           <aside
             className={`fixed inset-y-0 ${
               isRtl ? 'right-0 border-l' : 'left-0 border-r'
-            } z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform ${
+            } z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
               isMobileSidebarOpen
                 ? 'translate-x-0 pointer-events-auto'
                 : isRtl
@@ -262,7 +262,7 @@ const MainLayout: React.FC = () => {
         </div>
 
         {/* Scrollable Center Content Viewport */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
           <div className="max-w-7xl mx-auto w-full min-w-0">
             <ErrorBoundary key={activeTab} title="View Recovery Shield">
               {renderContent()}
@@ -274,7 +274,7 @@ const MainLayout: React.FC = () => {
       {/* Fixed Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-[#111622] border-t border-[#D4AF37]/25 px-1.5 py-1.5 z-30 flex items-center justify-around select-none"
+        className="md:hidden shrink-0 w-full max-w-full bg-[#111622] border-t border-[#D4AF37]/25 px-1.5 py-1.5 z-30 flex items-center justify-around select-none overscroll-none touch-pan-y"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;

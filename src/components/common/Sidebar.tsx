@@ -159,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     : (appSettings.appName || translate('en', 'appTitleShort'));
 
   return (
-    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0A0D12] overflow-hidden">
+    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0A0D12] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
         <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
@@ -206,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       </div>
 
       {/* Navigation List */}
-      <div className="p-3 flex-1 overflow-y-auto space-y-1">
+      <div className="p-3 flex-1 overflow-y-auto overscroll-none touch-pan-y space-y-1">
         {navItems.filter(item => item.visible).map(item => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;

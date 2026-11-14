@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import {
   MessageSquare,
@@ -33,7 +34,13 @@ import {
   Upload,
   Minus
 } from 'lucide-react';
-import { compressImageFile } from '../../utils/imageCompression';
+import {
+  compressImageFile,
+  isGifFile,
+  MAX_GALLERY_FILE_BYTES,
+  readFileAsDataUrlWithLimit
+} from '../../utils/imageCompression';
+import { uploadMediaToFirebaseStorage } from '../../services/firebase';
 import { RoleBadge } from '../common/RoleBadge';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
@@ -310,10 +317,12 @@ const ChatModuleContent: React.FC = () => {
   const isFounder =
     Boolean(currentUser.isFounder) ||
     currentUser.email.trim().toLowerCase() === FOUNDER_EMAIL.toLowerCase();
-  const isLeadership =
+  const canUploadGallery =
     isFounder ||
     currentUser.role === 'SUPER_ADMIN' ||
-    currentUser.role === 'ADMIN' ||
+    currentUser.role === 'ADMIN';
+  const isLeadership =
+    canUploadGallery ||
     currentUser.role === 'CO_ADMIN';
   const canMuteUsers = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
   const isUserMutedInCommunity = Boolean(currentUser.isMutedInChat) && !isFounder;
@@ -371,12 +380,26 @@ const ChatModuleContent: React.FC = () => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > MAX_GALLERY_FILE_BYTES) {
+      setChatError('Selected file exceeds the 10MB limit.');
+      return;
+    }
     setChatError(null);
     setIsCompressingMedia(true);
     try {
-      const compressed = await compressImageFile(file, 1080, 0.78);
+      let mediaUrl: string | null = null;
+      if (isGifFile(file)) {
+        mediaUrl = await readFileAsDataUrlWithLimit(file, 750 * 1024);
+        if (!mediaUrl) {
+          mediaUrl = await uploadMediaToFirebaseStorage(file, 'direct_gifs');
+        }
+      }
+      if (!mediaUrl) {
+        const compressed = await compressImageFile(file, 1024, 0.75, 750 * 1024);
+        mediaUrl = compressed.dataUrl;
+      }
       setAttachmentPreview({
-        url: compressed.dataUrl,
+        url: mediaUrl,
         name: file.name,
         type: 'IMAGE'
       });
@@ -452,37 +475,59 @@ const ChatModuleContent: React.FC = () => {
     setShowIslamicGifDrawer(false);
   };
 
-  const handleFounderGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const optimizeImageOrGifForFirestore = async (
+    file: File,
+    storageFolder: string
+  ): Promise<string> => {
+    if (!file || (!file.type.startsWith('image/') && !isGifFile(file))) {
+      throw new Error('Please choose a valid photo or GIF file.');
+    }
+    if (file.size > MAX_GALLERY_FILE_BYTES) {
+      throw new Error('Selected file exceeds the 10MB limit. Please choose a smaller file.');
+    }
+
+    if (isGifFile(file)) {
+      const inlineGif = await readFileAsDataUrlWithLimit(file, 750 * 1024);
+      if (inlineGif) return inlineGif;
+      const uploadedGifUrl = await uploadMediaToFirebaseStorage(file, storageFolder);
+      if (uploadedGifUrl) return uploadedGifUrl;
+    }
+
+    const compressed = await compressImageFile(file, 1024, 0.75, 750 * 1024);
+    return compressed.dataUrl;
+  };
+
+  const handleGalleryMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !isFounder) return;
+    if (!file || !canUploadGallery) return;
     setChatError(null);
     setIsCompressingMedia(true);
     try {
-      const compressed = await compressImageFile(file, 1080, 0.78);
+      const url = await optimizeImageOrGifForFirestore(file, 'community_gifs');
       setCommunityAttachment({
-        url: compressed.dataUrl,
+        url,
         name: file.name,
         type: 'IMAGE'
       });
     } catch (err: any) {
-      setChatError(err?.message || 'Unable to compress selected photo.');
+      setChatError(err?.message || 'Unable to process selected photo or GIF.');
     } finally {
       setIsCompressingMedia(false);
     }
   };
 
-  const handleFounderScenicBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomScenicBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !isFounder) return;
+    if (!file || !canUploadGallery) return;
     setChatError(null);
     setIsCompressingMedia(true);
     try {
-      const compressed = await compressImageFile(file, 1080, 0.78);
+      const url = await optimizeImageOrGifForFirestore(file, 'community_themes');
       const res = updateLiveChatAppearance({
         liveChatTheme: 'CUSTOM',
-        liveChatCustomBgUrl: compressed.dataUrl
+        liveChatCustomBgUrl: url
       });
       if (!res.success) {
         setChatError(res.error || 'Could not update custom scenic background.');
@@ -490,7 +535,7 @@ const ChatModuleContent: React.FC = () => {
         setIsThemeModalOpen(false);
       }
     } catch (err: any) {
-      setChatError(err?.message || 'Unable to compress custom scenic wallpaper.');
+      setChatError(err?.message || 'Unable to process custom scenic wallpaper.');
     } finally {
       setIsCompressingMedia(false);
     }
@@ -755,10 +800,10 @@ const ChatModuleContent: React.FC = () => {
       )}
 
       {/* ============================================================
-          MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM
+          MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM (PORTAL)
           ============================================================ */}
-      {chatMode === 'COMMUNITY' && (
-        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#0A0D12]">
+      {chatMode === 'COMMUNITY' && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#0A0D12] overscroll-none touch-pan-y">
           {/* Live Scenic GPU-Only SVG/CSS Wallpaper Background */}
           <ScenicChatBackground
             themeId={activeThemeId}
@@ -1264,11 +1309,20 @@ const ChatModuleContent: React.FC = () => {
 
           {communityAttachment && (
             <div className="relative z-10 px-3.5 py-2 bg-[#161D2C]/95 border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs text-[#F5D061] shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <ImageIcon className="w-4 h-4 shrink-0" />
-                <span className="truncate font-semibold">{communityAttachment.name} (Compressed &lt;450KB)</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src={communityAttachment.url}
+                  alt={communityAttachment.name}
+                  className="w-8 h-8 rounded-lg object-cover border border-[#D4AF37]/50 shrink-0"
+                />
+                <div className="min-w-0">
+                  <span className="truncate font-semibold block">{communityAttachment.name}</span>
+                  <span className="text-[10px] text-emerald-300 block">
+                    {communityAttachment.name.toLowerCase().endsWith('.gif') ? 'GIF Ready · Tap Send ➤' : 'Optimized <750KB · Tap Send ➤'}
+                  </span>
+                </div>
               </div>
-              <button type="button" onClick={() => setCommunityAttachment(null)} className="p-1 cursor-pointer">
+              <button type="button" onClick={() => setCommunityAttachment(null)} className="p-1 cursor-pointer shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1315,7 +1369,7 @@ const ChatModuleContent: React.FC = () => {
           ) : (
             <form
               onSubmit={handleSendCommunityMessage}
-              className="relative z-10 p-2.5 sm:p-3.5 bg-black/60 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2 shrink-0"
+              className="relative z-10 p-2.5 sm:p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/75 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2 shrink-0"
             >
               <button
                 type="button"
@@ -1341,17 +1395,17 @@ const ChatModuleContent: React.FC = () => {
                 ☪️
               </button>
 
-              {/* Founder-Only Gallery Photo / GIF Upload */}
-              {isFounder && (
+              {/* Phone Gallery Photo / GIF Upload (Super Admins & Admins Only) */}
+              {canUploadGallery && (
                 <label
                   className="p-2 rounded-xl bg-[#161D2C] text-[#F5D061] border border-[#F5D061]/35 hover:bg-[#1E273B] shrink-0 cursor-pointer"
-                  title="Founder Gallery Photo / GIF Upload (<450KB)"
+                  title="Gallery Photo / GIF Upload (Up to 10MB)"
                 >
                   <ImageIcon className="w-4 h-4" />
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handleFounderGalleryUpload}
+                    accept="image/*,.gif"
+                    onChange={handleGalleryMediaUpload}
                     disabled={isCompressingMedia}
                     className="hidden"
                   />
@@ -1362,7 +1416,7 @@ const ChatModuleContent: React.FC = () => {
                 type="text"
                 value={communityText}
                 onChange={(e) => setCommunityText(e.target.value)}
-                placeholder={isCompressingMedia ? 'Compressing photo...' : 'Message Community Room...'}
+                placeholder={isCompressingMedia ? 'Optimizing image/GIF...' : 'Message Community Room...'}
                 className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622]/90 text-white focus:outline-hidden focus:border-[#D4AF37]"
               />
 
@@ -1377,7 +1431,7 @@ const ChatModuleContent: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={!communityText.trim() && !communityAttachment}
+                disabled={isCompressingMedia || (!communityText.trim() && !communityAttachment)}
                 className="flex items-center gap-1 px-3.5 py-2 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
@@ -1385,7 +1439,8 @@ const ChatModuleContent: React.FC = () => {
               </button>
             </form>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ============================================================
@@ -1729,7 +1784,7 @@ const ChatModuleContent: React.FC = () => {
           ============================================================ */}
 
       {/* Direct Chat File Attachment Modal */}
-      {isAttachmentModalOpen && (
+      {isAttachmentModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsAttachmentModalOpen(false)}
@@ -1749,9 +1804,9 @@ const ChatModuleContent: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
                 <ImageIcon className="w-6 h-6 text-[#F5D061]" />
-                <span className="text-xs font-semibold text-white">Select Photo</span>
-                <span className="text-[10px] text-slate-400">Compressed &lt;450KB</span>
-                <input type="file" accept="image/*" onChange={handleDirectImageAttachment} className="hidden" />
+                <span className="text-xs font-semibold text-white">Select Photo / GIF</span>
+                <span className="text-[10px] text-slate-400">Up to 10MB · Smart &lt;750KB</span>
+                <input type="file" accept="image/*,.gif" onChange={handleDirectImageAttachment} className="hidden" />
               </label>
 
               <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
@@ -1762,11 +1817,12 @@ const ChatModuleContent: React.FC = () => {
               </label>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Scenic Live Chat Theme Modal (Leadership + Founder Custom BG Upload) */}
-      {isThemeModalOpen && isLeadership && (
+      {isThemeModalOpen && isLeadership && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsThemeModalOpen(false)}
@@ -1826,19 +1882,19 @@ const ChatModuleContent: React.FC = () => {
               })}
             </div>
 
-            {isFounder && (
+            {canUploadGallery && (
               <div className="pt-3 border-t border-slate-800 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#F5D061]">
                   <Crown className="w-3.5 h-3.5" />
-                  <span>Founder Exclusive: Custom Scenic Background</span>
+                  <span>Custom Scenic Wallpaper (Super Admin &amp; Admin)</span>
                 </div>
                 <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#F5D061]/50 bg-[#0A0D12] hover:bg-[#161D2C] text-xs font-bold text-[#F5D061] cursor-pointer">
                   <Upload className="w-4 h-4" />
-                  <span>{isCompressingMedia ? 'Compressing Wallpaper...' : 'Upload Custom Photo Wallpaper (<450KB)'}</span>
+                  <span>{isCompressingMedia ? 'Optimizing Wallpaper...' : 'Upload Photo or GIF Wallpaper (Up to 10MB)'}</span>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handleFounderScenicBgUpload}
+                    accept="image/*,.gif"
+                    onChange={handleCustomScenicBgUpload}
                     disabled={isCompressingMedia}
                     className="hidden"
                   />
@@ -1846,11 +1902,12 @@ const ChatModuleContent: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Founder Exclusive Bubble Color Picker Modal */}
-      {isBubbleColorModalOpen && isFounder && (
+      {isBubbleColorModalOpen && isFounder && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsBubbleColorModalOpen(false)}
@@ -1896,11 +1953,12 @@ const ChatModuleContent: React.FC = () => {
               })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Fullscreen Image Preview Modal */}
-      {previewImageUrl && (
+      {previewImageUrl && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#0A0D12]/95 p-4"
           onClick={() => setPreviewImageUrl(null)}
@@ -1920,7 +1978,8 @@ const ChatModuleContent: React.FC = () => {
               className="max-h-[82dvh] max-w-full rounded-2xl border border-[#D4AF37]/40 object-contain"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

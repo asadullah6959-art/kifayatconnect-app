@@ -27,6 +27,29 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Ensure Permanent Android Keystore
+        run: |
+          if [ ! -f android/app/kifayat-release.jks ]; then
+            mkdir -p android/app
+            keytool -genkeypair -v \
+              -keystore android/app/kifayat-release.jks \
+              -storepass kifayat2026 \
+              -keypass kifayat2026 \
+              -alias kifayatconnect \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Kifayat Connect, OU=Mobile Engineering, O=Kifayat Connect, L=Islamabad, ST=ICT, C=PK"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add android/app/kifayat-release.jks
+            git commit -m "chore(android): commit permanent release keystore [skip ci]"
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            git push origin "HEAD:${{ github.ref_name }}"
+          else
+            echo "Permanent keystore android/app/kifayat-release.jks already exists; reusing it."
+          fi
+
       - name: Install dependencies and build web app
         run: |
           npm install --legacy-peer-deps
@@ -39,13 +62,37 @@ jobs:
           if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
             echo '{"appId": "com.kifayatconnect.app", "appName": "Kifayat Connect", "webDir": "dist"}' > capacitor.config.json
           fi
-          if [ ! -d "android" ]; then
+          if [ ! -f "android/gradlew" ]; then
+            mkdir -p /tmp/kc_android_preserve
+            if [ -f "android/app/build.gradle" ]; then
+              cp android/app/build.gradle /tmp/kc_android_preserve/build.gradle
+            fi
+            if [ -f "android/app/kifayat-release.jks" ]; then
+              cp android/app/kifayat-release.jks /tmp/kc_android_preserve/kifayat-release.jks
+            fi
+            if ls -d android/app/src/main/res/mipmap-* >/dev/null 2>&1; then
+              mkdir -p /tmp/kc_android_preserve/res
+              cp -r android/app/src/main/res/mipmap-* /tmp/kc_android_preserve/res/
+            fi
+            rm -rf android
             npx cap add android
+            if [ -f "/tmp/kc_android_preserve/build.gradle" ]; then
+              cp /tmp/kc_android_preserve/build.gradle android/app/build.gradle
+            fi
+            if [ -f "/tmp/kc_android_preserve/kifayat-release.jks" ]; then
+              cp /tmp/kc_android_preserve/kifayat-release.jks android/app/kifayat-release.jks
+            fi
+            if ls -d /tmp/kc_android_preserve/res/mipmap-* >/dev/null 2>&1; then
+              rm -rf android/app/src/main/res/mipmap-*
+              cp -r /tmp/kc_android_preserve/res/mipmap-* android/app/src/main/res/
+            fi
+            rm -rf /tmp/kc_android_preserve
           fi
           npx cap sync android
-          grep -q "kotlin-stdlib-jdk7" android/app/build.gradle || echo 'configurations.all { exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"; exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8" }' >> android/app/build.gradle
 
       - name: Build & Rename Debug APK
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           cd android
           chmod +x gradlew

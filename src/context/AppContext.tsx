@@ -2955,11 +2955,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const isFounder = isFounderUser(currentUser);
+    const canUploadGallery = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
     if (currentUser.isMutedInChat && !isFounder) {
       return { success: false, error: 'You are currently muted in Community Chat by an administrator.' };
     }
-    if (payload.attachment && !isFounder) {
-      return { success: false, error: 'Gallery photo & GIF uploads are exclusive to the Founder.' };
+    if (payload.attachment && !canUploadGallery) {
+      return { success: false, error: 'Gallery photo & GIF uploads are restricted to Super Admins and Admins.' };
     }
 
     const cleanText = (payload.text || '').trim() ||
@@ -3144,13 +3145,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const isFounder = isFounderUser(currentUser);
-    const isLeader = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'CO_ADMIN';
+    const canUploadGallery = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
+    const isLeader = canUploadGallery || currentUser.role === 'CO_ADMIN';
 
     if (!isLeader) {
       return { success: false, error: 'Only leadership roles can customize Live Community Room themes.' };
     }
-    if ((data.liveChatCustomBgUrl !== undefined || data.founderBubbleColor !== undefined || data.liveChatTheme === 'CUSTOM') && !isFounder) {
-      return { success: false, error: 'Custom scenic backgrounds and Founder bubble colors are strictly exclusive to the Founder.' };
+    if (data.founderBubbleColor !== undefined && !isFounder) {
+      return { success: false, error: 'Founder bubble colors are strictly exclusive to the Founder.' };
+    }
+    if ((data.liveChatCustomBgUrl !== undefined || data.liveChatTheme === 'CUSTOM') && !canUploadGallery) {
+      return { success: false, error: 'Custom scenic backgrounds are restricted to Super Admins and Admins.' };
     }
 
     const updated = mergeAppSettings({

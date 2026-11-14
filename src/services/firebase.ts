@@ -24,6 +24,7 @@ import {
   serverTimestamp,
   Unsubscribe
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 import emailjs from '@emailjs/browser';
 import { 
@@ -48,6 +49,31 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with specific database ID (Critical for AI Studio Firestore)
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Initialize Firebase Storage when bucket is configured
+export const storage = firebaseConfig.storageBucket ? getStorage(app) : null;
+
+export async function uploadMediaToFirebaseStorage(
+  file: File,
+  folder = 'community_media'
+): Promise<string | null> {
+  if (!storage || !firebaseConfig.storageBucket) return null;
+  await tryEnsureSessionBestEffort();
+  try {
+    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
+    const objectRef = ref(storage, `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${cleanName}`);
+    const uploadTask = uploadBytes(objectRef, file, {
+      contentType: file.type || 'application/octet-stream'
+    }).then(() => getDownloadURL(objectRef));
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), 10000);
+    });
+    return await Promise.race([uploadTask, timeoutPromise]);
+  } catch (err) {
+    console.warn('Firebase Storage upload skipped/unavailable; falling back to local optimization:', err);
+    return null;
+  }
+}
 
 // Initialize Authentication
 export const auth = getAuth(app);
