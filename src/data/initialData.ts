@@ -187,10 +187,13 @@ export const INITIAL_APP_UPDATES: AppUpdate[] = [];
 
 export const INITIAL_APP_SETTINGS: AppSettings = {
   appName: 'Kifayat Connect',
-  tagline: 'Role-Based Governance, Transparency & Community Welfare System',
-  logoUrl: '/src/assets/images/kifayat_emblem_logo_1794225902501.jpg',
-  primaryColor: '#0a192f',
-  accentGoldColor: '#d4af37',
+  appNameUr: 'کفایت کنیکٹ',
+  tagline: 'Together for a Better Tomorrow',
+  taglineUr: 'بہتر کل کے لیے ایک ساتھ',
+  logoUrl: '',
+  primaryColor: '#043927',
+  accentGoldColor: '#D4AF37',
+  themePreset: 'OBSIDIAN_GOLD',
   registrationOpen: true,
   maintenanceMode: false,
   profileVisibility: 'MEMBERS_ONLY',
@@ -199,6 +202,58 @@ export const INITIAL_APP_SETTINGS: AppSettings = {
   maxCoAdminsPerState: 3,
   contactEmail: 'support@kifayatconnect.org',
   contactHelpline: '+92 51 111 8841',
+  dashboardVisibility: {
+    showKpiGrid: true,
+    showQuickActions: true,
+    showApkSyncBanner: true,
+    showDistrictMatrix: true,
+    showOfficeBearersWidget: true,
+    showAnnouncementsFeed: true
+  },
+  featureToggles: {
+    allowPasswordLogin: true,
+    allowCommunityAnnouncements: true,
+    allowDigitalIdDownload: true,
+    allowMemberPayments: true,
+    allowComplaintsDesk: true
+  },
+  textOverrides: {
+    welcomeHeadlineEn: 'Sign In to Kifayat Connect',
+    welcomeHeadlineUr: 'کفایت کنیکٹ میں سائن ان کریں',
+    maintenanceMessageEn: 'Kifayat Connect is currently undergoing scheduled maintenance by the Founder Super Admin.',
+    maintenanceMessageUr: 'کفایت کنیکٹ اس وقت سپر ایڈمن کی جانب سے مرمت کے مرحلے میں ہے۔',
+    idCardFooterEn: 'TOGETHER FOR A BETTER TOMORROW',
+    idCardFooterUr: 'بہتر کل کے لیے ایک ساتھ'
+  },
+  roleDefaults: {
+    ADMIN: {
+      canManageUsers: true,
+      canVerifyPayments: true,
+      canPostCommunityAnnouncements: true,
+      canPostOfficialAnnouncements: false,
+      canManageComplaints: true,
+      canViewReports: true,
+      canApproveMembers: true
+    },
+    CO_ADMIN: {
+      canManageUsers: false,
+      canVerifyPayments: false,
+      canPostCommunityAnnouncements: true,
+      canPostOfficialAnnouncements: false,
+      canManageComplaints: true,
+      canViewReports: true,
+      canApproveMembers: false
+    },
+    MEMBER: {
+      canManageUsers: false,
+      canVerifyPayments: false,
+      canPostCommunityAnnouncements: false,
+      canPostOfficialAnnouncements: false,
+      canManageComplaints: false,
+      canViewReports: false,
+      canApproveMembers: false
+    }
+  },
   updatedAt: new Date().toISOString(),
   updatedBy: 'System Initialization'
 };

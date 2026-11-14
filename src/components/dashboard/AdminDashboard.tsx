@@ -1,51 +1,52 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { 
-  Users, 
-  CheckSquare, 
-  MessageSquareWarning, 
-  Megaphone, 
-  MapPin, 
-  ShieldCheck, 
-  CheckCircle2, 
+import {
+  Users,
+  CheckSquare,
+  MessageSquareWarning,
+  Megaphone,
+  MapPin,
+  ShieldCheck,
+  CheckCircle2,
   XCircle,
   MessageSquare,
   Eye,
   Send,
-  Building2,
-  FileCheck
+  FileCheck,
+  Receipt,
+  IdCard
 } from 'lucide-react';
 import { RoleBadge } from '../common/RoleBadge';
+import { translate } from '../../data/translations';
 
 export const AdminDashboard: React.FC = () => {
-  const { 
-    currentUser, 
-    users, 
-    applications, 
-    complaints, 
-    announcements, 
-    recommendApplication, 
+  const {
+    currentUser,
+    users,
+    applications,
+    complaints,
+    announcements,
+    appSettings,
+    recommendApplication,
     publishAnnouncement,
     updateComplaintStatus,
     setInspectedUserProfile,
     setActiveTab,
     setActiveChatUser,
-    language 
+    setSelectedCardUser,
+    language
   } = useApp();
 
   const assignedDistrict = currentUser?.assignedDistrict || currentUser?.district || 'Lahore';
   const assignedState = currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab';
 
-  // Review interaction state
   const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [remarks, setRemarks] = useState<string>('');
 
-  // Complaint response state
   const [activeComplaintId, setActiveComplaintId] = useState<string | null>(null);
   const [complaintNote, setComplaintNote] = useState<string>('');
 
-  // New announcement state
   const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementContent, setAnnouncementContent] = useState('');
@@ -53,23 +54,31 @@ export const AdminDashboard: React.FC = () => {
 
   if (!currentUser) return null;
 
-  // Strictly filter to assigned district
+  const vis = appSettings.dashboardVisibility || {
+    showKpiGrid: true,
+    showQuickActions: true,
+    showApkSyncBanner: true,
+    showDistrictMatrix: true,
+    showOfficeBearersWidget: true,
+    showAnnouncementsFeed: true
+  };
+
   const districtMembers = users.filter(u => {
     if (u.role !== 'MEMBER') return false;
-    return (u.district === assignedDistrict) || (u.assignedDistrict === assignedDistrict);
+    return u.district === assignedDistrict || u.assignedDistrict === assignedDistrict;
   });
 
-  const districtApplications = applications.filter(a => {
-    return a.district === assignedDistrict || a.region?.includes(assignedDistrict);
-  });
-
-  const pendingDistrictApps = districtApplications.filter(
-    a => (a.status as any) === 'PENDING_DISTRICT_REVIEW' || (a.status as any) === 'PENDING_REGIONAL_REVIEW'
+  const districtApplications = applications.filter(
+    a => a.district === assignedDistrict || a.region?.includes(assignedDistrict)
   );
 
-  const districtComplaints = complaints.filter(c => {
-    return c.district === assignedDistrict || c.region?.includes(assignedDistrict);
-  });
+  const pendingDistrictApps = districtApplications.filter(
+    a => (a.status as string) === 'PENDING_DISTRICT_REVIEW' || (a.status as string) === 'PENDING_REGIONAL_REVIEW'
+  );
+
+  const districtComplaints = complaints.filter(
+    c => c.district === assignedDistrict || c.region?.includes(assignedDistrict)
+  );
 
   const districtAnnouncements = announcements.filter(a => {
     if (a.targetScope === 'ALL') return true;
@@ -90,6 +99,7 @@ export const AdminDashboard: React.FC = () => {
     publishAnnouncement({
       title: announcementTitle,
       content: announcementContent,
+      announcementType: 'COMMUNITY',
       targetScope: 'DISTRICT',
       targetDistrict: assignedDistrict,
       targetStateProvince: assignedState,
@@ -108,162 +118,160 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner with District Admin Authority */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
-              {language === 'ur' ? 'ڈسٹرکٹ ایڈمنسٹریشن' : 'District Administration'}
+            <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+              {language === 'ur' ? 'ڈسٹرکٹ ایڈمن پینل' : 'District Administration'}
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-400 font-medium">{assignedDistrict} District ({assignedState})</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-xs text-slate-400 font-medium">{assignedDistrict} ({assignedState})</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2.5">
-            <MapPin className="w-6 h-6 text-amber-500 shrink-0" />
-            <span>{assignedDistrict} – District Admin Console</span>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-1 flex items-center gap-2.5">
+            <MapPin className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <span>{assignedDistrict} – {translate(language, 'roleAdmin')}</span>
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Admin: <strong className="text-slate-700 dark:text-slate-200">{currentUser.name}</strong> · Responsible for member verification, community grievance handling, and local welfare delivery in {assignedDistrict}.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Admin: <strong className="text-white">{currentUser.name}</strong> · Member verification, payment verification, & local community care.
           </p>
         </div>
 
-        {/* Security / Quota Badge */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 rounded-xl border border-amber-500/30 text-[11px] text-amber-400">
-          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>District Scope: 10 Authorized Admins quota per District enforced.</span>
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#043927]/50 rounded-xl border border-[#D4AF37]/35 text-[11px] text-[#F5D061]">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
+          <span>Max {appSettings.maxAdminsPerDistrict} District Admins per District enforced.</span>
         </div>
       </div>
+
+      {/* Apollo-Style Quick Actions */}
+      {vis.showQuickActions && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: translate(language, 'actionVerifyPayments'), icon: Receipt, onClick: () => setActiveTab('funds') },
+            { label: translate(language, 'actionAnnouncements'), icon: Megaphone, onClick: () => setActiveTab('announcements') },
+            { label: translate(language, 'actionOpenChat'), icon: MessageSquare, onClick: () => setActiveTab('chat') },
+            { label: translate(language, 'actionDigitalId'), icon: IdCard, onClick: () => setSelectedCardUser(currentUser) }
+          ].map(card => {
+            const Icon = card.icon;
+            return (
+              <button
+                key={card.label}
+                type="button"
+                onClick={card.onClick}
+                className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 hover:border-[#F5D061]/60 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#043927]/80 border border-[#D4AF37]/35 flex items-center justify-center mb-2">
+                  <Icon className="w-4 h-4 text-[#F5D061]" />
+                </div>
+                <span className="text-xs font-extrabold text-white block truncate">{card.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* District Members */}
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">District Members</span>
-            <Users className="w-4 h-4 text-amber-500" />
+      {vis.showKpiGrid && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">District Members</span>
+              <Users className="w-4 h-4 text-[#F5D061]" />
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{districtMembers.length}</span>
+              <span className="text-xs text-[#F5D061] font-semibold">{assignedDistrict}</span>
+            </div>
+            <div className="mt-2 text-[11px] text-slate-400">Active verified community members</div>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {districtMembers.length}
-            </span>
-            <span className="text-xs text-amber-500 font-medium">{assignedDistrict}</span>
+
+          <div className="p-4 bg-[#111622] rounded-2xl border border-[#F5D061]/40">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Pending Verification</span>
+              <CheckSquare className="w-4 h-4 text-[#F5D061]" />
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{pendingDistrictApps.length}</span>
+              <span className="text-xs text-[#F5D061] font-semibold">Stage 1 Queue</span>
+            </div>
+            <div className="mt-2 text-[11px] text-slate-400">Requires address & CNIC check</div>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500">
-            Active verified community members
+
+          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">District Grievances</span>
+              <MessageSquareWarning className="w-4 h-4 text-rose-400" />
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{districtComplaints.length}</span>
+              <span className="text-xs text-rose-400 font-semibold">
+                {districtComplaints.filter(c => c.status === 'OPEN').length} Open
+              </span>
+            </div>
+            <div className="mt-2 text-[11px] text-slate-400">Member support tickets</div>
+          </div>
+
+          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Local Bulletins</span>
+              <Megaphone className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{districtAnnouncements.length}</span>
+              <span className="text-xs text-emerald-400 font-semibold">Published</span>
+            </div>
+            <div className="mt-2 text-[11px] text-slate-400">Dispatched to {assignedDistrict}</div>
           </div>
         </div>
+      )}
 
-        {/* Pending Stage 1 Verifications */}
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-amber-500/40 bg-amber-500/5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Pending Verification</span>
-            <CheckSquare className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {pendingDistrictApps.length}
-            </span>
-            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Stage 1 Queue</span>
-          </div>
-          <div className="mt-2 text-[11px] text-slate-500">
-            Requires field address and CNIC review
-          </div>
-        </div>
-
-        {/* District Grievances */}
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">District Grievances</span>
-            <MessageSquareWarning className="w-4 h-4 text-rose-500" />
-          </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {districtComplaints.length}
-            </span>
-            <span className="text-xs text-rose-500 font-medium">
-              {districtComplaints.filter(c => c.status === 'OPEN').length} Open
-            </span>
-          </div>
-          <div className="mt-2 text-[11px] text-slate-500">
-            Member inquiries & welfare tickets
-          </div>
-        </div>
-
-        {/* District Bulletins */}
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Local Bulletins</span>
-            <Megaphone className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-              {districtAnnouncements.length}
-            </span>
-            <span className="text-xs text-blue-500 font-medium">Published</span>
-          </div>
-          <div className="mt-2 text-[11px] text-slate-500">
-            Dispatched to {assignedDistrict} members
-          </div>
-        </div>
-      </div>
-
-      {/* CORE WORKFLOW: Stage 1 District Verification & Recommendation */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+      {/* Stage 1 District Verification */}
+      <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-amber-500" />
-              Stage 1: District Verification & Recommendation to Super Admin
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <FileCheck className="w-4 h-4 text-[#F5D061]" />
+              <span>Stage 1: District Verification & Recommendation to Super Admin</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              District Admins physically confirm applicant address, check CNIC validity, and send formal recommendation
+            <p className="text-xs text-slate-400 mt-0.5">
+              Confirm applicant address, inspect CNIC validity, and submit recommendation
             </p>
           </div>
-          <span className="text-xs font-mono font-bold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+          <span className="text-xs font-mono font-bold text-[#F5D061] bg-amber-500/10 px-2.5 py-1 rounded-full border border-[#D4AF37]/30">
             {pendingDistrictApps.length} in Queue
           </span>
         </div>
 
         <div className="mt-4 space-y-3">
           {pendingDistrictApps.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">
+            <div className="py-8 text-center text-xs text-slate-500">
               No pending applications awaiting District verification for {assignedDistrict}.
             </div>
           ) : (
             pendingDistrictApps.map(app => (
-              <div 
-                key={app.id}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40"
-              >
+              <div key={app.id} className="p-4 rounded-xl border border-slate-800 bg-[#0A0D12]">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        {app.applicantName}
-                      </h4>
+                      <h4 className="font-bold text-sm text-white">{app.applicantName}</h4>
                       {app.isOldMemberVerification && (
-                        <span className="text-[10px] bg-purple-500/10 text-purple-400 font-semibold px-2 py-0.5 rounded border border-purple-500/30">
+                        <span className="text-[10px] bg-purple-500/15 text-purple-300 font-semibold px-2 py-0.5 rounded border border-purple-500/30">
                           Old Member: {app.oldMembershipNo}
                         </span>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                      <p><span className="text-slate-400">CNIC:</span> <span className="font-mono text-slate-800 dark:text-slate-200">{app.cnic}</span></p>
-                      <p><span className="text-slate-400">Phone:</span> {app.phone}</p>
-                      <p><span className="text-slate-400">Email:</span> {app.email}</p>
-                      <p><span className="text-slate-400">Address:</span> {app.address}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5 text-xs text-slate-300 pt-1">
+                      <p><span className="text-slate-500">CNIC:</span> <span className="font-mono">{app.cnic}</span></p>
+                      <p><span className="text-slate-500">Phone:</span> {app.phone}</p>
+                      <p><span className="text-slate-500">Email:</span> {app.email}</p>
+                      <p><span className="text-slate-500">Address:</span> {app.address}</p>
                     </div>
-
-                    <p className="text-[11px] text-slate-400 pt-1">
-                      Submitted: {new Date(app.submittedAt).toLocaleDateString()}
-                    </p>
                   </div>
 
-                  {/* Review Action Trigger */}
                   <div className="shrink-0">
                     {reviewingAppId === app.id ? (
-                      <div className="w-full sm:w-80 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-amber-500/30 shadow-lg space-y-2.5">
+                      <div className="w-full sm:w-80 bg-[#111622] p-3.5 rounded-xl border border-[#D4AF37]/40 shadow-lg space-y-2.5">
                         <span className="text-[11px] font-semibold text-slate-200 block">
                           Submit Recommendation to Super Admin:
                         </span>
@@ -272,9 +280,9 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setRecommendation('APPROVE')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 cursor-pointer ${
                               recommendation === 'APPROVE'
-                                ? 'bg-emerald-600 text-white border-emerald-500'
+                                ? 'bg-emerald-700 text-white border-emerald-500'
                                 : 'bg-slate-800 text-slate-300 border-slate-700'
                             }`}
                           >
@@ -285,9 +293,9 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setRecommendation('REJECT')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 cursor-pointer ${
                               recommendation === 'REJECT'
-                                ? 'bg-rose-600 text-white border-rose-500'
+                                ? 'bg-rose-700 text-white border-rose-500'
                                 : 'bg-slate-800 text-slate-300 border-slate-700'
                             }`}
                           >
@@ -297,23 +305,21 @@ export const AdminDashboard: React.FC = () => {
                         </div>
 
                         <textarea
-                          placeholder="District verification remarks (e.g. physical address checked, documents verified)..."
+                          placeholder="District verification remarks..."
                           value={remarks}
                           onChange={(e) => setRemarks(e.target.value)}
                           rows={2}
-                          className="w-full text-xs p-2 rounded-lg border border-slate-700 bg-slate-800 text-white resize-none"
+                          className="w-full text-xs p-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white resize-none"
                         />
 
                         <div className="flex items-center justify-end gap-2 pt-1">
-                          <button
-                            onClick={() => setReviewingAppId(null)}
-                            className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
-                          >
+                          <button type="button" onClick={() => setReviewingAppId(null)} className="px-2.5 py-1 text-xs text-slate-400 hover:text-white cursor-pointer">
                             Cancel
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleSubmitRecommendation(app.id)}
-                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                            className="px-3 py-1.5 kc-gold-button text-xs font-extrabold rounded-lg cursor-pointer"
                           >
                             Send to Super Admin
                           </button>
@@ -321,12 +327,13 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => {
                           setReviewingAppId(app.id);
                           setRecommendation('APPROVE');
                           setRemarks('District documents & residence verified. Recommended for membership.');
                         }}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-amber-500/15 transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
                       >
                         <CheckSquare className="w-3.5 h-3.5" />
                         <span>Verify & Recommend</span>
@@ -342,48 +349,35 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Grid: District Member Directory & Grievances */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* District Member Directory */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {assignedDistrict} Community Members
-              </h3>
-              <p className="text-xs text-slate-500">
-                Registered members in your district
-              </p>
+              <h3 className="text-sm font-bold text-white">{assignedDistrict} Community Members</h3>
+              <p className="text-xs text-slate-400">Registered members in your district</p>
             </div>
-            <span className="text-xs font-mono font-semibold text-amber-500">
-              {districtMembers.length} Members
-            </span>
+            <span className="text-xs font-mono font-semibold text-[#F5D061]">{districtMembers.length} Members</span>
           </div>
 
-          <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800/60 max-h-80 overflow-y-auto">
+          <div className="mt-3 divide-y divide-slate-800/70 max-h-80 overflow-y-auto">
             {districtMembers.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                No active members in {assignedDistrict} yet.
-              </div>
+              <div className="py-6 text-center text-xs text-slate-500">No active members in {assignedDistrict} yet.</div>
             ) : (
               districtMembers.map(member => (
                 <div key={member.id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-3 min-w-0">
                     {(member.avatarUrl || member.avatar) ? (
-                      <img
-                        src={member.avatarUrl || member.avatar}
-                        alt={member.name}
-                        className="w-8 h-8 rounded-full border border-amber-500/30 object-cover shrink-0"
-                      />
+                      <img src={member.avatarUrl || member.avatar} alt={member.name} className="w-8 h-8 rounded-full border border-[#D4AF37]/40 object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#0a192f] text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs shrink-0">
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{member.name}</p>
-                        <RoleBadge role={member.role} compact />
+                        <p className="font-semibold text-white truncate">{member.name}</p>
+                        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
                       </div>
-                      <p className="text-[11px] text-slate-500 font-mono truncate">
+                      <p className="text-[11px] text-slate-400 font-mono truncate">
                         {member.membershipId} · {member.cityTown || member.district}
                       </p>
                     </div>
@@ -391,16 +385,17 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
+                      type="button"
                       onClick={() => setInspectedUserProfile(member)}
-                      className="p-1.5 text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-[#F5D061] hover:bg-slate-800 rounded-lg cursor-pointer"
                       title="View Member Profile"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleOpenChat(member)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold bg-[#0a192f] text-amber-400 hover:bg-slate-800 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
-                      title="Message in Chat"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#043927] text-[#F5D061] hover:bg-emerald-900 rounded-lg border border-[#D4AF37]/35 cursor-pointer"
                     >
                       <MessageSquare className="w-3 h-3" />
                       <span>Chat</span>
@@ -412,83 +407,65 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* District Complaints */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                District Grievance Tickets
-              </h3>
-              <p className="text-xs text-slate-500">
-                Support requests from {assignedDistrict}
-              </p>
+              <h3 className="text-sm font-bold text-white">District Grievance Tickets</h3>
+              <p className="text-xs text-slate-400">Support requests from {assignedDistrict}</p>
             </div>
-            <span className="text-xs font-mono text-rose-500 font-bold">
-              {districtComplaints.length} Tickets
-            </span>
+            <span className="text-xs font-mono text-rose-400 font-bold">{districtComplaints.length} Tickets</span>
           </div>
 
           <div className="mt-3 space-y-3 max-h-80 overflow-y-auto">
             {districtComplaints.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                No active complaints filed in {assignedDistrict}.
-              </div>
+              <div className="py-6 text-center text-xs text-slate-500">No active complaints filed in {assignedDistrict}.</div>
             ) : (
               districtComplaints.map(cmp => (
-                <div key={cmp.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-xs">
+                <div key={cmp.id} className="p-3 rounded-xl border border-slate-800 bg-[#0A0D12] text-xs">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">{cmp.subject}</span>
-                      <p className="text-[11px] text-slate-500">From {cmp.userName} · Category: {cmp.category}</p>
+                      <span className="font-bold text-white">{cmp.subject}</span>
+                      <p className="text-[11px] text-slate-400">From {cmp.userName} · {cmp.category}</p>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                       cmp.status === 'RESOLVED'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
                     }`}>
                       {cmp.status}
                     </span>
                   </div>
-
-                  <p className="text-[11px] text-slate-400 mt-1.5">
-                    {cmp.description}
-                  </p>
-
+                  <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.status !== 'RESOLVED' && (
                     <div className="mt-2 pt-2 border-t border-slate-800">
                       {activeComplaintId === cmp.id ? (
                         <div className="space-y-2">
                           <input
                             type="text"
-                            placeholder="Resolution notes / action taken..."
+                            placeholder="Resolution notes..."
                             value={complaintNote}
                             onChange={(e) => setComplaintNote(e.target.value)}
-                            className="w-full text-xs p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white"
+                            className="w-full text-xs p-1.5 border border-slate-700 rounded-lg bg-[#111622] text-white"
                           />
                           <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => setActiveComplaintId(null)}
-                              className="text-[11px] text-slate-400 hover:text-white"
-                            >
+                            <button type="button" onClick={() => setActiveComplaintId(null)} className="text-[11px] text-slate-400 hover:text-white cursor-pointer">
                               Cancel
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 updateComplaintStatus(cmp.id, 'RESOLVED', complaintNote);
                                 setActiveComplaintId(null);
                                 setComplaintNote('');
                               }}
-                              className="px-2.5 py-1 text-[11px] bg-emerald-600 text-white rounded-md font-medium"
+                              className="px-2.5 py-1 text-[11px] bg-emerald-600 text-white rounded-md font-semibold cursor-pointer"
                             >
                               Mark Resolved
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => setActiveComplaintId(cmp.id)}
-                          className="text-[11px] text-amber-400 hover:underline font-medium cursor-pointer"
-                        >
+                        <button type="button" onClick={() => setActiveComplaintId(cmp.id)} className="text-[11px] text-[#F5D061] hover:underline font-medium cursor-pointer">
                           Respond & Mark Resolved →
                         </button>
                       )}
@@ -501,93 +478,63 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* District Bulletins Publisher */}
-      <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      {/* District Bulletins Dispatcher */}
+      <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-amber-500" />
-              District Announcement Dispatcher
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-[#F5D061]" />
+              <span>District Community Announcement Dispatcher</span>
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               Publish local notices, camps, or community alerts targeted to {assignedDistrict} members
             </p>
           </div>
-
           {!isCreatingAnnouncement && (
             <button
+              type="button"
               onClick={() => setIsCreatingAnnouncement(true)}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
             >
-              Post District Bulletin
+              Post District Notice
             </button>
           )}
         </div>
 
         {isCreatingAnnouncement && (
-          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
-                Announcement Title
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Free Medical Checkup Camp at Model Town..."
-                value={announcementTitle}
-                onChange={(e) => setAnnouncementTitle(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
-                Announcement Details
-              </label>
-              <textarea
-                required
-                rows={3}
-                placeholder="Detailed instructions for district members..."
-                value={announcementContent}
-                onChange={(e) => setAnnouncementContent(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white resize-none"
-              />
-            </div>
-
+          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#0A0D12] p-4 rounded-xl border border-slate-800">
+            <input
+              type="text"
+              required
+              placeholder="e.g. Free Medical Checkup Camp at Model Town..."
+              value={announcementTitle}
+              onChange={(e) => setAnnouncementTitle(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white"
+            />
+            <textarea
+              required
+              rows={3}
+              placeholder="Detailed instructions for district members..."
+              value={announcementContent}
+              onChange={(e) => setAnnouncementContent(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white resize-none"
+            />
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-3 text-xs">
-                <label className="flex items-center gap-1.5 text-slate-400">
-                  <input
-                    type="radio"
-                    name="urgency"
-                    checked={announcementUrgency === 'NORMAL'}
-                    onChange={() => setAnnouncementUrgency('NORMAL')}
-                  />
-                  <span>Normal Notice</span>
+                <label className="flex items-center gap-1.5 text-slate-300">
+                  <input type="radio" name="urgency" checked={announcementUrgency === 'NORMAL'} onChange={() => setAnnouncementUrgency('NORMAL')} />
+                  <span>Normal</span>
                 </label>
-                <label className="flex items-center gap-1.5 text-rose-400 font-medium">
-                  <input
-                    type="radio"
-                    name="urgency"
-                    checked={announcementUrgency === 'URGENT'}
-                    onChange={() => setAnnouncementUrgency('URGENT')}
-                  />
-                  <span>Urgent Community Action</span>
+                <label className="flex items-center gap-1.5 text-rose-400 font-semibold">
+                  <input type="radio" name="urgency" checked={announcementUrgency === 'URGENT'} onChange={() => setAnnouncementUrgency('URGENT')} />
+                  <span>Urgent</span>
                 </label>
               </div>
-
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingAnnouncement(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
-                >
+                <button type="button" onClick={() => setIsCreatingAnnouncement(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold rounded-lg shadow-sm cursor-pointer"
-                >
+                <button type="submit" className="flex items-center gap-1.5 px-4 py-1.5 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer">
                   <Send className="w-3.5 h-3.5" />
                   <span>Broadcast to {assignedDistrict}</span>
                 </button>

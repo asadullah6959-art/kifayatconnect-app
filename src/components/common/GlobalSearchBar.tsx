@@ -34,7 +34,6 @@ export const GlobalSearchBar: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
@@ -166,7 +165,7 @@ export const GlobalSearchBar: React.FC = () => {
       targetTab: 'reports'
     });
 
-    if (isSuperAdmin || isFinanceOfficer) {
+    if (isSuperAdmin) {
       reportsCatalog.push({
         id: 'rep_treasury_ledger',
         title: 'Central Treasury Ledger & Receipt Vouchers',
@@ -205,7 +204,7 @@ export const GlobalSearchBar: React.FC = () => {
 
   // 4. Applications / Approvals search (for Super Admin & District Admin):
   const searchApplications = (): MembershipApplication[] => {
-    if (isMember || isFinanceOfficer) return [];
+    if (isMember) return [];
 
     return applications.filter(app => {
       const aFb = mapLegacyRegionToHierarchy(app.region);
@@ -275,7 +274,6 @@ export const GlobalSearchBar: React.FC = () => {
   // Role scope explanation badge for transparency
   const getScopeDescription = () => {
     if (isSuperAdmin) return 'Super Admin Scope: Organization-Wide Search';
-    if (isFinanceOfficer) return 'Finance Scope: Treasury, Transactions & Financial Reports';
     if (isDistrictAdmin) return `District Scope: Strictly ${currentUser.assignedDistrict || currentUser.district || 'Assigned District'} Records`;
     if (isCoAdmin) return `State Scope: Strictly ${currentUser.assignedStateProvince || currentUser.stateProvince || 'Assigned State'} Records`;
     return 'Member Scope: Personal Receipts & Welfare Reports';
@@ -283,7 +281,6 @@ export const GlobalSearchBar: React.FC = () => {
 
   const getPlaceholder = () => {
     if (isSuperAdmin) return 'Search members, receipts, reports (⌘K)...';
-    if (isFinanceOfficer) return 'Search transactions, receipts, reports (⌘K)...';
     if (isDistrictAdmin) return `Search ${(currentUser.assignedDistrict || currentUser.district || 'District')} records (⌘K)...`;
     if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records (⌘K)...`;
     return 'Search my receipts & reports (⌘K)...';

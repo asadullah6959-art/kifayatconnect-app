@@ -18,7 +18,6 @@ import { RoleBadge } from '../common/RoleBadge';
 
 interface MemberRowProps {
   member: User;
-  isFinanceOfficer: boolean;
   onInspect: (u: User) => void;
   onCard: (u: User) => void;
   onMessage: (u: User) => void;
@@ -27,7 +26,6 @@ interface MemberRowProps {
 
 const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   member,
-  isFinanceOfficer,
   onInspect,
   onCard,
   onMessage
@@ -58,7 +56,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
             </span>
           </div>
         </div>
-        <RoleBadge role={member.role} compact />
+        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-slate-500">
@@ -73,7 +71,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
 
       {member.cnic && (
         <div className="text-[10px] font-mono text-slate-400">
-          CNIC: {isFinanceOfficer ? `${member.cnic.slice(0, 5)}...` : member.cnic}
+          CNIC: {member.cnic}
         </div>
       )}
 
@@ -116,7 +114,6 @@ export const MemberDirectory: React.FC = () => {
 
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvinceFilter, setSelectedProvinceFilter] = useState<string>(
@@ -270,7 +267,6 @@ export const MemberDirectory: React.FC = () => {
             <MemberCardMobile
               key={member.id}
               member={member}
-              isFinanceOfficer={isFinanceOfficer}
               onInspect={setInspectedUserProfile}
               onCard={setSelectedCardUser}
               onMessage={handleOpenMessage}
@@ -348,7 +344,7 @@ export const MemberDirectory: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 font-mono text-slate-800 dark:text-slate-200">
-                        {member.cnic ? (isFinanceOfficer ? `${member.cnic.slice(0, 5)}...` : member.cnic) : '—'}
+                        {member.cnic || '—'}
                       </td>
 
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
@@ -361,7 +357,7 @@ export const MemberDirectory: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <RoleBadge role={member.role} compact />
+                        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
                       </td>
 
                       <td className="py-3 px-4 text-right">

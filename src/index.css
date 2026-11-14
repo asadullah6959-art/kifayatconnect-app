@@ -7,6 +7,15 @@
   --font-urdu: 'Noto Nastaliq Urdu', serif;
 }
 
+:root {
+  --kc-bg: #0A0D12;
+  --kc-surface: #111622;
+  --kc-surface-elevated: #161D2C;
+  --kc-border: rgba(212, 175, 55, 0.25);
+  --kc-accent: #D4AF37;
+  --kc-emerald: #043927;
+}
+
 html,
 body,
 #root {
@@ -22,11 +31,111 @@ body {
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  background-color: var(--kc-bg);
 }
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
+}
+
+[dir="rtl"] body,
+[dir="rtl"] .font-urdu-auto {
+  font-family: 'Noto Nastaliq Urdu', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Luxury Metallic Gold & 3D GPU-Accelerated Utilities (transform & opacity only) */
+@keyframes kcShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.75;
+  }
+  80% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateX(240%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes kcTilt3D {
+  0% {
+    transform: perspective(900px) rotateY(-12deg) rotateX(6deg) scale(0.92);
+    opacity: 0;
+  }
+  45% {
+    transform: perspective(900px) rotateY(4deg) rotateX(-2deg) scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(900px) rotateY(0deg) rotateX(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes kcCrownFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.kc-animate-shimmer {
+  animation: kcShimmer 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.kc-animate-tilt-3d {
+  animation: kcTilt3D 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.kc-animate-crown-float {
+  animation: kcCrownFloat 3s ease-in-out infinite;
+  will-change: transform;
+}
+
+.kc-gold-gradient-text {
+  background: linear-gradient(135deg, #F5D061 0%, #D4AF37 50%, #9E7322 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.kc-gold-button {
+  background: linear-gradient(135deg, #F5D061 0%, #D4AF37 55%, #A67C23 100%);
+  color: #0A0D12;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.kc-obsidian-card {
+  background-color: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+}
+
+/* CSS 3D Card Flip Helpers */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
 }
 
 /* Custom scrollbars for dense data grids */
@@ -38,11 +147,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(212, 175, 55, 0.28);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(212, 175, 55, 0.55);
 }
 
 /* Print to PDF Brand Formatting */

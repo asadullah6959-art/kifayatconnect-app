@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { AuthWelcomeGate } from './components/auth/AuthWelcomeGate';
+import { SplashScreen } from './components/common/SplashScreen';
+import { BrandEmblem3D } from './components/common/BrandEmblem3D';
 
-// Dashboards
+// Dashboards (Strict 4 Roles)
 import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard';
-import { FinanceOfficerDashboard } from './components/dashboard/FinanceOfficerDashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { CoAdminDashboard } from './components/dashboard/CoAdminDashboard';
 import { MemberDashboard } from './components/dashboard/MemberDashboard';
@@ -36,30 +37,57 @@ import { NotificationsSlideOver } from './components/common/NotificationsSlideOv
 import { AppUpdateModal } from './components/common/AppUpdateModal';
 import { MemberProfileModal } from './components/modules/MemberProfileModal';
 
-import { LayoutDashboard, MessageSquare, Coins, Megaphone, User as UserIcon } from 'lucide-react';
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Coins,
+  Megaphone,
+  User as UserIcon,
+  LogOut,
+  Wrench
+} from 'lucide-react';
+import { translate } from './data/translations';
 
 const MainLayout: React.FC = () => {
-  const { 
-    currentUser, 
-    activeTab, 
+  const {
+    currentUser,
+    activeTab,
     setActiveTab,
-    selectedReceipt, 
+    selectedReceipt,
     setSelectedReceipt,
     selectedCardUser,
     setSelectedCardUser,
     inspectedUserProfile,
     setInspectedUserProfile,
     chats,
-    language
+    language,
+    appSettings,
+    logoutFirebaseAuth
   } = useApp();
 
+  const [showSplash, setShowSplash] = useState(true);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Clean signed-out gate when no session exists (zero dummy users)
+  const handleSplashFinish = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  if (showSplash) {
+    return (
+      <SplashScreen
+        appName={appSettings.appName}
+        tagline={language === 'ur' ? appSettings.taglineUr : appSettings.tagline}
+        language={language}
+        onFinish={handleSplashFinish}
+      />
+    );
+  }
+
+  // Signed-out gate
   if (!currentUser) {
     return (
       <>
@@ -72,17 +100,47 @@ const MainLayout: React.FC = () => {
     );
   }
 
+  // Maintenance Screen for non-Super-Admin users when Maintenance Mode is enabled
+  if (appSettings.maintenanceMode && currentUser.role !== 'SUPER_ADMIN') {
+    return (
+      <div className="min-h-[100dvh] w-full bg-[#0A0D12] text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-[#111622] border border-[#D4AF37]/35 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="flex flex-col items-center gap-3">
+            <BrandEmblem3D size="lg" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-[#D4AF37]/40 text-[#F5D061] text-[11px] font-bold uppercase">
+              <Wrench className="w-3.5 h-3.5" />
+              <span>{translate(language, 'maintenanceTitle')}</span>
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            {translate(language, 'maintenanceDesc', appSettings.textOverrides)}
+          </p>
+          <p className="text-[11px] text-slate-500 font-mono">
+            {appSettings.contactHelpline} · {appSettings.contactEmail}
+          </p>
+          <button
+            type="button"
+            onClick={logoutFirebaseAuth}
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 text-[#F5D061]" />
+            <span>{translate(language, 'logout')}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const totalUnreadMessages = chats.reduce(
-    (acc, c) => acc + (c.unreadCount || (c.unreadCounts && c.unreadCounts[currentUser.id]) || 0),
+    (acc, c) => acc + ((c.unreadCounts && c.unreadCounts[currentUser.id]) || c.unreadCount || 0),
     0
   );
 
-  // Render content based on current active tab & role
+  // Render content based on current active tab & strict 4-role hierarchy
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
-        if (currentUser.role === 'FINANCE_OFFICER') return <FinanceOfficerDashboard />;
         if (currentUser.role === 'ADMIN') return <AdminDashboard />;
         if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
         return <MemberDashboard />;
@@ -98,9 +156,8 @@ const MainLayout: React.FC = () => {
       case 'approvals':
         return <ApprovalWorkflow />;
       case 'funds':
-        return <FundsAndPayments />;
       case 'verification':
-        return <FinanceOfficerDashboard />;
+        return <FundsAndPayments />;
       case 'complaints':
         return <ComplaintsManager />;
       case 'announcements':
@@ -115,7 +172,6 @@ const MainLayout: React.FC = () => {
         return <ProfileSettings />;
       default:
         if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
-        if (currentUser.role === 'FINANCE_OFFICER') return <FinanceOfficerDashboard />;
         if (currentUser.role === 'ADMIN') return <AdminDashboard />;
         if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
         return <MemberDashboard />;
@@ -123,16 +179,21 @@ const MainLayout: React.FC = () => {
   };
 
   const mobileNavTabs = [
-    { id: 'dashboard', label: language === 'ur' ? 'ہوم' : 'Home', icon: LayoutDashboard },
-    { id: 'chat', label: language === 'ur' ? 'چیٹ' : 'Chat', icon: MessageSquare, badge: totalUnreadMessages },
-    { id: 'funds', label: language === 'ur' ? 'ادائیگی' : 'Pay', icon: Coins },
-    { id: 'announcements', label: language === 'ur' ? 'اعلانات' : 'Elaanat', icon: Megaphone },
-    { id: 'profile', label: language === 'ur' ? 'پروفائل' : 'Profile', icon: UserIcon }
+    { id: 'dashboard', label: translate(language, 'mobileNavHome'), icon: LayoutDashboard },
+    { id: 'chat', label: translate(language, 'mobileNavChat'), icon: MessageSquare, badge: totalUnreadMessages },
+    { id: 'funds', label: translate(language, 'mobileNavPay'), icon: Coins },
+    { id: 'announcements', label: translate(language, 'mobileNavElaanat'), icon: Megaphone },
+    { id: 'profile', label: translate(language, 'mobileNavProfile'), icon: UserIcon }
   ];
 
+  const isRtl = language === 'ur';
+
   return (
-    <div className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden bg-slate-100 dark:bg-slate-950 flex flex-col font-sans">
-      {/* Global Keyboard Shortcuts Handler & Notification Toasts */}
+    <div
+      className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden flex flex-col font-sans text-slate-100"
+      style={{ backgroundColor: 'var(--kc-bg, #0A0D12)' }}
+    >
+      {/* Global Keyboard Shortcuts Handler */}
       <GlobalShortcutsHandler
         onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
@@ -140,7 +201,7 @@ const MainLayout: React.FC = () => {
       />
 
       {/* Fixed Top Navigation Bar */}
-      <Header 
+      <Header
         onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
@@ -149,34 +210,45 @@ const MainLayout: React.FC = () => {
         isSidebarOpen={isMobileSidebarOpen}
       />
 
-      {/* Main App Workspace: only middle main area scrolls vertically */}
+      {/* Main App Workspace */}
       <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
         {/* Desktop Docked Sidebar */}
-        <aside className="hidden md:flex md:w-64 md:shrink-0 h-full border-r border-slate-800 bg-[#0a192f] select-none z-20">
+        <aside
+          className={`hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 ${
+            isRtl ? 'border-l border-[#D4AF37]/20' : 'border-r border-[#D4AF37]/20'
+          }`}
+          style={{ backgroundColor: 'var(--kc-surface, #111622)' }}
+        >
           <Sidebar />
         </aside>
 
-        {/* Mobile Sidebar Overlay (low-RAM solid translucent backdrop, zero blur) */}
+        {/* Mobile Sidebar Overlay (zero blur) */}
         <div className="md:hidden">
-          <div 
+          <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-slate-950/85 z-50 transition-opacity duration-200 cursor-pointer ${
+            className={`fixed inset-0 bg-[#0A0D12]/85 z-50 transition-opacity duration-200 cursor-pointer ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
           />
 
-          <aside 
-            className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl border-r border-slate-800 transition-transform duration-200 ease-out transform ${
-              isMobileSidebarOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'
+          <aside
+            className={`fixed inset-y-0 ${
+              isRtl ? 'right-0 border-l' : 'left-0 border-r'
+            } z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform ${
+              isMobileSidebarOpen
+                ? 'translate-x-0 pointer-events-auto'
+                : isRtl
+                ? 'translate-x-full pointer-events-none'
+                : '-translate-x-full pointer-events-none'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Mobile Navigation Menu"
           >
-            <Sidebar 
-              onClose={() => setIsMobileSidebarOpen(false)} 
-              isMobileDrawer={true} 
+            <Sidebar
+              onClose={() => setIsMobileSidebarOpen(false)}
+              isMobileDrawer={true}
             />
           </aside>
         </div>
@@ -192,7 +264,7 @@ const MainLayout: React.FC = () => {
       {/* Fixed Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-[#0a192f] border-t border-slate-800 px-1.5 py-1.5 z-30 flex items-center justify-around select-none"
+        className="md:hidden shrink-0 w-full max-w-full bg-[#111622] border-t border-[#D4AF37]/25 px-1.5 py-1.5 z-30 flex items-center justify-around select-none"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -206,13 +278,13 @@ const MainLayout: React.FC = () => {
                 setIsMobileSidebarOpen(false);
               }}
               className={`relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl text-[10px] font-semibold transition-colors cursor-pointer ${
-                isActive ? 'text-amber-400 bg-slate-900/90' : 'text-slate-400 hover:text-slate-200'
+                isActive ? 'text-[#F5D061] bg-[#043927]/60 border border-[#D4AF37]/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="relative">
                 <Icon className="w-4 h-4 mb-0.5" />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#0A0D12] text-[9px] font-extrabold flex items-center justify-center leading-none">
                     {tab.badge > 9 ? '9+' : tab.badge}
                   </span>
                 ) : null}
@@ -239,26 +311,26 @@ const MainLayout: React.FC = () => {
       />
 
       {selectedReceipt && (
-        <DigitalReceiptModal 
-          receipt={selectedReceipt} 
-          onClose={() => setSelectedReceipt(null)} 
+        <DigitalReceiptModal
+          receipt={selectedReceipt}
+          onClose={() => setSelectedReceipt(null)}
         />
       )}
 
       {selectedCardUser && (
-        <DigitalCardModal 
-          user={selectedCardUser} 
-          onClose={() => setSelectedCardUser(null)} 
+        <DigitalCardModal
+          user={selectedCardUser}
+          onClose={() => setSelectedCardUser(null)}
         />
       )}
 
-      <RegisterModal 
-        isOpen={isRegisterModalOpen} 
-        onClose={() => setIsRegisterModalOpen(false)} 
+      <RegisterModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
       />
 
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSwitchToRegister={() => {
           setIsLoginModalOpen(false);

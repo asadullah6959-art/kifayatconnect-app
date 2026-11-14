@@ -13,6 +13,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   onSnapshot,
   getDocFromServer,
@@ -35,7 +36,8 @@ import {
   AppUpdate,
   AppSettings,
   ChatMessage,
-  ChatConversation
+  ChatConversation,
+  normalizeLegacyRole
 } from '../types';
 
 // Initialize Firebase App
@@ -157,7 +159,7 @@ export async function logoutUser(): Promise<void> {
  * Synchronizes the Firebase authenticated user with their Firestore /users/{uid} document.
  * Enforces trusted server-side authorization:
  * - If email is asadullah6959@gmail.com, assigns SUPER_ADMIN role with full governance authority.
- * - Otherwise defaults strictly to MEMBER role unless previously appointed as ADMIN/CO_ADMIN/FINANCE_OFFICER.
+ * - Otherwise defaults strictly to MEMBER role unless previously appointed as ADMIN/CO_ADMIN.
  */
 export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise<User> {
   const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -169,14 +171,29 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 
     if (docSnap.exists()) {
       const existingData = docSnap.data() as User;
-      // Backend confirmation: if email is authorized super admin, ensure role is SUPER_ADMIN
-      if (isSuperAdminEmail && existingData.role !== 'SUPER_ADMIN') {
+      const normalizedRole = normalizeLegacyRole(existingData.role, firebaseUser.email || existingData.email);
+      const shouldBeFounder = isSuperAdminEmail || existingData.isFounder === true;
+      const hasPwd = existingData.hasPassword || hasLocalPasswordCredential(firebaseUser.email || existingData.email);
+
+      if (
+        normalizedRole !== existingData.role ||
+        (shouldBeFounder && !existingData.isFounder) ||
+        (isSuperAdminEmail && !existingData.isStaff) ||
+        hasPwd !== Boolean(existingData.hasPassword)
+      ) {
         const updated: User = {
           ...existingData,
-          role: 'SUPER_ADMIN',
-          isStaff: true
+          role: normalizedRole,
+          isFounder: shouldBeFounder,
+          isStaff: normalizedRole !== 'MEMBER',
+          hasPassword: hasPwd
         };
-        await updateDoc(userDocRef, { role: 'SUPER_ADMIN', isStaff: true });
+        await updateDoc(userDocRef, {
+          role: normalizedRole,
+          isFounder: shouldBeFounder,
+          isStaff: normalizedRole !== 'MEMBER',
+          hasPassword: hasPwd
+        }).catch(() => {});
         return updated;
       }
       return existingData;
@@ -189,10 +206,12 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 
     const newUser: User = {
       id: firebaseUser.uid,
-      name: isSuperAdminEmail ? 'Asadullah (Super Admin)' : (firebaseUser.displayName || 'Registered Member'),
+      name: isSuperAdminEmail ? 'Asadullah (Founder Super Admin)' : (firebaseUser.displayName || 'Registered Member'),
       email: firebaseUser.email || '',
       phone: firebaseUser.phoneNumber || '',
       role: isSuperAdminEmail ? 'SUPER_ADMIN' : 'MEMBER',
+      isFounder: isSuperAdminEmail,
+      hasPassword: hasLocalPasswordCredential(firebaseUser.email || ''),
       country: 'Pakistan',
       stateProvince: isSuperAdminEmail ? 'Islamabad Capital Territory' : 'Punjab',
       district: isSuperAdminEmail ? 'Islamabad' : 'Lahore',
@@ -211,7 +230,7 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       annualPledge: 0,
       totalContributed: 0,
       isStaff: isSuperAdminEmail,
-      notes: isSuperAdminEmail ? 'Verified Root Super Admin authorized via Google Identity' : 'Authenticated Member'
+      notes: isSuperAdminEmail ? 'Verified Founder Super Admin authorized via Google Identity' : 'Authenticated Member'
     };
 
     await setDoc(userDocRef, newUser);
@@ -688,27 +707,98 @@ export async function verifyPasswordReset(
     return { success: false, message: `Incorrect reset code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately clear single-use reset code and store hashed recovery credential
+  // Verified — immediately clear single-use reset code and store hashed credential
   resetStore.delete(normEmail);
   clearPendingPasswordReset();
 
-  try {
-    const emailHash = await hashOTP(normEmail, 'identity');
-    const passwordHash = await hashOTP(normEmail, `pwd:${cleanPassword}`);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(
-        `kc_recovery_credential_${emailHash}`,
-        JSON.stringify({ passwordHash, updatedAt: now })
-      );
-    }
-  } catch {
-    // Non-blocking local credential hash store
-  }
+  await saveLocalPasswordCredential(normEmail, cleanPassword);
 
   return {
     success: true,
-    message: 'Temporary reset code verified and password updated. You can now sign in with Email OTP or Google Sign-In.'
+    message: 'Temporary reset code verified and password updated. You can now sign in with your new password or Email OTP.',
+    verifiedEmail: normEmail
   };
+}
+
+// ----------------------------------------------------
+// Salted SHA-256 Local Password & Master PIN Credentials Store
+// ----------------------------------------------------
+const CREDENTIALS_STORAGE_KEY = 'kc_user_credentials_v1';
+
+interface StoredCredentialEntry {
+  passwordHash: string;
+  updatedAt: number;
+}
+
+export async function hashSecretString(secret: string, salt = 'kifayat_sec_v1'): Promise<string> {
+  return hashOTP(salt.trim().toLowerCase(), secret);
+}
+
+function readCredentialsMap(): Record<string, StoredCredentialEntry> {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, StoredCredentialEntry>;
+  } catch {
+    return {};
+  }
+}
+
+export function hasLocalPasswordCredential(email: string): boolean {
+  const norm = email.trim().toLowerCase();
+  if (!norm) return false;
+  const map = readCredentialsMap();
+  return Boolean(map[norm]?.passwordHash);
+}
+
+export async function saveLocalPasswordCredential(email: string, password: string): Promise<void> {
+  const norm = email.trim().toLowerCase();
+  if (!norm || !password) return;
+  const passwordHash = await hashOTP(norm, `pwd:${password.trim()}`);
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const map = readCredentialsMap();
+    map[norm] = { passwordHash, updatedAt: Date.now() };
+    localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+
+    // Also mirror into legacy recovery key for seamless cross-flow compatibility
+    const emailHash = await hashOTP(norm, 'identity');
+    localStorage.setItem(
+      `kc_recovery_credential_${emailHash}`,
+      JSON.stringify({ passwordHash, updatedAt: Date.now() })
+    );
+  } catch {
+    // Non-blocking storage write
+  }
+}
+
+export async function verifyLocalPasswordCredential(email: string, password: string): Promise<boolean> {
+  const norm = email.trim().toLowerCase();
+  const cleanPwd = password.trim();
+  if (!norm || !cleanPwd) return false;
+  const candidateHash = await hashOTP(norm, `pwd:${cleanPwd}`);
+  const map = readCredentialsMap();
+  if (map[norm]?.passwordHash && map[norm].passwordHash === candidateHash) {
+    return true;
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const emailHash = await hashOTP(norm, 'identity');
+      const legacyRaw = localStorage.getItem(`kc_recovery_credential_${emailHash}`);
+      if (legacyRaw) {
+        const legacy = JSON.parse(legacyRaw) as { passwordHash?: string };
+        if (legacy?.passwordHash === candidateHash) {
+          map[norm] = { passwordHash: candidateHash, updatedAt: Date.now() };
+          localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+          return true;
+        }
+      }
+    }
+  } catch {
+    // Ignore parse error
+  }
+  return false;
 }
 
 // ----------------------------------------------------
@@ -761,6 +851,16 @@ export async function saveAnnouncementToFirestore(announcement: Announcement): P
     await setDoc(doc(db, 'announcements', announcement.id), announcement);
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
+  if (!auth.currentUser) return;
+  const path = `announcements/${announcementId}`;
+  try {
+    await deleteDoc(doc(db, 'announcements', announcementId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
   }
 }
 

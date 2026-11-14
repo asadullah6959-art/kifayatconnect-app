@@ -1,26 +1,25 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp, isFounderUser } from '../../context/AppContext';
 import { 
   LayoutDashboard, 
   Users, 
   CheckSquare, 
   Coins, 
-  Receipt, 
   MessageSquareWarning, 
   Megaphone, 
   ShieldCheck, 
   FileText, 
   IdCard,
-  Building2,
   Clock,
   MessageSquare,
   Award,
-  Settings,
-  Sparkles,
-  Download,
+  Crown,
   X
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
+import { BrandEmblem3D } from './BrandEmblem3D';
+import { RoleBadge } from './RoleBadge';
+import { translate } from '../../data/translations';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -37,21 +36,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     payments, 
     complaints, 
     chats,
-    appUpdates,
     language,
+    appSettings,
     setSelectedCardUser
   } = useApp();
 
   if (!currentUser) return null;
 
-  // Pending counts
   const pendingApprovalsCount = currentUser.role === 'SUPER_ADMIN'
     ? applications.filter(a => a.status === 'RECOMMENDED_BY_DISTRICT' || a.status === 'RECOMMENDED_BY_REGION').length
     : currentUser.role === 'ADMIN'
     ? applications.filter(a => (a.district === (currentUser.assignedDistrict || currentUser.district)) && (a.status === 'PENDING_DISTRICT_REVIEW' || a.status === 'PENDING_REGIONAL_REVIEW')).length
     : 0;
 
-  const pendingPaymentsCount = (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER' || currentUser.role === 'ADMIN')
+  const pendingPaymentsCount = (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN')
     ? payments.filter(p => p.status === 'PENDING_VERIFICATION').length
     : 0;
 
@@ -61,90 +59,62 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     ? complaints.filter(c => (c.district === (currentUser.assignedDistrict || currentUser.district)) && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length
     : currentUser.role === 'CO_ADMIN'
     ? complaints.filter(c => (c.stateProvince === (currentUser.assignedStateProvince || currentUser.stateProvince)) && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length
-    : currentUser.role === 'MEMBER'
-    ? complaints.filter(c => c.userId === currentUser.id && c.status === 'OPEN').length
-    : 0;
+    : complaints.filter(c => c.userId === currentUser.id && c.status === 'OPEN').length;
 
   const totalUnreadMessages = chats.reduce((acc, c) => acc + (c.unreadCount || (c.unreadCounts && c.unreadCounts[currentUser.id]) || 0), 0);
 
-  // Nav item list tailored to role
   const navItems = [
     {
       id: 'dashboard',
-      label: language === 'ur' ? 'ڈیش بورڈ' : 'Overview Dashboard',
+      label: translate(language, 'navDashboard'),
       icon: LayoutDashboard,
       visible: true
     },
     {
       id: 'chat',
-      label: language === 'ur' ? 'پیغامات و چیٹ' : 'Chat & Messages',
+      label: translate(language, 'navChat'),
       icon: MessageSquare,
       visible: true,
       badge: totalUnreadMessages > 0 ? totalUnreadMessages : null,
-      badgeColor: 'bg-amber-500 text-slate-950 font-bold'
+      badgeColor: 'bg-[#F5D061] text-[#0A0D12] font-bold'
     },
     {
       id: 'office_bearers',
-      label: language === 'ur' ? 'عہدیداران تنظیم' : 'Office-Bearers',
+      label: translate(language, 'navOfficeBearers'),
       icon: Award,
       visible: true
     },
     {
       id: 'members',
-      label: language === 'ur' 
-        ? 'ممبر ڈائریکٹری' 
-        : currentUser.role === 'ADMIN'
-        ? `${currentUser.assignedDistrict || currentUser.district || 'District'} Members`
-        : currentUser.role === 'CO_ADMIN'
-        ? `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Directory`
-        : 'Member Directory',
+      label: translate(language, 'navMembers'),
       icon: Users,
-      visible: currentUser.role !== 'MEMBER',
-      badge: null
+      visible: currentUser.role !== 'MEMBER'
     },
     {
       id: 'approvals',
-      label: language === 'ur' 
-        ? 'رکنیت منظوریاں' 
-        : currentUser.role === 'SUPER_ADMIN' 
-        ? 'Final Approvals' 
-        : 'District Verification',
+      label: translate(language, 'navApprovals'),
       icon: CheckSquare,
       visible: currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN',
       badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : null,
-      badgeColor: 'bg-amber-500 text-slate-950 font-bold'
+      badgeColor: 'bg-[#F5D061] text-[#0A0D12] font-bold'
     },
     {
       id: 'funds',
-      label: language === 'ur' 
-        ? 'فنڈز و رقوم' 
-        : currentUser.role === 'MEMBER' 
-        ? 'My Contributions' 
-        : 'Funds & Accounts',
+      label: translate(language, 'navFunds'),
       icon: Coins,
-      visible: true
-    },
-    {
-      id: 'verification',
-      label: language === 'ur' ? 'ادائیگیوں کی تصدیق' : 'Payment Verification',
-      icon: Receipt,
-      visible: currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER',
+      visible: true,
       badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : null,
       badgeColor: 'bg-emerald-600 text-white'
     },
     {
       id: 'digital-card',
-      label: language === 'ur' ? 'ڈیجیٹل کارڈ' : 'Digital Member ID Card',
+      label: translate(language, 'viewDigitalId'),
       icon: IdCard,
-      visible: currentUser.role === 'MEMBER'
+      visible: true
     },
     {
       id: 'complaints',
-      label: language === 'ur' 
-        ? 'شکایات کا ازالہ' 
-        : currentUser.role === 'MEMBER' 
-        ? 'Grievance & Support' 
-        : 'Complaints Desk',
+      label: translate(language, 'navComplaints'),
       icon: MessageSquareWarning,
       visible: true,
       badge: openComplaintsCount > 0 ? openComplaintsCount : null,
@@ -152,53 +122,55 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     },
     {
       id: 'announcements',
-      label: language === 'ur' ? 'اعلانات و خبریں' : 'Bulletins & News',
+      label: translate(language, 'navAnnouncements'),
       icon: Megaphone,
       visible: true
     },
     {
       id: 'staff',
-      label: language === 'ur' ? 'انتظامی افسران' : 'Staff & Roles (RBAC)',
+      label: translate(language, 'navStaff'),
       icon: ShieldCheck,
       visible: currentUser.role === 'SUPER_ADMIN'
     },
     {
       id: 'manage_app',
-      label: language === 'ur' ? 'ایپ سیٹنگز و اپڈیٹس' : 'Manage App Console',
-      icon: Settings,
+      label: `${translate(language, 'navMasterControl')} 👑`,
+      icon: Crown,
       visible: currentUser.role === 'SUPER_ADMIN',
-      badge: 'Admin',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+      badge: 'VIP',
+      badgeColor: 'bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/40'
     },
     {
       id: 'reports',
-      label: language === 'ur' ? 'مالیاتی و علاقائی رپورٹس' : 'Statements & Reports',
+      label: translate(language, 'navReports'),
       icon: FileText,
       visible: true
     },
     {
       id: 'audit',
-      label: language === 'ur' ? 'آڈٹ لاگز' : 'Audit Trail',
+      label: translate(language, 'navAudit'),
       icon: Clock,
-      visible: true
+      visible: currentUser.role !== 'MEMBER'
     }
   ];
 
+  const appDisplayName = language === 'ur'
+    ? (appSettings.appNameUr || translate('ur', 'appTitleShort'))
+    : (appSettings.appName || translate('en', 'appTitleShort'));
+
   return (
-    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0a192f] overflow-hidden">
-      {/* Mobile Drawer Header with Close Button */}
+    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0A0D12] overflow-hidden">
+      {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
-        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-slate-800 bg-slate-950 shrink-0">
+        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold font-serif text-sm shadow-sm">
-              KC
-            </div>
+            <BrandEmblem3D size="xs" />
             <div>
-              <span className="font-bold text-sm text-white block leading-tight">
-                {language === 'ur' ? 'کفایت کنیکٹ' : 'Kifayat Connect'}
+              <span className="font-extrabold text-sm kc-gold-gradient-text block leading-tight">
+                {appDisplayName}
               </span>
-              <span className="text-[10px] text-amber-400 font-medium">
-                {language === 'ur' ? 'شعبہ جاتی مینو' : 'Navigation Menu'}
+              <span className="text-[10px] text-emerald-400 font-medium">
+                {translate(language, 'tagline')}
               </span>
             </div>
           </div>
@@ -206,40 +178,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5 text-amber-400" />
+            <X className="w-5 h-5 text-[#F5D061]" />
           </button>
         </div>
       )}
 
-      {/* Scope / Role Identity Indicator */}
-      <div className="p-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Building2 className="w-4 h-4 text-amber-400 shrink-0" />
-          <div className="truncate">
-            <span className="text-[11px] font-semibold text-slate-200 block truncate">
-              {currentUser.role === 'SUPER_ADMIN' && 'Central Headquarters'}
-              {currentUser.role === 'FINANCE_OFFICER' && 'Central Treasury Desk'}
-              {currentUser.role === 'ADMIN' && `${currentUser.assignedDistrict || currentUser.district || 'District'} Admin`}
-              {currentUser.role === 'CO_ADMIN' && `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Co-Admin`}
-              {currentUser.role === 'MEMBER' && 'Member Self-Service'}
-            </span>
-            <span className="text-[10px] text-amber-400/90 block truncate font-mono">
-              {currentUser.role === 'MEMBER' 
-                ? `ID: ${currentUser.membershipId || 'KC-PENDING'}` 
-                : currentUser.assignedOfficeTitle ? currentUser.assignedOfficeTitle : `Role: ${currentUser.role}`}
-            </span>
-          </div>
+      {/* Role & Jurisdiction Card */}
+      <div className="p-4 border-b border-[#D4AF37]/20 bg-[#111622]/90 shrink-0 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
+        </div>
+        <div className="truncate">
+          <span className="text-xs font-bold text-white block truncate">
+            {currentUser.name}
+          </span>
+          <span className="text-[10px] text-[#D4AF37] block truncate font-mono mt-0.5">
+            {currentUser.membershipId || 'KC-PENDING'} · {currentUser.district || 'Pakistan'}
+          </span>
         </div>
       </div>
 
       {/* Navigation List */}
       <div className="p-3 flex-1 overflow-y-auto space-y-1">
-        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold px-2 py-1 block">
-          {language === 'ur' ? 'شعبہ جات' : 'Management Modules'}
-        </span>
-
         {navItems.filter(item => item.visible).map(item => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;
@@ -253,24 +215,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
                 } else {
                   setActiveTab(item.id);
                 }
-                // Automatically close sidebar on mobile so dashboard takes full screen width
-                if (onClose) {
-                  onClose();
-                }
+                if (onClose) onClose();
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-xs rounded-xl transition-all text-start cursor-pointer ${
                 isActive
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/15'
-                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                  ? 'kc-gold-button font-bold'
+                  : 'text-slate-300 hover:bg-[#161D2C] hover:text-white border border-transparent hover:border-[#D4AF37]/20'
               }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400/80'}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0A0D12]' : 'text-[#D4AF37]'}`} />
                 <span className="truncate">{item.label}</span>
               </div>
 
               {item.badge !== null && item.badge !== undefined && (
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-slate-800 text-white'}`}>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-[#161D2C] text-white'}`}>
                   {item.badge}
                 </span>
               )}
@@ -279,15 +238,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
         })}
       </div>
 
-      {/* PWA & Install Callout in Sidebar Footer */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/80 space-y-2 shrink-0">
+      {/* Footer Install Widget */}
+      <div className="p-3 border-t border-[#D4AF37]/20 bg-[#111622] space-y-2 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold text-slate-400">Mobile & Desktop App</span>
+          <span className="text-[10px] font-semibold text-slate-400">
+            {language === 'ur' ? 'موبائل ایپ' : 'Mobile & PWA App'}
+          </span>
           <PWAInstallButton compact />
         </div>
-        <p className="text-[10px] text-slate-400 leading-tight">
-          Installable PWA & Direct Android APK build ready.
-        </p>
       </div>
     </div>
   );

@@ -6,27 +6,45 @@ import {
   Plus,
   Pin,
   MapPin,
-  MailCheck
+  MailCheck,
+  Crown,
+  Archive,
+  Clock,
+  Trash2,
+  X
 } from 'lucide-react';
 import {
   PROVINCE_OPTIONS,
   getDistrictsForProvince,
   mapLegacyRegionToHierarchy
 } from '../../data/locationData';
+import { translate } from '../../data/translations';
+import { AnnouncementType } from '../../types';
+import { RoleBadge } from '../common/RoleBadge';
 
 export const AnnouncementsManager: React.FC = () => {
   const {
     currentUser,
     announcements,
-    publishAnnouncement
+    publishAnnouncement,
+    deleteAnnouncement,
+    appSettings,
+    language
   } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
-  const canPublish = isSuperAdmin || isDistrictAdmin || isCoAdmin;
 
+  const canPublishOfficial = isSuperAdmin || Boolean(currentUser?.permissions?.canPostOfficialAnnouncements);
+  const canPublishCommunity =
+    appSettings.featureToggles?.allowCommunityAnnouncements !== false &&
+    (isSuperAdmin || isDistrictAdmin || isCoAdmin || Boolean(currentUser?.permissions?.canPostCommunityAnnouncements));
+  const canPublishAny = canPublishOfficial || canPublishCommunity;
+
+  const [activeChannel, setActiveChannel] = useState<'OFFICIAL_APP' | 'COMMUNITY' | 'ARCHIVE'>('OFFICIAL_APP');
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [annType, setAnnType] = useState<AnnouncementType>(canPublishOfficial ? 'OFFICIAL_APP' : 'COMMUNITY');
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [annScope, setAnnScope] = useState<'ALL' | 'PROVINCE' | 'DISTRICT'>(
@@ -40,12 +58,16 @@ export const AnnouncementsManager: React.FC = () => {
   );
   const [annUrgency, setAnnUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
   const [annPinned, setAnnPinned] = useState(false);
+  const [annExpiresAt, setAnnExpiresAt] = useState('');
 
   if (!currentUser) return null;
 
-  const visibleAnnouncements = announcements.filter(ann => {
+  const nowMs = Date.now();
+
+  const visibleToUser = announcements.filter(ann => {
     if (isSuperAdmin) return true;
-    if (ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS') return true;
+    if (ann.announcementType === 'OFFICIAL_APP') return true;
+    if (ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS' || !ann.targetScope) return true;
 
     const userLoc = mapLegacyRegionToHierarchy(currentUser.region);
     const userProv = currentUser.stateProvince || userLoc.stateProvince;
@@ -60,240 +82,462 @@ export const AnnouncementsManager: React.FC = () => {
     return true;
   });
 
+  const isExpired = (expiresAt?: string) => {
+    if (!expiresAt) return false;
+    const t = new Date(expiresAt).getTime();
+    return !Number.isNaN(t) && t <= nowMs;
+  };
+
+  const sortAnnouncements = (list: typeof visibleToUser) =>
+    [...list].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
+
+  const officialList = sortAnnouncements(
+    visibleToUser.filter(a => a.announcementType === 'OFFICIAL_APP' && !isExpired(a.expiresAt))
+  );
+  const communityList = sortAnnouncements(
+    visibleToUser.filter(a => a.announcementType !== 'OFFICIAL_APP' && !isExpired(a.expiresAt))
+  );
+  const archiveList = sortAnnouncements(
+    visibleToUser.filter(a => isExpired(a.expiresAt))
+  );
+
+  const displayedList =
+    activeChannel === 'OFFICIAL_APP'
+      ? officialList
+      : activeChannel === 'COMMUNITY'
+      ? communityList
+      : archiveList;
+
+  const openPublishForChannel = () => {
+    if (activeChannel === 'OFFICIAL_APP' && canPublishOfficial) {
+      setAnnType('OFFICIAL_APP');
+    } else if (canPublishCommunity) {
+      setAnnType('COMMUNITY');
+    } else {
+      setAnnType('OFFICIAL_APP');
+    }
+    setIsPublishModalOpen(true);
+  };
+
   const handlePublishSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!annTitle.trim() || !annContent.trim()) return;
 
-    const targetScope = isDistrictAdmin ? 'DISTRICT' : isCoAdmin ? 'PROVINCE' : annScope;
+    const finalType: AnnouncementType =
+      annType === 'OFFICIAL_APP' && canPublishOfficial ? 'OFFICIAL_APP' : 'COMMUNITY';
+
+    const targetScope =
+      finalType === 'OFFICIAL_APP'
+        ? 'ALL'
+        : isDistrictAdmin
+        ? 'DISTRICT'
+        : isCoAdmin
+        ? 'PROVINCE'
+        : annScope;
+
     const targetStateProvince =
-      isDistrictAdmin || isCoAdmin
+      finalType === 'OFFICIAL_APP'
+        ? undefined
+        : isDistrictAdmin || isCoAdmin
         ? (currentUser.assignedStateProvince || currentUser.stateProvince)
-        : (annScope !== 'ALL' ? annProvince : undefined);
-    const targetDistrict = isDistrictAdmin
-      ? (currentUser.assignedDistrict || currentUser.district)
-      : (annScope === 'DISTRICT' ? annDistrict : undefined);
+        : annScope !== 'ALL'
+        ? annProvince
+        : undefined;
+
+    const targetDistrict =
+      finalType === 'OFFICIAL_APP'
+        ? undefined
+        : isDistrictAdmin
+        ? (currentUser.assignedDistrict || currentUser.district)
+        : annScope === 'DISTRICT'
+        ? annDistrict
+        : undefined;
+
+    const parsedExpiry = annExpiresAt ? new Date(annExpiresAt).toISOString() : undefined;
 
     publishAnnouncement({
       title: annTitle.trim(),
       content: annContent.trim(),
+      announcementType: finalType,
       targetScope,
       targetStateProvince,
       targetDistrict,
       urgency: annUrgency,
-      isPinned: annPinned
+      isPinned: annPinned,
+      expiresAt: parsedExpiry
     });
 
     setIsPublishModalOpen(false);
     setAnnTitle('');
     setAnnContent('');
     setAnnPinned(false);
+    setAnnExpiresAt('');
+    setActiveChannel(finalType);
   };
 
   return (
     <div className="space-y-5 max-w-full">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-              Elaanat & Circulars
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <Megaphone className="w-6 h-6 text-amber-500 shrink-0" />
-            <span>Announcements (Elaanat)</span>
+          <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+            Elaanat & Dual Broadcast Channels
+          </span>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
+            <Megaphone className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <span>{translate(language, 'announcementsHeader')}</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {canPublish
-              ? 'Published announcements automatically send notification alerts and direct inbox messages to targeted members.'
-              : 'Official organizational broadcasts, welfare drives, and leadership circulars.'}
+          <p className="text-xs text-slate-400 mt-0.5">
+            {canPublishAny
+              ? 'Published announcements auto-sync to member notification feeds and direct chat inboxes.'
+              : 'Official Super Admin notices and district community circulars.'}
           </p>
         </div>
 
-        {canPublish && (
+        {canPublishAny && (
           <button
-            onClick={() => setIsPublishModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg shadow-xs transition-colors self-start md:self-auto"
+            type="button"
+            onClick={openPublishForChannel}
+            className="flex items-center gap-1.5 px-4 py-2.5 kc-gold-button text-xs font-extrabold rounded-xl shadow-sm self-start md:self-auto cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Publish Elaan</span>
+            <Plus className="w-4 h-4" />
+            <span>{translate(language, 'publishAnnouncementBtn')}</span>
           </button>
         )}
       </div>
 
-      {canPublish && (
-        <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-          <MailCheck className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Auto-Broadcast Active: Every published Elaan is simultaneously sent to members&apos; Chat Inboxes and Notification Alerts.</span>
+      {/* 3 Channel Tabs: Official App 👑 | Community 📢 | History Archive */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setActiveChannel('OFFICIAL_APP')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+            activeChannel === 'OFFICIAL_APP'
+              ? 'kc-gold-button'
+              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+          }`}
+        >
+          <Crown className="w-3.5 h-3.5" />
+          <span>{translate(language, 'tabOfficialApp')}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{officialList.length}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveChannel('COMMUNITY')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+            activeChannel === 'COMMUNITY'
+              ? 'kc-gold-button'
+              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+          }`}
+        >
+          <Megaphone className="w-3.5 h-3.5" />
+          <span>{translate(language, 'tabCommunity')}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{communityList.length}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveChannel('ARCHIVE')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+            activeChannel === 'ARCHIVE'
+              ? 'kc-gold-button'
+              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+          }`}
+        >
+          <Archive className="w-3.5 h-3.5" />
+          <span>{translate(language, 'tabArchive')}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{archiveList.length}</span>
+        </button>
+      </div>
+
+      {canPublishAny && activeChannel !== 'ARCHIVE' && (
+        <div className="p-3 rounded-xl bg-[#043927]/40 border border-[#D4AF37]/30 flex items-center gap-2.5 text-xs text-emerald-200">
+          <MailCheck className="w-4 h-4 text-[#F5D061] shrink-0" />
+          <span>
+            Auto-Broadcast Active: Official App announcements (👑) require Super Admin authority; Community notices reach targeted province/district inboxes.
+          </span>
         </div>
       )}
 
-      <div className="space-y-4">
-        {visibleAnnouncements.length === 0 ? (
-          <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-400">
-            No announcements published yet.
+      {/* List */}
+      <div className="space-y-3.5">
+        {displayedList.length === 0 ? (
+          <div className="p-10 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/20 text-xs text-slate-400">
+            {activeChannel === 'ARCHIVE'
+              ? translate(language, 'noArchivedAnnouncements')
+              : translate(language, 'noAnnouncements')}
           </div>
         ) : (
-          visibleAnnouncements.map(ann => (
-            <div
-              key={ann.id}
-              className={`p-4 sm:p-5 rounded-xl border shadow-2xs text-xs space-y-2.5 ${
-                ann.urgency === 'URGENT'
-                  ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {ann.isPinned && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                      <Pin className="w-3 h-3" />
-                      PINNED
+          displayedList.map(ann => {
+            const isOfficial = ann.announcementType === 'OFFICIAL_APP';
+            const expired = isExpired(ann.expiresAt);
+            return (
+              <div
+                key={ann.id}
+                className={`p-4 sm:p-5 rounded-2xl border shadow-sm text-xs space-y-2.5 ${
+                  ann.urgency === 'URGENT'
+                    ? 'bg-rose-950/25 border-rose-500/40'
+                    : isOfficial
+                    ? 'bg-[#111622] border-[#D4AF37]/40'
+                    : 'bg-[#111622] border-slate-800'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
+                        isOfficial
+                          ? 'bg-amber-500/15 border-[#F5D061]/50 text-[#F5D061]'
+                          : 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                      }`}
+                    >
+                      {isOfficial ? '👑 OFFICIAL APP' : '📢 COMMUNITY'}
                     </span>
-                  )}
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white">{ann.title}</h3>
-                  {ann.urgency === 'URGENT' && (
-                    <span className="text-[10px] font-bold text-rose-600 uppercase px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950">
-                      Urgent
+
+                    {ann.isPinned && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
+                        <Pin className="w-3 h-3" />
+                        <span>{translate(language, 'pinnedBadge')}</span>
+                      </span>
+                    )}
+
+                    {ann.urgency === 'URGENT' && (
+                      <span className="text-[10px] font-bold text-rose-200 uppercase px-2 py-0.5 rounded-md bg-rose-900/80 border border-rose-500/40">
+                        {translate(language, 'urgentBadge')}
+                      </span>
+                    )}
+
+                    {expired && (
+                      <span className="text-[10px] font-bold text-slate-300 uppercase px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700">
+                        {translate(language, 'expiredOn')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#0A0D12] border border-slate-800 px-2.5 py-0.5 rounded-lg text-emerald-300">
+                      <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                      {ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS' || !ann.targetScope
+                        ? 'All Pakistan'
+                        : ann.targetScope === 'PROVINCE'
+                        ? `${ann.targetStateProvince}`
+                        : `${ann.targetDistrict || ann.targetRegion}`}
                     </span>
-                  )}
+
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => deleteAnnouncement(ann.id)}
+                        className="p-1.5 rounded-lg bg-[#0A0D12] hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800 cursor-pointer"
+                        title={translate(language, 'deleteLabel')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded text-emerald-700 dark:text-emerald-300 self-start sm:self-auto">
-                  <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
-                  {ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS'
-                    ? 'All Pakistan'
-                    : ann.targetScope === 'PROVINCE'
-                    ? `${ann.targetStateProvince}`
-                    : `${ann.targetDistrict || ann.targetRegion}`}
-                </span>
-              </div>
+                <h3 className="font-extrabold text-base text-white">{ann.title}</h3>
 
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-xs whitespace-pre-wrap">
-                {ann.content}
-              </p>
+                <p className="text-slate-300 leading-relaxed text-xs whitespace-pre-wrap">
+                  {ann.content}
+                </p>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <span>
-                  Published by: <strong className="text-slate-700 dark:text-slate-300">{ann.publishedBy}</strong>
-                </span>
-                <span className="font-mono">{new Date(ann.publishedAt).toLocaleDateString()}</span>
+                <div className="pt-2.5 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>
+                      By <strong className="text-white">{ann.publishedBy}</strong>
+                    </span>
+                    <RoleBadge role={ann.publisherRole} compact />
+                  </div>
+
+                  <div className="flex items-center gap-3 font-mono text-[10px]">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#F5D061]" />
+                      {new Date(ann.publishedAt).toLocaleString()}
+                    </span>
+                    {ann.expiresAt && (
+                      <span className="text-amber-300">
+                        {expired ? translate(language, 'expiredOn') : translate(language, 'expiresOn')}:{' '}
+                        {new Date(ann.expiresAt).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
+      {/* Publish Modal */}
       {isPublishModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-6 text-xs">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
-              Publish Official Elaan & Inbox Broadcast
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-6 text-xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white">
+                {translate(language, 'publishAnnouncementBtn')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsPublishModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <form onSubmit={handlePublishSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handlePublishSubmit} className="space-y-4">
+              {/* Channel Selector */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Headline
-                </label>
+                <label className="font-semibold text-slate-300 block mb-1.5">Announcement Channel</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={!canPublishOfficial}
+                    onClick={() => setAnnType('OFFICIAL_APP')}
+                    className={`p-2.5 rounded-xl border text-left font-bold cursor-pointer disabled:opacity-40 ${
+                      annType === 'OFFICIAL_APP'
+                        ? 'border-[#F5D061] bg-[#043927]/70 text-[#F5D061]'
+                        : 'border-slate-800 bg-[#0A0D12] text-slate-400'
+                    }`}
+                  >
+                    👑 Official App
+                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">Super Admin Global</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!canPublishCommunity}
+                    onClick={() => setAnnType('COMMUNITY')}
+                    className={`p-2.5 rounded-xl border text-left font-bold cursor-pointer disabled:opacity-40 ${
+                      annType === 'COMMUNITY'
+                        ? 'border-[#F5D061] bg-[#043927]/70 text-[#F5D061]'
+                        : 'border-slate-800 bg-[#0A0D12] text-slate-400'
+                    }`}
+                  >
+                    📢 Community
+                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">Leadership Circular</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-300 block mb-1">Headline *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Monthly Welfare Assembly Notice"
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white text-xs"
                 />
               </div>
 
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Target Audience
-                </label>
-                {isDistrictAdmin ? (
-                  <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{currentUser.assignedDistrict || currentUser.district}</span>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <select
-                      value={annScope}
-                      onChange={(e) => setAnnScope(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
-                    >
-                      <option value="ALL">National Broadcast (All Members)</option>
-                      <option value="PROVINCE">Province-Level Broadcast</option>
-                      <option value="DISTRICT">District-Specific Broadcast</option>
-                    </select>
+              {annType === 'COMMUNITY' && (
+                <div>
+                  <label className="font-semibold text-slate-300 block mb-1">Target Audience</label>
+                  {isDistrictAdmin ? (
+                    <div className="p-2.5 bg-[#0A0D12] border border-slate-800 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{currentUser.assignedDistrict || currentUser.district}</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <select
+                        value={annScope}
+                        onChange={(e) => setAnnScope(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white font-semibold"
+                      >
+                        <option value="ALL">National Broadcast (All Members)</option>
+                        <option value="PROVINCE">Province-Level Broadcast</option>
+                        <option value="DISTRICT">District-Specific Broadcast</option>
+                      </select>
 
-                    {annScope !== 'ALL' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <select
-                          value={annProvince}
-                          onChange={(e) => {
-                            const newP = e.target.value;
-                            setAnnProvince(newP);
-                            const dists = getDistrictsForProvince(newP);
-                            if (dists.length > 0) setAnnDistrict(dists[0]);
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs"
-                        >
-                          {PROVINCE_OPTIONS.map(p => (
-                            <option key={p} value={p}>{p}</option>
-                          ))}
-                        </select>
-
-                        {annScope === 'DISTRICT' && (
+                      {annScope !== 'ALL' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <select
-                            value={annDistrict}
-                            onChange={(e) => setAnnDistrict(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs"
+                            value={annProvince}
+                            onChange={(e) => {
+                              const newP = e.target.value;
+                              setAnnProvince(newP);
+                              const dists = getDistrictsForProvince(newP);
+                              if (dists.length > 0) setAnnDistrict(dists[0]);
+                            }}
+                            className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white"
                           >
-                            {getDistrictsForProvince(annProvince).map(d => (
-                              <option key={d} value={d}>{d}</option>
+                            {PROVINCE_OPTIONS.map(p => (
+                              <option key={p} value={p}>{p}</option>
                             ))}
                           </select>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+
+                          {annScope === 'DISTRICT' && (
+                            <select
+                              value={annDistrict}
+                              onChange={(e) => setAnnDistrict(e.target.value)}
+                              className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white"
+                            >
+                              {getDistrictsForProvince(annProvince).map(d => (
+                                <option key={d} value={d}>{d}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Message Content
-                </label>
+                <label className="font-semibold text-slate-300 block mb-1">Message Content *</label>
                 <textarea
                   required
                   rows={4}
                   placeholder="Write the full announcement message..."
                   value={annContent}
                   onChange={(e) => setAnnContent(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs resize-none"
+                  className="w-full p-2.5 border border-slate-700 rounded-xl bg-[#0A0D12] text-white text-xs resize-none"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                <div className="flex items-center gap-4">
+              <div>
+                <label className="font-semibold text-slate-300 block mb-1">
+                  {translate(language, 'expiryLabel')}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={annExpiresAt}
+                  onChange={(e) => setAnnExpiresAt(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                <div className="flex items-center gap-4 text-slate-200">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={annPinned}
                       onChange={(e) => setAnnPinned(e.target.checked)}
-                      className="rounded text-amber-500"
+                      className="accent-amber-500"
                     />
-                    <span>Pin to top</span>
+                    <span>{translate(language, 'pinToTop')}</span>
                   </label>
 
-                  <label className="flex items-center gap-1.5 cursor-pointer text-rose-600 font-medium">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-rose-300 font-semibold">
                     <input
                       type="checkbox"
                       checked={annUrgency === 'URGENT'}
                       onChange={(e) => setAnnUrgency(e.target.checked ? 'URGENT' : 'NORMAL')}
-                      className="rounded text-rose-600"
+                      className="accent-rose-500"
                     />
-                    <span>Urgent</span>
+                    <span>{translate(language, 'urgentBadge')}</span>
                   </label>
                 </div>
 
@@ -301,13 +545,13 @@ export const AnnouncementsManager: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsPublishModalOpen(false)}
-                    className="px-3 py-1.5 text-slate-500 hover:text-slate-700"
+                    className="px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer"
                   >
-                    Cancel
+                    {translate(language, 'cancel')}
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 kc-gold-button font-extrabold rounded-xl shadow-xs cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Broadcast Now</span>

@@ -1,4 +1,32 @@
-export type UserRole = 'SUPER_ADMIN' | 'FINANCE_OFFICER' | 'ADMIN' | 'CO_ADMIN' | 'MEMBER';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CO_ADMIN' | 'MEMBER';
+
+export interface RolePermissions {
+  canManageUsers: boolean;
+  canVerifyPayments: boolean;
+  canPostCommunityAnnouncements: boolean;
+  canPostOfficialAnnouncements: boolean;
+  canManageComplaints: boolean;
+  canViewReports: boolean;
+  canApproveMembers: boolean;
+}
+
+export function normalizeLegacyRole(role: string | undefined, email?: string): UserRole {
+  if (email && email.trim().toLowerCase() === 'asadullah6959@gmail.com') {
+    return 'SUPER_ADMIN';
+  }
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'SUPER_ADMIN';
+    case 'ADMIN':
+    case 'FINANCE_OFFICER':
+      return 'ADMIN';
+    case 'CO_ADMIN':
+      return 'CO_ADMIN';
+    case 'MEMBER':
+    default:
+      return 'MEMBER';
+  }
+}
 
 export type MembershipStatus = 
   | 'PENDING_DISTRICT_REVIEW' 
@@ -54,13 +82,16 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
+  isFounder?: boolean;
+  permissions?: RolePermissions;
+  hasPassword?: boolean;
   country: string;
   stateProvince: string;
   district: string;
   tehsil: string;
   cityTown: string;
   unionCouncil: string;
-  membershipId?: string; // e.g., KC-2024-8841
+  membershipId?: string; // e.g., KC-000001
   membershipStatus: MembershipStatus;
   avatarUrl?: string;
   avatar?: string;
@@ -195,10 +226,13 @@ export interface Complaint {
   region?: string;
 }
 
+export type AnnouncementType = 'OFFICIAL_APP' | 'COMMUNITY';
+
 export interface Announcement {
   id: string;
   title: string;
   content: string;
+  announcementType?: AnnouncementType;
   targetScope?: 'ALL' | 'PROVINCE' | 'DISTRICT';
   targetStateProvince?: string;
   targetDistrict?: string;
@@ -207,6 +241,8 @@ export interface Announcement {
   publishedAt: string;
   isPinned: boolean;
   urgency: 'NORMAL' | 'URGENT';
+  expiresAt?: string;
+  pinnedUntil?: string;
   targetRegion?: string;
 }
 
@@ -319,6 +355,8 @@ export interface OfficeBearerHistory {
 // ----------------------------------------------------
 // Chat System Models
 // ----------------------------------------------------
+export type MessageDeliveryStatus = 'QUEUED' | 'DELIVERED' | 'SEEN';
+
 export interface ChatMessage {
   id: string;
   chatId: string;
@@ -330,6 +368,7 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   read: boolean;
+  deliveryStatus?: MessageDeliveryStatus;
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentType?: 'IMAGE' | 'DOCUMENT';
@@ -377,14 +416,45 @@ export interface AppUpdate {
 }
 
 // ----------------------------------------------------
-// In-App Administration & Settings
+// In-App Administration & Master Control Panel Settings
 // ----------------------------------------------------
+export type ThemePresetId = 'OBSIDIAN_GOLD' | 'EMERALD_GOLD' | 'MIDNIGHT_ROYAL' | 'IMPERIAL_ONYX';
+
+export interface DashboardSectionVisibility {
+  showKpiGrid: boolean;
+  showQuickActions: boolean;
+  showApkSyncBanner: boolean;
+  showDistrictMatrix: boolean;
+  showOfficeBearersWidget: boolean;
+  showAnnouncementsFeed: boolean;
+}
+
+export interface FeatureToggles {
+  allowPasswordLogin: boolean;
+  allowCommunityAnnouncements: boolean;
+  allowDigitalIdDownload: boolean;
+  allowMemberPayments: boolean;
+  allowComplaintsDesk: boolean;
+}
+
+export interface CustomCopyOverrides {
+  welcomeHeadlineEn: string;
+  welcomeHeadlineUr: string;
+  maintenanceMessageEn: string;
+  maintenanceMessageUr: string;
+  idCardFooterEn: string;
+  idCardFooterUr: string;
+}
+
 export interface AppSettings {
   appName: string;
+  appNameUr?: string;
   tagline: string;
+  taglineUr?: string;
   logoUrl: string;
   primaryColor: string;
   accentGoldColor: string;
+  themePreset?: ThemePresetId;
   registrationOpen: boolean;
   maintenanceMode: boolean;
   profileVisibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
@@ -393,6 +463,15 @@ export interface AppSettings {
   maxCoAdminsPerState: number; // exactly 3
   contactEmail: string;
   contactHelpline: string;
+  masterPinHash?: string;
+  dashboardVisibility?: DashboardSectionVisibility;
+  featureToggles?: FeatureToggles;
+  textOverrides?: CustomCopyOverrides;
+  roleDefaults?: {
+    ADMIN: RolePermissions;
+    CO_ADMIN: RolePermissions;
+    MEMBER: RolePermissions;
+  };
   updatedAt: string;
   updatedBy: string;
 }

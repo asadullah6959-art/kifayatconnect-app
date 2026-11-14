@@ -9,7 +9,7 @@
         "name": { "type": "string", "maxLength": 120 },
         "email": { "type": "string", "maxLength": 120 },
         "phone": { "type": "string", "maxLength": 30 },
-        "role": { "type": "string", "enum": ["SUPER_ADMIN", "FINANCE_OFFICER", "ADMIN", "CO_ADMIN", "MEMBER"] },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "ADMIN", "CO_ADMIN", "MEMBER"] },
         "country": { "type": "string", "maxLength": 80 },
         "stateProvince": { "type": "string", "maxLength": 100 },
         "district": { "type": "string", "maxLength": 100 },

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { PaymentTransaction } from '../../types';
 import { X, Printer, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { BrandEmblem3D } from '../common/BrandEmblem3D';
 
 interface DigitalReceiptModalProps {
   receipt: PaymentTransaction;
@@ -71,11 +72,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
           {/* Top Logo and Organization Title */}
           <div className="flex items-start justify-between border-b border-slate-300 dark:border-slate-800 pb-4">
             <div className="flex items-center gap-3">
-              <img 
-                src="/src/assets/images/kifayat_emblem_logo_1794225902501.jpg" 
-                alt="Logo" 
-                className="w-12 h-12 rounded-lg object-cover border border-emerald-600/40"
-              />
+              <BrandEmblem3D size="md" className="shrink-0" />
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight">
                   Kifayat Connect Welfare Organization

@@ -15,6 +15,7 @@ import {
   LineChart,
   PieChart as PieIcon
 } from 'lucide-react';
+import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -46,7 +47,6 @@ export const ReportsView: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
@@ -289,7 +289,6 @@ export const ReportsView: React.FC = () => {
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">
               {isSuperAdmin && 'Master Organization Report'}
-              {isFinanceOfficer && 'Central Financial Statement'}
               {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} District Statement`}
               {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`}
               {isMember && 'Personal Welfare Contribution Summary'}
@@ -335,11 +334,7 @@ export const ReportsView: React.FC = () => {
         {/* Statement Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <img 
-              src="/src/assets/images/kifayat_emblem_logo_1794225902501.jpg" 
-              alt="Logo" 
-              className="w-12 h-12 rounded-lg object-cover border border-emerald-600/40"
-            />
+            <BrandEmblem3D size="md" className="shrink-0" />
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight">
                 Kifayat Connect Welfare Trust
@@ -615,7 +610,7 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
 
-        {/* District & Provincial Performance Matrix (Visible to Super Admin & Finance Officer) */}
+        {/* District & Provincial Performance Matrix (Visible to Leadership) */}
         {!isMember && (
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">

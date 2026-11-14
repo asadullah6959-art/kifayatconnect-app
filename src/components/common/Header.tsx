@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp, isFounderUser } from '../../context/AppContext';
 import { 
   Languages, 
   User as UserIcon, 
   LogOut, 
-  ExternalLink, 
   IdCard, 
   Plus, 
   Keyboard, 
@@ -12,13 +11,15 @@ import {
   ShieldCheck,
   MessageSquare,
   Award,
-  Sparkles,
-  Download,
+  Crown,
   Menu,
   X
 } from 'lucide-react';
 import { GlobalSearchBar } from './GlobalSearchBar';
 import { PWAInstallButton } from './PWAInstallButton';
+import { BrandEmblem3D } from './BrandEmblem3D';
+import { RoleBadge } from './RoleBadge';
+import { translate } from '../../data/translations';
 
 interface HeaderProps {
   onOpenRegisterModal: () => void;
@@ -48,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
     isFirebaseLive,
     firebaseUser,
     logoutFirebaseAuth,
+    appSettings,
     isOnline
   } = useApp();
 
@@ -55,40 +57,25 @@ export const Header: React.FC<HeaderProps> = ({
 
   if (!currentUser) return null;
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'SUPER_ADMIN':
-        return 'Super Admin';
-      case 'FINANCE_OFFICER':
-        return 'Finance Officer';
-      case 'ADMIN':
-        return `District Admin · ${currentUser.assignedDistrict || currentUser.district || 'District'}`;
-      case 'CO_ADMIN':
-        return `State Co-Admin · ${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'}`;
-      case 'MEMBER':
-        return `Member · ${currentUser.membershipId || 'KC-PENDING'}`;
-      default:
-        return role;
-    }
-  };
+  const displayAppName = language === 'ur'
+    ? (appSettings.appNameUr || translate('ur', 'appTitleShort'))
+    : (appSettings.appName || translate('en', 'appTitleShort'));
 
   return (
-    <header className="shrink-0 z-30 w-full max-w-full flex items-center justify-between gap-2 sm:gap-4 md:gap-6 px-2.5 sm:px-4 md:px-6 py-2.5 bg-[#0a192f] border-b border-slate-800 text-white shadow-md">
-      {/* Zone 1: Mobile Hamburger Button (☰) & Wordmark */}
+    <header className="shrink-0 z-30 w-full max-w-full flex items-center justify-between gap-2 sm:gap-4 md:gap-6 px-2.5 sm:px-4 md:px-6 py-2.5 bg-[#0A0D12] border-b border-[#D4AF37]/25 text-white shadow-md">
+      {/* Zone 1: Mobile Hamburger & 3D Brand Emblem */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Hamburger Menu Button (☰) on Mobile screens */}
         <button
           type="button"
           onClick={onToggleSidebar}
-          aria-label={isSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isSidebarOpen}
-          className="md:hidden p-2 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-slate-800/80 active:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center border border-amber-500/30 shrink-0"
-          title="Toggle Navigation Menu (☰)"
+          className="md:hidden p-2 rounded-xl text-[#F5D061] hover:bg-[#161D2C] transition-colors cursor-pointer flex items-center justify-center border border-[#D4AF37]/30 shrink-0"
         >
           {isSidebarOpen ? (
-            <X className="w-5 h-5 text-amber-400" />
+            <X className="w-5 h-5 text-[#F5D061]" />
           ) : (
-            <Menu className="w-5 h-5 text-amber-400" />
+            <Menu className="w-5 h-5 text-[#F5D061]" />
           )}
         </button>
 
@@ -99,122 +86,117 @@ export const Header: React.FC<HeaderProps> = ({
           }} 
           className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none whitespace-nowrap shrink-0"
         >
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-bold shadow-md shadow-amber-500/20 shrink-0">
-            <span className="font-serif text-base sm:text-lg leading-none">KC</span>
-          </div>
+          <BrandEmblem3D size="sm" />
           <div className="flex flex-col">
-            <span className="text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-none flex items-center gap-1.5">
-              {language === 'ur' ? 'کفایت کنیکٹ' : 'Kifayat Connect'}
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hidden xs:inline-block">
-                v2.1
-              </span>
+            <span className="text-sm sm:text-base md:text-lg font-extrabold tracking-tight kc-gold-gradient-text leading-none flex items-center gap-1.5">
+              {displayAppName}
             </span>
-            <span className="text-[9px] sm:text-[10px] text-amber-400 font-medium tracking-wide">
-              {language === 'ur' ? 'ویلفیئر و گورننس' : 'Welfare & Governance'}
+            <span className="text-[9px] sm:text-[10px] text-emerald-400 font-semibold tracking-wide mt-0.5">
+              {language === 'ur'
+                ? (appSettings.taglineUr || translate('ur', 'tagline'))
+                : (appSettings.tagline || translate('en', 'tagline'))}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Zone 2: Navigation Links */}
+      {/* Zone 2: Desktop Quick Nav */}
       <nav className="hidden xl:flex items-center gap-5 text-xs font-semibold text-slate-300">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`hover:text-amber-400 transition-colors py-1 cursor-pointer ${
-            activeTab === 'dashboard' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+          className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+            activeTab === 'dashboard' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
           }`}
         >
-          {language === 'ur' ? 'ڈیش بورڈ' : 'Dashboard'}
+          {translate(language, 'navDashboard')}
         </button>
 
         <button
           onClick={() => setActiveTab('chat')}
-          className={`hover:text-amber-400 transition-colors py-1 flex items-center gap-1 cursor-pointer ${
-            activeTab === 'chat' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+          className={`hover:text-[#F5D061] transition-colors py-1 flex items-center gap-1 cursor-pointer ${
+            activeTab === 'chat' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span>{language === 'ur' ? 'چیٹ' : 'Chat'}</span>
+          <span>{translate(language, 'navChat')}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('office_bearers')}
-          className={`hover:text-amber-400 transition-colors py-1 flex items-center gap-1 cursor-pointer ${
-            activeTab === 'office_bearers' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+          className={`hover:text-[#F5D061] transition-colors py-1 flex items-center gap-1 cursor-pointer ${
+            activeTab === 'office_bearers' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
           }`}
         >
           <Award className="w-3.5 h-3.5" />
-          <span>{language === 'ur' ? 'عہدیداران' : 'Office-Bearers'}</span>
+          <span>{translate(language, 'navOfficeBearers')}</span>
         </button>
 
         {currentUser.role !== 'MEMBER' && (
           <button
             onClick={() => setActiveTab('members')}
-            className={`hover:text-amber-400 transition-colors py-1 cursor-pointer ${
-              activeTab === 'members' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+            className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+              activeTab === 'members' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
             }`}
           >
-            {language === 'ur' ? 'ارکان' : 'Members'}
+            {translate(language, 'navMembers')}
           </button>
         )}
 
         {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
           <button
             onClick={() => setActiveTab('approvals')}
-            className={`hover:text-amber-400 transition-colors py-1 cursor-pointer ${
-              activeTab === 'approvals' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+            className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+              activeTab === 'approvals' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
             }`}
           >
-            {language === 'ur' ? 'منظوریاں' : 'Approvals'}
+            {translate(language, 'navApprovals')}
           </button>
         )}
 
         <button
           onClick={() => setActiveTab('funds')}
-          className={`hover:text-amber-400 transition-colors py-1 cursor-pointer ${
-            activeTab === 'funds' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+          className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+            activeTab === 'funds' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
           }`}
         >
-          {language === 'ur' ? 'فنڈز' : 'Contributions'}
+          {translate(language, 'navFunds')}
         </button>
 
         <button
           onClick={() => setActiveTab('complaints')}
-          className={`hover:text-amber-400 transition-colors py-1 cursor-pointer ${
-            activeTab === 'complaints' ? 'text-amber-400 font-bold border-b-2 border-amber-400' : ''
+          className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+            activeTab === 'complaints' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
           }`}
         >
-          {language === 'ur' ? 'شکایات' : 'Grievances'}
+          {translate(language, 'navComplaints')}
         </button>
       </nav>
 
-      {/* Global Role-Gated Search Bar */}
+      {/* Global Search Bar */}
       <div className="hidden sm:block flex-1 max-w-xs md:max-w-md mx-1 min-w-0">
         <GlobalSearchBar />
       </div>
 
-      {/* Zone 3: Actions & Account profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
+      {/* Zone 3: Actions & Profile */}
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 shrink-0">
         {!isOnline && (
           <span className="hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Offline
+            {translate(language, 'offline')}
           </span>
         )}
 
-        {/* PWA Install Button */}
         <div className="hidden sm:block">
           <PWAInstallButton />
         </div>
 
-        {/* Keyboard Shortcuts Guide */}
         {onOpenShortcutsModal && (
           <button
             onClick={onOpenShortcutsModal}
-            className="hidden md:flex items-center gap-1 px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title="Keyboard Shortcuts Guide (?)"
+            className="hidden md:flex items-center gap-1 px-2 py-1.5 text-xs text-slate-300 hover:bg-[#161D2C] rounded-lg transition-colors cursor-pointer"
+            title="Keyboard Shortcuts (?)"
           >
             <Keyboard className="w-3.5 h-3.5 text-slate-400" />
-            <kbd className="font-mono text-[9px] px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400">
+            <kbd className="font-mono text-[9px] px-1 py-0.5 bg-[#111622] border border-[#D4AF37]/30 rounded text-slate-400">
               ?
             </kbd>
           </button>
@@ -223,103 +205,109 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Language switch */}
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-[#F5D061] bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/30 rounded-xl transition-colors cursor-pointer"
           title="Switch Language (English / اردو)"
         >
-          <Languages className="w-3.5 h-3.5 text-amber-400" />
-          <span>{language === 'en' ? 'اردو' : 'EN'}</span>
+          <Languages className="w-3.5 h-3.5 text-[#D4AF37]" />
+          <span>{translate(language, 'languageToggle')}</span>
         </button>
 
-        {/* Global Notifications Bell */}
+        {/* Notifications Bell */}
         <button
           onClick={onOpenNotifications}
-          className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors shrink-0 cursor-pointer"
-          title={language === 'ur' ? 'اطلاعات (الرٹس)' : 'Notifications & Alerts'}
-          aria-label="Open notifications"
+          className="relative p-2 text-slate-300 hover:text-[#F5D061] hover:bg-[#161D2C] rounded-xl transition-colors shrink-0 cursor-pointer border border-transparent hover:border-[#D4AF37]/25"
+          title={translate(language, 'notifications')}
+          aria-label={translate(language, 'notifications')}
         >
-          <Bell className="w-4 h-4 text-slate-300" />
+          <Bell className="w-4 h-4" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-slate-950 bg-amber-400 rounded-full shadow-xs">
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-[#0A0D12] bg-[#F5D061] rounded-full shadow-xs">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
             </span>
           )}
         </button>
 
-        {/* New Member Registration CTA */}
+        {/* VIP Digital ID Quick Pill */}
         <button
-          onClick={onOpenRegisterModal}
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+          onClick={() => setSelectedCardUser(currentUser)}
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl kc-gold-button hover:brightness-110 transition-all cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{language === 'ur' ? 'نئی رکنیت' : 'Join Member'}</span>
+          <IdCard className="w-3.5 h-3.5" />
+          <span>{translate(language, 'viewDigitalId')}</span>
         </button>
 
-        {/* Current User Profile Pill with dropdown */}
+        {/* Profile Pill + Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowProfileMenu(prev => !prev)}
-            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer border border-slate-800 hover:border-slate-700"
+            className="flex items-center gap-2 p-1 rounded-xl bg-[#111622] hover:bg-[#161D2C] transition-colors text-start cursor-pointer border border-[#D4AF37]/30"
           >
             <img 
-              src={currentUser.avatarUrl || currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=0a192f&color=d4af37&size=64`}
+              src={currentUser.avatarUrl || currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=043927&color=F5D061&size=64`}
               alt={currentUser.name} 
-              className="w-8 h-8 rounded-full object-cover border border-amber-500/30"
+              className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/60"
             />
-            <div className="hidden lg:flex flex-col text-left leading-tight">
-              <span className="text-xs font-bold text-white whitespace-nowrap">
+            <div className="hidden lg:flex flex-col text-start leading-tight pe-1.5">
+              <span className="text-xs font-bold text-white whitespace-nowrap max-w-[130px] truncate">
                 {currentUser.name}
               </span>
-              <span className="text-[10px] text-amber-400/90 whitespace-nowrap font-mono">
-                {getRoleBadge(currentUser.role)}
-              </span>
+              <div className="mt-0.5">
+                <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
+              </div>
             </div>
           </button>
 
-          {/* Profile Dropdown Menu */}
           {showProfileMenu && (
             <div 
               onMouseLeave={() => setShowProfileMenu(false)}
-              className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl py-2 z-50 text-xs text-slate-200"
+              className="absolute end-0 mt-2 w-68 bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl py-2 z-50 text-xs text-slate-200"
             >
-              <div className="px-3.5 py-2.5 border-b border-slate-800">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-white">{currentUser.name}</p>
+              <div className="px-3.5 py-2.5 border-b border-[#D4AF37]/20">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-white truncate">{currentUser.name}</p>
                   {isFirebaseLive && (
-                    <span className="text-[9px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                      Live Firebase
+                    <span className="text-[9px] bg-emerald-500/15 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
+                      Live
                     </span>
                   )}
                 </div>
                 <p className="text-slate-400 text-[11px] truncate font-mono mt-0.5">{currentUser.email}</p>
-                <div className="mt-1 flex items-center gap-1.5 text-[10px] text-amber-400 font-semibold">
-                  <span>{currentUser.role}</span>
-                  <span>·</span>
-                  <span>{currentUser.assignedDistrict || currentUser.assignedStateProvince || 'Headquarters'}</span>
+                <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                  <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
                 </div>
               </div>
 
-              {currentUser.role === 'MEMBER' && (
-                <button
-                  onClick={() => {
-                    setSelectedCardUser(currentUser);
-                    setShowProfileMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-slate-800 text-slate-200 text-left cursor-pointer"
-                >
-                  <IdCard className="w-3.5 h-3.5 text-amber-400" />
-                  <span>View Digital Membership Card</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setSelectedCardUser(currentUser);
+                  setShowProfileMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#F5D061] text-start cursor-pointer font-semibold"
+              >
+                <IdCard className="w-3.5 h-3.5" />
+                <span>{translate(language, 'viewDigitalId')}</span>
+              </button>
 
               <button
                 onClick={() => {
                   setActiveTab('profile');
                   setShowProfileMenu(false);
                 }}
-                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-slate-800 text-slate-200 text-left cursor-pointer"
+                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-slate-200 text-start cursor-pointer"
               >
                 <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                <span>Account Profile & Security</span>
+                <span>{translate(language, 'navProfile')}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenRegisterModal();
+                  setShowProfileMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-emerald-300 text-start cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{translate(language, 'registerBtn')}</span>
               </button>
 
               {currentUser.role === 'SUPER_ADMIN' && (
@@ -328,24 +316,24 @@ export const Header: React.FC<HeaderProps> = ({
                     setActiveTab('manage_app');
                     setShowProfileMenu(false);
                   }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-slate-800 text-amber-400 text-left cursor-pointer font-semibold"
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#F5D061] text-start cursor-pointer font-bold"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Manage App & Update Center</span>
+                  <Crown className="w-3.5 h-3.5" />
+                  <span>{translate(language, 'navMasterControl')} 👑</span>
                 </button>
               )}
 
-              <div className="border-t border-slate-800 my-1 pt-1 space-y-0.5">
+              <div className="border-t border-[#D4AF37]/20 my-1 pt-1 space-y-0.5">
                 {!isFirebaseLive && (
                   <button
                     onClick={() => {
                       onOpenLoginModal();
                       setShowProfileMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-amber-500/10 text-amber-400 text-left cursor-pointer font-medium"
+                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-amber-500/10 text-[#F5D061] text-start cursor-pointer font-medium"
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Verify with Google / Email OTP</span>
+                    <span>{translate(language, 'signInBtn')}</span>
                   </button>
                 )}
                 <button
@@ -353,10 +341,10 @@ export const Header: React.FC<HeaderProps> = ({
                     await logoutFirebaseAuth();
                     setShowProfileMenu(false);
                   }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-500/10 text-rose-400 text-left cursor-pointer font-medium"
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-500/10 text-rose-400 text-start cursor-pointer font-semibold"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>{isFirebaseLive ? `Sign Out (${firebaseUser?.email})` : 'Sign Out'}</span>
+                  <span>{isFirebaseLive && firebaseUser?.email ? `${translate(language, 'logout')} (${firebaseUser.email})` : translate(language, 'logout')}</span>
                 </button>
               </div>
             </div>

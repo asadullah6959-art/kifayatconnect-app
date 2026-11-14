@@ -31,7 +31,6 @@ export const ComplaintsManager: React.FC = () => {
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
   const isMember = currentUser?.role === 'MEMBER';
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED'>('ALL');
@@ -72,7 +71,6 @@ export const ComplaintsManager: React.FC = () => {
       const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
       return cProv === myProv;
     }
-    if (isFinanceOfficer) return false;
     return true; // Super Admin sees all
   });
 
@@ -117,20 +115,6 @@ export const ComplaintsManager: React.FC = () => {
     setCmpSubject('');
     setCmpDescription('');
   };
-
-  if (isFinanceOfficer) {
-    return (
-      <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-        <MessageSquareWarning className="w-12 h-12 text-slate-400 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-3">
-          Module Restricted for Finance Role
-        </h3>
-        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-          Per Kifayat Connect permission matrix, grievances are managed exclusively by District Admins & State Co-Admins for their assigned jurisdictions and Super Admin centrally.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

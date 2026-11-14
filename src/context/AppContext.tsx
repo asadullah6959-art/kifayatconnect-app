@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   User, 
-  UserRole, 
+  UserRole,
+  RolePermissions,
   MembershipApplication, 
   PaymentTransaction, 
   Complaint, 
-  Announcement, 
+  Announcement,
+  AnnouncementType,
   AuditLog, 
   RegionalStats,
   ComplaintStatus,
@@ -18,7 +20,8 @@ import {
   ChatMessage,
   ChatConversation,
   SupportingDocument,
-  SupportingDocumentType
+  SupportingDocumentType,
+  normalizeLegacyRole
 } from '../types';
 import { 
   INITIAL_USERS, 
@@ -47,6 +50,7 @@ import {
   savePaymentToFirestore,
   saveComplaintToFirestore,
   saveAnnouncementToFirestore,
+  deleteAnnouncementFromFirestore,
   saveAuditLogToFirestore,
   saveNotificationToFirestore,
   saveUserToFirestore,
@@ -61,6 +65,9 @@ import {
   verifyEmailOTP,
   getPendingEmailOTP,
   clearPendingEmailOTP,
+  saveLocalPasswordCredential,
+  verifyLocalPasswordCredential,
+  hasLocalPasswordCredential,
   StoredOTP,
   OTPRequestResult,
   OTPVerifyResult,
@@ -85,6 +92,7 @@ const STORAGE_KEYS = {
   APP_SETTINGS: 'kifayat_app_settings_v3',
   CHATS: 'kifayat_chats_v3',
   CHAT_MESSAGES: 'kifayat_chat_messages_v3',
+  OFFLINE_CHAT_QUEUE: 'kc_offline_chat_queue_v1',
   LANGUAGE: 'kifayat_lang_v3'
 };
 
@@ -96,6 +104,57 @@ function readStorage<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+export function isFounderUser(user?: User | null): boolean {
+  if (!user) return false;
+  return Boolean(user.isFounder || user.email?.trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase());
+}
+
+function normalizeUserRecord(u: User): User {
+  const isFounder = isFounderUser(u);
+  const role = normalizeLegacyRole(u.role, u.email);
+  return {
+    ...u,
+    role,
+    isFounder,
+    isStaff: role !== 'MEMBER',
+    hasPassword: u.hasPassword || hasLocalPasswordCredential(u.email)
+  };
+}
+
+function mergeAppSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
+  if (!raw) return INITIAL_APP_SETTINGS;
+  return {
+    ...INITIAL_APP_SETTINGS,
+    ...raw,
+    dashboardVisibility: {
+      ...INITIAL_APP_SETTINGS.dashboardVisibility!,
+      ...(raw.dashboardVisibility || {})
+    },
+    featureToggles: {
+      ...INITIAL_APP_SETTINGS.featureToggles!,
+      ...(raw.featureToggles || {})
+    },
+    textOverrides: {
+      ...INITIAL_APP_SETTINGS.textOverrides!,
+      ...(raw.textOverrides || {})
+    },
+    roleDefaults: {
+      ADMIN: {
+        ...INITIAL_APP_SETTINGS.roleDefaults!.ADMIN,
+        ...(raw.roleDefaults?.ADMIN || {})
+      },
+      CO_ADMIN: {
+        ...INITIAL_APP_SETTINGS.roleDefaults!.CO_ADMIN,
+        ...(raw.roleDefaults?.CO_ADMIN || {})
+      },
+      MEMBER: {
+        ...INITIAL_APP_SETTINGS.roleDefaults!.MEMBER,
+        ...(raw.roleDefaults?.MEMBER || {})
+      }
+    }
+  };
 }
 
 interface AppContextType {
@@ -155,7 +214,8 @@ interface AppContextType {
     address: string;
     isOldMember: boolean;
     oldMembershipNo?: string;
-  }) => void;
+    password?: string;
+  }) => Promise<void> | void;
   submitPayment: (data: {
     amount: number;
     fundCategory: any;
@@ -176,13 +236,21 @@ interface AppContextType {
   publishAnnouncement: (data: {
     title: string;
     content: string;
+    announcementType?: AnnouncementType;
     targetScope?: 'ALL' | 'PROVINCE' | 'DISTRICT';
     targetStateProvince?: string;
     targetDistrict?: string;
     urgency: 'NORMAL' | 'URGENT';
     isPinned: boolean;
+    expiresAt?: string;
   }) => void;
+  deleteAnnouncement: (announcementId: string) => void;
   createOrUpdateStaff: (userData: Partial<User> & { id?: string }) => { success: boolean; error?: string };
+  promoteToSuperAdmin: (userId: string) => { success: boolean; error?: string };
+  demoteSuperAdmin: (userId: string) => { success: boolean; error?: string };
+  toggleUserSuspension: (userId: string, suspended: boolean) => { success: boolean; error?: string };
+  updateUserPermissions: (userId: string, permissions: Partial<RolePermissions>) => { success: boolean; error?: string };
+  broadcastAdminAlert: (title: string, message: string, target: 'ALL' | 'STAFF') => void;
   updateUserProfile: (profileData: Partial<User>) => void;
   resetAllData: () => void;
 
@@ -195,9 +263,11 @@ interface AppContextType {
   // Chat Module
   chats: ChatConversation[];
   chatMessages: ChatMessage[];
+  queuedMessageCount: number;
   activeChatUser: User | null;
   setActiveChatUser: (user: User | null) => void;
-  sendChatMessage: (recipientId: string, text: string, attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }) => { success: boolean; error?: string };
+  sendChatMessage: (recipientId: string, text: string, attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }) => { success: boolean; error?: string; queued?: boolean };
+  markConversationAsSeen: (chatId: string) => void;
 
   // App Updates Module & GitHub Releases
   appUpdates: AppUpdate[];
@@ -233,17 +303,55 @@ interface AppContextType {
     actionUrl?: string;
   }) => void;
 
-  // Auth & Email OTP
+  // Auth, Password & Email OTP
   firebaseUser: FirebaseUser | null;
   isFirebaseLive: boolean;
   isCloudSyncing: boolean;
   loginWithGoogleAuth: () => Promise<User>;
+  loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean }>;
+  completePasswordAfterOtp: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User }>;
+  setOrChangeUserPassword: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logoutFirebaseAuth: () => Promise<void>;
   requestOTP: (email: string) => Promise<OTPRequestResult>;
   verifyOTP: (email: string, code: string) => Promise<OTPVerifyResult & { user?: User }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<string, string>> = {
+  OBSIDIAN_GOLD: {
+    '--kc-bg': '#0A0D12',
+    '--kc-surface': '#111622',
+    '--kc-surface-elevated': '#161D2C',
+    '--kc-border': 'rgba(212, 175, 55, 0.25)',
+    '--kc-accent': '#D4AF37',
+    '--kc-emerald': '#043927'
+  },
+  EMERALD_GOLD: {
+    '--kc-bg': '#06130F',
+    '--kc-surface': '#0B1F18',
+    '--kc-surface-elevated': '#102B22',
+    '--kc-border': 'rgba(212, 175, 55, 0.3)',
+    '--kc-accent': '#F5D061',
+    '--kc-emerald': '#065F46'
+  },
+  MIDNIGHT_ROYAL: {
+    '--kc-bg': '#070B16',
+    '--kc-surface': '#0F172A',
+    '--kc-surface-elevated': '#17233E',
+    '--kc-border': 'rgba(212, 175, 55, 0.25)',
+    '--kc-accent': '#EAB308',
+    '--kc-emerald': '#043927'
+  },
+  IMPERIAL_ONYX: {
+    '--kc-bg': '#08080A',
+    '--kc-surface': '#121216',
+    '--kc-surface-elevated': '#1B1B21',
+    '--kc-border': 'rgba(245, 208, 97, 0.28)',
+    '--kc-accent': '#D4AF37',
+    '--kc-emerald': '#064E3B'
+  }
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Purge legacy v2 dummy storage once on upgrade
@@ -271,7 +379,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [users, setUsers] = useState<User[]>(() => readStorage(STORAGE_KEYS.USERS, INITIAL_USERS));
+  const [users, setUsers] = useState<User[]>(() => {
+    const raw = readStorage(STORAGE_KEYS.USERS, INITIAL_USERS);
+    return raw.map(normalizeUserRecord);
+  });
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID));
   const [applications, setApplications] = useState<MembershipApplication[]>(() => readStorage(STORAGE_KEYS.APPLICATIONS, INITIAL_MEMBERSHIP_APPLICATIONS));
   const [payments, setPayments] = useState<PaymentTransaction[]>(() => readStorage(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS));
@@ -283,9 +394,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [officeBearerHistory, setOfficeBearerHistory] = useState<OfficeBearerHistory[]>(() => readStorage(STORAGE_KEYS.OFFICE_BEARER_HISTORY, INITIAL_OFFICE_BEARER_HISTORY));
   const [appUpdates, setAppUpdates] = useState<AppUpdate[]>(() => readStorage(STORAGE_KEYS.APP_UPDATES, INITIAL_APP_UPDATES));
   const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.ACK_VERSION));
-  const [appSettings, setAppSettings] = useState<AppSettings>(() => readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS));
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => mergeAppSettings(readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS)));
   const [chats, setChats] = useState<ChatConversation[]>(() => readStorage(STORAGE_KEYS.CHATS, INITIAL_CHATS));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.CHAT_MESSAGES, INITIAL_CHAT_MESSAGES));
+  const [offlineChatQueue, setOfflineChatQueue] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, []));
 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
   const [inspectedUserProfile, setInspectedUserProfile] = useState<User | null>(null);
@@ -302,10 +414,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
   const [activeOtpRecord, setActiveOtpRecord] = useState<StoredOTP | null>(() => getPendingEmailOTP());
 
+  // Sync RTL / LTR document direction & language
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
+  // Apply dynamic theme preset CSS variables
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const preset = appSettings.themePreset || 'OBSIDIAN_GOLD';
+      const vars = THEME_PRESET_VARS[preset] || THEME_PRESET_VARS.OBSIDIAN_GOLD;
+      Object.entries(vars).forEach(([k, v]) => {
+        document.documentElement.style.setProperty(k, v);
+      });
+    }
+  }, [appSettings.themePreset]);
+
+  // Flush queued offline chat messages whenever device goes online
+  const flushOfflineChatQueue = useCallback(() => {
+    setOfflineChatQueue(prevQueue => {
+      if (prevQueue.length === 0) return prevQueue;
+      const deliveredIds = new Set(prevQueue.map(m => m.id));
+      const deliveredMessages = prevQueue.map(m => ({
+        ...m,
+        deliveryStatus: 'DELIVERED' as const
+      }));
+
+      setChatMessages(prevMsgs =>
+        prevMsgs.map(m => (deliveredIds.has(m.id) ? { ...m, deliveryStatus: 'DELIVERED' } : m))
+      );
+
+      deliveredMessages.forEach(msg => {
+        saveChatMessageToFirestore(msg).catch(() => {});
+      });
+
+      return [];
+    });
+  }, []);
+
   // Online / Offline Connectivity Listeners & Hybrid Re-Sync
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      flushOfflineChatQueue();
       if (auth.currentUser) {
         users.forEach(u => saveUserToFirestore(u).catch(() => {}));
         applications.forEach(a => saveApplicationToFirestore(a).catch(() => {}));
@@ -317,13 +471,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     const handleOffline = () => setIsOnline(false);
 
+    if (typeof navigator !== 'undefined' && navigator.onLine && offlineChatQueue.length > 0) {
+      flushOfflineChatQueue();
+    }
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [users, applications, payments, complaints, announcements]);
+  }, [users, applications, payments, complaints, announcements, offlineChatQueue.length, flushOfflineChatQueue]);
 
   // Initial GitHub Release fetch
   const refreshGitHubRelease = useCallback(async (force = false) => {
@@ -353,6 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); }, [appSettings]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); }, [chats]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); }, [chatMessages]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, JSON.stringify(offlineChatQueue)); }, [offlineChatQueue]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LANGUAGE, language); }, [language]);
   useEffect(() => {
     if (acknowledgedUpdateVersion) {
@@ -374,7 +533,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsCloudSyncing(true);
 
         try {
-          const syncedProfile = await syncUserWithFirestore(fbUser);
+          const syncedProfileRaw = await syncUserWithFirestore(fbUser);
+          const syncedProfile = normalizeUserRecord(syncedProfileRaw);
           if (syncedProfile) {
             setUsers(prev => {
               const idx = prev.findIndex(u => u.id === syncedProfile.id);
@@ -393,7 +553,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const userEmail = syncedProfile?.email || fbUser.email || '';
 
           const unsubUsers = subscribeToFirestoreCollection<User>('users', (remote) => {
-            if (remote && remote.length > 0) setUsers(remote);
+            if (remote && remote.length > 0) setUsers(remote.map(normalizeUserRecord));
           });
           const unsubApps = subscribeToFirestoreCollection<MembershipApplication>(
             'applications',
@@ -407,7 +567,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             (remote) => {
               if (remote && remote.length > 0) setPayments(remote);
             },
-            (role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN')
+            (role === 'SUPER_ADMIN' || role === 'ADMIN')
               ? undefined
               : { field: 'userId', value: uid }
           );
@@ -429,6 +589,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
             if (remote && remote.length > 0) setOfficeBearers(remote);
           });
+          const unsubSettings = subscribeToFirestoreCollection<AppSettings & { id?: string }>('app_settings', (remote) => {
+            if (remote && remote.length > 0) {
+              setAppSettings(prev => mergeAppSettings({ ...prev, ...remote[0] }));
+            }
+          });
           const unsubChats = subscribeToFirestoreCollection<ChatConversation>(
             'chats',
             (remote) => {
@@ -444,7 +609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setChatMessages(prev => {
               const map = new Map<string, ChatMessage>();
               prev.forEach(m => map.set(m.id, m));
-              incoming.forEach(m => map.set(m.id, m));
+              incoming.forEach(m => map.set(m.id, { ...m, deliveryStatus: m.read ? 'SEEN' : (m.deliveryStatus || 'DELIVERED') }));
               return Array.from(map.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
             });
           };
@@ -460,7 +625,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             { field: 'recipientId', value: uid }
           );
 
-          unsubs = [unsubUsers, unsubApps, unsubPayments, unsubComplaints, unsubAnnounce, unsubUpdates, unsubOB, unsubChats, unsubMsgsSent, unsubMsgsRecv];
+          unsubs = [unsubUsers, unsubApps, unsubPayments, unsubComplaints, unsubAnnounce, unsubUpdates, unsubOB, unsubSettings, unsubChats, unsubMsgsSent, unsubMsgsRecv];
         } catch (err) {
           console.warn('Firestore live sync init warning:', err);
         } finally {
@@ -481,7 +646,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithGoogleAuth = async (): Promise<User> => {
     const fbUser = await loginWithGoogle();
-    const synced = await syncUserWithFirestore(fbUser);
+    const synced = normalizeUserRecord(await syncUserWithFirestore(fbUser));
     setUsers(prev => {
       const idx = prev.findIndex(u => u.id === synced.id);
       if (idx >= 0) {
@@ -500,7 +665,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await logoutUser();
     } catch {
-      // Ignore if signed in purely via OTP
+      // Ignore if signed in purely via OTP / Password
     }
     setFirebaseUser(null);
     setIsFirebaseLive(false);
@@ -519,42 +684,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return res;
   };
 
-  const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
-    const res = await verifyEmailOTP(email, code, activeOtpRecord);
-    if (!res.success) {
-      if (!getPendingEmailOTP()) setActiveOtpRecord(null);
-      return res;
-    }
-
-    setActiveOtpRecord(null);
-    clearPendingEmailOTP();
-
-    const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
+  const upsertVerifiedUserByEmail = (normEmail: string, options?: { hasPassword?: boolean; name?: string }): User => {
     const existing = users.find(u => u.email.toLowerCase() === normEmail);
+    const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
 
-    if (normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+    if (isFounderEmail) {
       if (existing) {
-        const updatedSuperAdmin: User = existing.role === 'SUPER_ADMIN'
-          ? existing
-          : { ...existing, role: 'SUPER_ADMIN', isStaff: true };
-        if (updatedSuperAdmin !== existing) {
-          setUsers(prev => prev.map(u => (u.id === existing.id ? updatedSuperAdmin : u)));
-        }
-        setCurrentUserId(updatedSuperAdmin.id);
-        setActiveTab('dashboard');
-        return { ...res, user: updatedSuperAdmin };
+        const updatedSuperAdmin: User = {
+          ...existing,
+          role: 'SUPER_ADMIN',
+          isFounder: true,
+          isStaff: true,
+          isSuspended: false,
+          hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
+        };
+        setUsers(prev => prev.map(u => (u.id === existing.id ? updatedSuperAdmin : u)));
+        saveUserToFirestore(updatedSuperAdmin).catch(() => {});
+        return updatedSuperAdmin;
       }
 
       const joinDate = new Date().toISOString().split('T')[0];
       const exp = new Date();
       exp.setFullYear(exp.getFullYear() + 5);
 
-      const superAdminUser: User = {
+      const founderUser: User = {
         id: 'usr_super_admin',
-        name: 'Asadullah (Super Admin)',
+        name: options?.name || 'Asadullah (Founder Super Admin)',
         email: normEmail,
         phone: '',
         role: 'SUPER_ADMIN',
+        isFounder: true,
+        hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
         country: 'Pakistan',
         stateProvince: 'Islamabad Capital Territory',
         district: 'Islamabad',
@@ -572,32 +732,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         annualPledge: 0,
         totalContributed: 0,
         isStaff: true,
-        notes: 'Verified Root Super Admin via Email OTP'
+        notes: 'Verified Founder Super Admin'
       };
-
-      setUsers(prev => [superAdminUser, ...prev]);
-      setCurrentUserId(superAdminUser.id);
-      setActiveTab('dashboard');
-      return { ...res, user: superAdminUser };
+      setUsers(prev => [founderUser, ...prev]);
+      saveUserToFirestore(founderUser).catch(() => {});
+      return founderUser;
     }
 
     if (existing) {
-      setCurrentUserId(existing.id);
-      setActiveTab('dashboard');
-      return { ...res, user: existing };
+      const updatedExisting = normalizeUserRecord({
+        ...existing,
+        hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
+      });
+      setUsers(prev => prev.map(u => (u.id === existing.id ? updatedExisting : u)));
+      saveUserToFirestore(updatedExisting).catch(() => {});
+      return updatedExisting;
     }
 
-    // Create clean Member account at zero balance
     const joinDate = new Date().toISOString().split('T')[0];
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
 
     const newMember: User = {
       id: `usr_${Date.now()}`,
-      name: normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      name: options?.name || normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
       email: normEmail,
       phone: '',
       role: 'MEMBER',
+      isFounder: false,
+      hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
       country: 'Pakistan',
       stateProvince: 'Punjab',
       district: 'Lahore',
@@ -619,10 +782,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setUsers(prev => [newMember, ...prev]);
-    setCurrentUserId(newMember.id);
-    setActiveTab('dashboard');
     saveUserToFirestore(newMember).catch(() => {});
-    return { ...res, user: newMember };
+    return newMember;
+  };
+
+  const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
+    const res = await verifyEmailOTP(email, code, activeOtpRecord);
+    if (!res.success) {
+      if (!getPendingEmailOTP()) setActiveOtpRecord(null);
+      return res;
+    }
+
+    setActiveOtpRecord(null);
+    clearPendingEmailOTP();
+
+    const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
+    const matched = upsertVerifiedUserByEmail(normEmail);
+    if (matched.isSuspended && !isFounderUser(matched)) {
+      return {
+        success: false,
+        message: 'This account is suspended. Contact the Super Admin.'
+      };
+    }
+
+    setCurrentUserId(matched.id);
+    setActiveTab('dashboard');
+    return { ...res, user: matched };
+  };
+
+  const loginWithPassword = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean }> => {
+    const normEmail = email.trim().toLowerCase();
+    if (!normEmail || !normEmail.includes('@')) {
+      return { success: false, message: 'Please enter a valid Gmail or email address.' };
+    }
+    if (!password.trim()) {
+      return { success: false, message: 'Please enter your password.' };
+    }
+
+    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+    const hasPwd = hasLocalPasswordCredential(normEmail);
+
+    if (!hasPwd) {
+      return {
+        success: false,
+        needsPasswordSetup: true,
+        message: 'No password is set for this email yet. Use Email OTP to sign in or click "Forgot Password?" to create one.'
+      };
+    }
+
+    const ok = await verifyLocalPasswordCredential(normEmail, password);
+    if (!ok) {
+      return {
+        success: false,
+        message: 'Incorrect email or password. Try again or use Forgot Password / Email OTP.'
+      };
+    }
+
+    if (existing?.isSuspended && !isFounderUser(existing)) {
+      return {
+        success: false,
+        message: 'This account has been suspended by the Super Admin.'
+      };
+    }
+
+    const loggedInUser = upsertVerifiedUserByEmail(normEmail, { hasPassword: true });
+    setCurrentUserId(loggedInUser.id);
+    setActiveTab('dashboard');
+    return { success: true, message: 'Signed in successfully.', user: loggedInUser };
+  };
+
+  const completePasswordAfterOtp = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; user?: User }> => {
+    const normEmail = email.trim().toLowerCase();
+    if (password.trim().length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters long.' };
+    }
+    await saveLocalPasswordCredential(normEmail, password);
+    const user = upsertVerifiedUserByEmail(normEmail, { hasPassword: true });
+    setCurrentUserId(user.id);
+    setActiveTab('dashboard');
+    return { success: true, message: 'Password saved and signed in.', user };
+  };
+
+  const setOrChangeUserPassword = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const normEmail = email.trim().toLowerCase();
+    if (password.trim().length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters long.' };
+    }
+    await saveLocalPasswordCredential(normEmail, password);
+    setUsers(prev =>
+      prev.map(u => {
+        if (u.email.toLowerCase() === normEmail) {
+          const updated = { ...u, hasPassword: true };
+          saveUserToFirestore(updated).catch(() => {});
+          return updated;
+        }
+        return u;
+      })
+    );
+    return { success: true, message: 'Password updated successfully.' };
   };
 
   const logAudit = (
@@ -689,6 +955,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ? notifications.filter(n => {
         if (n.targetUserId && n.targetUserId === currentUser.id) return true;
         if (n.targetRole === 'ALL' || !n.targetRole) return true;
+        if (currentUser.role === 'SUPER_ADMIN' && n.type === 'PAYMENT_PENDING') return true;
         if (n.targetRole === currentUser.role) {
           if (currentUser.role === 'ADMIN' && n.targetDistrict && n.targetDistrict !== currentUser.district) {
             return false;
@@ -711,6 +978,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const canAccess = (permission: string): boolean => {
     if (!currentUser) return false;
     const role = currentUser.role;
+    const perms = currentUser.permissions;
+
     switch (permission) {
       case 'SUPER_ADMIN_CONTROL':
       case 'MANAGE_APP':
@@ -721,18 +990,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       case 'MANAGE_APP_SETTINGS':
         return role === 'SUPER_ADMIN';
 
+      case 'MANAGE_SUPER_ADMINS':
+        return isFounderUser(currentUser);
+
       case 'VIEW_MEMBERS':
-        return role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN' || role === 'CO_ADMIN';
+        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN' || Boolean(perms?.canManageUsers);
 
       case 'APPROVE_MEMBERSHIP_FINAL':
-        return role === 'SUPER_ADMIN';
+        return role === 'SUPER_ADMIN' || Boolean(perms?.canApproveMembers);
 
       case 'RECOMMEND_MEMBERSHIP':
-        return role === 'SUPER_ADMIN' || role === 'ADMIN';
+        return role === 'SUPER_ADMIN' || role === 'ADMIN' || Boolean(perms?.canApproveMembers);
 
       case 'MANAGE_FUNDS':
       case 'VERIFY_PAYMENTS':
-        return role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN';
+        return role === 'SUPER_ADMIN' || role === 'ADMIN' || Boolean(perms?.canVerifyPayments);
 
       case 'GENERATE_RECEIPTS':
         return true;
@@ -741,19 +1013,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return role === 'SUPER_ADMIN';
 
       case 'MANAGE_DISTRICT_COMPLAINTS':
-        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN';
+        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN' || Boolean(perms?.canManageComplaints);
 
       case 'PUBLISH_GLOBAL_ANNOUNCEMENTS':
-        return role === 'SUPER_ADMIN';
+      case 'PUBLISH_OFFICIAL_ANNOUNCEMENTS':
+        return role === 'SUPER_ADMIN' || Boolean(perms?.canPostOfficialAnnouncements);
 
       case 'PUBLISH_DISTRICT_ANNOUNCEMENTS':
-        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN';
+        return (
+          appSettings.featureToggles?.allowCommunityAnnouncements !== false &&
+          (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN' || Boolean(perms?.canPostCommunityAnnouncements))
+        );
 
       case 'CHAT_MESSAGING':
         return appSettings.chatEnabled;
 
       case 'VIEW_AUDIT_LOGS':
-        return role === 'SUPER_ADMIN' || role === 'FINANCE_OFFICER' || role === 'ADMIN' || role === 'CO_ADMIN';
+        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN' || Boolean(perms?.canViewReports);
 
       default:
         return false;
@@ -790,7 +1066,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     addNotification({
       type: 'MEMBERSHIP_RECOMMENDED',
-      title: 'Application Recommended by District Admin',
+      title: 'Application Recommended by Admin',
       message: `${targetApp.applicantName} (${targetApp.district}) has been recommended for final approval.`,
       targetRole: 'SUPER_ADMIN',
       linkTab: 'approvals',
@@ -820,36 +1096,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
 
-    const newMemberUser: User = {
-      id: `usr_${Date.now()}`,
-      name: targetApp.applicantName,
-      email: targetApp.email,
-      phone: targetApp.phone,
-      role: 'MEMBER',
-      country: targetApp.country,
-      stateProvince: targetApp.stateProvince,
-      district: targetApp.district,
-      tehsil: targetApp.tehsil,
-      cityTown: targetApp.cityTown,
-      unionCouncil: targetApp.unionCouncil,
-      membershipId: newMembershipId,
-      membershipStatus: 'ACTIVE',
-      verificationStatus: 'VERIFIED',
-      cnic: targetApp.cnic,
-      address: targetApp.address,
-      joinDate: new Date().toISOString().split('T')[0],
-      validUntil: exp.toISOString().split('T')[0],
-      monthlyPledge: 0,
-      annualPledge: 0,
-      totalContributed: 0,
-      isStaff: false,
-      notes: targetApp.isOldMemberVerification 
-        ? `Verified legacy member. Old ID: ${targetApp.oldMembershipNo}` 
-        : 'Newly verified member via two-stage governance pipeline.'
-    };
-
-    setUsers(prev => [newMemberUser, ...prev]);
-    saveUserToFirestore(newMemberUser).catch(() => {});
+    const existingMember = users.find(u => u.email.toLowerCase() === targetApp.email.toLowerCase());
+    if (existingMember) {
+      const updatedMember: User = {
+        ...existingMember,
+        name: targetApp.applicantName || existingMember.name,
+        phone: targetApp.phone || existingMember.phone,
+        cnic: targetApp.cnic || existingMember.cnic,
+        country: targetApp.country || existingMember.country,
+        stateProvince: targetApp.stateProvince || existingMember.stateProvince,
+        district: targetApp.district || existingMember.district,
+        tehsil: targetApp.tehsil || existingMember.tehsil,
+        cityTown: targetApp.cityTown || existingMember.cityTown,
+        unionCouncil: targetApp.unionCouncil || existingMember.unionCouncil,
+        address: targetApp.address || existingMember.address,
+        membershipId: existingMember.membershipId || newMembershipId,
+        membershipStatus: 'ACTIVE',
+        verificationStatus: 'VERIFIED',
+        validUntil: exp.toISOString().split('T')[0]
+      };
+      setUsers(prev => prev.map(u => u.id === existingMember.id ? updatedMember : u));
+      saveUserToFirestore(updatedMember).catch(() => {});
+    } else {
+      const newMemberUser: User = {
+        id: `usr_${Date.now()}`,
+        name: targetApp.applicantName,
+        email: targetApp.email,
+        phone: targetApp.phone,
+        role: 'MEMBER',
+        isFounder: false,
+        hasPassword: hasLocalPasswordCredential(targetApp.email),
+        country: targetApp.country,
+        stateProvince: targetApp.stateProvince,
+        district: targetApp.district,
+        tehsil: targetApp.tehsil,
+        cityTown: targetApp.cityTown,
+        unionCouncil: targetApp.unionCouncil,
+        membershipId: newMembershipId,
+        membershipStatus: 'ACTIVE',
+        verificationStatus: 'VERIFIED',
+        cnic: targetApp.cnic,
+        address: targetApp.address,
+        joinDate: new Date().toISOString().split('T')[0],
+        validUntil: exp.toISOString().split('T')[0],
+        monthlyPledge: 0,
+        annualPledge: 0,
+        totalContributed: 0,
+        isStaff: false,
+        notes: targetApp.isOldMemberVerification 
+          ? `Verified legacy member. Old ID: ${targetApp.oldMembershipNo}` 
+          : 'Newly verified member via two-stage governance pipeline.'
+      };
+      setUsers(prev => [newMemberUser, ...prev]);
+      saveUserToFirestore(newMemberUser).catch(() => {});
+    }
 
     logAudit(
       'FINAL_MEMBERSHIP_APPROVAL_GRANTED',
@@ -864,9 +1164,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'MEMBERSHIP_APPROVED',
       title: 'Membership Approved & ID Issued',
       message: `Congratulations ${targetApp.applicantName}! Your membership is active. Membership ID: ${newMembershipId}.`,
-      targetUserId: newMemberUser.id,
+      targetUserId: existingMember?.id,
       linkTab: 'dashboard',
-      entityId: newMemberUser.id
+      entityId: appId
     });
   };
 
@@ -1030,7 +1330,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const registerMember = (data: {
+  const registerMember = async (data: {
     applicantName: string;
     email: string;
     phone: string;
@@ -1044,15 +1344,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     address: string;
     isOldMember: boolean;
     oldMembershipNo?: string;
+    password?: string;
   }) => {
     const loc = mapLegacyRegionToHierarchy('');
     const prov = data.stateProvince || loc.stateProvince;
     const dist = data.district || loc.district;
+    const normEmail = data.email.trim().toLowerCase();
+
+    if (data.password && data.password.trim().length >= 6) {
+      await saveLocalPasswordCredential(normEmail, data.password.trim());
+    }
 
     const newApp: MembershipApplication = {
       id: `app_${Date.now()}`,
       applicantName: data.applicantName,
-      email: data.email,
+      email: normEmail,
       phone: data.phone,
       cnic: data.cnic,
       country: data.country || 'Pakistan',
@@ -1070,6 +1376,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setApplications(prev => [newApp, ...prev]);
     saveApplicationToFirestore(newApp).catch(() => {});
+
+    // Also create / sign in persistent user profile so OTP-verified signup logs straight in cleanly
+    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+    const exp = new Date();
+    exp.setFullYear(exp.getFullYear() + 3);
+    const joinDate = new Date().toISOString().split('T')[0];
+
+    const registeredUser: User = existing
+      ? normalizeUserRecord({
+          ...existing,
+          name: data.applicantName || existing.name,
+          phone: data.phone || existing.phone,
+          cnic: data.cnic || existing.cnic,
+          stateProvince: prov,
+          district: dist,
+          tehsil: data.tehsil || data.cityTown || dist,
+          cityTown: data.cityTown || dist,
+          unionCouncil: data.unionCouncil || existing.unionCouncil,
+          address: data.address || existing.address,
+          hasPassword: Boolean(data.password) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
+        })
+      : normalizeUserRecord({
+          id: `usr_${Date.now()}`,
+          name: data.applicantName,
+          email: normEmail,
+          phone: data.phone,
+          role: 'MEMBER',
+          isFounder: normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase(),
+          hasPassword: Boolean(data.password) || hasLocalPasswordCredential(normEmail),
+          country: data.country || 'Pakistan',
+          stateProvince: prov,
+          district: dist,
+          tehsil: data.tehsil || data.cityTown || dist,
+          cityTown: data.cityTown || dist,
+          unionCouncil: data.unionCouncil || '',
+          membershipId: `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          membershipStatus: 'ACTIVE',
+          verificationStatus: 'VERIFIED',
+          cnic: data.cnic,
+          address: data.address,
+          joinDate,
+          validUntil: exp.toISOString().split('T')[0],
+          monthlyPledge: 0,
+          annualPledge: 0,
+          totalContributed: 0,
+          isStaff: false,
+          notes: 'Registered via Email OTP + Password flow'
+        });
+
+    setUsers(prev => {
+      const idx = prev.findIndex(u => u.id === registeredUser.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = registeredUser;
+        return next;
+      }
+      return [registeredUser, ...prev];
+    });
+    saveUserToFirestore(registeredUser).catch(() => {});
+    setCurrentUserId(registeredUser.id);
+    setActiveTab('dashboard');
 
     logAudit(
       'NEW_MEMBERSHIP_APPLICATION_SUBMITTED',
@@ -1140,7 +1507,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'PAYMENT_PENDING',
       title: 'New Contribution Awaiting Verification',
       message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} (${data.paymentMethod}) for approval.`,
-      targetRole: 'FINANCE_OFFICER',
+      targetRole: 'ADMIN',
+      targetDistrict: currentUser.district,
       linkTab: 'funds',
       entityId: newTx.id
     });
@@ -1263,23 +1631,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  // Announcements (Elaanat) with automatic personal inbox + notification broadcast
+  // Dual Announcements (Official App + Community) with Pin, Expiry & Automatic Chat Broadcast
   const publishAnnouncement = (data: {
     title: string;
     content: string;
+    announcementType?: AnnouncementType;
     targetScope?: 'ALL' | 'PROVINCE' | 'DISTRICT';
     targetStateProvince?: string;
     targetDistrict?: string;
     urgency: 'NORMAL' | 'URGENT';
     isPinned: boolean;
+    expiresAt?: string;
   }) => {
     if (!currentUser) return;
-    const scope = data.targetScope || 'ALL';
+    const announcementType: AnnouncementType =
+      data.announcementType === 'OFFICIAL_APP' && currentUser.role === 'SUPER_ADMIN'
+        ? 'OFFICIAL_APP'
+        : 'COMMUNITY';
+    const scope = announcementType === 'OFFICIAL_APP' ? 'ALL' : (data.targetScope || 'ALL');
 
     const newAnnounce: Announcement = {
       id: `ann_${Date.now()}`,
       title: data.title,
       content: data.content,
+      announcementType,
       targetScope: scope,
       targetStateProvince: data.targetStateProvince,
       targetDistrict: data.targetDistrict,
@@ -1287,13 +1662,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       publisherRole: currentUser.role,
       publishedAt: new Date().toISOString(),
       isPinned: data.isPinned,
-      urgency: data.urgency
+      urgency: data.urgency,
+      expiresAt: data.expiresAt || undefined
     };
 
     setAnnouncements(prev => [newAnnounce, ...prev]);
     saveAnnouncementToFirestore(newAnnounce).catch(() => {});
 
-    // Automatically deliver notification alert to targeted users
+    const channelPrefix = announcementType === 'OFFICIAL_APP' ? '👑 OFFICIAL APP' : '📢 COMMUNITY';
+
     addNotification({
       type: 'ANNOUNCEMENT_NEW',
       title: `${data.urgency === 'URGENT' ? '[URGENT] ' : ''}${data.title}`,
@@ -1305,7 +1682,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId: newAnnounce.id
     });
 
-    // Automatically deliver personal inbox message to each targeted member
     const recipients = users.filter(u => {
       if (u.id === currentUser.id) return false;
       if (scope === 'DISTRICT' && data.targetDistrict) {
@@ -1318,7 +1694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (recipients.length > 0) {
-      const broadcastText = `📢 OFFICIAL ELAAN: ${data.title}\n\n${data.content}`;
+      const broadcastText = `${channelPrefix}: ${data.title}\n\n${data.content}`;
       const newMessages: ChatMessage[] = [];
       const updatedConvos: ChatConversation[] = [];
 
@@ -1337,10 +1713,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           recipientName: recipient.name,
           text: broadcastText,
           timestamp: nowIso,
-          read: false
+          read: false,
+          deliveryStatus: isOnline ? 'DELIVERED' : 'QUEUED'
         };
         newMessages.push(msg);
-        saveChatMessageToFirestore(msg).catch(() => {});
+        if (isOnline) saveChatMessageToFirestore(msg).catch(() => {});
 
         const existingConvo = chats.find(c => c.id === chatId);
         const convo: ChatConversation = {
@@ -1366,7 +1743,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               officeTitle: recipient.assignedOfficeTitle
             }
           },
-          lastMessage: `📢 ${data.title}`,
+          lastMessage: `${announcementType === 'OFFICIAL_APP' ? '👑' : '📢'} ${data.title}`,
           lastMessageTime: nowIso,
           lastMessageSenderId: currentUser.id,
           unreadCounts: {
@@ -1390,18 +1767,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'BROADCAST_ANNOUNCEMENT_PUBLISHED',
       'SETTINGS',
       newAnnounce.title,
-      `Published by ${currentUser.name} (${currentUser.role}). Target: ${scope}. Dispatched to ${recipients.length} member inbox(es).`,
+      `Published ${announcementType} by ${currentUser.name} (${currentUser.role}). Target: ${scope}. Dispatched to ${recipients.length} member inbox(es).`,
       data.targetDistrict,
       data.targetStateProvince
     );
   };
 
-  // Staff & Admin Management with Quotas (10 Admins/District, 3 Co-Admins/State)
+  const deleteAnnouncement = (announcementId: string) => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
+    const target = announcements.find(a => a.id === announcementId);
+    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    deleteAnnouncementFromFirestore(announcementId).catch(() => {});
+    if (target) {
+      logAudit(
+        'ANNOUNCEMENT_DELETED',
+        'SETTINGS',
+        target.title,
+        `Super Admin ${currentUser.name} removed announcement (${target.announcementType || 'COMMUNITY'}).`
+      );
+    }
+  };
+
+  // Staff & Role Management with Strict 4-Role Quotas + Founder Protection
   const createOrUpdateStaff = (userData: Partial<User> & { id?: string }): { success: boolean; error?: string } => {
-    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    if (!currentUser || (currentUser.role !== 'SUPER_ADMIN' && !currentUser.permissions?.canManageUsers)) {
+      return { success: false, error: 'Insufficient authority to manage staff or roles.' };
+    }
     const targetDistrict = userData.district || currentUser.district;
     const targetState = userData.stateProvince || currentUser.stateProvince;
-    const requestedRole = userData.role || 'MEMBER';
+    const requestedRole: UserRole = normalizeLegacyRole(userData.role, userData.email);
+
+    if (requestedRole === 'SUPER_ADMIN' && !isFounderUser(currentUser)) {
+      return { success: false, error: 'Only the Founder Super Admin can appoint Additional Super Admins.' };
+    }
 
     if (requestedRole === 'ADMIN') {
       const existingAdminsInDistrict = users.filter(u => 
@@ -1413,7 +1811,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (existingAdminsInDistrict.length >= (appSettings.maxAdminsPerDistrict || 10)) {
         return {
           success: false,
-          error: `District quota exceeded! Maximum 10 District Admins are allowed for ${targetDistrict}. Current count: ${existingAdminsInDistrict.length}.`
+          error: `District quota exceeded! Maximum ${appSettings.maxAdminsPerDistrict || 10} District Admins are allowed for ${targetDistrict}.`
         };
       }
     }
@@ -1428,7 +1826,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (existingCoAdminsInState.length >= (appSettings.maxCoAdminsPerState || 3)) {
         return {
           success: false,
-          error: `State quota exceeded! Maximum 3 State Co-Admins are allowed for ${targetState}. Current count: ${existingCoAdminsInState.length}.`
+          error: `State quota exceeded! Maximum ${appSettings.maxCoAdminsPerState || 3} State Co-Admins are allowed for ${targetState}.`
         };
       }
     }
@@ -1437,20 +1835,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const existing = users.find(u => u.id === userData.id);
       if (!existing) return { success: false, error: 'User not found.' };
 
+      // STRICT FOUNDER PROTECTION
+      if (isFounderUser(existing) && !isFounderUser(currentUser)) {
+        return { success: false, error: 'Founder Protection: No Additional Super Admin can edit, demote, or suspend the Main Super Admin (Founder).' };
+      }
+
+      if (existing.role === 'SUPER_ADMIN' && !isFounderUser(currentUser) && existing.id !== currentUser.id) {
+        return { success: false, error: 'Only the Founder Super Admin can modify another Super Admin.' };
+      }
+
+      const safeRole: UserRole = isFounderUser(existing) ? 'SUPER_ADMIN' : requestedRole;
       const updated: User = {
         ...existing,
         ...userData,
-        isStaff: requestedRole !== 'MEMBER'
+        role: safeRole,
+        isFounder: isFounderUser(existing),
+        isSuspended: isFounderUser(existing) ? false : Boolean(userData.isSuspended ?? existing.isSuspended),
+        isStaff: safeRole !== 'MEMBER'
       };
 
       setUsers(prev => prev.map(u => u.id === userData.id ? updated : u));
       saveUserToFirestore(updated).catch(() => {});
 
       logAudit(
-        'STAFF_RECORD_UPDATED',
-        'STAFF_MANAGEMENT',
+        'ROLE_CHANGE_RECORDED',
+        'ROLE_MANAGEMENT',
         updated.name,
-        `Updated role to ${updated.role} in ${updated.district}, ${updated.stateProvince}.`,
+        `${currentUser.name} updated ${updated.name} role to ${updated.role} in ${updated.district}, ${updated.stateProvince}.`,
         updated.district,
         updated.stateProvince
       );
@@ -1463,9 +1874,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newUser: User = {
         id: `usr_${Date.now()}`,
         name: userData.name || 'New Appointee',
-        email: userData.email || '',
+        email: (userData.email || '').trim().toLowerCase(),
         phone: userData.phone || '',
         role: requestedRole,
+        isFounder: false,
         country: userData.country || 'Pakistan',
         stateProvince: targetState || 'Punjab',
         district: targetDistrict || 'Lahore',
@@ -1476,7 +1888,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? `KC-ADM-${(targetDistrict || 'DIST').substring(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`
           : requestedRole === 'CO_ADMIN'
           ? `KC-COA-${(targetState || 'STATE').substring(0, 2).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`
-          : `KC-STAFF-${Math.floor(100 + Math.random() * 900)}`,
+          : requestedRole === 'SUPER_ADMIN'
+          ? `KC-SA-${Math.floor(100 + Math.random() * 900)}`
+          : `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         membershipStatus: 'ACTIVE',
         verificationStatus: 'VERIFIED',
         cnic: userData.cnic || '',
@@ -1487,7 +1901,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         annualPledge: 0,
         totalContributed: 0,
         isStaff: requestedRole !== 'MEMBER',
-        notes: `Appointed by Super Admin ${currentUser.name}.`
+        notes: `Appointed by ${currentUser.name}.`
       };
 
       setUsers(prev => [newUser, ...prev]);
@@ -1495,7 +1909,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       logAudit(
         'STAFF_APPOINTMENT_CREATED',
-        'STAFF_MANAGEMENT',
+        'ROLE_MANAGEMENT',
         newUser.name,
         `Appointed as ${newUser.role} for ${newUser.district}, ${newUser.stateProvince}.`,
         newUser.district,
@@ -1506,11 +1920,166 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const promoteToSuperAdmin = (userId: string): { success: boolean; error?: string } => {
+    if (!currentUser || !isFounderUser(currentUser)) {
+      return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can promote Additional Super Admins.' };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'Member not found.' };
+    if (isFounderUser(target)) return { success: false, error: 'Founder already holds supreme authority.' };
+
+    const updated: User = {
+      ...target,
+      role: 'SUPER_ADMIN',
+      isStaff: true,
+      isFounder: false,
+      isSuspended: false
+    };
+    setUsers(prev => prev.map(u => u.id === userId ? updated : u));
+    saveUserToFirestore(updated).catch(() => {});
+
+    logAudit(
+      'ADDITIONAL_SUPER_ADMIN_PROMOTED',
+      'ROLE_MANAGEMENT',
+      target.name,
+      `Founder ${currentUser.name} promoted ${target.name} (${target.email}) to Additional Super Admin.`
+    );
+    addNotification({
+      type: 'STAFF_ROLE_CHANGE',
+      title: 'Promoted to Additional Super Admin 👑',
+      message: `${currentUser.name} has promoted you to Additional Super Admin.`,
+      targetUserId: target.id,
+      linkTab: 'dashboard'
+    });
+    return { success: true };
+  };
+
+  const demoteSuperAdmin = (userId: string): { success: boolean; error?: string } => {
+    if (!currentUser || !isFounderUser(currentUser)) {
+      return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can demote Additional Super Admins.' };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'User not found.' };
+    if (isFounderUser(target)) {
+      return { success: false, error: 'Founder Protection: The Main Super Admin (Founder) cannot be demoted or removed.' };
+    }
+
+    const updated: User = {
+      ...target,
+      role: 'ADMIN',
+      isStaff: true,
+      isFounder: false
+    };
+    setUsers(prev => prev.map(u => u.id === userId ? updated : u));
+    saveUserToFirestore(updated).catch(() => {});
+
+    logAudit(
+      'ADDITIONAL_SUPER_ADMIN_DEMOTED',
+      'ROLE_MANAGEMENT',
+      target.name,
+      `Founder ${currentUser.name} demoted Additional Super Admin ${target.name} to Admin.`
+    );
+    return { success: true };
+  };
+
+  const toggleUserSuspension = (userId: string, suspended: boolean): { success: boolean; error?: string } => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Only Super Admin can change account suspension status.' };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'User not found.' };
+    if (isFounderUser(target)) {
+      return { success: false, error: 'Founder Protection: The Main Super Admin (Founder) cannot be suspended or removed.' };
+    }
+    if (target.role === 'SUPER_ADMIN' && !isFounderUser(currentUser)) {
+      return { success: false, error: 'Only the Founder can suspend or reinstate Additional Super Admins.' };
+    }
+
+    const updated: User = {
+      ...target,
+      isSuspended: suspended,
+      membershipStatus: suspended ? 'SUSPENDED' : 'ACTIVE'
+    };
+    setUsers(prev => prev.map(u => u.id === userId ? updated : u));
+    saveUserToFirestore(updated).catch(() => {});
+
+    logAudit(
+      suspended ? 'ACCOUNT_SUSPENDED' : 'ACCOUNT_ACTIVATED',
+      'SECURITY',
+      target.name,
+      `${currentUser.name} ${suspended ? 'suspended' : 'reactivated'} ${target.name} (${target.role}).`
+    );
+    return { success: true };
+  };
+
+  const updateUserPermissions = (userId: string, permissions: Partial<RolePermissions>): { success: boolean; error?: string } => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Only Super Admin can edit custom permissions.' };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'User not found.' };
+    if (isFounderUser(target) && !isFounderUser(currentUser)) {
+      return { success: false, error: 'Founder Protection: Cannot modify Founder permissions.' };
+    }
+    if (target.role === 'SUPER_ADMIN' && !isFounderUser(currentUser)) {
+      return { success: false, error: 'Only Founder can adjust Additional Super Admin permissions.' };
+    }
+
+    const baseRole = target.role === 'SUPER_ADMIN'
+      ? INITIAL_APP_SETTINGS.roleDefaults!.ADMIN
+      : (appSettings.roleDefaults?.[target.role] || INITIAL_APP_SETTINGS.roleDefaults!.MEMBER);
+
+    const updated: User = {
+      ...target,
+      permissions: {
+        ...baseRole,
+        ...(target.permissions || {}),
+        ...permissions
+      }
+    };
+    setUsers(prev => prev.map(u => u.id === userId ? updated : u));
+    saveUserToFirestore(updated).catch(() => {});
+
+    logAudit(
+      'USER_PERMISSIONS_UPDATED',
+      'ROLE_MANAGEMENT',
+      target.name,
+      `${currentUser.name} updated granular permissions for ${target.name}.`
+    );
+    return { success: true };
+  };
+
+  const broadcastAdminAlert = (title: string, message: string, target: 'ALL' | 'STAFF') => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
+    if (target === 'ALL') {
+      addNotification({
+        type: 'ANNOUNCEMENT_NEW',
+        title,
+        message,
+        targetRole: 'ALL',
+        linkTab: 'announcements'
+      });
+    } else {
+      (['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN'] as UserRole[]).forEach(r => {
+        addNotification({
+          type: 'ANNOUNCEMENT_NEW',
+          title,
+          message,
+          targetRole: r,
+          linkTab: 'dashboard'
+        });
+      });
+    }
+    logAudit('MASTER_NOTIFICATION_BROADCAST', 'SETTINGS', title, `Dispatched live notification alert to ${target}.`);
+  };
+
   const updateUserProfile = (profileData: Partial<User>) => {
     if (!currentUser) return;
     const updated: User = {
       ...currentUser,
-      ...profileData
+      ...profileData,
+      role: currentUser.role,
+      isFounder: isFounderUser(currentUser)
     };
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
     saveUserToFirestore(updated).catch(() => {});
@@ -1630,16 +2199,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  // Chat Operations (Online required for live 1-on-1 messaging)
+  // Chat Operations with Offline Message Queue (🕒 Queued -> ✓ Delivered -> ✓✓ Seen)
   const sendChatMessage = (
     recipientId: string, 
     text: string, 
     attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }
-  ): { success: boolean; error?: string } => {
+  ): { success: boolean; error?: string; queued?: boolean } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
-    if (!isOnline) {
-      return { success: false, error: 'Internet connection required for live messaging.' };
-    }
     const recipient = users.find(u => u.id === recipientId);
     if (!recipient || (!text.trim() && !attachment)) {
       return { success: false, error: 'Recipient or message cannot be empty.' };
@@ -1648,6 +2214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanText = text.trim() || (attachment ? `📎 ${attachment.name}` : '');
     const sortedIds = [currentUser.id, recipientId].sort();
     const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+    const deliveryStatus = isOnline ? 'DELIVERED' : 'QUEUED';
 
     const newMsg: ChatMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1660,13 +2227,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       text: cleanText,
       timestamp: new Date().toISOString(),
       read: false,
+      deliveryStatus,
       attachmentUrl: attachment?.url,
       attachmentName: attachment?.name,
       attachmentType: attachment?.type
     };
 
     setChatMessages(prev => [...prev, newMsg]);
-    saveChatMessageToFirestore(newMsg).catch(() => {});
+    if (isOnline) {
+      saveChatMessageToFirestore(newMsg).catch(() => {});
+    } else {
+      setOfflineChatQueue(prev => [...prev, newMsg]);
+    }
 
     setChats(prev => {
       const existing = prev.find(c => c.id === chatId);
@@ -1705,21 +2277,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
 
-      saveChatConversationToFirestore(conversation).catch(() => {});
+      if (isOnline) saveChatConversationToFirestore(conversation).catch(() => {});
       return [conversation, ...prev.filter(c => c.id !== chatId)];
     });
 
-    addNotification({
-      type: 'CHAT_MESSAGE',
-      title: `Message from ${currentUser.name}`,
-      message: cleanText.length > 60 ? `${cleanText.substring(0, 60)}...` : cleanText,
-      targetUserId: recipientId,
-      linkTab: 'chat',
-      entityId: chatId
+    if (isOnline) {
+      addNotification({
+        type: 'CHAT_MESSAGE',
+        title: `Message from ${currentUser.name}`,
+        message: cleanText.length > 60 ? `${cleanText.substring(0, 60)}...` : cleanText,
+        targetUserId: recipientId,
+        linkTab: 'chat',
+        entityId: chatId
+      });
+    }
+
+    return { success: true, queued: !isOnline };
+  };
+
+  const markConversationAsSeen = useCallback((chatId: string) => {
+    if (!currentUser) return;
+
+    setChatMessages(prev => {
+      let changed = false;
+      const next = prev.map(m => {
+        if (m.chatId === chatId && m.recipientId === currentUser.id && (!m.read || m.deliveryStatus !== 'SEEN')) {
+          changed = true;
+          const seenMsg: ChatMessage = { ...m, read: true, deliveryStatus: 'SEEN' };
+          if (isOnline) saveChatMessageToFirestore(seenMsg).catch(() => {});
+          return seenMsg;
+        }
+        return m;
+      });
+      return changed ? next : prev;
     });
 
-    return { success: true };
-  };
+    setChats(prev =>
+      prev.map(c => {
+        if (c.id === chatId && (c.unreadCounts?.[currentUser.id] || 0) > 0) {
+          const updatedConvo: ChatConversation = {
+            ...c,
+            unreadCounts: {
+              ...c.unreadCounts,
+              [currentUser.id]: 0
+            }
+          };
+          if (isOnline) saveChatConversationToFirestore(updatedConvo).catch(() => {});
+          return updatedConvo;
+        }
+        return c;
+      })
+    );
+  }, [currentUser, isOnline]);
 
   // App Updates Management
   const publishAppUpdate = (updateData: Omit<AppUpdate, 'id'>) => {
@@ -1772,19 +2381,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateAppSettings = (newSettings: Partial<AppSettings>) => {
     if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
-    const updated: AppSettings = {
+    const updated: AppSettings = mergeAppSettings({
       ...appSettings,
       ...newSettings,
       updatedAt: new Date().toISOString(),
       updatedBy: currentUser.name
-    };
+    });
     setAppSettings(updated);
     saveAppSettingsToFirestore(updated).catch(() => {});
 
     logAudit(
       'APP_SETTINGS_MODIFIED',
       'SETTINGS',
-      'System Configuration',
+      'Master Control Settings',
       `Super Admin ${currentUser.name} updated global app settings.`
     );
   };
@@ -1805,6 +2414,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppSettings(INITIAL_APP_SETTINGS);
     setChats(INITIAL_CHATS);
     setChatMessages(INITIAL_CHAT_MESSAGES);
+    setOfflineChatQueue([]);
     setAcknowledgedUpdateVersion(null);
   };
 
@@ -1844,7 +2454,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitComplaint,
         updateComplaintStatus,
         publishAnnouncement,
+        deleteAnnouncement,
         createOrUpdateStaff,
+        promoteToSuperAdmin,
+        demoteSuperAdmin,
+        toggleUserSuspension,
+        updateUserPermissions,
+        broadcastAdminAlert,
         updateUserProfile,
         resetAllData,
         officeBearers,
@@ -1853,9 +2469,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         vacateOfficeBearer,
         chats,
         chatMessages,
+        queuedMessageCount: offlineChatQueue.length,
         activeChatUser,
         setActiveChatUser,
         sendChatMessage,
+        markConversationAsSeen,
         appUpdates,
         latestPublishedUpdate,
         githubRelease,
@@ -1877,6 +2495,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isFirebaseLive,
         isCloudSyncing,
         loginWithGoogleAuth,
+        loginWithPassword,
+        completePasswordAfterOtp,
+        setOrChangeUserPassword,
         logoutFirebaseAuth,
         requestOTP,
         verifyOTP

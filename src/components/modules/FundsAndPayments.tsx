@@ -47,11 +47,10 @@ export const FundsAndPayments: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
-  const canVerify = isSuperAdmin || isFinanceOfficer || isDistrictAdmin;
+  const canVerify = isSuperAdmin || isDistrictAdmin || Boolean(currentUser?.permissions?.canVerifyPayments);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFund, setFilterFund] = useState<string>('ALL');

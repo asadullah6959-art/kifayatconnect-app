@@ -101,7 +101,7 @@ export const GlobalShortcutsHandler: React.FC<GlobalShortcutsHandlerProps> = ({
             break;
           case '5':
             e.preventDefault();
-            if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'FINANCE_OFFICER') {
+            if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.permissions?.canVerifyPayments) {
               setActiveTab('verification');
               showToast('Navigated to Payment Verification (Alt+5)');
             } else {

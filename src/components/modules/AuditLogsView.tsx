@@ -17,7 +17,6 @@ export const AuditLogsView: React.FC = () => {
   const { currentUser, auditLogs, language } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-  const isFinanceOfficer = currentUser?.role === 'FINANCE_OFFICER';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
@@ -30,9 +29,6 @@ export const AuditLogsView: React.FC = () => {
   // Strict role-scoped audit visibility per matrix:
   const allowedLogs = auditLogs.filter(log => {
     if (isSuperAdmin) return true; // Super Admin sees all organization logs
-    if (isFinanceOfficer) {
-      return log.category === 'FINANCIAL'; // Finance officer sees only financial logs
-    }
     if (isDistrictAdmin) {
       const myDist = currentUser.assignedDistrict || currentUser.district;
       const logDist = log.district || (log.region ? mapLegacyRegionToHierarchy(log.region).district : '');
@@ -96,7 +92,6 @@ export const AuditLogsView: React.FC = () => {
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">
               {isSuperAdmin && 'Master Organization Audit Trail'}
-              {isFinanceOfficer && 'Financial Ledger Audit Trail'}
               {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} Activity Audit Trail`}
               {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`}
               {isMember && 'My Personal Account Activity Trail'}

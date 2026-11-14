@@ -1,69 +1,84 @@
 import React from 'react';
-import { Crown, ShieldCheck, Building2, Wallet, BadgeCheck } from 'lucide-react';
 import { UserRole } from '../../types';
+import { useApp } from '../../context/AppContext';
+import { getRoleDisplayLabel } from '../../data/translations';
 
 interface RoleBadgeProps {
   role: UserRole;
+  isFounder?: boolean;
   compact?: boolean;
   className?: string;
 }
 
-export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({ role, compact = false, className = '' }) => {
+export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({
+  role,
+  isFounder = false,
+  compact = false,
+  className = ''
+}) => {
+  const { language } = useApp();
+  const label = getRoleDisplayLabel(role, language);
+  const sizeCls = compact ? 'px-2 py-0.5 text-[9px] gap-1' : 'px-2.5 py-0.5 text-[10px] gap-1.5';
+
   switch (role) {
     case 'SUPER_ADMIN':
       return (
         <span
-          className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider border rounded-md ${
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-          } bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 ${className}`}
+          className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(255,245,190,0.45)] ${sizeCls} ${className}`}
+          style={{
+            background: 'linear-gradient(135deg, #3A2A0A 0%, #7A5816 50%, #2A1D06 100%)',
+            borderColor: '#F5D061',
+            color: '#FFF2B2'
+          }}
         >
-          <Crown className={compact ? 'w-2.5 h-2.5 text-amber-500' : 'w-3 h-3 text-amber-500'} />
-          <span>Super Admin</span>
+          <span aria-hidden="true" className="leading-none">👑</span>
+          <span>{label}{isFounder ? (language === 'ur' ? ' · بانی' : ' · FOUNDER') : ''}</span>
         </span>
       );
+
     case 'ADMIN':
       return (
         <span
-          className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider border rounded-md ${
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-          } bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40 ${className}`}
+          className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(37,99,235,0.25),inset_0_1px_0_rgba(191,219,254,0.3)] ${sizeCls} ${className}`}
+          style={{
+            background: 'linear-gradient(135deg, #0E234E 0%, #1E40AF 55%, #0B1B3B 100%)',
+            borderColor: '#D4AF37',
+            color: '#DBEAFE'
+          }}
         >
-          <ShieldCheck className={compact ? 'w-2.5 h-2.5 text-blue-500' : 'w-3 h-3 text-blue-500'} />
-          <span>District Admin</span>
+          <span aria-hidden="true" className="text-[#F5D061] leading-none">★</span>
+          <span>{label}</span>
         </span>
       );
+
     case 'CO_ADMIN':
       return (
         <span
-          className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider border rounded-md ${
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-          } bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/40 ${className}`}
+          className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(5,150,105,0.25),inset_0_1px_0_rgba(167,243,208,0.3)] ${sizeCls} ${className}`}
+          style={{
+            background: 'linear-gradient(135deg, #032B1E 0%, #046C4E 55%, #022016 100%)',
+            borderColor: '#34D399',
+            color: '#D1FAE5'
+          }}
         >
-          <Building2 className={compact ? 'w-2.5 h-2.5 text-indigo-500' : 'w-3 h-3 text-indigo-500'} />
-          <span>State Co-Admin</span>
+          <span aria-hidden="true" className="text-[#F5D061] leading-none">✦</span>
+          <span>{label}</span>
         </span>
       );
-    case 'FINANCE_OFFICER':
-      return (
-        <span
-          className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider border rounded-md ${
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-          } bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 ${className}`}
-        >
-          <Wallet className={compact ? 'w-2.5 h-2.5 text-emerald-500' : 'w-3 h-3 text-emerald-500'} />
-          <span>Finance Officer</span>
-        </span>
-      );
+
     case 'MEMBER':
     default:
       return (
         <span
-          className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider border rounded-md ${
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-          } bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 ${className}`}
+          className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(126,34,206,0.25),inset_0_1px_0_rgba(233,213,255,0.28)] ${sizeCls} ${className}`}
+          style={{
+            background: 'linear-gradient(135deg, #271242 0%, #5B21B6 55%, #1D0B33 100%)',
+            borderColor: '#C084FC',
+            color: '#F3E8FF'
+          }}
         >
-          <BadgeCheck className={compact ? 'w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400' : 'w-3 h-3 text-emerald-600 dark:text-emerald-400'} />
-          <span>Verified Member</span>
+          <span aria-hidden="true" className="leading-none">👥</span>
+          <span>{label}</span>
         </span>
       );
   }

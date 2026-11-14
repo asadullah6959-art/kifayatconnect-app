@@ -29,8 +29,8 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    // Absolute Super Admin Gate: Strictly bound to authorized root email
-    function isSuperAdmin() {
+    // Founder Gate: Strictly bound to authorized root email (cannot be edited/demoted by any other Super Admin)
+    function isFounder() {
       return isVerified() && request.auth.token.email == 'asadullah6959@gmail.com';
     }
 
@@ -38,12 +38,18 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
 
-    function isStaff() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).isStaff == true));
+    // Super Admin Gate: Founder OR appointed Additional Super Admin (when not suspended)
+    function isSuperAdmin() {
+      return isFounder() || (
+        isVerified() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserDoc(request.auth.uid).role == 'SUPER_ADMIN' &&
+        !(getUserDoc(request.auth.uid).isSuspended == true)
+      );
     }
 
-    function isFinanceOfficer() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'FINANCE_OFFICER'));
+    function isStaff() {
+      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).isStaff == true));
     }
 
     function isDistrictAdmin() {
@@ -60,33 +66,47 @@ service cloud.firestore {
         data.id is string && isValidId(data.id) &&
         data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
-        data.role in ['SUPER_ADMIN', 'FINANCE_OFFICER', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
+        data.role in ['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
         data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED', 'SUSPENDED', 'PENDING_DISTRICT_REVIEW', 'RECOMMENDED_BY_DISTRICT', 'PENDING_REGIONAL_REVIEW', 'RECOMMENDED_BY_REGION'] &&
         data.isStaff is bool;
     }
 
+    function targetIsFounderDoc() {
+      return existing().email == 'asadullah6959@gmail.com' || existing().isFounder == true;
+    }
+
     // --- COLLECTION RULES ---
 
-    // 1. Users Collection
+    // 1. Users Collection (Founder Lock + Multi-Super Admin governance)
     match /users/{userId} {
       allow get: if isVerified();
       allow list: if isVerified();
 
       allow create: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        isSuperAdmin() ||
-        (request.auth.uid == userId && incoming().role == 'MEMBER' && incoming().isStaff == false)
+        isFounder() ||
+        (isSuperAdmin() && incoming().role != 'SUPER_ADMIN' && incoming().isFounder != true) ||
+        (request.auth.uid == userId && incoming().role == 'MEMBER' && incoming().isStaff == false && incoming().isFounder != true)
       );
 
       allow update: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        isSuperAdmin() ||
+        isFounder() ||
+        (
+          isSuperAdmin() &&
+          !targetIsFounderDoc() &&
+          incoming().role != 'SUPER_ADMIN' &&
+          existing().role != 'SUPER_ADMIN' &&
+          incoming().isFounder == existing().isFounder
+        ) ||
         (
           request.auth.uid == userId &&
           incoming().role == existing().role &&
-          incoming().isStaff == existing().isStaff
+          incoming().isStaff == existing().isStaff &&
+          incoming().isFounder == existing().isFounder &&
+          incoming().isSuspended == existing().isSuspended
         )
       );
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isFounder() || (isSuperAdmin() && !targetIsFounderDoc() && existing().role != 'SUPER_ADMIN');
     }
 
     // 2. Membership Applications
@@ -109,7 +129,7 @@ service cloud.firestore {
     // 3. Payments Ledger
     match /payments/{paymentId} {
       allow get, list: if isVerified() && (
-        isFinanceOfficer() ||
+        isSuperAdmin() ||
         isDistrictAdmin() ||
         resource.data.userId == request.auth.uid
       );
@@ -119,7 +139,6 @@ service cloud.firestore {
 
       allow update: if isVerified() && isValidId(paymentId) && (
         isSuperAdmin() ||
-        isFinanceOfficer() ||
         isDistrictAdmin()
       );
 
@@ -160,7 +179,7 @@ service cloud.firestore {
       allow update, delete: if false; // Immutable historical succession log
     }
 
-    // 6. Mobile App Updates & Releases
+    // 6. Mobile App Updates & Master Settings
     match /app_updates/{updateId} {
       allow read: if true; // Publicly readable for app update checking
       allow write: if isSuperAdmin();
@@ -204,10 +223,16 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
-    // 8. Announcements
+    // 8. Dual Announcements (Official App = Super Admin only, Community = Admin/Co-Admin/Super Admin)
     match /announcements/{announcementId} {
       allow read: if isVerified();
-      allow create, update: if isVerified() && (isSuperAdmin() || isDistrictAdmin() || isCoAdmin());
+      allow create, update: if isVerified() && (
+        isSuperAdmin() ||
+        (
+          (isDistrictAdmin() || isCoAdmin()) &&
+          (!('announcementType' in incoming()) || incoming().announcementType != 'OFFICIAL_APP')
+        )
+      );
       allow delete: if isSuperAdmin();
     }
 
