@@ -138,7 +138,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
     if (file.type.startsWith('image/')) {
       try {
-        const compressed = await compressImageFile(file, 800, 0.72);
+        const compressed = await compressImageFile(file, 1080, 0.78);
         setFileDataUrl(compressed.dataUrl);
         setFileSize(compressed.sizeBytes);
         setFileMime('image/jpeg');
@@ -239,8 +239,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const pendingCount = docs.filter(d => !d.verificationStatus || d.verificationStatus === 'PENDING').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/90 p-3 sm:p-5 overflow-y-auto">
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[92dvh] my-auto overflow-hidden"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-[#0a192f] text-white flex items-center justify-between">

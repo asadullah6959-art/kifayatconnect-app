@@ -21,6 +21,7 @@ import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { compressImageFile } from '../../utils/imageCompression';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { translate } from '../../data/translations';
 
 export const MemberDashboard: React.FC = () => {
@@ -101,7 +102,7 @@ export const MemberDashboard: React.FC = () => {
     setUploadError(null);
     setIsCompressing(true);
     try {
-      const compressed = await compressImageFile(file, 800, 0.72);
+      const compressed = await compressImageFile(file, 1080, 0.78);
       setReceiptImageUrl(compressed.dataUrl);
       setReceiptImageName(file.name);
     } catch (err: any) {
@@ -175,7 +176,12 @@ export const MemberDashboard: React.FC = () => {
             <span className="text-xs text-slate-400">
               ID: <strong className="font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</strong>
             </span>
-            <RoleBadge role={currentUser.role} isFounder={currentUser.isFounder} compact />
+            <RoleBadge
+              role={currentUser.role}
+              isFounder={currentUser.isFounder}
+              isAuditOfficer={Boolean(currentUser.isAuditOfficer)}
+              compact
+            />
           </div>
         </div>
 
@@ -575,8 +581,11 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: SUBMIT PAYMENT (PRESERVED UPLOAD & COMPRESSION) */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <h3 className="text-base font-bold text-white pb-2 border-b border-slate-800">
               Submit Payment / Welfare Contribution
             </h3>
@@ -593,16 +602,18 @@ export const MemberDashboard: React.FC = () => {
               <form onSubmit={handlePaymentSubmit} className="mt-4 space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">Select Welfare Fund Category</label>
-                  <select
+                  <LuxurySelect
+                    compact
                     value={payFund}
-                    onChange={(e) => setPayFund(e.target.value as FundCategory)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-                  >
-                    <option value="Monthly Contribution">Monthly Contribution</option>
-                    <option value="Annual Welfare Fund">Annual Welfare Fund</option>
-                    <option value="Emergency Relief">Emergency Relief</option>
-                    <option value="Zakat & Sadqah">Zakat & Sadqah</option>
-                  </select>
+                    onChange={(val) => setPayFund(val as FundCategory)}
+                    label="Welfare Fund Category"
+                    options={[
+                      { value: 'Monthly Contribution', label: 'Monthly Contribution' },
+                      { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
+                      { value: 'Emergency Relief', label: 'Emergency Relief' },
+                      { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -620,16 +631,18 @@ export const MemberDashboard: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-300 block mb-1">Payment Method</label>
-                    <select
+                    <LuxurySelect
+                      compact
                       value={payMethod}
-                      onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-                    >
-                      <option value="EasyPaisa">EasyPaisa</option>
-                      <option value="JazzCash">JazzCash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                      <option value="Cash">Cash</option>
-                    </select>
+                      onChange={(val) => setPayMethod(val as PaymentMethod)}
+                      label="Payment Method"
+                      options={[
+                        { value: 'EasyPaisa', label: 'EasyPaisa' },
+                        { value: 'JazzCash', label: 'JazzCash' },
+                        { value: 'Bank Transfer', label: 'Bank Transfer' },
+                        { value: 'Cash', label: 'Cash' }
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -692,8 +705,11 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: COMPLAINT */}
       {isComplaintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <h3 className="text-base font-bold text-white pb-2 border-b border-slate-800">
               File Support Ticket or Grievance
             </h3>
@@ -705,30 +721,34 @@ export const MemberDashboard: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">Category</label>
-                  <select
+                  <LuxurySelect
+                    compact
                     value={cmpCategory}
-                    onChange={(e) => setCmpCategory(e.target.value as ComplaintCategory)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-                  >
-                    <option value="Membership Card">Membership Card Delivery / Issue</option>
-                    <option value="Receipt Inquiry">Receipt Tax / Record Correction</option>
-                    <option value="Fund Allocation">Fund Allocation Transparency</option>
-                    <option value="Welfare Support">Welfare Support Nomination</option>
-                    <option value="District Activity">District Activity Question</option>
-                    <option value="General">General Inquiries</option>
-                  </select>
+                    onChange={(val) => setCmpCategory(val as ComplaintCategory)}
+                    label="Category"
+                    options={[
+                      { value: 'Membership Card', label: 'Membership Card Delivery / Issue' },
+                      { value: 'Receipt Inquiry', label: 'Receipt Tax / Record Correction' },
+                      { value: 'Fund Allocation', label: 'Fund Allocation Transparency' },
+                      { value: 'Welfare Support', label: 'Welfare Support Nomination' },
+                      { value: 'District Activity', label: 'District Activity Question' },
+                      { value: 'General', label: 'General Inquiries' }
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">Urgency Priority</label>
-                  <select
+                  <LuxurySelect
+                    compact
                     value={cmpPriority}
-                    onChange={(e) => setCmpPriority(e.target.value as any)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High (Urgent Attention)</option>
-                  </select>
+                    onChange={(val) => setCmpPriority(val as 'LOW' | 'MEDIUM' | 'HIGH')}
+                    label="Urgency Priority"
+                    options={[
+                      { value: 'LOW', label: 'Low' },
+                      { value: 'MEDIUM', label: 'Medium' },
+                      { value: 'HIGH', label: 'High (Urgent Attention)' }
+                    ]}
+                  />
                 </div>
               </div>
 

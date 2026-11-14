@@ -59,9 +59,9 @@ export const ProfileSettings: React.FC = () => {
     if (!file) return;
     setAvatarError(null);
     try {
-      const compressed = await compressImageFile(file, 400, 0.78);
+      const compressed = await compressImageFile(file, 1080, 0.78);
       setAvatarUrl(compressed.dataUrl);
-      updateUserProfile({ avatarUrl: compressed.dataUrl });
+      updateUserProfile({ avatarUrl: compressed.dataUrl, photoUrl: compressed.dataUrl });
     } catch (err: any) {
       setAvatarError(err?.message || 'Unable to process selected profile image.');
     }
@@ -136,7 +136,12 @@ export const ProfileSettings: React.FC = () => {
             <span className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
               {language === 'ur' ? 'شناخت اور پروفائل' : 'Identity & Profile'}
             </span>
-            <RoleBadge role={currentUser.role} isFounder={currentUser.isFounder} compact />
+            <RoleBadge
+              role={currentUser.role}
+              isFounder={currentUser.isFounder}
+              isAuditOfficer={Boolean(currentUser.isAuditOfficer)}
+              compact
+            />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
             <UserIcon className="w-6 h-6 text-[#D4AF37]" />

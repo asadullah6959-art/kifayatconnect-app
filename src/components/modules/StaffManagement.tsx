@@ -18,6 +18,7 @@ import { User, UserRole } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { RoleBadge } from '../common/RoleBadge';
 import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { translate } from '../../data/translations';
 
 export const StaffManagement: React.FC = () => {
@@ -29,6 +30,7 @@ export const StaffManagement: React.FC = () => {
     createOrUpdateStaff,
     promoteToSuperAdmin,
     demoteSuperAdmin,
+    assignAuditOfficer,
     toggleUserSuspension
   } = useApp();
 
@@ -288,6 +290,7 @@ export const StaffManagement: React.FC = () => {
                   <RoleBadge
                     role={staff.role}
                     isFounder={staffIsFounder}
+                    isAuditOfficer={Boolean(staff.isAuditOfficer)}
                     compact
                     className="shrink-0"
                   />
@@ -371,6 +374,20 @@ export const StaffManagement: React.FC = () => {
                       </button>
                     )}
 
+                    {currentIsFounder && !staffIsFounder && (
+                      <button
+                        onClick={() => {
+                          const res = assignAuditOfficer(staff.id, !staff.isAuditOfficer);
+                          if (!res.success) showToast('err', res.error || 'Could not update Audit Officer role.');
+                          else showToast('ok', `${staff.name} ${staff.isAuditOfficer ? 'removed from' : 'assigned as'} Audit Officer.`);
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>{staff.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                      </button>
+                    )}
+
                     {!staffIsFounder && (
                       <button
                         onClick={() => handleToggleSuspend(staff)}
@@ -403,22 +420,25 @@ export const StaffManagement: React.FC = () => {
 
       {/* APPOINT / MODIFY STAFF MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-[#111622] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#D4AF37]/30 p-6 my-6">
-            <h3 className="text-base font-bold text-slate-900 dark:text-[#F5D061] pb-2 border-b border-slate-100 dark:border-[#D4AF37]/20">
-              {editingStaff ? `Modify Official: ${editingStaff.name}` : 'Appoint New Official'}
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 my-auto max-h-[92dvh] flex flex-col overflow-hidden text-white">
+            <div className="px-6 py-4 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
+              <h3 className="text-base font-bold text-[#F5D061]">
+                {editingStaff ? `Modify Official: ${editingStaff.name}` : 'Appoint New Official'}
+              </h3>
+            </div>
 
+            <div className="flex-1 overflow-y-auto p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
             {formError && (
-              <div className="mt-3 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 font-medium">
+              <div className="mb-3 p-2.5 rounded-lg bg-rose-950/60 border border-rose-800 text-xs text-rose-300 font-medium">
                 {formError}
               </div>
             )}
 
-            <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
+            <form id="kc-staff-modal-form" onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Official Full Name
                   </label>
                   <input
@@ -427,12 +447,12 @@ export const StaffManagement: React.FC = () => {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="Full Legal Name"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Official Email
                   </label>
                   <input
@@ -441,14 +461,14 @@ export const StaffManagement: React.FC = () => {
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="official@kifayatconnect.org"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     CNIC Identity Number
                   </label>
                   <input
@@ -457,12 +477,12 @@ export const StaffManagement: React.FC = () => {
                     value={formCnic}
                     onChange={(e) => setFormCnic(e.target.value)}
                     placeholder="35201-1234567-1"
-                    className="w-full text-xs font-mono px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                    className="w-full text-xs font-mono px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Official Phone Contact
                   </label>
                   <input
@@ -470,27 +490,29 @@ export const StaffManagement: React.FC = () => {
                     required
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Assigned Role (4-Role Hierarchy)
                   </label>
-                  <select
+                  <LuxurySelect
+                    label="Assigned Role"
                     value={formRole}
-                    onChange={(e) => setFormRole(e.target.value as UserRole)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white font-semibold"
-                  >
-                    <option value="ADMIN">Admin — District Operations & Verifications (Max 10/District)</option>
-                    <option value="CO_ADMIN">Co-Admin — Provincial Coordination (Max 3/Province)</option>
-                    {currentIsFounder && (
-                      <option value="SUPER_ADMIN">Super Admin — Central Governance (Founder Appointment)</option>
-                    )}
-                  </select>
+                    onChange={(val) => setFormRole(val as UserRole)}
+                    options={[
+                      { value: 'ADMIN', label: 'Admin — District Operations & Verifications (Max 10/District)' },
+                      { value: 'CO_ADMIN', label: 'Co-Admin — Provincial Coordination (Max 3/Province)' },
+                      ...(currentIsFounder
+                        ? [{ value: 'SUPER_ADMIN', label: 'Super Admin — Central Governance (Founder Appointment)' }]
+                        : [])
+                    ]}
+                    compact
+                  />
                 </div>
 
                 <SearchableLocationSelect
@@ -537,23 +559,26 @@ export const StaffManagement: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#F5D061] via-[#D4AF37] to-[#8A6218] text-[#0A0D12] text-xs font-extrabold rounded-lg shadow-xs hover:brightness-110"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{editingStaff ? 'Save Role Changes' : 'Approve Credentials'}</span>
-                </button>
-              </div>
             </form>
+            </div>
+
+            <div className="px-6 py-3.5 border-t border-[#D4AF37]/20 bg-[#0A0D12] flex items-center justify-end gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="kc-staff-modal-form"
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#F5D061] via-[#D4AF37] to-[#8A6218] text-[#0A0D12] text-xs font-extrabold rounded-lg shadow-xs hover:brightness-110"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{editingStaff ? 'Save Role Changes' : 'Approve Credentials'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

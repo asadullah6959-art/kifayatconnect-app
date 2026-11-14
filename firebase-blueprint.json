@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Organizational user account, staff credential, or welfare member profile",
+      "description": "Organizational user account, staff credential, audit officer, or welfare member profile",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -10,6 +10,10 @@
         "email": { "type": "string", "maxLength": 120 },
         "phone": { "type": "string", "maxLength": 30 },
         "role": { "type": "string", "enum": ["SUPER_ADMIN", "ADMIN", "CO_ADMIN", "MEMBER"] },
+        "isFounder": { "type": "boolean" },
+        "isAuditOfficer": { "type": "boolean" },
+        "isMutedInChat": { "type": "boolean" },
+        "founderBubbleColor": { "type": "string", "maxLength": 40 },
         "country": { "type": "string", "maxLength": 80 },
         "stateProvince": { "type": "string", "maxLength": 100 },
         "district": { "type": "string", "maxLength": 100 },
@@ -20,11 +24,15 @@
         "assignedStateProvince": { "type": "string", "maxLength": 100 },
         "assignedOfficeTitle": { "type": "string", "maxLength": 120 },
         "membershipId": { "type": "string", "maxLength": 50 },
-        "membershipStatus": { "type": "string", "enum": ["ACTIVE", "PENDING", "REJECTED", "EXPIRED"] },
-        "avatar": { "type": "string", "maxLength": 300 },
-        "cnic": { "type": "string", "maxLength": 20 },
+        "memberId": { "type": "string", "maxLength": 50 },
+        "membershipStatus": { "type": "string", "enum": ["ACTIVE", "PENDING", "REJECTED", "EXPIRED", "SUSPENDED", "PENDING_DISTRICT_REVIEW", "RECOMMENDED_BY_DISTRICT", "PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION"] },
+        "avatarUrl": { "type": "string", "maxLength": 650000 },
+        "photoUrl": { "type": "string", "maxLength": 650000 },
+        "avatar": { "type": "string", "maxLength": 650000 },
+        "cnic": { "type": "string", "maxLength": 30 },
         "address": { "type": "string", "maxLength": 300 },
-        "joinDate": { "type": "string", "maxLength": 30 },
+        "joinDate": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "maxLength": 40 },
         "isStaff": { "type": "boolean" },
         "notes": { "type": "string", "maxLength": 500 }
       },
@@ -39,13 +47,13 @@
         "applicantName": { "type": "string", "maxLength": 120 },
         "email": { "type": "string", "maxLength": 120 },
         "phone": { "type": "string", "maxLength": 30 },
-        "cnic": { "type": "string", "maxLength": 20 },
+        "cnic": { "type": "string", "maxLength": 30 },
         "country": { "type": "string", "maxLength": 80 },
         "stateProvince": { "type": "string", "maxLength": 100 },
         "district": { "type": "string", "maxLength": 100 },
         "address": { "type": "string", "maxLength": 300 },
         "submittedAt": { "type": "string", "maxLength": 40 },
-        "status": { "type": "string", "enum": ["PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION", "ACTIVE", "REJECTED"] },
+        "status": { "type": "string", "enum": ["PENDING_DISTRICT_REVIEW", "RECOMMENDED_BY_DISTRICT", "PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION", "ACTIVE", "REJECTED"] },
         "isOldMemberVerification": { "type": "boolean" },
         "oldMembershipNo": { "type": "string", "maxLength": 50 }
       },
@@ -80,7 +88,7 @@
         "userName": { "type": "string", "maxLength": 120 },
         "subject": { "type": "string", "maxLength": 150 },
         "description": { "type": "string", "maxLength": 1000 },
-        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"] },
+        "status": { "type": "string", "enum": ["OPEN", "UNDER_REVIEW", "IN_PROGRESS", "RESOLVED", "DISMISSED", "REJECTED"] },
         "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] }
       },
       "required": ["id", "ticketNumber", "userId", "userName", "subject", "description", "status", "priority"]
@@ -92,16 +100,15 @@
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "title": { "type": "string", "maxLength": 120 },
-        "seatNumber": { "type": "number" },
-        "totalSeatsForTitle": { "type": "number" },
-        "status": { "type": "string", "enum": ["APPOINTED", "VACANT"] },
-        "appointedUserId": { "type": "string", "maxLength": 128 },
-        "appointedUserName": { "type": "string", "maxLength": 120 },
+        "seatLabel": { "type": "string", "maxLength": 120 },
+        "seatIndex": { "type": "number" },
+        "status": { "type": "string", "enum": ["ACTIVE", "VACANT", "EXPIRED"] },
+        "assignedUserId": { "type": "string", "maxLength": 128 },
+        "assignedUserName": { "type": "string", "maxLength": 120 },
         "appointedDate": { "type": "string", "maxLength": 40 },
-        "term": { "type": "string", "maxLength": 50 },
         "jurisdiction": { "type": "string", "maxLength": 100 }
       },
-      "required": ["id", "title", "seatNumber", "totalSeatsForTitle", "status"]
+      "required": ["id", "title", "status"]
     },
     "AppUpdate": {
       "title": "AppUpdate",
@@ -125,9 +132,9 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
-        "participantIds": { "type": "array", "items": { "type": "string" } },
+        "participantIds": { "type": "array" },
         "lastMessage": { "type": "string", "maxLength": 500 },
-        "lastMessageTimestamp": { "type": "string", "maxLength": 40 }
+        "lastMessageTime": { "type": "string", "maxLength": 40 }
       },
       "required": ["id", "participantIds"]
     },
@@ -137,19 +144,42 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
+        "chatId": { "type": "string", "maxLength": 128 },
         "senderId": { "type": "string", "maxLength": 128 },
         "recipientId": { "type": "string", "maxLength": 128 },
         "text": { "type": "string", "maxLength": 2000 },
-        "timestamp": { "type": "string", "maxLength": 40 },
-        "status": { "type": "string", "enum": ["SENT", "DELIVERED", "READ"] }
+        "timestamp": { "type": "string", "maxLength": 40 }
       },
-      "required": ["id", "senderId", "recipientId", "text", "timestamp", "status"]
+      "required": ["id", "senderId", "recipientId", "text", "timestamp"]
+    },
+    "CommunityChatMessage": {
+      "title": "CommunityChatMessage",
+      "description": "Ultra-Luxury Live Community Chat Room messages supporting voice notes, Islamic GIFs, reactions, pins, and Founder highlights",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "chatId": { "type": "string", "maxLength": 128 },
+        "roomType": { "type": "string", "enum": ["COMMUNITY"] },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 120 },
+        "senderRole": { "type": "string", "enum": ["SUPER_ADMIN", "ADMIN", "CO_ADMIN", "MEMBER"] },
+        "senderIsFounder": { "type": "boolean" },
+        "senderIsAuditOfficer": { "type": "boolean" },
+        "senderBubbleColor": { "type": "string", "maxLength": 40 },
+        "text": { "type": "string", "maxLength": 4000 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "islamicGifId": { "type": "string", "maxLength": 64 },
+        "isHighlighted": { "type": "boolean" },
+        "isPinned": { "type": "boolean" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["id", "chatId", "senderId", "senderName", "senderRole", "text", "timestamp"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
-      "description": "User profiles, roles, and administrative credentials"
+      "description": "User profiles, roles, audit officer designations, and administrative credentials"
     },
     "/applications/{applicationId}": {
       "schema": { "$ref": "#/entities/MembershipApplication" },
@@ -177,7 +207,11 @@
     },
     "/chat_messages/{messageId}": {
       "schema": { "$ref": "#/entities/ChatMessage" },
-      "description": "Chat messages and attachments"
+      "description": "Direct chat messages and attachments"
+    },
+    "/community_chat_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/CommunityChatMessage" },
+      "description": "Live Community Room messages, voice notes, Islamic GIFs, reactions, and Founder pins"
     }
   }
 }

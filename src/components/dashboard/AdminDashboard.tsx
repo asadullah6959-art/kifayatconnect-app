@@ -375,7 +375,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="font-semibold text-white truncate">{member.name}</p>
-                        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
+                        <RoleBadge role={member.role} isFounder={member.isFounder} isAuditOfficer={Boolean(member.isAuditOfficer)} compact />
                       </div>
                       <p className="text-[11px] text-slate-400 font-mono truncate">
                         {member.membershipId} · {member.cityTown || member.district}

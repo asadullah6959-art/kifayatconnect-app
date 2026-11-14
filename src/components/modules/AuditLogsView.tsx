@@ -12,11 +12,14 @@ import {
 } from 'lucide-react';
 import { AuditLog } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const AuditLogsView: React.FC = () => {
   const { currentUser, auditLogs, language } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
+  const canSeeAllLogs = isSuperAdmin || isAuditOfficer;
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
@@ -28,7 +31,7 @@ export const AuditLogsView: React.FC = () => {
 
   // Strict role-scoped audit visibility per matrix:
   const allowedLogs = auditLogs.filter(log => {
-    if (isSuperAdmin) return true; // Super Admin sees all organization logs
+    if (canSeeAllLogs) return true; // Super Admin & Audit Officer see all organization logs
     if (isDistrictAdmin) {
       const myDist = currentUser.assignedDistrict || currentUser.district;
       const logDist = log.district || (log.region ? mapLegacyRegionToHierarchy(log.region).district : '');
@@ -91,10 +94,15 @@ export const AuditLogsView: React.FC = () => {
             </span>
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">
-              {isSuperAdmin && 'Master Organization Audit Trail'}
-              {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} Activity Audit Trail`}
-              {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`}
-              {isMember && 'My Personal Account Activity Trail'}
+              {isSuperAdmin
+                ? 'Master Organization Audit Trail'
+                : isAuditOfficer
+                ? 'Audit Officer Verification Trail (Read-Only)'
+                : isDistrictAdmin
+                ? `${currentUser.assignedDistrict || currentUser.district} Activity Audit Trail`
+                : isCoAdmin
+                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`
+                : 'My Personal Account Activity Trail'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
@@ -102,8 +110,8 @@ export const AuditLogsView: React.FC = () => {
             <span>Immutable Governance Audit Log</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isSuperAdmin 
-              ? 'Complete historical ledger of approvals, payment certifications, role changes, and administrative actions.' 
+            {canSeeAllLogs
+              ? 'Complete historical ledger of approvals, payment certifications, role changes, and administrative actions.'
               : 'Strictly filtered to records necessary for your operational role.'}
           </p>
         </div>
@@ -121,19 +129,23 @@ export const AuditLogsView: React.FC = () => {
             />
           </div>
 
-          {isSuperAdmin && (
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-            >
-              <option value="ALL">All Categories</option>
-              <option value="ROLE_MANAGEMENT">Role Management</option>
-              <option value="FINANCIAL">Financial Verifications</option>
-              <option value="MEMBERSHIP">Membership Approvals</option>
-              <option value="REGIONAL">District / State Decisions</option>
-              <option value="SECURITY">Security Events</option>
-            </select>
+          {canSeeAllLogs && (
+            <div className="w-48">
+              <LuxurySelect
+                compact
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                label="Audit Category"
+                options={[
+                  { value: 'ALL', label: 'All Categories' },
+                  { value: 'ROLE_MANAGEMENT', label: 'Role Management' },
+                  { value: 'FINANCIAL', label: 'Financial Verifications' },
+                  { value: 'MEMBERSHIP', label: 'Membership Approvals' },
+                  { value: 'REGIONAL', label: 'District / State Decisions' },
+                  { value: 'SECURITY', label: 'Security Events' }
+                ]}
+              />
+            </div>
           )}
         </div>
       </div>

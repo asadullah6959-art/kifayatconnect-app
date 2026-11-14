@@ -6,7 +6,8 @@ import {
   MapPin,
   IdCard,
   ShieldAlert,
-  MessageSquare
+  MessageSquare,
+  RefreshCw
 } from 'lucide-react';
 import { User } from '../../types';
 import {
@@ -15,6 +16,7 @@ import {
   mapLegacyRegionToHierarchy
 } from '../../data/locationData';
 import { RoleBadge } from '../common/RoleBadge';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 interface MemberRowProps {
   member: User;
@@ -56,7 +58,12 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
             </span>
           </div>
         </div>
-        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
+        <RoleBadge
+          role={member.role}
+          isFounder={member.isFounder}
+          isAuditOfficer={Boolean(member.isAuditOfficer)}
+          compact
+        />
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-slate-500">
@@ -109,31 +116,39 @@ export const MemberDirectory: React.FC = () => {
     setSelectedCardUser,
     setInspectedUserProfile,
     setActiveChatUser,
-    setActiveTab
+    setActiveTab,
+    syncAllUsersToCloud
   } = useApp();
 
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'MEMBER' | 'STAFF'>('ALL');
+  const [isSyncingDir, setIsSyncingDir] = useState(false);
   const [selectedProvinceFilter, setSelectedProvinceFilter] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'ALL') : 'ALL'
+    !isAuditOfficer && (isCoAdmin || isDistrictAdmin)
+      ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'ALL')
+      : 'ALL'
   );
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>(
-    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'ALL') : 'ALL'
+    !isAuditOfficer && isDistrictAdmin
+      ? (currentUser?.assignedDistrict || currentUser?.district || 'ALL')
+      : 'ALL'
   );
   const [selectedMemberForHierarchy, setSelectedMemberForHierarchy] = useState<User | null>(null);
 
   if (!currentUser) return null;
 
-  if (currentUser.role === 'MEMBER') {
+  if (currentUser.role === 'MEMBER' && !isAuditOfficer) {
     return (
-      <div className="p-8 sm:p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="p-8 sm:p-12 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
         <ShieldAlert className="w-10 h-10 text-rose-500 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
+        <h3 className="text-base font-bold text-white mt-2">
           Access Restricted
         </h3>
-        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+        <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
           Members are restricted from viewing the central directory containing other members&apos; private records and addresses.
         </p>
       </div>
@@ -141,13 +156,15 @@ export const MemberDirectory: React.FC = () => {
   }
 
   const allowedMembers = users.filter(u => {
-    if (u.role !== 'MEMBER') return false;
-    if (isDistrictAdmin) {
+    if (roleFilter === 'MEMBER' && u.role !== 'MEMBER') return false;
+    if (roleFilter === 'STAFF' && u.role === 'MEMBER' && !u.isAuditOfficer) return false;
+
+    if (!isAuditOfficer && isDistrictAdmin) {
       const myDistrict = currentUser.assignedDistrict || currentUser.district;
       const memberDistrict = u.district || u.assignedDistrict;
       return memberDistrict === myDistrict;
     }
-    if (isCoAdmin) {
+    if (!isAuditOfficer && isCoAdmin) {
       const myProvince = currentUser.assignedStateProvince || currentUser.stateProvince;
       return u.stateProvince === myProvince || u.assignedStateProvince === myProvince;
     }
@@ -177,6 +194,15 @@ export const MemberDirectory: React.FC = () => {
 
     return matchesSearch && matchesProvince && matchesDistrict;
   });
+
+  const handleManualCloudSync = async () => {
+    setIsSyncingDir(true);
+    try {
+      await syncAllUsersToCloud();
+    } finally {
+      setIsSyncingDir(false);
+    }
+  };
 
   const handleOpenMessage = (member: User) => {
     setActiveChatUser(member);
@@ -211,6 +237,16 @@ export const MemberDirectory: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleManualCloudSync}
+            disabled={isSyncingDir}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-bold hover:border-[#D4AF37] transition cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDir ? 'animate-spin' : ''}`} />
+            <span>Sync Cloud ({allowedMembers.length})</span>
+          </button>
+
           <div className="relative flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
@@ -218,39 +254,58 @@ export const MemberDirectory: React.FC = () => {
               placeholder="Search member, ID, city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-amber-500 w-full sm:w-56"
+              className="pl-8 pr-3 py-1.5 text-xs bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-white focus:outline-none focus:border-[#D4AF37] w-full sm:w-52"
             />
           </div>
 
-          {!isDistrictAdmin && !isCoAdmin && (
-            <>
-              <select
-                value={selectedProvinceFilter}
-                onChange={(e) => {
-                  setSelectedProvinceFilter(e.target.value);
-                  setSelectedDistrictFilter('ALL');
-                }}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-              >
-                <option value="ALL">All Provinces</option>
-                {PROVINCE_OPTIONS.map(prov => (
-                  <option key={prov} value={prov}>{prov}</option>
-                ))}
-              </select>
+          <div className="w-40">
+            <LuxurySelect
+              label="Account Scope"
+              value={roleFilter}
+              onChange={(val) => setRoleFilter(val as 'ALL' | 'MEMBER' | 'STAFF')}
+              options={[
+                { value: 'ALL', label: 'All Accounts' },
+                { value: 'MEMBER', label: 'Members Only' },
+                { value: 'STAFF', label: 'Officials & Audit' }
+              ]}
+              compact
+            />
+          </div>
 
-              <select
-                value={selectedDistrictFilter}
-                onChange={(e) => setSelectedDistrictFilter(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-              >
-                <option value="ALL">All Districts</option>
-                {(selectedProvinceFilter !== 'ALL'
-                  ? getDistrictsForProvince(selectedProvinceFilter)
-                  : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
-                ).map(dist => (
-                  <option key={dist} value={dist}>{dist}</option>
-                ))}
-              </select>
+          {(isAuditOfficer || (!isDistrictAdmin && !isCoAdmin)) && (
+            <>
+              <div className="w-44">
+                <LuxurySelect
+                  label="Province Filter"
+                  value={selectedProvinceFilter}
+                  onChange={(val) => {
+                    setSelectedProvinceFilter(val);
+                    setSelectedDistrictFilter('ALL');
+                  }}
+                  options={[
+                    { value: 'ALL', label: 'All Provinces' },
+                    ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
+                  ]}
+                  compact
+                />
+              </div>
+
+              <div className="w-44">
+                <LuxurySelect
+                  label="District Filter"
+                  value={selectedDistrictFilter}
+                  onChange={setSelectedDistrictFilter}
+                  options={[
+                    { value: 'ALL', label: 'All Districts' },
+                    ...(selectedProvinceFilter !== 'ALL'
+                      ? getDistrictsForProvince(selectedProvinceFilter)
+                      : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
+                    ).map(dist => ({ value: dist, label: dist }))
+                  ]}
+                  searchable
+                  compact
+                />
+              </div>
             </>
           )}
         </div>
@@ -357,7 +412,12 @@ export const MemberDirectory: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <RoleBadge role={member.role} isFounder={member.isFounder} compact />
+                        <RoleBadge
+                          role={member.role}
+                          isFounder={member.isFounder}
+                          isAuditOfficer={Boolean(member.isAuditOfficer)}
+                          compact
+                        />
                       </td>
 
                       <td className="py-3 px-4 text-right">
@@ -396,8 +456,8 @@ export const MemberDirectory: React.FC = () => {
 
       {/* Location Hierarchy Modal */}
       {selectedMemberForHierarchy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-amber-500" />

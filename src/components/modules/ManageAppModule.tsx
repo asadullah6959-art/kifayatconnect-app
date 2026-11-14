@@ -32,6 +32,7 @@ import { PROVINCE_OPTIONS, getAllDistricts, addCustomDistrict } from '../../data
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
 import { RoleBadge } from '../common/RoleBadge';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { hashSecretString } from '../../services/firebase';
 import { translate } from '../../data/translations';
 import {
@@ -114,6 +115,7 @@ export const ManageAppModule: React.FC = () => {
     createOrUpdateStaff,
     promoteToSuperAdmin,
     demoteSuperAdmin,
+    assignAuditOfficer,
     toggleUserSuspension,
     updateUserPermissions,
     broadcastAdminAlert,
@@ -878,15 +880,17 @@ export const ManageAppModule: React.FC = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">Directory Visibility</label>
-              <select
+              <LuxurySelect
+                compact
                 value={profileVisibility}
-                onChange={(e) => setProfileVisibility(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-              >
-                <option value="MEMBERS_ONLY">Members Only</option>
-                <option value="PUBLIC">Public</option>
-                <option value="PRIVATE">Staff Only</option>
-              </select>
+                onChange={(val) => setProfileVisibility(val as any)}
+                label="Directory Visibility"
+                options={[
+                  { value: 'MEMBERS_ONLY', label: 'Members Only' },
+                  { value: 'PUBLIC', label: 'Public' },
+                  { value: 'PRIVATE', label: 'Staff Only' }
+                ]}
+              />
             </div>
           </div>
 
@@ -1128,18 +1132,21 @@ export const ManageAppModule: React.FC = () => {
 
             {currentIsFounder && (
               <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/25">
-                <select
-                  value={superAdminCandidateId}
-                  onChange={(e) => setSuperAdminCandidateId(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white"
-                >
-                  <option value="">Select member or admin to promote to Additional Super Admin...</option>
-                  {promotableUsers.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email}) — {u.role}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1 min-w-0">
+                  <LuxurySelect
+                    compact
+                    searchable
+                    value={superAdminCandidateId}
+                    onChange={setSuperAdminCandidateId}
+                    placeholder="Select member or admin to promote to Additional Super Admin..."
+                    label="Promote Member to Super Admin"
+                    options={promotableUsers.map(u => ({
+                      value: u.id,
+                      label: u.name,
+                      sublabel: `${u.email} — ${u.role}`
+                    }))}
+                  />
+                </div>
                 <button
                   type="button"
                   disabled={!superAdminCandidateId}
@@ -1162,7 +1169,7 @@ export const ManageAppModule: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-white truncate">{sa.name}</span>
-                        <RoleBadge role={sa.role} isFounder={saIsFounder} compact />
+                        <RoleBadge role={sa.role} isFounder={saIsFounder} isAuditOfficer={Boolean(sa.isAuditOfficer)} compact />
                       </div>
                       <span className="text-[11px] text-slate-400 font-mono">{sa.email}</span>
                     </div>
@@ -1257,7 +1264,7 @@ export const ManageAppModule: React.FC = () => {
                         <span className="font-bold text-white block truncate">{admin.name}</span>
                         <span className="text-[11px] text-slate-400">{admin.district}, {admin.stateProvince}</span>
                       </div>
-                      <RoleBadge role={admin.role} compact />
+                      <RoleBadge role={admin.role} isAuditOfficer={Boolean(admin.isAuditOfficer)} compact />
                     </div>
                   ))
                 )}
@@ -1282,7 +1289,7 @@ export const ManageAppModule: React.FC = () => {
                         <span className="font-bold text-white block truncate">{ca.name}</span>
                         <span className="text-[11px] text-slate-400">{ca.stateProvince}</span>
                       </div>
-                      <RoleBadge role={ca.role} compact />
+                      <RoleBadge role={ca.role} isAuditOfficer={Boolean(ca.isAuditOfficer)} compact />
                     </div>
                   ))
                 )}
@@ -1319,7 +1326,7 @@ export const ManageAppModule: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-white truncate">{u.name}</span>
-                        <RoleBadge role={u.role} isFounder={targetIsFounder} compact />
+                        <RoleBadge role={u.role} isFounder={targetIsFounder} isAuditOfficer={Boolean(u.isAuditOfficer)} compact />
                         {u.isSuspended && (
                           <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
                             SUSPENDED
@@ -1337,7 +1344,29 @@ export const ManageAppModule: React.FC = () => {
                         <span>{translate(language, 'founderProtected')}</span>
                       </span>
                     ) : (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {currentIsFounder && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = !u.isAuditOfficer;
+                              const res = assignAuditOfficer(u.id, nextVal);
+                              if (res.success) {
+                                showNotice('success', `${u.name} ${nextVal ? 'assigned as Audit Officer 🛡️' : 'removed from Audit Officer role'}.`);
+                              } else {
+                                showNotice('error', res.error || 'Only Founder can manage Audit Officers.');
+                              }
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer border ${
+                              u.isAuditOfficer
+                                ? 'bg-cyan-950/70 border-cyan-400/60 text-cyan-200 hover:bg-cyan-900/70'
+                                : 'bg-[#0A0D12] border-cyan-500/30 text-cyan-300 hover:border-cyan-400'
+                            }`}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>{u.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setEditingPermUserId(isEditing ? null : u.id)}
@@ -1421,14 +1450,16 @@ export const ManageAppModule: React.FC = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">Audience</label>
-              <select
+              <LuxurySelect
+                compact
                 value={broadcastTarget}
-                onChange={(e) => setBroadcastTarget(e.target.value as 'ALL' | 'STAFF')}
-                className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-              >
-                <option value="ALL">All Users (Members + Staff)</option>
-                <option value="STAFF">Leadership Only (Super Admin, Admin, Co-Admin)</option>
-              </select>
+                onChange={(val) => setBroadcastTarget(val as 'ALL' | 'STAFF')}
+                label="Broadcast Audience"
+                options={[
+                  { value: 'ALL', label: 'All Users (Members + Staff)' },
+                  { value: 'STAFF', label: 'Leadership Only (Super Admin, Admin, Co-Admin)' }
+                ]}
+              />
             </div>
           </div>
 
@@ -1699,15 +1730,13 @@ export const ManageAppModule: React.FC = () => {
               <span>Pakistan Districts & Cities Master ({getAllDistricts().length} Registered)</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <select
+              <LuxurySelect
+                compact
                 value={locProvince}
-                onChange={(e) => setLocProvince(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-              >
-                {PROVINCE_OPTIONS.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+                onChange={setLocProvince}
+                label="Select Province / Territory"
+                options={PROVINCE_OPTIONS}
+              />
               <input
                 type="text"
                 required
@@ -1756,8 +1785,11 @@ export const ManageAppModule: React.FC = () => {
 
       {/* Staff Appointment Modal (STRICT 4 ROLES: ADMIN & CO_ADMIN) */}
       {staffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-          <div className="bg-[#111622] rounded-2xl p-5 sm:p-6 max-w-md w-full border border-[#D4AF37]/35 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-[#111622] rounded-2xl p-5 sm:p-6 max-w-md w-full border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider">
                 Super Admin Appointment
@@ -1779,14 +1811,16 @@ export const ManageAppModule: React.FC = () => {
             <form onSubmit={handleCreateStaff} className="space-y-3 text-xs">
               <div>
                 <label className="block font-semibold text-slate-300 mb-1">Role *</label>
-                <select
+                <LuxurySelect
+                  compact
                   value={staffRole}
-                  onChange={(e) => setStaffRole(e.target.value as 'ADMIN' | 'CO_ADMIN')}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
-                >
-                  <option value="ADMIN">Admin (Max {appSettings.maxAdminsPerDistrict} per District)</option>
-                  <option value="CO_ADMIN">Co-Admin (Max {appSettings.maxCoAdminsPerState} per State)</option>
-                </select>
+                  onChange={(val) => setStaffRole(val as 'ADMIN' | 'CO_ADMIN')}
+                  label="Select Staff Role"
+                  options={[
+                    { value: 'ADMIN', label: `Admin (Max ${appSettings.maxAdminsPerDistrict} per District)` },
+                    { value: 'CO_ADMIN', label: `Co-Admin (Max ${appSettings.maxCoAdminsPerState} per State)` }
+                  ]}
+                />
               </div>
 
               <div>

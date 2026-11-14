@@ -252,7 +252,12 @@ export const Header: React.FC<HeaderProps> = ({
                 {currentUser.name}
               </span>
               <div className="mt-0.5">
-                <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
+                <RoleBadge
+                  role={currentUser.role}
+                  isFounder={isFounderUser(currentUser)}
+                  isAuditOfficer={Boolean(currentUser.isAuditOfficer)}
+                  compact
+                />
               </div>
             </div>
           </button>
@@ -273,7 +278,12 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <p className="text-slate-400 text-[11px] truncate font-mono mt-0.5">{currentUser.email}</p>
                 <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                  <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
+                  <RoleBadge
+                    role={currentUser.role}
+                    isFounder={isFounderUser(currentUser)}
+                    isAuditOfficer={Boolean(currentUser.isAuditOfficer)}
+                    compact
+                  />
                 </div>
               </div>
 

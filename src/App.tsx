@@ -5,6 +5,7 @@ import { Sidebar } from './components/common/Sidebar';
 import { AuthWelcomeGate } from './components/auth/AuthWelcomeGate';
 import { SplashScreen } from './components/common/SplashScreen';
 import { BrandEmblem3D } from './components/common/BrandEmblem3D';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Dashboards (Strict 4 Roles)
 import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard';
@@ -256,7 +257,9 @@ const MainLayout: React.FC = () => {
         {/* Scrollable Center Content Viewport */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
           <div className="max-w-7xl mx-auto w-full min-w-0">
-            {renderContent()}
+            <ErrorBoundary key={activeTab} title="View Recovery Shield">
+              {renderContent()}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

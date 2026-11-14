@@ -30,7 +30,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
   const isPrivilegedViewer =
     currentUser.role === 'SUPER_ADMIN' ||
     currentUser.role === 'ADMIN' ||
-    currentUser.role === 'CO_ADMIN';
+    currentUser.role === 'CO_ADMIN' ||
+    Boolean(currentUser.isAuditOfficer);
   const showContact = isSelf || isPrivilegedViewer;
 
   const handleStartChat = () => {
@@ -47,8 +48,11 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
   const avatarSrc = user.avatarUrl || user.avatar;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div
+        className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-y-auto relative my-auto max-h-[92dvh]"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div className="h-24 bg-[#0a192f] p-4 relative border-b border-amber-500/20">
           <div className="absolute top-0 right-0 left-0 h-1 bg-amber-500" />
           <button
@@ -81,7 +85,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
             </div>
 
             <div className="flex flex-col items-end gap-1.5">
-              <RoleBadge role={user.role} />
+              <RoleBadge role={user.role} isFounder={Boolean(user.isFounder)} isAuditOfficer={Boolean(user.isAuditOfficer)} />
               <span className="text-[11px] font-mono font-medium text-amber-400">
                 {user.membershipId || 'KC-PENDING'}
               </span>

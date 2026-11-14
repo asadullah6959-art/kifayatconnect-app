@@ -27,6 +27,7 @@ import {
   mapLegacyRegionToHierarchy
 } from '../../data/locationData';
 import { compressImageFile } from '../../utils/imageCompression';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; hint: string }> = [
   { id: 'EasyPaisa', label: 'EasyPaisa', hint: 'Mobile Wallet / Till' },
@@ -47,6 +48,8 @@ export const FundsAndPayments: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
+  const hasFullAuditView = isSuperAdmin || isAuditOfficer;
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
@@ -56,10 +59,14 @@ export const FundsAndPayments: React.FC = () => {
   const [filterFund, setFilterFund] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterProvince, setFilterProvince] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'ALL') : 'ALL'
+    !hasFullAuditView && (isCoAdmin || isDistrictAdmin)
+      ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'ALL')
+      : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'ALL') : 'ALL'
+    !hasFullAuditView && isDistrictAdmin
+      ? (currentUser?.assignedDistrict || currentUser?.district || 'ALL')
+      : 'ALL'
   );
 
   // 3-Step Payment Submission Modal
@@ -84,6 +91,7 @@ export const FundsAndPayments: React.FC = () => {
   if (!currentUser) return null;
 
   const visibleTransactions = payments.filter(p => {
+    if (isAuditOfficer || isSuperAdmin) return true;
     if (isMember) return p.userId === currentUser.id;
     if (isDistrictAdmin) {
       const myDist = currentUser.assignedDistrict || currentUser.district;
@@ -129,7 +137,7 @@ export const FundsAndPayments: React.FC = () => {
     setUploadError(null);
     setIsCompressing(true);
     try {
-      const compressed = await compressImageFile(file, 800, 0.72);
+      const compressed = await compressImageFile(file, 1080, 0.78);
       setReceiptImageUrl(compressed.dataUrl);
       setReceiptImageName(file.name);
     } catch (err: any) {
@@ -231,7 +239,9 @@ export const FundsAndPayments: React.FC = () => {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-              {isMember
+              {isAuditOfficer && !isSuperAdmin
+                ? 'Audit Officer Verification Ledger (Read-Only)'
+                : isMember
                 ? 'Personal Ledger'
                 : isDistrictAdmin
                 ? `${currentUser.assignedDistrict || currentUser.district} Funds`
@@ -249,6 +259,8 @@ export const FundsAndPayments: React.FC = () => {
           <p className="text-xs text-slate-500 mt-0.5">
             {canVerify
               ? 'Review uploaded payment receipts, approve contributions, and issue certified vouchers.'
+              : isAuditOfficer
+              ? 'Read-only inspection of all member contributions and uploaded payment receipt proofs across Pakistan.'
               : 'Submit contributions in 3 simple steps with receipt upload and instant status tracking.'}
           </p>
         </div>
@@ -357,58 +369,71 @@ export const FundsAndPayments: React.FC = () => {
               />
             </div>
 
-            <select
-              value={filterFund}
-              onChange={(e) => setFilterFund(e.target.value)}
-              className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-            >
-              <option value="ALL">All Categories</option>
-              <option value="Monthly Contribution">Monthly Contribution</option>
-              <option value="Annual Welfare Fund">Annual Welfare Fund</option>
-              <option value="Emergency Relief">Emergency Relief</option>
-              <option value="Zakat & Sadqah">Zakat & Sadqah</option>
-            </select>
+            <div className="w-44">
+              <LuxurySelect
+                compact
+                value={filterFund}
+                onChange={setFilterFund}
+                label="Fund Category"
+                options={[
+                  { value: 'ALL', label: 'All Categories' },
+                  { value: 'Monthly Contribution', label: 'Monthly Contribution' },
+                  { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
+                  { value: 'Emergency Relief', label: 'Emergency Relief' },
+                  { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                ]}
+              />
+            </div>
 
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="VERIFIED">Approved</option>
-              <option value="PENDING_VERIFICATION">Pending</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
+            <div className="w-36">
+              <LuxurySelect
+                compact
+                value={filterStatus}
+                onChange={setFilterStatus}
+                label="Status"
+                options={[
+                  { value: 'ALL', label: 'All Statuses' },
+                  { value: 'VERIFIED', label: 'Approved' },
+                  { value: 'PENDING_VERIFICATION', label: 'Pending' },
+                  { value: 'REJECTED', label: 'Rejected' }
+                ]}
+              />
+            </div>
 
-            {!isDistrictAdmin && !isCoAdmin && (
+            {(hasFullAuditView || (!isDistrictAdmin && !isCoAdmin)) && (
               <>
-                <select
-                  value={filterProvince}
-                  onChange={(e) => {
-                    setFilterProvince(e.target.value);
-                    setFilterDistrict('ALL');
-                  }}
-                  className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-                >
-                  <option value="ALL">All Provinces</option>
-                  {PROVINCE_OPTIONS.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+                <div className="w-40">
+                  <LuxurySelect
+                    compact
+                    value={filterProvince}
+                    onChange={(val) => {
+                      setFilterProvince(val);
+                      setFilterDistrict('ALL');
+                    }}
+                    label="Province"
+                    options={[
+                      { value: 'ALL', label: 'All Provinces' },
+                      ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
+                    ]}
+                  />
+                </div>
 
-                <select
-                  value={filterDistrict}
-                  onChange={(e) => setFilterDistrict(e.target.value)}
-                  className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-                >
-                  <option value="ALL">All Districts</option>
-                  {(filterProvince !== 'ALL'
-                    ? getDistrictsForProvince(filterProvince)
-                    : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
-                  ).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
+                <div className="w-44">
+                  <LuxurySelect
+                    compact
+                    searchable
+                    value={filterDistrict}
+                    onChange={setFilterDistrict}
+                    label="District"
+                    options={[
+                      { value: 'ALL', label: 'All Districts' },
+                      ...(filterProvince !== 'ALL'
+                        ? getDistrictsForProvince(filterProvince)
+                        : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
+                      ).map(d => ({ value: d, label: d }))
+                    ]}
+                  />
+                </div>
               </>
             )}
           </div>
@@ -620,8 +645,11 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* 3-Step Payment Submission Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
@@ -669,16 +697,17 @@ export const FundsAndPayments: React.FC = () => {
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Fund Purpose / Category
                     </label>
-                    <select
+                    <LuxurySelect
                       value={payFund}
-                      onChange={(e) => setPayFund(e.target.value as FundCategory)}
-                      className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                    >
-                      <option value="Monthly Contribution">Monthly Contribution</option>
-                      <option value="Annual Welfare Fund">Annual Welfare Fund</option>
-                      <option value="Emergency Relief">Emergency Relief</option>
-                      <option value="Zakat & Sadqah">Zakat & Sadqah</option>
-                    </select>
+                      onChange={(val) => setPayFund(val as FundCategory)}
+                      label="Fund Purpose / Category"
+                      options={[
+                        { value: 'Monthly Contribution', label: 'Monthly Contribution' },
+                        { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
+                        { value: 'Emergency Relief', label: 'Emergency Relief' },
+                        { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -895,8 +924,8 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Receipt Image Preview Modal */}
       {previewTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-4 space-y-3 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-4 space-y-3 shadow-2xl my-auto max-h-[92dvh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -927,8 +956,8 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Rejection Reason Modal */}
       {rejectTxId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full p-5 space-y-3 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full p-5 space-y-3 shadow-2xl my-auto">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white">Reject Payment Proof</h4>
             <p className="text-xs text-slate-500">
               Provide a brief reason so the member can resubmit a valid receipt.

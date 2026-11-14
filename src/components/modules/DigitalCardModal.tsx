@@ -191,8 +191,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 my-8">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+      <div
+        className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="min-w-0">
@@ -275,7 +278,12 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                   <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight truncate">
                     {user.name}
                   </h3>
-                  <RoleBadge role={user.role} isFounder={user.isFounder} compact />
+                  <RoleBadge
+                    role={user.role}
+                    isFounder={user.isFounder}
+                    isAuditOfficer={Boolean(user.isAuditOfficer)}
+                    compact
+                  />
                   <div className="text-[10px] text-slate-300 space-y-0.5 pt-0.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-400">CNIC:</span>

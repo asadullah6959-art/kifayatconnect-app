@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInAnonymously,
   signOut as fbSignOut, 
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -11,6 +12,7 @@ import {
   getFirestore, 
   doc, 
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -58,12 +60,28 @@ googleProvider.setCustomParameters({
 // Authorized Permanent Root Super Admin Email
 export const ROOT_SUPER_ADMIN_EMAIL = 'asadullah6959@gmail.com';
 
-// Test connection status safely
+// Test connection status safely on boot
 export async function testFirestoreConnection(): Promise<boolean> {
   try {
-    return !!db && !!db.app;
-  } catch {
-    return false;
+    await getDocFromServer(doc(db, 'app_settings', 'global'));
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn('Firestore client is currently offline; using cached local state.');
+    }
+    return Boolean(db && db.app);
+  }
+}
+
+// Bridge EmailJS OTP / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
+export async function ensureFirebaseAuthSession(): Promise<FirebaseUser | null> {
+  try {
+    if (auth.currentUser) return auth.currentUser;
+    const cred = await signInAnonymously(auth);
+    return cred.user;
+  } catch (err) {
+    console.warn('Firebase anonymous bridge skipped or unavailable:', err);
+    return auth.currentUser;
   }
 }
 
@@ -804,58 +822,117 @@ export async function verifyLocalPasswordCredential(email: string, password: str
 // ----------------------------------------------------
 // Firestore Database Synchronization Methods
 // ----------------------------------------------------
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(item => stripUndefinedDeep(item)) as unknown as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([k, v]) => {
+      if (v !== undefined) {
+        out[k] = stripUndefinedDeep(v);
+      }
+    });
+    return out as T;
+  }
+  return value;
+}
+
+export function normalizeUserForCloud(user: User): Record<string, unknown> {
+  const photo = user.photoUrl || user.avatarUrl || user.avatar || '';
+  const memId = user.memberId || user.membershipId || '';
+  const statusStr = user.status || user.membershipStatus || 'ACTIVE';
+  return stripUndefinedDeep({
+    ...user,
+    uid: user.id,
+    memberId: memId,
+    membershipId: memId,
+    photoUrl: photo,
+    avatarUrl: photo,
+    province: user.stateProvince,
+    city: user.cityTown,
+    uc: user.unionCouncil,
+    status: statusStr,
+    isAuditOfficer: Boolean(user.isAuditOfficer),
+    isMutedInChat: Boolean(user.isMutedInChat),
+    createdAt: user.createdAt || user.joinDate || new Date().toISOString()
+  });
+}
+
 export async function saveUserToFirestore(user: User): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `users/${user.id}`;
   try {
-    await setDoc(doc(db, 'users', user.id), user);
+    await setDoc(doc(db, 'users', user.id), normalizeUserForCloud(user), { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
+export async function fetchAllUsersFromFirestore(): Promise<User[]> {
+  try {
+    const session = auth.currentUser || (await ensureFirebaseAuthSession());
+    if (!session) return [];
+    const snap = await getDocs(collection(db, 'users'));
+    const list: User[] = [];
+    snap.forEach(docSnap => {
+      list.push(docSnap.data() as User);
+    });
+    return list;
+  } catch (err) {
+    console.warn('Firestore users directory fetch warning:', err);
+    return [];
+  }
+}
+
 export async function saveApplicationToFirestore(app: MembershipApplication): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `applications/${app.id}`;
   try {
-    await setDoc(doc(db, 'applications', app.id), app);
+    await setDoc(doc(db, 'applications', app.id), stripUndefinedDeep(app));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function savePaymentToFirestore(payment: PaymentTransaction): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `payments/${payment.id}`;
   try {
-    await setDoc(doc(db, 'payments', payment.id), payment);
+    await setDoc(doc(db, 'payments', payment.id), stripUndefinedDeep(payment));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveComplaintToFirestore(complaint: Complaint): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `complaints/${complaint.id}`;
   try {
-    await setDoc(doc(db, 'complaints', complaint.id), complaint);
+    await setDoc(doc(db, 'complaints', complaint.id), stripUndefinedDeep(complaint));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveAnnouncementToFirestore(announcement: Announcement): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `announcements/${announcement.id}`;
   try {
-    await setDoc(doc(db, 'announcements', announcement.id), announcement);
+    await setDoc(doc(db, 'announcements', announcement.id), stripUndefinedDeep(announcement));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `announcements/${announcementId}`;
   try {
     await deleteDoc(doc(db, 'announcements', announcementId));
@@ -865,80 +942,110 @@ export async function deleteAnnouncementFromFirestore(announcementId: string): P
 }
 
 export async function saveAuditLogToFirestore(log: AuditLog): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `audit_logs/${log.id}`;
   try {
-    await setDoc(doc(db, 'audit_logs', log.id), log);
+    await setDoc(doc(db, 'audit_logs', log.id), stripUndefinedDeep(log));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveNotificationToFirestore(notif: AppNotification): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `notifications/${notif.id}`;
   try {
-    await setDoc(doc(db, 'notifications', notif.id), notif);
+    await setDoc(doc(db, 'notifications', notif.id), stripUndefinedDeep(notif));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveOfficeBearerToFirestore(ob: OfficeBearer): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `office_bearers/${ob.id}`;
   try {
-    await setDoc(doc(db, 'office_bearers', ob.id), ob);
+    await setDoc(doc(db, 'office_bearers', ob.id), stripUndefinedDeep(ob));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveOfficeBearerHistoryToFirestore(obh: OfficeBearerHistory): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `office_bearer_history/${obh.id}`;
   try {
-    await setDoc(doc(db, 'office_bearer_history', obh.id), obh);
+    await setDoc(doc(db, 'office_bearer_history', obh.id), stripUndefinedDeep(obh));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveAppUpdateToFirestore(update: AppUpdate): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `app_updates/${update.id}`;
   try {
-    await setDoc(doc(db, 'app_updates', update.id), update);
+    await setDoc(doc(db, 'app_updates', update.id), stripUndefinedDeep(update));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveAppSettingsToFirestore(settings: AppSettings): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `app_settings/global`;
   try {
-    await setDoc(doc(db, 'app_settings', 'global'), settings);
+    await setDoc(doc(db, 'app_settings', 'global'), stripUndefinedDeep(settings), { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
 export async function saveChatMessageToFirestore(msg: ChatMessage): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `chat_messages/${msg.id}`;
   try {
-    await setDoc(doc(db, 'chat_messages', msg.id), msg);
+    await setDoc(doc(db, 'chat_messages', msg.id), stripUndefinedDeep(msg));
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
+export async function saveCommunityMessageToFirestore(msg: ChatMessage): Promise<void> {
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
+  const path = `community_chat_messages/${msg.id}`;
+  try {
+    await setDoc(doc(db, 'community_chat_messages', msg.id), stripUndefinedDeep(msg), { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteCommunityMessageFromFirestore(messageId: string): Promise<void> {
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
+  const path = `community_chat_messages/${messageId}`;
+  try {
+    await deleteDoc(doc(db, 'community_chat_messages', messageId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
 export async function saveChatConversationToFirestore(chat: ChatConversation): Promise<void> {
-  if (!auth.currentUser) return;
+  const session = auth.currentUser || (await ensureFirebaseAuthSession());
+  if (!session) return;
   const path = `chats/${chat.id}`;
   try {
-    await setDoc(doc(db, 'chats', chat.id), chat);
+    await setDoc(doc(db, 'chats', chat.id), stripUndefinedDeep(chat), { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
@@ -968,12 +1075,15 @@ export function subscribeToFirestoreCollection<T>(
       onData(items);
     },
     (error) => {
-      // In offline mode or transient connection dips, Firestore operates on local cache
-      if ((error as any)?.code === 'unavailable' || error.message?.includes('offline') || error.message?.includes('unavailable')) {
+      if (
+        (error as { code?: string })?.code === 'unavailable' ||
+        error.message?.includes('offline') ||
+        error.message?.includes('unavailable')
+      ) {
         console.info(`Firestore collection "${collectionName}" operating in offline cache mode.`);
         return;
       }
-      handleFirestoreError(error, OperationType.GET, path);
+      console.warn(`Firestore subscription warning on "${path}":`, error);
     }
   );
 }

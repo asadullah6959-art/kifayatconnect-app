@@ -10,7 +10,8 @@ import {
   Loader2,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Camera
 } from 'lucide-react';
 import { 
   PROVINCE_OPTIONS, 
@@ -21,8 +22,10 @@ import {
   COUNTRIES
 } from '../../data/locationData';
 import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { verifyEmailOTP, getPendingEmailOTP, clearPendingEmailOTP } from '../../services/firebase';
+import { compressImageFile } from '../../utils/imageCompression';
 import { translate } from '../../data/translations';
 
 interface RegisterModalProps {
@@ -60,10 +63,29 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
   const [cityTown, setCityTown] = useState('Lahore');
   const [unionCouncil, setUnionCouncil] = useState('UC-112 Model Town');
   const [address, setAddress] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
   const [isOldMember, setIsOldMember] = useState(false);
   const [oldMembershipNo, setOldMembershipNo] = useState('');
 
   const [submitted, setSubmitted] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError('');
+    setPhotoUploading(true);
+    try {
+      const compressed = await compressImageFile(file, 1080, 0.78);
+      setAvatarUrl(compressed.dataUrl);
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'Unable to optimize profile photo.');
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handleProvinceChange = (newProvince: string) => {
     setStateProvince(newProvince);
@@ -169,7 +191,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
       address: address.trim(),
       isOldMember,
       oldMembershipNo: isOldMember ? oldMembershipNo.trim() : undefined,
-      password: password.trim()
+      password: password.trim(),
+      avatarUrl: avatarUrl || undefined
     });
 
     setSubmitted(true);
@@ -186,6 +209,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
       setPhone('+92 300 ');
       setCnic('');
       setAddress('');
+      setAvatarUrl('');
+      setPhotoError('');
       setIsOldMember(false);
       setOldMembershipNo('');
     }, 1800);
@@ -196,46 +221,51 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
   const sampleUCs = getSampleUCsForDistrict(stateProvince, district);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl p-4 sm:p-6 my-6 text-xs text-white">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
-          <div className="flex items-center gap-2.5">
-            <BrandEmblem3D size="sm" />
-            <div>
-              <h3 className="text-base font-extrabold kc-gold-gradient-text">
-                {translate(language, 'registerBtn')}
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                {step === 1
-                  ? translate(language, 'step1VerifyEmail')
-                  : step === 2
-                  ? translate(language, 'step2CreatePassword')
-                  : translate(language, 'step3CompleteProfile')}
-              </p>
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl my-auto max-h-[92dvh] flex flex-col overflow-hidden text-xs text-white">
+        {/* Sticky Header */}
+        <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <BrandEmblem3D size="sm" />
+              <div>
+                <h3 className="text-base font-extrabold kc-gold-gradient-text">
+                  {translate(language, 'registerBtn')}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {step === 1
+                    ? translate(language, 'step1VerifyEmail')
+                    : step === 2
+                    ? translate(language, 'step2CreatePassword')
+                    : translate(language, 'step3CompleteProfile')}
+                </p>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-[#161D2C] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-[#161D2C] cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Step Indicator */}
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {[1, 2, 3].map(idx => (
+              <div
+                key={idx}
+                className={`h-1.5 rounded-full transition-colors ${
+                  step >= idx ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D061]' : 'bg-[#161D2C]'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Step Indicator */}
-        <div className="grid grid-cols-3 gap-2 my-4">
-          {[1, 2, 3].map(idx => (
-            <div
-              key={idx}
-              className={`h-1.5 rounded-full transition-colors ${
-                step >= idx ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D061]' : 'bg-[#161D2C]'
-              }`}
-            />
-          ))}
-        </div>
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
 
         {submitted ? (
           <div className="py-10 text-center space-y-3">
@@ -406,8 +436,46 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
             </button>
           </form>
         ) : (
-          /* STEP 3: Full Community Profile + Preserved Searchable Pakistan Districts/Cities */
-          <form onSubmit={handleSubmit} className="space-y-4">
+          /* STEP 3: Full Community Profile + Compressed Photo Upload + Searchable Pakistan Districts/Cities */
+          <form id="kc-register-step3-form" onSubmit={handleSubmit} className="space-y-4">
+            {/* Profile Photo Upload above Applicant Full Name */}
+            <div className="p-3.5 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center gap-3.5">
+              <div className="relative w-16 h-16 rounded-full bg-[#161D2C] border-2 border-[#D4AF37]/60 overflow-hidden shrink-0 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Applicant Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-6 h-6 text-[#D4AF37]/70" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <p className="text-xs font-bold text-[#F5D061]">
+                  Profile Photo <span className="text-[10px] text-slate-400 font-normal">(Optional · Auto-compressed &lt;450KB)</span>
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg kc-gold-button text-[11px] font-bold cursor-pointer">
+                    {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                    <span>{avatarUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl('')}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {photoError && <p className="text-[11px] text-rose-400">{photoError}</p>}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="font-semibold text-slate-300 block mb-1">
@@ -488,37 +556,38 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">Country</label>
-                  <select
+                  <LuxurySelect
+                    label="Country"
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
-                  >
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    onChange={setCountry}
+                    options={COUNTRIES}
+                    compact
+                  />
                 </div>
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">State / Province *</label>
-                  <select
+                  <LuxurySelect
+                    label="State / Province"
                     value={stateProvince}
-                    onChange={(e) => handleProvinceChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs font-semibold text-white"
-                  >
-                    {PROVINCE_OPTIONS.map(prov => <option key={prov} value={prov}>{prov}</option>)}
-                  </select>
+                    onChange={handleProvinceChange}
+                    options={PROVINCE_OPTIONS}
+                    compact
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">District *</label>
-                  <select
+                  <LuxurySelect
+                    label="District"
                     value={district}
-                    onChange={(e) => handleDistrictChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs font-semibold text-emerald-300"
-                  >
-                    {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                    onChange={handleDistrictChange}
+                    options={[...availableDistricts, 'Other / Village']}
+                    searchable
+                    compact
+                  />
                 </div>
 
                 <div>
@@ -605,23 +674,29 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-[#D4AF37]/20">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer"
-              >
-                {translate(language, 'cancel')}
-              </button>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 px-5 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
-              >
-                <span>{translate(language, 'completeSignupBtn')}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
           </form>
+        )}
+        </div>
+
+        {/* Sticky Bottom Footer for Step 3 */}
+        {!submitted && step === 3 && (
+          <div className="px-4 sm:px-6 py-3 border-t border-[#D4AF37]/25 bg-[#0A0D12] flex items-center justify-between gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-xl bg-[#161D2C] text-slate-300 hover:text-white font-semibold cursor-pointer"
+            >
+              {translate(language, 'cancel')}
+            </button>
+            <button
+              type="submit"
+              form="kc-register-step3-form"
+              className="flex items-center gap-1.5 px-5 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
+            >
+              <span>{translate(language, 'completeSignupBtn')}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
       </div>
     </div>

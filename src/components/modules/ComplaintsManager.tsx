@@ -18,6 +18,7 @@ import {
   mapLegacyRegionToHierarchy 
 } from '../../data/locationData';
 import { MapPin } from 'lucide-react';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const ComplaintsManager: React.FC = () => {
   const { 
@@ -196,49 +197,58 @@ export const ComplaintsManager: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="Membership Card">Membership Card</option>
-            <option value="Receipt Inquiry">Receipt Inquiry</option>
-            <option value="Fund Allocation">Fund Allocation</option>
-            <option value="Welfare Support">Welfare Support</option>
-            <option value="District Activity">District Activity</option>
-            <option value="General">General</option>
-          </select>
+          <div className="w-44">
+            <LuxurySelect
+              compact
+              value={filterCategory}
+              onChange={setFilterCategory}
+              label="Ticket Category"
+              options={[
+                { value: 'ALL', label: 'All Categories' },
+                { value: 'Membership Card', label: 'Membership Card' },
+                { value: 'Receipt Inquiry', label: 'Receipt Inquiry' },
+                { value: 'Fund Allocation', label: 'Fund Allocation' },
+                { value: 'Welfare Support', label: 'Welfare Support' },
+                { value: 'District Activity', label: 'District Activity' },
+                { value: 'General', label: 'General' }
+              ]}
+            />
+          </div>
 
           {!isDistrictAdmin && !isCoAdmin && (
             <>
-              <select
-                value={filterProvince}
-                onChange={(e) => {
-                  setFilterProvince(e.target.value);
-                  setFilterDistrict('ALL');
-                }}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-              >
-                <option value="ALL">All Provinces</option>
-                {PROVINCE_OPTIONS.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+              <div className="w-40">
+                <LuxurySelect
+                  compact
+                  value={filterProvince}
+                  onChange={(val) => {
+                    setFilterProvince(val);
+                    setFilterDistrict('ALL');
+                  }}
+                  label="Province"
+                  options={[
+                    { value: 'ALL', label: 'All Provinces' },
+                    ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
+                  ]}
+                />
+              </div>
 
-              <select
-                value={filterDistrict}
-                onChange={(e) => setFilterDistrict(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-              >
-                <option value="ALL">All Districts</option>
-                {(filterProvince !== 'ALL'
-                  ? getDistrictsForProvince(filterProvince)
-                  : Object.values(PROVINCE_OPTIONS).flatMap(p => getDistrictsForProvince(p))
-                ).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+              <div className="w-44">
+                <LuxurySelect
+                  compact
+                  searchable
+                  value={filterDistrict}
+                  onChange={setFilterDistrict}
+                  label="District"
+                  options={[
+                    { value: 'ALL', label: 'All Districts' },
+                    ...(filterProvince !== 'ALL'
+                      ? getDistrictsForProvince(filterProvince)
+                      : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
+                    ).map(d => ({ value: d, label: d }))
+                  ]}
+                />
+              </div>
             </>
           )}
         </div>
@@ -335,8 +345,11 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: SUBMIT COMPLAINT */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-6">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
               Submit Grievance or Inquiry Ticket
             </h3>
@@ -347,33 +360,37 @@ export const ComplaintsManager: React.FC = () => {
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Category
                   </label>
-                  <select
+                  <LuxurySelect
+                    compact
                     value={cmpCategory}
-                    onChange={(e) => setCmpCategory(e.target.value as ComplaintCategory)}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    <option value="Membership Card">Membership Card Delivery</option>
-                    <option value="Receipt Inquiry">Receipt Inquiry</option>
-                    <option value="Fund Allocation">Fund Allocation</option>
-                    <option value="Welfare Support">Welfare Support</option>
-                    <option value="District Activity">District Activity</option>
-                    <option value="General">General Inquiry</option>
-                  </select>
+                    onChange={(val) => setCmpCategory(val as ComplaintCategory)}
+                    label="Category"
+                    options={[
+                      { value: 'Membership Card', label: 'Membership Card Delivery' },
+                      { value: 'Receipt Inquiry', label: 'Receipt Inquiry' },
+                      { value: 'Fund Allocation', label: 'Fund Allocation' },
+                      { value: 'Welfare Support', label: 'Welfare Support' },
+                      { value: 'District Activity', label: 'District Activity' },
+                      { value: 'General', label: 'General Inquiry' }
+                    ]}
+                  />
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Urgency Priority
                   </label>
-                  <select
+                  <LuxurySelect
+                    compact
                     value={cmpPriority}
-                    onChange={(e) => setCmpPriority(e.target.value as any)}
-                    className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                  </select>
+                    onChange={(val) => setCmpPriority(val as 'LOW' | 'MEDIUM' | 'HIGH')}
+                    label="Urgency Priority"
+                    options={[
+                      { value: 'LOW', label: 'Low' },
+                      { value: 'MEDIUM', label: 'Medium' },
+                      { value: 'HIGH', label: 'High' }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -428,8 +445,11 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: UPDATE TICKET & RESPOND (STAFF ONLY) */}
       {respondingTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 text-xs my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-slate-400 uppercase font-mono font-bold">
                 {respondingTicket.ticketNumber}
@@ -446,15 +466,17 @@ export const ComplaintsManager: React.FC = () => {
               <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Update Status
               </label>
-              <select
+              <LuxurySelect
+                compact
                 value={responseStatus}
-                onChange={(e) => setResponseStatus(e.target.value as ComplaintStatus)}
-                className="w-full p-2 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800"
-              >
-                <option value="UNDER_REVIEW">Keep Under Review</option>
-                <option value="RESOLVED">Mark as Resolved</option>
-                <option value="DISMISSED">Dismiss Ticket</option>
-              </select>
+                onChange={(val) => setResponseStatus(val as ComplaintStatus)}
+                label="Update Status"
+                options={[
+                  { value: 'UNDER_REVIEW', label: 'Keep Under Review' },
+                  { value: 'RESOLVED', label: 'Mark as Resolved' },
+                  { value: 'DISMISSED', label: 'Dismiss Ticket' }
+                ]}
+              />
             </div>
 
             <div>

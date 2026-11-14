@@ -19,6 +19,7 @@ import {
   Building
 } from 'lucide-react';
 import { OfficeBearer, OfficeBearerHistory, User } from '../../types';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const OfficeBearersModule: React.FC = () => {
   const { 
@@ -165,27 +166,35 @@ export const OfficeBearersModule: React.FC = () => {
         </div>
 
         {activeSubTab === 'SEATS' && (
-          <div className="flex items-center gap-2">
-            <select
-              value={filterJurisdiction}
-              onChange={(e) => setFilterJurisdiction(e.target.value as any)}
-              className="text-xs px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200"
-            >
-              <option value="ALL">All Jurisdictions</option>
-              <option value="NATIONAL">National Level</option>
-              <option value="STATE">State / Province Level</option>
-              <option value="DISTRICT">District Level</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-44">
+              <LuxurySelect
+                compact
+                value={filterJurisdiction}
+                onChange={(val) => setFilterJurisdiction(val as 'ALL' | 'NATIONAL' | 'STATE' | 'DISTRICT')}
+                label="Jurisdiction"
+                options={[
+                  { value: 'ALL', label: 'All Jurisdictions' },
+                  { value: 'NATIONAL', label: 'National Level' },
+                  { value: 'STATE', label: 'State / Province Level' },
+                  { value: 'DISTRICT', label: 'District Level' }
+                ]}
+              />
+            </div>
 
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="text-xs px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Occupied Only</option>
-              <option value="VACANT">Vacant Only</option>
-            </select>
+            <div className="w-36">
+              <LuxurySelect
+                compact
+                value={filterStatus}
+                onChange={(val) => setFilterStatus(val as 'ALL' | 'ACTIVE' | 'VACANT')}
+                label="Seat Status"
+                options={[
+                  { value: 'ALL', label: 'All Statuses' },
+                  { value: 'ACTIVE', label: 'Occupied Only' },
+                  { value: 'VACANT', label: 'Vacant Only' }
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -394,8 +403,11 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Appoint Office-Bearer */}
       {selectedSeatForAppoint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
                 Super Admin Appointment Authority
@@ -419,19 +431,18 @@ export const OfficeBearersModule: React.FC = () => {
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Select Active Appointee / Member *
                 </label>
-                <select
-                  required
+                <LuxurySelect
+                  searchable
                   value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  <option value="">-- Choose Member or Admin --</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.role.replace('_', ' ')}) — {u.district}, {u.stateProvince}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedUserId}
+                  placeholder="-- Choose Member or Admin --"
+                  label="Select Appointee"
+                  options={users.map(u => ({
+                    value: u.id,
+                    label: u.name,
+                    sublabel: `${u.role.replace('_', ' ')} — ${u.district}, ${u.stateProvince}`
+                  }))}
+                />
               </div>
 
               <div>
@@ -469,8 +480,11 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Declare Seat Vacant */}
       {selectedSeatForVacate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
                 Termination of Office Term

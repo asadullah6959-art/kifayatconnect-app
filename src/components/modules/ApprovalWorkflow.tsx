@@ -25,6 +25,7 @@ import {
   mapLegacyRegionToHierarchy 
 } from '../../data/locationData';
 import { DocumentUploadModal } from './DocumentUploadModal';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const ApprovalWorkflow: React.FC = () => {
   const { 
@@ -290,34 +291,39 @@ export const ApprovalWorkflow: React.FC = () => {
         </div>
 
         {/* State/Province & District Filters */}
-        <div className="flex items-center gap-2">
-          <select
-            value={filterProvince}
-            onChange={(e) => {
-              setFilterProvince(e.target.value);
-              setFilterDistrict('ALL');
-            }}
-            className="text-xs px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-          >
-            <option value="ALL">All Provinces</option>
-            {PROVINCE_OPTIONS.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-40">
+            <LuxurySelect
+              compact
+              value={filterProvince}
+              onChange={(val) => {
+                setFilterProvince(val);
+                setFilterDistrict('ALL');
+              }}
+              label="Province Filter"
+              options={[
+                { value: 'ALL', label: 'All Provinces' },
+                ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
+              ]}
+            />
+          </div>
 
-          <select
-            value={filterDistrict}
-            onChange={(e) => setFilterDistrict(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-          >
-            <option value="ALL">All Districts</option>
-            {(filterProvince !== 'ALL'
-              ? getDistrictsForProvince(filterProvince)
-              : Object.values(PROVINCE_OPTIONS).flatMap(p => getDistrictsForProvince(p))
-            ).map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+          <div className="w-44">
+            <LuxurySelect
+              compact
+              searchable
+              value={filterDistrict}
+              onChange={setFilterDistrict}
+              label="District Filter"
+              options={[
+                { value: 'ALL', label: 'All Districts' },
+                ...(filterProvince !== 'ALL'
+                  ? getDistrictsForProvince(filterProvince)
+                  : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
+                ).map(d => ({ value: d, label: d }))
+              ]}
+            />
+          </div>
         </div>
       </div>
 
@@ -590,8 +596,11 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: DISTRICT ADMIN RECOMMENDATION DIALOG */}
       {reviewingApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-xs text-amber-600 uppercase font-bold tracking-wide">
                 Stage 1 Review: {reviewingApp.district || currentUser.district || 'District Jurisdiction'} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
@@ -708,8 +717,11 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: SUPER ADMIN FINAL APPROVAL DIALOG */}
       {finalApprovingApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className="text-xs text-emerald-600 uppercase font-bold tracking-wide">
                 Final Authorization Authority
@@ -867,8 +879,11 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: BULK APPROVE / REJECT CONFIRMATION */}
       {bulkAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div>
               <span className={`text-xs uppercase font-bold tracking-wide ${bulkAction === 'APPROVE' ? 'text-emerald-600' : 'text-rose-600'}`}>
                 Bulk Confirmation · {selectedIds.length} Applications

@@ -120,6 +120,71 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
 }
 
+/* Lightweight GPU-only Scenic Live Chat & Voice Animations (transform + opacity ONLY) */
+@keyframes kcFloatDrift {
+  0%, 100% {
+    transform: translate3d(0px, 0px, 0px) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(14px, -10px, 0px) scale(1.06);
+    opacity: 0.8;
+  }
+}
+
+@keyframes kcTwinkle {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.9;
+  }
+}
+
+@keyframes kcSwayLeaf {
+  0%, 100% {
+    transform: rotate(-3deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(3deg) translateY(2px);
+  }
+}
+
+@keyframes kcWavePulse {
+  0%, 100% {
+    transform: scaleY(0.45);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.kc-scenic-drift {
+  animation: kcFloatDrift 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.kc-scenic-twinkle {
+  animation: kcTwinkle 3.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.kc-scenic-sway {
+  animation: kcSwayLeaf 6.5s ease-in-out infinite;
+  transform-origin: top center;
+  will-change: transform;
+}
+
+.kc-wave-bar-active {
+  animation: kcWavePulse 0.9s ease-in-out infinite;
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
 /* CSS 3D Card Flip Helpers */
 .perspective-1000 {
   perspective: 1000px;

@@ -18,6 +18,9 @@ export const TRANSLATIONS = {
     roleAdmin: 'ADMIN',
     roleCoAdmin: 'CO-ADMIN',
     roleMember: 'MEMBER',
+    roleAuditOfficer: 'AUDIT OFFICER',
+    assignAuditOfficer: 'Assign Audit Officer',
+    revokeAuditOfficer: 'Revoke Audit Officer',
 
     // Auth & Gate
     welcomeSignInTitle: 'Sign In to Kifayat Connect',
@@ -106,6 +109,13 @@ export const TRANSLATIONS = {
     statusDelivered: 'Delivered',
     statusSeen: 'Seen',
     noConversations: 'Select any community member or leader to start a conversation.',
+    communityRoomTab: 'Live Community Room',
+    directMessagesTab: 'Direct Messages',
+    voiceNoteHold: 'Hold mic to record (max 60s)',
+    islamicGifs: 'Islamic GIFs',
+    scenicThemes: 'Live Themes',
+    mutedNotice: 'You are currently muted in Community Chat by an administrator.',
+    pinnedMessageLabel: 'Pinned by Founder',
 
     // Announcements
     announcementsHeader: 'Community & Official Announcements',
@@ -173,6 +183,9 @@ export const TRANSLATIONS = {
     roleAdmin: 'ایڈمن',
     roleCoAdmin: 'کو ایڈمن',
     roleMember: 'ممبر',
+    roleAuditOfficer: 'آڈٹ آفیسر',
+    assignAuditOfficer: 'آڈٹ آفیسر مقرر کریں',
+    revokeAuditOfficer: 'آڈٹ آفیسر ختم کریں',
 
     // Auth & Gate
     welcomeSignInTitle: 'کفایت کنیکٹ میں سائن ان کریں',
@@ -261,6 +274,13 @@ export const TRANSLATIONS = {
     statusDelivered: 'پہنچ گیا',
     statusSeen: 'پڑھ لیا گیا',
     noConversations: 'گفتگو شروع کرنے کے لیے کسی بھی ممبر یا عہدیدار کو منتخب کریں۔',
+    communityRoomTab: 'لائیو کمیونٹی روم',
+    directMessagesTab: 'براہ راست پیغامات',
+    voiceNoteHold: 'آواز ریکارڈ کرنے کے لیے مائیک دبائے رکھیں (زیادہ سے زیادہ 60 سیکنڈ)',
+    islamicGifs: 'اسلامی جفس',
+    scenicThemes: 'لائیو تھیمز',
+    mutedNotice: 'ایڈمنسٹریٹر کی جانب سے آپ کو کمیونٹی چیٹ میں عارضی طور پر خاموش کیا گیا ہے۔',
+    pinnedMessageLabel: 'بانی کی جانب سے پن شدہ',
 
     // Announcements
     announcementsHeader: 'آفیشل ایپ اور کمیونٹی اعلانات',

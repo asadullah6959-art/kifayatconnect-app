@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'members',
       label: translate(language, 'navMembers'),
       icon: Users,
-      visible: currentUser.role !== 'MEMBER'
+      visible: currentUser.role !== 'MEMBER' || Boolean(currentUser.isAuditOfficer)
     },
     {
       id: 'approvals',
@@ -150,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'audit',
       label: translate(language, 'navAudit'),
       icon: Clock,
-      visible: currentUser.role !== 'MEMBER'
+      visible: currentUser.role !== 'MEMBER' || Boolean(currentUser.isAuditOfficer)
     }
   ];
 
@@ -188,7 +188,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       {/* Role & Jurisdiction Card */}
       <div className="p-4 border-b border-[#D4AF37]/20 bg-[#111622]/90 shrink-0 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <RoleBadge role={currentUser.role} isFounder={isFounderUser(currentUser)} compact />
+          <RoleBadge
+            role={currentUser.role}
+            isFounder={isFounderUser(currentUser)}
+            isAuditOfficer={Boolean(currentUser.isAuditOfficer)}
+            compact
+          />
         </div>
         <div className="truncate">
           <span className="text-xs font-bold text-white block truncate">

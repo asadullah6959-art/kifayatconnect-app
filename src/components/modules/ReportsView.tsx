@@ -36,6 +36,7 @@ import {
   formatShortLocation, 
   mapLegacyRegionToHierarchy 
 } from '../../data/locationData';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const ReportsView: React.FC = () => {
   const { 
@@ -47,15 +48,21 @@ export const ReportsView: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
+  const hasFullAuditView = isSuperAdmin || isAuditOfficer;
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
   const isMember = currentUser?.role === 'MEMBER';
 
   const [filterProvince, setFilterProvince] = useState<string>(
-    isCoAdmin || isDistrictAdmin ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab') : 'ALL'
+    !hasFullAuditView && (isCoAdmin || isDistrictAdmin)
+      ? (currentUser?.assignedStateProvince || currentUser?.stateProvince || 'Punjab')
+      : 'ALL'
   );
   const [filterDistrict, setFilterDistrict] = useState<string>(
-    isDistrictAdmin ? (currentUser?.assignedDistrict || currentUser?.district || 'Lahore') : 'ALL'
+    !hasFullAuditView && isDistrictAdmin
+      ? (currentUser?.assignedDistrict || currentUser?.district || 'Lahore')
+      : 'ALL'
   );
   const [downloadSuccessToast, setDownloadSuccessToast] = useState(false);
   const [activeChartTab, setActiveChartTab] = useState<'TRENDS' | 'REGIONAL'>('TRENDS');
@@ -68,16 +75,16 @@ export const ReportsView: React.FC = () => {
 
   // Filtered payments by role, province, and district
   const relevantPayments = payments.filter(p => {
-    if (isMember) return p.userId === currentUser.id;
+    if (isMember && !isAuditOfficer) return p.userId === currentUser.id;
     const fallback = mapLegacyRegionToHierarchy(p.userRegion);
     const pProv = p.stateProvince || fallback.stateProvince;
     const pDist = p.district || fallback.district;
 
-    if (isDistrictAdmin) {
+    if (!hasFullAuditView && isDistrictAdmin) {
       const myDist = currentUser.assignedDistrict || currentUser.district;
       return pDist === myDist || p.userRegion === currentUser.region;
     }
-    if (isCoAdmin) {
+    if (!hasFullAuditView && isCoAdmin) {
       const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
       return pProv === myProv;
     }
@@ -206,11 +213,11 @@ export const ReportsView: React.FC = () => {
   const liveDistrictRows = normalizedRows.filter(stat => {
     const prov = stat.stateProvince;
     const dist = stat.district;
-    if (isDistrictAdmin) {
+    if (!hasFullAuditView && isDistrictAdmin) {
       const myDist = currentUser.assignedDistrict || currentUser.district;
       return dist === myDist || (stat.region && stat.region === currentUser.region);
     }
-    if (isCoAdmin) {
+    if (!hasFullAuditView && isCoAdmin) {
       const myProv = currentUser.assignedStateProvince || currentUser.stateProvince;
       return prov === myProv;
     }
@@ -288,10 +295,15 @@ export const ReportsView: React.FC = () => {
             </span>
             <span className="text-slate-400">·</span>
             <span className="text-xs text-slate-500">
-              {isSuperAdmin && 'Master Organization Report'}
-              {isDistrictAdmin && `${currentUser.assignedDistrict || currentUser.district} District Statement`}
-              {isCoAdmin && `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`}
-              {isMember && 'Personal Welfare Contribution Summary'}
+              {isSuperAdmin
+                ? 'Master Organization Report'
+                : isAuditOfficer
+                ? 'Audit Officer — Read-Only Financial Verification Statement'
+                : isDistrictAdmin
+                ? `${currentUser.assignedDistrict || currentUser.district} District Statement`
+                : isCoAdmin
+                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`
+                : 'Personal Welfare Contribution Summary'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
@@ -610,8 +622,8 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
 
-        {/* District & Provincial Performance Matrix (Visible to Leadership) */}
-        {!isMember && (
+        {/* District & Provincial Performance Matrix (Visible to Leadership & Audit Officer) */}
+        {(hasFullAuditView || !isMember) && (
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
@@ -623,35 +635,40 @@ export const ReportsView: React.FC = () => {
                 </p>
               </div>
 
-              {!isDistrictAdmin && !isCoAdmin && (
-                <div className="flex items-center gap-2 no-print">
-                  <select
-                    value={filterProvince}
-                    onChange={(e) => {
-                      setFilterProvince(e.target.value);
-                      setFilterDistrict('ALL');
-                    }}
-                    className="text-xs px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-                  >
-                    <option value="ALL">All Provinces</option>
-                    {PROVINCE_OPTIONS.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
+              {(hasFullAuditView || (!isDistrictAdmin && !isCoAdmin)) && (
+                <div className="flex flex-wrap items-center gap-2 no-print">
+                  <div className="w-40">
+                    <LuxurySelect
+                      compact
+                      value={filterProvince}
+                      onChange={(val) => {
+                        setFilterProvince(val);
+                        setFilterDistrict('ALL');
+                      }}
+                      label="Province Filter"
+                      options={[
+                        { value: 'ALL', label: 'All Provinces' },
+                        ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
+                      ]}
+                    />
+                  </div>
 
-                  <select
-                    value={filterDistrict}
-                    onChange={(e) => setFilterDistrict(e.target.value)}
-                    className="text-xs px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
-                  >
-                    <option value="ALL">All Districts</option>
-                    {(filterProvince !== 'ALL'
-                      ? getDistrictsForProvince(filterProvince)
-                      : Object.values(PROVINCE_OPTIONS).flatMap(p => getDistrictsForProvince(p))
-                    ).map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
+                  <div className="w-44">
+                    <LuxurySelect
+                      compact
+                      searchable
+                      value={filterDistrict}
+                      onChange={setFilterDistrict}
+                      label="District Filter"
+                      options={[
+                        { value: 'ALL', label: 'All Districts' },
+                        ...(filterProvince !== 'ALL'
+                          ? getDistrictsForProvince(filterProvince)
+                          : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
+                        ).map(d => ({ value: d, label: d }))
+                      ]}
+                    />
+                  </div>
                 </div>
               )}
             </div>

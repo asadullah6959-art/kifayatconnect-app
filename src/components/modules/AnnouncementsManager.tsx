@@ -21,6 +21,7 @@ import {
 import { translate } from '../../data/translations';
 import { AnnouncementType } from '../../types';
 import { RoleBadge } from '../common/RoleBadge';
+import { LuxurySelect } from '../common/LuxurySelect';
 
 export const AnnouncementsManager: React.FC = () => {
   const {
@@ -377,8 +378,11 @@ export const AnnouncementsManager: React.FC = () => {
 
       {/* Publish Modal */}
       {isPublishModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-6 text-xs space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+          <div
+            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto text-xs space-y-4"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <h3 className="text-base font-bold text-white">
                 {translate(language, 'publishAnnouncementBtn')}
@@ -449,43 +453,41 @@ export const AnnouncementsManager: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <select
+                      <LuxurySelect
+                        compact
                         value={annScope}
-                        onChange={(e) => setAnnScope(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white font-semibold"
-                      >
-                        <option value="ALL">National Broadcast (All Members)</option>
-                        <option value="PROVINCE">Province-Level Broadcast</option>
-                        <option value="DISTRICT">District-Specific Broadcast</option>
-                      </select>
+                        onChange={(val) => setAnnScope(val as 'ALL' | 'PROVINCE' | 'DISTRICT')}
+                        label="Target Audience Scope"
+                        options={[
+                          { value: 'ALL', label: 'National Broadcast (All Members)' },
+                          { value: 'PROVINCE', label: 'Province-Level Broadcast' },
+                          { value: 'DISTRICT', label: 'District-Specific Broadcast' }
+                        ]}
+                      />
 
                       {annScope !== 'ALL' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <select
+                          <LuxurySelect
+                            compact
                             value={annProvince}
-                            onChange={(e) => {
-                              const newP = e.target.value;
+                            onChange={(newP) => {
                               setAnnProvince(newP);
                               const dists = getDistrictsForProvince(newP);
                               if (dists.length > 0) setAnnDistrict(dists[0]);
                             }}
-                            className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white"
-                          >
-                            {PROVINCE_OPTIONS.map(p => (
-                              <option key={p} value={p}>{p}</option>
-                            ))}
-                          </select>
+                            label="Target Province"
+                            options={PROVINCE_OPTIONS}
+                          />
 
                           {annScope === 'DISTRICT' && (
-                            <select
+                            <LuxurySelect
+                              compact
+                              searchable
                               value={annDistrict}
-                              onChange={(e) => setAnnDistrict(e.target.value)}
-                              className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white"
-                            >
-                              {getDistrictsForProvince(annProvince).map(d => (
-                                <option key={d} value={d}>{d}</option>
-                              ))}
-                            </select>
+                              onChange={setAnnDistrict}
+                              label="Target District"
+                              options={getDistrictsForProvince(annProvince)}
+                            />
                           )}
                         </div>
                       )}

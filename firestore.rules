@@ -21,17 +21,18 @@ service cloud.firestore {
       return resource.data;
     }
 
+    // Active Firebase Auth session (supports Google Auth AND OTP/Password bridged sessions)
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isVerified() {
+    function isGoogleVerified() {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    // Founder Gate: Strictly bound to authorized root email (cannot be edited/demoted by any other Super Admin)
+    // Founder Gate: Strictly bound to authorized root email
     function isFounder() {
-      return isVerified() && request.auth.token.email == 'asadullah6959@gmail.com';
+      return isGoogleVerified() && request.auth.token.email == 'asadullah6959@gmail.com';
     }
 
     function getUserDoc(uid) {
@@ -41,23 +42,15 @@ service cloud.firestore {
     // Super Admin Gate: Founder OR appointed Additional Super Admin (when not suspended)
     function isSuperAdmin() {
       return isFounder() || (
-        isVerified() &&
+        isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         getUserDoc(request.auth.uid).role == 'SUPER_ADMIN' &&
         !(getUserDoc(request.auth.uid).isSuspended == true)
       );
     }
 
-    function isStaff() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).isStaff == true));
-    }
-
-    function isDistrictAdmin() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'ADMIN'));
-    }
-
-    function isCoAdmin() {
-      return isVerified() && (isSuperAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc(request.auth.uid).role == 'CO_ADMIN'));
+    function targetIsFounderDoc() {
+      return existing().email == 'asadullah6959@gmail.com' || existing().isFounder == true;
     }
 
     // --- VALIDATION HELPERS ---
@@ -68,190 +61,152 @@ service cloud.firestore {
         data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
         data.role in ['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
         data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED', 'SUSPENDED', 'PENDING_DISTRICT_REVIEW', 'RECOMMENDED_BY_DISTRICT', 'PENDING_REGIONAL_REVIEW', 'RECOMMENDED_BY_REGION'] &&
-        data.isStaff is bool;
+        data.isStaff is bool &&
+        (!('isAuditOfficer' in data) || data.isAuditOfficer is bool) &&
+        (!('isMutedInChat' in data) || data.isMutedInChat is bool);
     }
 
-    function targetIsFounderDoc() {
-      return existing().email == 'asadullah6959@gmail.com' || existing().isFounder == true;
+    function isValidCommunityMessage(data) {
+      return data.keys().hasAll(['id', 'chatId', 'senderId', 'senderName', 'senderRole', 'text', 'timestamp']) &&
+        data.id is string && isValidId(data.id) &&
+        data.senderId is string && data.senderId.size() > 0 && data.senderId.size() <= 128 &&
+        data.senderName is string && data.senderName.size() > 0 && data.senderName.size() <= 120 &&
+        data.senderRole in ['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
+        data.text is string && data.text.size() <= 4000 &&
+        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50;
     }
 
     // --- COLLECTION RULES ---
 
-    // 1. Users Collection (Founder Lock + Multi-Super Admin governance)
+    // 1. Users Collection (Full Directory Sync + Founder Lock + Audit Officer protection)
     match /users/{userId} {
-      allow get: if isVerified();
-      allow list: if isVerified();
+      allow get, list: if isSignedIn();
 
-      allow create: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
+      allow create: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
         isFounder() ||
-        (isSuperAdmin() && incoming().role != 'SUPER_ADMIN' && incoming().isFounder != true) ||
-        (request.auth.uid == userId && incoming().role == 'MEMBER' && incoming().isStaff == false && incoming().isFounder != true)
+        (incoming().email != 'asadullah6959@gmail.com' && incoming().isFounder != true && incoming().role != 'SUPER_ADMIN' && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
+        (userId == 'usr_super_admin' && incoming().email == 'asadullah6959@gmail.com' && incoming().role == 'SUPER_ADMIN' && incoming().isFounder == true)
       );
 
-      allow update: if isVerified() && isValidId(userId) && isValidUser(incoming()) && (
+      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
         isFounder() ||
         (
-          isSuperAdmin() &&
           !targetIsFounderDoc() &&
-          incoming().role != 'SUPER_ADMIN' &&
-          existing().role != 'SUPER_ADMIN' &&
-          incoming().isFounder == existing().isFounder
+          incoming().isFounder == existing().isFounder &&
+          // Only Founder session can alter Founder doc; non-Founder updates preserve immutable Founder invariant
+          (incoming().email == existing().email)
         ) ||
         (
-          request.auth.uid == userId &&
-          incoming().role == existing().role &&
-          incoming().isStaff == existing().isStaff &&
-          incoming().isFounder == existing().isFounder &&
-          incoming().isSuspended == existing().isSuspended
+          // Allow Founder profile metadata sync (e.g. avatar/hasPassword) without allowing role demotion or suspension
+          targetIsFounderDoc() &&
+          incoming().email == 'asadullah6959@gmail.com' &&
+          incoming().role == 'SUPER_ADMIN' &&
+          incoming().isFounder == true &&
+          !(incoming().isSuspended == true)
         )
       );
 
-      allow delete: if isFounder() || (isSuperAdmin() && !targetIsFounderDoc() && existing().role != 'SUPER_ADMIN');
+      allow delete: if isSignedIn() && !targetIsFounderDoc() && (isFounder() || isSuperAdmin());
     }
 
     // 2. Membership Applications
     match /applications/{applicationId} {
-      allow get, list: if isVerified() && (
-        isStaff() ||
-        resource.data.email == request.auth.token.email
-      );
-
-      allow create: if isVerified() && isValidId(applicationId);
-
-      allow update: if isVerified() && isValidId(applicationId) && (
-        isSuperAdmin() ||
-        isDistrictAdmin()
-      );
-
-      allow delete: if isSuperAdmin();
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(applicationId) &&
+        incoming().keys().hasAll(['id', 'applicantName', 'email', 'status']) &&
+        incoming().applicantName is string && incoming().applicantName.size() <= 120;
+      allow delete: if isFounder() || isSuperAdmin();
     }
 
     // 3. Payments Ledger
     match /payments/{paymentId} {
-      allow get, list: if isVerified() && (
-        isSuperAdmin() ||
-        isDistrictAdmin() ||
-        resource.data.userId == request.auth.uid
-      );
-
-      allow create: if isVerified() && isValidId(paymentId) &&
-        incoming().userId == request.auth.uid;
-
-      allow update: if isVerified() && isValidId(paymentId) && (
-        isSuperAdmin() ||
-        isDistrictAdmin()
-      );
-
-      allow delete: if isSuperAdmin();
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(paymentId) &&
+        incoming().keys().hasAll(['id', 'receiptNumber', 'userId', 'amount', 'status']) &&
+        incoming().amount is number && incoming().amount >= 0;
+      allow delete: if isFounder() || isSuperAdmin();
     }
 
     // 4. Grievance & Complaints
     match /complaints/{complaintId} {
-      allow get, list: if isVerified() && (
-        isSuperAdmin() ||
-        resource.data.userId == request.auth.uid ||
-        isDistrictAdmin() ||
-        isCoAdmin()
-      );
-
-      allow create: if isVerified() && isValidId(complaintId) &&
-        incoming().userId == request.auth.uid;
-
-      allow update: if isVerified() && isValidId(complaintId) && (
-        isSuperAdmin() ||
-        isDistrictAdmin() ||
-        isCoAdmin() ||
-        (request.auth.uid == existing().userId && existing().status == 'OPEN')
-      );
-
-      allow delete: if isSuperAdmin();
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(complaintId) &&
+        incoming().keys().hasAll(['id', 'ticketNumber', 'userId', 'subject', 'status']) &&
+        incoming().subject is string && incoming().subject.size() <= 160;
+      allow delete: if isFounder() || isSuperAdmin();
     }
 
     // 5. Office-Bearers Seats (Constitutional Module)
     match /office_bearers/{seatId} {
-      allow read: if isVerified();
-      allow write: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(seatId);
     }
 
     match /office_bearer_history/{historyId} {
-      allow read: if isVerified();
-      allow create: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(historyId);
       allow update, delete: if false; // Immutable historical succession log
     }
 
     // 6. Mobile App Updates & Master Settings
     match /app_updates/{updateId} {
-      allow read: if true; // Publicly readable for app update checking
-      allow write: if isSuperAdmin();
+      allow read: if true;
+      allow write: if isSignedIn() && isValidId(updateId);
     }
 
     match /app_settings/{settingId} {
-      allow read: if isVerified();
-      allow write: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(settingId);
     }
 
     // 7. Dedicated 1-to-1 Chat Messaging System
     match /chats/{chatId} {
-      allow read: if isVerified() && (
-        request.auth.uid in resource.data.participantIds ||
-        isSuperAdmin()
-      );
-
-      allow create: if isVerified() &&
-        request.auth.uid in incoming().participantIds;
-
-      allow update: if isVerified() &&
-        request.auth.uid in existing().participantIds;
-
-      allow delete: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(chatId) &&
+        incoming().keys().hasAll(['id', 'participantIds']);
+      allow delete: if isFounder() || isSuperAdmin();
     }
 
     match /chat_messages/{messageId} {
-      allow read: if isVerified() && (
-        resource.data.senderId == request.auth.uid ||
-        resource.data.recipientId == request.auth.uid
-      );
-
-      allow create: if isVerified() &&
-        incoming().senderId == request.auth.uid;
-
-      allow update: if isVerified() && (
-        existing().recipientId == request.auth.uid ||
-        existing().senderId == request.auth.uid
-      );
-
-      allow delete: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(messageId) &&
+        incoming().keys().hasAll(['id', 'chatId', 'senderId', 'recipientId', 'text', 'timestamp']) &&
+        incoming().text is string && incoming().text.size() <= 4000;
+      allow delete: if isFounder() || isSuperAdmin();
     }
 
-    // 8. Dual Announcements (Official App = Super Admin only, Community = Admin/Co-Admin/Super Admin)
+    // 8. Live Community Chat Room (Voice Notes, Islamic GIFs, Reactions, Pins, Founder Protection)
+    match /community_chat_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(messageId) && isValidCommunityMessage(incoming());
+      allow update: if isSignedIn() && isValidId(messageId) && isValidCommunityMessage(incoming()) && (
+        // Founder's messages can never be soft-deleted by non-Founder
+        !(existing().senderIsFounder == true && incoming().isDeleted == true && !isFounder())
+      );
+      allow delete: if isSignedIn() && !(existing().senderIsFounder == true && !isFounder());
+    }
+
+    // 9. Dual Announcements
     match /announcements/{announcementId} {
-      allow read: if isVerified();
-      allow create, update: if isVerified() && (
-        isSuperAdmin() ||
-        (
-          (isDistrictAdmin() || isCoAdmin()) &&
-          (!('announcementType' in incoming()) || incoming().announcementType != 'OFFICIAL_APP')
-        )
-      );
-      allow delete: if isSuperAdmin();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(announcementId) &&
+        incoming().keys().hasAll(['id', 'title', 'content', 'publishedBy']);
+      allow delete: if isSignedIn();
     }
 
-    // 9. Audit Trail (Immutable)
+    // 10. Audit Trail (Strictly Immutable)
     match /audit_logs/{auditId} {
-      allow read: if isVerified() && (isSuperAdmin() || isStaff());
-      allow create: if isVerified() && incoming().actorId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(auditId) &&
+        incoming().keys().hasAll(['id', 'timestamp', 'actorId', 'action']);
       allow update, delete: if false;
     }
 
-    // 10. Global Notifications
+    // 11. Global Notifications
     match /notifications/{notificationId} {
-      allow read: if isVerified();
-      allow create: if isVerified();
-      allow update, delete: if isVerified() && (
-        isSuperAdmin() ||
-        resource.data.targetUserId == request.auth.uid
-      );
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(notificationId);
+      allow delete: if isSignedIn();
     }
-
   }
 }

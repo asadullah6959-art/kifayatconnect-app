@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PAKISTAN_LOCATION_DATA } from '../../data/locationData';
 import { RoleBadge } from '../common/RoleBadge';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { translate } from '../../data/translations';
 
 export const CoAdminDashboard: React.FC = () => {
@@ -238,7 +239,7 @@ export const CoAdminDashboard: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="font-semibold text-white truncate">{admin.name}</p>
-                        <RoleBadge role={admin.role} isFounder={admin.isFounder} compact />
+                        <RoleBadge role={admin.role} isFounder={admin.isFounder} isAuditOfficer={Boolean(admin.isAuditOfficer)} compact />
                       </div>
                       <p className="text-[11px] text-slate-400 font-mono truncate">
                         District: <strong className="text-[#F5D061]">{admin.assignedDistrict || admin.district || 'Unassigned'}</strong>
@@ -295,16 +296,17 @@ export const CoAdminDashboard: React.FC = () => {
 
           {isCreatingAnnouncement ? (
             <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#0A0D12] p-4 rounded-xl border border-slate-800">
-              <select
+              <LuxurySelect
+                compact
+                searchable
                 value={selectedDistrictFilter}
-                onChange={(e) => setSelectedDistrictFilter(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white"
-              >
-                <option value="ALL">All Districts in {assignedState}</option>
-                {districtList.map(dist => (
-                  <option key={dist} value={dist}>{dist} District</option>
-                ))}
-              </select>
+                onChange={setSelectedDistrictFilter}
+                label={`Target District (${assignedState})`}
+                options={[
+                  { value: 'ALL', label: `All Districts in ${assignedState}` },
+                  ...districtList.map(dist => ({ value: dist, label: `${dist} District` }))
+                ]}
+              />
 
               <input
                 type="text"

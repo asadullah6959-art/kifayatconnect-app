@@ -83,6 +83,9 @@ export interface User {
   phone: string;
   role: UserRole;
   isFounder?: boolean;
+  isAuditOfficer?: boolean;
+  isMutedInChat?: boolean;
+  founderBubbleColor?: string;
   permissions?: RolePermissions;
   hasPassword?: boolean;
   country: string;
@@ -92,8 +95,10 @@ export interface User {
   cityTown: string;
   unionCouncil: string;
   membershipId?: string; // e.g., KC-000001
+  memberId?: string;
   membershipStatus: MembershipStatus;
   avatarUrl?: string;
+  photoUrl?: string;
   avatar?: string;
   status?: string;
   createdAt?: string;
@@ -357,12 +362,38 @@ export interface OfficeBearerHistory {
 // ----------------------------------------------------
 export type MessageDeliveryStatus = 'QUEUED' | 'DELIVERED' | 'SEEN';
 
+export type CommunityScenicThemeId =
+  | 'OBSIDIAN_GOLD'
+  | 'JUNGLE'
+  | 'SUNSET_DESERT'
+  | 'STARRY_OASIS'
+  | 'NORTHERN_VALLEY'
+  | 'MADINAH_NOOR'
+  | 'CUSTOM';
+
+export interface ChatReplySnapshot {
+  id: string;
+  senderName: string;
+  text: string;
+  isVoiceNote?: boolean;
+}
+
+export interface ChatVoiceNote {
+  url: string;
+  durationSec: number;
+  waveform: number[];
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
+  roomType?: 'DIRECT' | 'COMMUNITY';
   senderId: string;
   senderName: string;
   senderRole: UserRole;
+  senderIsFounder?: boolean;
+  senderIsAuditOfficer?: boolean;
+  senderBubbleColor?: string;
   recipientId: string;
   recipientName: string;
   text: string;
@@ -372,6 +403,16 @@ export interface ChatMessage {
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentType?: 'IMAGE' | 'DOCUMENT';
+  voiceNote?: ChatVoiceNote;
+  islamicGifId?: string;
+  replyTo?: ChatReplySnapshot;
+  reactions?: Record<string, string[]>;
+  isHighlighted?: boolean;
+  highlightedBy?: string;
+  isPinned?: boolean;
+  pinnedBy?: string;
+  isDeleted?: boolean;
+  deletedBy?: string;
 }
 
 export interface ChatConversation {
@@ -455,6 +496,9 @@ export interface AppSettings {
   primaryColor: string;
   accentGoldColor: string;
   themePreset?: ThemePresetId;
+  liveChatTheme?: CommunityScenicThemeId;
+  liveChatCustomBgUrl?: string;
+  founderBubbleColor?: string;
   registrationOpen: boolean;
   maintenanceMode: boolean;
   profileVisibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
