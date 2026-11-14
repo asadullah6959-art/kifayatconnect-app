@@ -33,6 +33,9 @@
         "address": { "type": "string", "maxLength": 300 },
         "joinDate": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
+        "lastLoginAt": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "maxLength": 40 },
+        "profileCompleted": { "type": "boolean" },
         "isStaff": { "type": "boolean" },
         "notes": { "type": "string", "maxLength": 500 }
       },

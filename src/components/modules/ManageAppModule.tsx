@@ -35,7 +35,9 @@ import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { hashSecretString } from '../../services/firebase';
 import { translate } from '../../data/translations';
+import { AssignRoleModal } from '../common/AssignRoleModal';
 import {
+  User,
   RolePermissions,
   ThemePresetId,
   DashboardSectionVisibility,
@@ -249,6 +251,7 @@ export const ManageAppModule: React.FC = () => {
   const [locProvince, setLocProvince] = useState('Punjab');
   const [newDistrictName, setNewDistrictName] = useState('');
   const [newCityName, setNewCityName] = useState('');
+  const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
 
   if (!currentUser) return null;
 
@@ -1327,6 +1330,11 @@ export const ManageAppModule: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-white truncate">{u.name}</span>
                         <RoleBadge role={u.role} isFounder={targetIsFounder} isAuditOfficer={Boolean(u.isAuditOfficer)} compact />
+                        {u.profileCompleted === false && !targetIsFounder && (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[10px] font-extrabold">
+                            PROFILE PENDING
+                          </span>
+                        )}
                         {u.isSuspended && (
                           <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
                             SUSPENDED
@@ -1345,6 +1353,16 @@ export const ManageAppModule: React.FC = () => {
                       </span>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {currentIsFounder && (
+                          <button
+                            type="button"
+                            onClick={() => setRoleModalUser(u)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Crown className="w-3.5 h-3.5" />
+                            <span>Assign Role</span>
+                          </button>
+                        )}
                         {currentIsFounder && (
                           <button
                             type="button"
@@ -1895,6 +1913,13 @@ export const ManageAppModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Founder Role Assignment Modal */}
+      <AssignRoleModal
+        targetUser={roleModalUser}
+        onClose={() => setRoleModalUser(null)}
+        onAssigned={(msg) => showNotice('success', msg)}
+      />
     </div>
   );
 };

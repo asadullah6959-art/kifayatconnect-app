@@ -101,6 +101,8 @@ export interface User {
   photoUrl?: string;
   avatar?: string;
   status?: string;
+  profileCompleted?: boolean;
+  lastLoginAt?: string;
   createdAt?: string;
   cnic: string;
   address: string;

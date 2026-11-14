@@ -45,7 +45,8 @@ import {
   Megaphone,
   User as UserIcon,
   LogOut,
-  Wrench
+  Wrench,
+  X
 } from 'lucide-react';
 import { translate } from './data/translations';
 
@@ -63,7 +64,13 @@ const MainLayout: React.FC = () => {
     chats,
     language,
     appSettings,
-    logoutFirebaseAuth
+    logoutFirebaseAuth,
+    isCompleteProfileModalOpen,
+    closeCompleteProfileModal,
+    liveChatDisplayMode,
+    unreadCommunityCount,
+    restoreLiveChat,
+    hideLiveChat
   } = useApp();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -327,9 +334,47 @@ const MainLayout: React.FC = () => {
         />
       )}
 
+      {/* Floating Golden Chat Bubble when Live Chat is Minimized */}
+      {liveChatDisplayMode === 'MINIMIZED' && activeTab !== 'chat' && (
+        <div className="fixed bottom-[72px] md:bottom-5 right-3 sm:right-5 z-40 flex items-center rounded-full bg-[#111622] border-2 border-[#D4AF37] shadow-[0_8px_28px_rgba(212,175,55,0.28)] overflow-hidden transition-transform duration-200 hover:-translate-y-0.5">
+          <button
+            type="button"
+            onClick={restoreLiveChat}
+            className="flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161D2C] cursor-pointer"
+            title="Restore Live Chat Room"
+          >
+            <span className="relative flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-[#F5D061]" />
+              {unreadCommunityCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-[#0A0D12]">
+                  {unreadCommunityCount > 99 ? '99+' : unreadCommunityCount}
+                </span>
+              )}
+            </span>
+            <span className="whitespace-nowrap">Live Chat</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              hideLiveChat();
+            }}
+            aria-label="Hide Live Chat bubble"
+            title="Hide Live Chat bubble"
+            className="px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/25 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       <RegisterModal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
+        isOpen={isRegisterModalOpen || isCompleteProfileModalOpen}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          closeCompleteProfileModal();
+        }}
+        completeProfileUser={isCompleteProfileModalOpen ? currentUser : null}
       />
 
       <LoginModal

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { 
   User, 
   UserRole,
@@ -124,18 +124,24 @@ function normalizeUserRecord(u: User): User {
   const role = normalizeLegacyRole(u.role, u.email);
   const photo = u.photoUrl || u.avatarUrl || u.avatar;
   const memId = u.memberId || u.membershipId;
+  const profileCompleted = isFounder
+    ? true
+    : u.profileCompleted !== undefined
+    ? Boolean(u.profileCompleted)
+    : Boolean((u.cnic && u.cnic.trim()) || (u.address && u.address.trim()) || role !== 'MEMBER');
   return {
     ...u,
     role,
     isFounder,
     isAuditOfficer: Boolean(u.isAuditOfficer),
     isMutedInChat: isFounder ? false : Boolean(u.isMutedInChat),
+    profileCompleted,
     avatarUrl: photo,
     photoUrl: photo,
     membershipId: memId,
     memberId: memId,
-    status: u.status || u.membershipStatus,
-    createdAt: u.createdAt || u.joinDate,
+    status: u.status || 'online',
+    createdAt: u.createdAt || u.joinDate || new Date().toISOString(),
     isStaff: role !== 'MEMBER',
     hasPassword: u.hasPassword || hasLocalPasswordCredential(u.email)
   };
@@ -164,6 +170,9 @@ function mergeUsersLists(localList: User[], remoteList: User[]): User[] {
         id: existing.id || rem.id,
         avatarUrl: photo,
         photoUrl: photo,
+        profileCompleted: isFounderUser(existing) || isFounderUser(rem)
+          ? true
+          : Boolean(rem.profileCompleted || existing.profileCompleted),
         isFounder: isFounderUser(existing) || isFounderUser(rem),
         isAuditOfficer: Boolean(rem.isAuditOfficer ?? existing.isAuditOfficer),
         isMutedInChat: isFounderUser(existing) || isFounderUser(rem) ? false : Boolean(rem.isMutedInChat ?? existing.isMutedInChat)
@@ -229,6 +238,18 @@ interface AppContextType {
   toggleLanguage: () => void;
   setSelectedReceipt: (tx: PaymentTransaction | null) => void;
   setSelectedCardUser: (user: User | null) => void;
+
+  // Profile Completion Modal Trigger
+  isCompleteProfileModalOpen: boolean;
+  openCompleteProfileModal: () => void;
+  closeCompleteProfileModal: () => void;
+
+  // Live Chat Window Display Mode (Full / Minimized Bubble / Hidden)
+  liveChatDisplayMode: 'FULL' | 'MINIMIZED' | 'HIDDEN';
+  unreadCommunityCount: number;
+  minimizeLiveChat: () => void;
+  hideLiveChat: () => void;
+  restoreLiveChat: () => void;
 
   // Profile Viewer Modal
   inspectedUserProfile: User | null;
@@ -298,6 +319,7 @@ interface AppContextType {
   }) => void;
   deleteAnnouncement: (announcementId: string) => void;
   createOrUpdateStaff: (userData: Partial<User> & { id?: string }) => { success: boolean; error?: string };
+  assignMemberRole: (userId: string, options: { role: UserRole; isAuditOfficer?: boolean }) => { success: boolean; error?: string };
   promoteToSuperAdmin: (userId: string) => { success: boolean; error?: string };
   demoteSuperAdmin: (userId: string) => { success: boolean; error?: string };
   assignAuditOfficer: (userId: string, assigned: boolean) => { success: boolean; error?: string };
@@ -475,7 +497,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
   const [inspectedUserProfile, setInspectedUserProfile] = useState<User | null>(null);
   const [regionalStats] = useState<RegionalStats[]>(REGIONAL_STATS_DATA);
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTabState] = useState<string>('dashboard');
+  const lastNonChatTabRef = useRef<string>('dashboard');
+  const [liveChatDisplayMode, setLiveChatDisplayMode] = useState<'FULL' | 'MINIMIZED' | 'HIDDEN'>('FULL');
+  const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(0);
+  const lastSeenCommunityIdsRef = useRef<Set<string> | null>(null);
+  const [isCompleteProfileModalOpen, setIsCompleteProfileModalOpen] = useState<boolean>(false);
+
+  const openCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(true), []);
+  const closeCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(false), []);
+
+  const setActiveTab = useCallback((tab: string) => {
+    if (tab !== 'chat') {
+      lastNonChatTabRef.current = tab;
+    } else {
+      setLiveChatDisplayMode('FULL');
+      setUnreadCommunityCount(0);
+    }
+    setActiveTabState(tab);
+  }, []);
+
+  const minimizeLiveChat = useCallback(() => {
+    setLiveChatDisplayMode('MINIMIZED');
+    const targetBackTab = lastNonChatTabRef.current && lastNonChatTabRef.current !== 'chat'
+      ? lastNonChatTabRef.current
+      : 'dashboard';
+    setActiveTabState(targetBackTab);
+  }, []);
+
+  const hideLiveChat = useCallback(() => {
+    setLiveChatDisplayMode('HIDDEN');
+  }, []);
+
+  const restoreLiveChat = useCallback(() => {
+    setLiveChatDisplayMode('FULL');
+    setUnreadCommunityCount(0);
+    setActiveTabState('chat');
+  }, []);
+
+  useEffect(() => {
+    if (lastSeenCommunityIdsRef.current === null) {
+      lastSeenCommunityIdsRef.current = new Set(communityMessages.map(m => m.id));
+      return;
+    }
+    const prevIds = lastSeenCommunityIdsRef.current;
+    let newlyAdded = 0;
+    for (const m of communityMessages) {
+      if (!prevIds.has(m.id)) {
+        prevIds.add(m.id);
+        if (!m.isDeleted) {
+          newlyAdded += 1;
+        }
+      }
+    }
+    if (activeTab === 'chat' && liveChatDisplayMode === 'FULL') {
+      setUnreadCommunityCount(0);
+    } else if (newlyAdded > 0) {
+      setUnreadCommunityCount(c => c + newlyAdded);
+    }
+  }, [communityMessages, activeTab, liveChatDisplayMode]);
+
   const [language, setLanguage] = useState<'en' | 'ur'>(() => (localStorage.getItem(STORAGE_KEYS.LANGUAGE) === 'ur' ? 'ur' : 'en'));
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentTransaction | null>(null);
   const [selectedCardUser, setSelectedCardUser] = useState<User | null>(null);
@@ -847,33 +928,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const upsertVerifiedUserByEmail = (normEmail: string, options?: { hasPassword?: boolean; name?: string }): User => {
     const existing = users.find(u => u.email.toLowerCase() === normEmail);
     const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+    const nowIso = new Date().toISOString();
 
     if (isFounderEmail) {
       if (existing) {
-        const updatedSuperAdmin: User = {
+        const updatedSuperAdmin: User = normalizeUserRecord({
           ...existing,
           role: 'SUPER_ADMIN',
           isFounder: true,
           isStaff: true,
           isSuspended: false,
+          profileCompleted: true,
+          status: 'online',
+          lastLoginAt: nowIso,
           hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
-        };
+        });
         setUsers(prev => prev.map(u => (u.id === existing.id ? updatedSuperAdmin : u)));
-        saveUserToFirestore(updatedSuperAdmin).catch(() => {});
+        ensureFirebaseAuthSession().then(() => saveUserToFirestore(updatedSuperAdmin)).catch(() => {});
         return updatedSuperAdmin;
       }
 
-      const joinDate = new Date().toISOString().split('T')[0];
+      const joinDate = nowIso.split('T')[0];
       const exp = new Date();
       exp.setFullYear(exp.getFullYear() + 5);
 
-      const founderUser: User = {
+      const founderUser: User = normalizeUserRecord({
         id: 'usr_super_admin',
         name: options?.name || 'Asadullah (Founder Super Admin)',
         email: normEmail,
         phone: '',
         role: 'SUPER_ADMIN',
         isFounder: true,
+        profileCompleted: true,
+        status: 'online',
+        lastLoginAt: nowIso,
+        createdAt: nowIso,
         hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
         country: 'Pakistan',
         stateProvince: 'Islamabad Capital Territory',
@@ -893,33 +982,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalContributed: 0,
         isStaff: true,
         notes: 'Verified Founder Super Admin'
-      };
+      });
       setUsers(prev => [founderUser, ...prev]);
-      saveUserToFirestore(founderUser).catch(() => {});
+      ensureFirebaseAuthSession().then(() => saveUserToFirestore(founderUser)).catch(() => {});
       return founderUser;
     }
 
     if (existing) {
       const updatedExisting = normalizeUserRecord({
         ...existing,
+        status: 'online',
+        lastLoginAt: nowIso,
         hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
       });
       setUsers(prev => prev.map(u => (u.id === existing.id ? updatedExisting : u)));
-      saveUserToFirestore(updatedExisting).catch(() => {});
+      ensureFirebaseAuthSession().then(() => saveUserToFirestore(updatedExisting)).catch(() => {});
       return updatedExisting;
     }
 
-    const joinDate = new Date().toISOString().split('T')[0];
+    const joinDate = nowIso.split('T')[0];
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
+    const derivedName =
+      options?.name ||
+      normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) ||
+      'New Member';
 
-    const newMember: User = {
+    const newMember: User = normalizeUserRecord({
       id: `usr_${Date.now()}`,
-      name: options?.name || normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      name: derivedName,
       email: normEmail,
       phone: '',
       role: 'MEMBER',
       isFounder: false,
+      profileCompleted: false,
+      status: 'online',
+      lastLoginAt: nowIso,
+      createdAt: nowIso,
       hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
       country: 'Pakistan',
       stateProvince: 'Punjab',
@@ -938,11 +1037,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       annualPledge: 0,
       totalContributed: 0,
       isStaff: false,
-      notes: 'Verified via Email OTP'
-    };
+      notes: 'Instant login cloud sync (Profile Pending)'
+    });
 
     setUsers(prev => [newMember, ...prev]);
-    saveUserToFirestore(newMember).catch(() => {});
+    ensureFirebaseAuthSession().then(() => saveUserToFirestore(newMember)).catch(() => {});
     return newMember;
   };
 
@@ -1157,7 +1256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return isFounderUser(currentUser);
 
       case 'VIEW_MEMBERS':
-        return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN' || Boolean(currentUser.isAuditOfficer) || Boolean(perms?.canManageUsers);
+        return Boolean(currentUser);
 
       case 'APPROVE_MEMBERSHIP_FINAL':
         return role === 'SUPER_ADMIN' || Boolean(perms?.canApproveMembers);
@@ -1548,6 +1647,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const joinDate = new Date().toISOString().split('T')[0];
 
     const photo = data.avatarUrl || existing?.avatarUrl || existing?.photoUrl;
+    const nowIso = new Date().toISOString();
     const registeredUser: User = existing
       ? normalizeUserRecord({
           ...existing,
@@ -1562,6 +1662,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cityTown: data.cityTown || dist,
           unionCouncil: data.unionCouncil || existing.unionCouncil,
           address: data.address || existing.address,
+          profileCompleted: true,
+          status: 'online',
+          lastLoginAt: nowIso,
           hasPassword: Boolean(data.password) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
         })
       : normalizeUserRecord({
@@ -1572,6 +1675,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           role: 'MEMBER',
           isFounder: normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase(),
           isAuditOfficer: false,
+          profileCompleted: true,
+          status: 'online',
+          lastLoginAt: nowIso,
           hasPassword: Boolean(data.password) || hasLocalPasswordCredential(normEmail),
           country: data.country || 'Pakistan',
           stateProvince: prov,
@@ -1587,7 +1693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cnic: data.cnic,
           address: data.address,
           joinDate,
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso,
           validUntil: exp.toISOString().split('T')[0],
           monthlyPledge: 0,
           annualPledge: 0,
@@ -2091,6 +2197,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Direct Role Assignment exclusively by Main Super Admin (Founder)
+  const assignMemberRole = (
+    userId: string,
+    options: { role: UserRole; isAuditOfficer?: boolean }
+  ): { success: boolean; error?: string } => {
+    if (!currentUser || !isFounderUser(currentUser)) {
+      return {
+        success: false,
+        error: 'Founder Protection: Only the Main Super Admin (Founder) can directly assign member roles.'
+      };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'Member not found.' };
+    if (isFounderUser(target)) {
+      return {
+        success: false,
+        error: 'Founder Protection: The Main Super Admin (Founder) retains supreme authority and cannot be reassigned.'
+      };
+    }
+
+    const nextRole = normalizeLegacyRole(options.role, target.email);
+    const nextAudit = options.isAuditOfficer !== undefined ? Boolean(options.isAuditOfficer) : false;
+
+    const updated: User = normalizeUserRecord({
+      ...target,
+      role: nextRole,
+      isStaff: nextRole !== 'MEMBER',
+      isAuditOfficer: nextAudit,
+      isFounder: false,
+      isSuspended: false,
+      membershipStatus: 'ACTIVE'
+    });
+
+    setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
+    ensureFirebaseAuthSession().then(() => saveUserToFirestore(updated)).catch(() => {});
+
+    const roleDisplay = nextAudit && nextRole === 'MEMBER'
+      ? 'Audit Officer'
+      : nextAudit
+      ? `${nextRole} + Audit Officer`
+      : nextRole === 'SUPER_ADMIN'
+      ? 'Super Admin'
+      : nextRole === 'ADMIN'
+      ? 'Admin'
+      : nextRole === 'CO_ADMIN'
+      ? 'Co-Admin'
+      : 'Member';
+
+    logAudit(
+      'MEMBER_ROLE_ASSIGNED_DIRECTLY',
+      'ROLE_MANAGEMENT',
+      target.name,
+      `Founder ${currentUser.name} directly assigned role "${roleDisplay}" to ${target.name} (${target.email}).`,
+      target.district,
+      target.stateProvince
+    );
+
+    addNotification({
+      type: 'STAFF_ROLE_CHANGE',
+      title: `Role Updated: ${roleDisplay} 👑`,
+      message: `${currentUser.name} assigned your account role to ${roleDisplay}.`,
+      targetUserId: target.id,
+      linkTab: 'dashboard'
+    });
+
+    return { success: true };
+  };
+
   const promoteToSuperAdmin = (userId: string): { success: boolean; error?: string } => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can promote Additional Super Admins.' };
@@ -2286,14 +2460,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateUserProfile = (profileData: Partial<User>) => {
     if (!currentUser) return;
-    const updated: User = {
+    const hasDetailsCompleted = Boolean(
+      profileData.profileCompleted ||
+      currentUser.profileCompleted ||
+      ((profileData.cnic ?? currentUser.cnic)?.trim() && (profileData.address ?? currentUser.address)?.trim())
+    );
+    const updated: User = normalizeUserRecord({
       ...currentUser,
       ...profileData,
       role: currentUser.role,
-      isFounder: isFounderUser(currentUser)
-    };
+      isFounder: isFounderUser(currentUser),
+      profileCompleted: isFounderUser(currentUser) ? true : hasDetailsCompleted,
+      lastLoginAt: new Date().toISOString()
+    });
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
-    saveUserToFirestore(updated).catch(() => {});
+    ensureFirebaseAuthSession().then(() => saveUserToFirestore(updated)).catch(() => {});
   };
 
   // Office-Bearers Operations
@@ -2871,6 +3052,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleLanguage,
         setSelectedReceipt,
         setSelectedCardUser,
+        isCompleteProfileModalOpen,
+        openCompleteProfileModal,
+        closeCompleteProfileModal,
+        liveChatDisplayMode,
+        unreadCommunityCount,
+        minimizeLiveChat,
+        hideLiveChat,
+        restoreLiveChat,
         inspectedUserProfile,
         setInspectedUserProfile,
         canAccess,
@@ -2888,6 +3077,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         publishAnnouncement,
         deleteAnnouncement,
         createOrUpdateStaff,
+        assignMemberRole,
         promoteToSuperAdmin,
         demoteSuperAdmin,
         assignAuditOfficer,

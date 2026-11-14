@@ -14,7 +14,8 @@ import {
   Upload,
   XCircle,
   MessageSquare,
-  MessageSquareWarning
+  MessageSquareWarning,
+  Users
 } from 'lucide-react';
 import { FundCategory, PaymentMethod, ComplaintCategory } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
@@ -22,6 +23,7 @@ import { compressImageFile } from '../../utils/imageCompression';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
 import { LuxurySelect } from '../common/LuxurySelect';
+import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 import { translate } from '../../data/translations';
 
 export const MemberDashboard: React.FC = () => {
@@ -36,8 +38,10 @@ export const MemberDashboard: React.FC = () => {
     setSelectedReceipt,
     setSelectedCardUser,
     setActiveTab,
+    openCompleteProfileModal,
     language
   } = useApp();
+  const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [payAmount, setPayAmount] = useState<number>(currentUser?.monthlyPledge || 2500);
@@ -198,7 +202,13 @@ export const MemberDashboard: React.FC = () => {
           {allowPayments && (
             <button
               type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
+              onClick={() => {
+                if (requiresProfileCompletion) {
+                  openCompleteProfileModal();
+                } else {
+                  setIsPaymentModalOpen(true);
+                }
+              }}
               className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -208,13 +218,23 @@ export const MemberDashboard: React.FC = () => {
         </div>
       </div>
 
+      {requiresProfileCompletion && (
+        <ProfileCompletionGate featureName="payments, Live Chat & complaints" />
+      )}
+
       {/* Apollo Telenor-style Quick Action Cards */}
       {vis.showQuickActions && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {allowPayments && (
             <button
               type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
+              onClick={() => {
+                if (requiresProfileCompletion) {
+                  openCompleteProfileModal();
+                } else {
+                  setIsPaymentModalOpen(true);
+                }
+              }}
               className="p-3.5 rounded-2xl bg-gradient-to-br from-[#043927] to-[#111622] border border-[#D4AF37]/40 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
             >
               <div className="w-8 h-8 rounded-xl bg-[#0A0D12]/80 border border-[#D4AF37]/40 flex items-center justify-center mb-2">
@@ -233,6 +253,17 @@ export const MemberDashboard: React.FC = () => {
               <IdCard className="w-4 h-4 text-[#F5D061]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionDigitalId')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('members')}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
+              <Users className="w-4 h-4 text-[#F5D061]" />
+            </div>
+            <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'navMembers')}</span>
           </button>
 
           <button
@@ -260,7 +291,13 @@ export const MemberDashboard: React.FC = () => {
           {allowComplaints && (
             <button
               type="button"
-              onClick={() => setIsComplaintModalOpen(true)}
+              onClick={() => {
+                if (requiresProfileCompletion) {
+                  openCompleteProfileModal();
+                } else {
+                  setIsComplaintModalOpen(true);
+                }
+              }}
               className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
             >
               <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-rose-500/30 flex items-center justify-center mb-2">

@@ -28,6 +28,7 @@ import {
 } from '../../data/locationData';
 import { compressImageFile } from '../../utils/imageCompression';
 import { LuxurySelect } from '../common/LuxurySelect';
+import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; hint: string }> = [
   { id: 'EasyPaisa', label: 'EasyPaisa', hint: 'Mobile Wallet / Till' },
@@ -44,8 +45,10 @@ export const FundsAndPayments: React.FC = () => {
     payments,
     verifyPayment,
     submitPayment,
-    setSelectedReceipt
+    setSelectedReceipt,
+    openCompleteProfileModal
   } = useApp();
+  const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
@@ -283,14 +286,24 @@ export const FundsAndPayments: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setIsSubmitModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#0a192f] hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 text-xs font-bold rounded-lg shadow-sm border border-amber-500/40 transition-colors"
+            onClick={() => {
+              if (requiresProfileCompletion) {
+                openCompleteProfileModal();
+              } else {
+                setIsSubmitModalOpen(true);
+              }
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#0a192f] hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 text-xs font-bold rounded-lg shadow-sm border border-amber-500/40 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Submit Payment</span>
           </button>
         </div>
       </div>
+
+      {requiresProfileCompletion && (
+        <ProfileCompletionGate compact featureName="Contribution Payments" />
+      )}
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

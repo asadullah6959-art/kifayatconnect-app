@@ -171,17 +171,15 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{translate(language, 'navOfficeBearers')}</span>
         </button>
 
-        {currentUser.role !== 'MEMBER' && (
-          <button
-            type="button"
-            onClick={() => setActiveTab('members')}
-            className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
-              activeTab === 'members' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
-            }`}
-          >
-            {translate(language, 'navMembers')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setActiveTab('members')}
+          className={`hover:text-[#F5D061] transition-colors py-1 cursor-pointer ${
+            activeTab === 'members' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
+          }`}
+        >
+          {translate(language, 'navMembers')}
+        </button>
 
         {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
           <button

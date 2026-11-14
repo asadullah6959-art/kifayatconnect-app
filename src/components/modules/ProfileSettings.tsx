@@ -30,6 +30,7 @@ export const ProfileSettings: React.FC = () => {
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
+  const [cnic, setCnic] = useState(currentUser?.cnic || '');
   const [address, setAddress] = useState(currentUser?.address || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
@@ -69,10 +70,13 @@ export const ProfileSettings: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanCnic = (currentUser.cnic || cnic).trim();
+    const isCompleted = Boolean(name.trim() && (cleanCnic || address.trim()));
     updateUserProfile({
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
+      cnic: cleanCnic,
       address: address.trim(),
       bio: bio.trim(),
       avatarUrl: avatarUrl || undefined,
@@ -83,7 +87,8 @@ export const ProfileSettings: React.FC = () => {
       cityTown: location.cityTown,
       unionCouncil: unionCouncil.trim(),
       monthlyPledge: Number(monthlyPledge),
-      annualPledge: Number(annualPledge)
+      annualPledge: Number(annualPledge),
+      profileCompleted: isCompleted ? true : currentUser.profileCompleted
     });
 
     setSavedSuccess(true);
@@ -227,13 +232,19 @@ export const ProfileSettings: React.FC = () => {
 
           <div>
             <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              National ID (CNIC) - [LOCKED]
+              {currentUser.cnic ? 'National ID (CNIC) - [LOCKED]' : 'National ID (CNIC)'}
             </label>
             <input
               type="text"
-              disabled
-              value={currentUser.cnic || 'Not linked'}
-              className="w-full px-3 py-2.5 font-mono border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-100 dark:bg-[#0A0D12]/60 text-slate-500 text-xs cursor-not-allowed"
+              disabled={Boolean(currentUser.cnic)}
+              value={currentUser.cnic ? currentUser.cnic : cnic}
+              onChange={(e) => setCnic(e.target.value)}
+              placeholder="35201-1234567-1"
+              className={`w-full px-3 py-2.5 font-mono border rounded-xl text-xs ${
+                currentUser.cnic
+                  ? 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#0A0D12]/60 text-slate-500 cursor-not-allowed'
+                  : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#0A0D12] text-slate-900 dark:text-white'
+              }`}
             />
           </div>
         </div>

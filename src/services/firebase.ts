@@ -192,44 +192,60 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       const normalizedRole = normalizeLegacyRole(existingData.role, firebaseUser.email || existingData.email);
       const shouldBeFounder = isSuperAdminEmail || existingData.isFounder === true;
       const hasPwd = existingData.hasPassword || hasLocalPasswordCredential(firebaseUser.email || existingData.email);
+      const inferredProfileCompleted = shouldBeFounder
+        ? true
+        : existingData.profileCompleted !== undefined
+        ? Boolean(existingData.profileCompleted)
+        : Boolean((existingData.cnic && existingData.cnic.trim()) || (existingData.address && existingData.address.trim()) || normalizedRole !== 'MEMBER');
+      const nowIso = new Date().toISOString();
 
-      if (
-        normalizedRole !== existingData.role ||
-        (shouldBeFounder && !existingData.isFounder) ||
-        (isSuperAdminEmail && !existingData.isStaff) ||
-        hasPwd !== Boolean(existingData.hasPassword)
-      ) {
-        const updated: User = {
-          ...existingData,
+      const updated: User = {
+        ...existingData,
+        role: normalizedRole,
+        isFounder: shouldBeFounder,
+        isStaff: normalizedRole !== 'MEMBER',
+        hasPassword: hasPwd,
+        profileCompleted: inferredProfileCompleted,
+        status: 'online',
+        lastLoginAt: nowIso
+      };
+      await setDoc(
+        userDocRef,
+        {
           role: normalizedRole,
           isFounder: shouldBeFounder,
           isStaff: normalizedRole !== 'MEMBER',
-          hasPassword: hasPwd
-        };
-        await updateDoc(userDocRef, {
-          role: normalizedRole,
-          isFounder: shouldBeFounder,
-          isStaff: normalizedRole !== 'MEMBER',
-          hasPassword: hasPwd
-        }).catch(() => {});
-        return updated;
-      }
-      return existingData;
+          hasPassword: hasPwd,
+          profileCompleted: inferredProfileCompleted,
+          status: 'online',
+          lastLoginAt: nowIso
+        },
+        { merge: true }
+      ).catch(() => {});
+      return updated;
     }
 
-    // Document does not exist yet: create verified profile in Firestore starting cleanly at 0
-    const joinDate = new Date().toISOString().split('T')[0];
+    // Document does not exist yet: create verified account in Firestore immediately
+    const nowIso = new Date().toISOString();
+    const joinDate = nowIso.split('T')[0];
     const expiryDate = new Date();
     expiryDate.setFullYear(expiryDate.getFullYear() + 3);
+    const emailPrefix = firebaseUser.email
+      ? firebaseUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : 'Registered Member';
 
     const newUser: User = {
       id: firebaseUser.uid,
-      name: isSuperAdminEmail ? 'Asadullah (Founder Super Admin)' : (firebaseUser.displayName || 'Registered Member'),
+      name: isSuperAdminEmail ? 'Asadullah (Founder Super Admin)' : (firebaseUser.displayName || emailPrefix),
       email: firebaseUser.email || '',
       phone: firebaseUser.phoneNumber || '',
       role: isSuperAdminEmail ? 'SUPER_ADMIN' : 'MEMBER',
       isFounder: isSuperAdminEmail,
       hasPassword: hasLocalPasswordCredential(firebaseUser.email || ''),
+      profileCompleted: isSuperAdminEmail,
+      status: 'online',
+      lastLoginAt: nowIso,
+      createdAt: nowIso,
       country: 'Pakistan',
       stateProvince: isSuperAdminEmail ? 'Islamabad Capital Territory' : 'Punjab',
       district: isSuperAdminEmail ? 'Islamabad' : 'Lahore',
@@ -248,10 +264,10 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       annualPledge: 0,
       totalContributed: 0,
       isStaff: isSuperAdminEmail,
-      notes: isSuperAdminEmail ? 'Verified Founder Super Admin authorized via Google Identity' : 'Authenticated Member'
+      notes: isSuperAdminEmail ? 'Verified Founder Super Admin authorized via Google Identity' : 'Authenticated Member (Profile Pending)'
     };
 
-    await setDoc(userDocRef, newUser);
+    await setDoc(userDocRef, normalizeUserForCloud(newUser), { merge: true });
     return newUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
@@ -841,7 +857,8 @@ function stripUndefinedDeep<T>(value: T): T {
 export function normalizeUserForCloud(user: User): Record<string, unknown> {
   const photo = user.photoUrl || user.avatarUrl || user.avatar || '';
   const memId = user.memberId || user.membershipId || '';
-  const statusStr = user.status || user.membershipStatus || 'ACTIVE';
+  const statusStr = user.status || 'online';
+  const nowIso = new Date().toISOString();
   return stripUndefinedDeep({
     ...user,
     uid: user.id,
@@ -853,9 +870,11 @@ export function normalizeUserForCloud(user: User): Record<string, unknown> {
     city: user.cityTown,
     uc: user.unionCouncil,
     status: statusStr,
+    profileCompleted: Boolean(user.profileCompleted),
+    lastLoginAt: user.lastLoginAt || nowIso,
     isAuditOfficer: Boolean(user.isAuditOfficer),
     isMutedInChat: Boolean(user.isMutedInChat),
-    createdAt: user.createdAt || user.joinDate || new Date().toISOString()
+    createdAt: user.createdAt || user.joinDate || nowIso
   });
 }
 

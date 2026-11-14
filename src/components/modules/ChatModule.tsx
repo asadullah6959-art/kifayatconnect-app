@@ -30,11 +30,13 @@ import {
   Palette,
   Crown,
   Smile,
-  Upload
+  Upload,
+  Minus
 } from 'lucide-react';
 import { compressImageFile } from '../../utils/imageCompression';
 import { RoleBadge } from '../common/RoleBadge';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 import { translate } from '../../data/translations';
 import {
   ChatMessage,
@@ -225,6 +227,7 @@ const ChatModuleContent: React.FC = () => {
     deleteCommunityMessage,
     muteChatUser,
     updateLiveChatAppearance,
+    minimizeLiveChat,
     appSettings,
     activeChatUser,
     setActiveChatUser,
@@ -232,6 +235,7 @@ const ChatModuleContent: React.FC = () => {
     isOnline,
     language
   } = useApp();
+  const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const [chatMode, setChatMode] = useState<'COMMUNITY' | 'DIRECT'>(activeChatUser ? 'DIRECT' : 'COMMUNITY');
 
@@ -703,6 +707,17 @@ const ChatModuleContent: React.FC = () => {
               <span>Direct Messages</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={minimizeLiveChat}
+            title="Minimize Live Chat to Floating Bubble"
+            aria-label="Minimize Live Chat"
+            className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-extrabold cursor-pointer shrink-0"
+          >
+            <Minus className="w-4 h-4" />
+            <span className="hidden sm:inline text-[11px]">Minimize</span>
+          </button>
         </div>
       </div>
 
@@ -784,6 +799,16 @@ const ChatModuleContent: React.FC = () => {
                   <span>Scenic Theme</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={minimizeLiveChat}
+                title="Minimize Live Chat to Floating Bubble"
+                aria-label="Minimize Live Chat Room"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C] hover:bg-[#1E273B] border border-[#D4AF37]/45 text-[#F5D061] font-extrabold cursor-pointer shrink-0"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -1184,7 +1209,11 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {/* Composer Area */}
-          {isUserMutedInCommunity ? (
+          {requiresProfileCompletion ? (
+            <div className="relative z-10 p-3 bg-[#0A0D12]/95 border-t border-[#D4AF37]/30">
+              <ProfileCompletionGate compact featureName="Live Community Chat" />
+            </div>
+          ) : isUserMutedInCommunity ? (
             <div className="relative z-10 p-3 bg-rose-950/90 border-t border-rose-500/40 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2">
               <VolumeX className="w-4 h-4 text-rose-400 shrink-0" />
               <span>You are currently muted from posting in Community Chat. Direct Messages remain available.</span>
@@ -1549,6 +1578,11 @@ const ChatModuleContent: React.FC = () => {
                   </div>
                 )}
 
+                {requiresProfileCompletion ? (
+                  <div className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 bg-[#0A0D12]">
+                    <ProfileCompletionGate compact featureName="Direct Messaging" />
+                  </div>
+                ) : (
                 <form onSubmit={handleSendDirectMessage} className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 flex items-center gap-2 bg-[#0A0D12]">
                   <button
                     type="button"
@@ -1576,6 +1610,7 @@ const ChatModuleContent: React.FC = () => {
                     <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
                   </button>
                 </form>
+                )}
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 text-center">

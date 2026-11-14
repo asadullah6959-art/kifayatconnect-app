@@ -63,7 +63,10 @@ service cloud.firestore {
         data.membershipStatus in ['ACTIVE', 'PENDING', 'REJECTED', 'EXPIRED', 'SUSPENDED', 'PENDING_DISTRICT_REVIEW', 'RECOMMENDED_BY_DISTRICT', 'PENDING_REGIONAL_REVIEW', 'RECOMMENDED_BY_REGION'] &&
         data.isStaff is bool &&
         (!('isAuditOfficer' in data) || data.isAuditOfficer is bool) &&
-        (!('isMutedInChat' in data) || data.isMutedInChat is bool);
+        (!('isMutedInChat' in data) || data.isMutedInChat is bool) &&
+        (!('profileCompleted' in data) || data.profileCompleted is bool) &&
+        (!('status' in data) || data.status is string) &&
+        (!('lastLoginAt' in data) || data.lastLoginAt is string);
     }
 
     function isValidCommunityMessage(data) {

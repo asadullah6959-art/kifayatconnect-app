@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'members',
       label: translate(language, 'navMembers'),
       icon: Users,
-      visible: currentUser.role !== 'MEMBER' || Boolean(currentUser.isAuditOfficer)
+      visible: true
     },
     {
       id: 'approvals',

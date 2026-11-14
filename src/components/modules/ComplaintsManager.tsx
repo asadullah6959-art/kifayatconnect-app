@@ -19,6 +19,7 @@ import {
 } from '../../data/locationData';
 import { MapPin } from 'lucide-react';
 import { LuxurySelect } from '../common/LuxurySelect';
+import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 
 export const ComplaintsManager: React.FC = () => {
   const { 
@@ -26,8 +27,10 @@ export const ComplaintsManager: React.FC = () => {
     complaints, 
     submitComplaint, 
     updateComplaintStatus, 
+    openCompleteProfileModal,
     language 
   } = useApp();
+  const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
@@ -143,13 +146,23 @@ export const ComplaintsManager: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsSubmitModalOpen(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors"
+          onClick={() => {
+            if (requiresProfileCompletion) {
+              openCompleteProfileModal();
+            } else {
+              setIsSubmitModalOpen(true);
+            }
+          }}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>File New Grievance Ticket</span>
         </button>
       </div>
+
+      {requiresProfileCompletion && (
+        <ProfileCompletionGate compact featureName="Complaints & Support" />
+      )}
 
       {/* Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">

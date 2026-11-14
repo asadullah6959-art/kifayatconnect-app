@@ -28,18 +28,22 @@ import { verifyEmailOTP, getPendingEmailOTP, clearPendingEmailOTP } from '../../
 import { compressImageFile } from '../../utils/imageCompression';
 import { translate } from '../../data/translations';
 
+import { User } from '../../types';
+
 interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  completeProfileUser?: User | null;
 }
 
-export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
+export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, completeProfileUser }) => {
   const { registerMember, requestOTP, language, isOnline } = useApp();
+  const isCompletingExistingProfile = Boolean(completeProfileUser);
 
   // 3-Step Flow: STEP 1 (OTP Verify Email) -> STEP 2 (Create & Confirm Password) -> STEP 3 (Community Profile & Location)
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(() => (completeProfileUser ? 3 : 1));
 
-  const [email, setEmail] = useState(() => getPendingEmailOTP()?.email || '');
+  const [email, setEmail] = useState(() => completeProfileUser?.email || getPendingEmailOTP()?.email || '');
   const [otpSent, setOtpSent] = useState(() => Boolean(getPendingEmailOTP()));
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -51,25 +55,49 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
   const [showPassword, setShowPassword] = useState(false);
   const [pwdError, setPwdError] = useState('');
 
-  const [applicantName, setApplicantName] = useState('');
-  const [phone, setPhone] = useState('+92 300 ');
-  const [cnic, setCnic] = useState('');
+  const [applicantName, setApplicantName] = useState(() => completeProfileUser?.name || '');
+  const [phone, setPhone] = useState(() => completeProfileUser?.phone || '+92 300 ');
+  const [cnic, setCnic] = useState(() => completeProfileUser?.cnic || '');
 
   // Administrative Location Hierarchy (100% preserved)
-  const [country, setCountry] = useState('Pakistan');
-  const [stateProvince, setStateProvince] = useState('Punjab');
-  const [district, setDistrict] = useState('Lahore');
-  const [tehsil, setTehsil] = useState('Model Town');
-  const [cityTown, setCityTown] = useState('Lahore');
-  const [unionCouncil, setUnionCouncil] = useState('UC-112 Model Town');
-  const [address, setAddress] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [country, setCountry] = useState(() => completeProfileUser?.country || 'Pakistan');
+  const [stateProvince, setStateProvince] = useState(() => completeProfileUser?.stateProvince || 'Punjab');
+  const [district, setDistrict] = useState(() => completeProfileUser?.district || 'Lahore');
+  const [tehsil, setTehsil] = useState(() => completeProfileUser?.tehsil || 'Model Town');
+  const [cityTown, setCityTown] = useState(() => completeProfileUser?.cityTown || 'Lahore');
+  const [unionCouncil, setUnionCouncil] = useState(() => completeProfileUser?.unionCouncil || 'UC-112 Model Town');
+  const [address, setAddress] = useState(() => completeProfileUser?.address || '');
+  const [avatarUrl, setAvatarUrl] = useState(() => completeProfileUser?.avatarUrl || completeProfileUser?.photoUrl || '');
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [isOldMember, setIsOldMember] = useState(false);
   const [oldMembershipNo, setOldMembershipNo] = useState('');
 
   const [submitted, setSubmitted] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen && completeProfileUser) {
+      setStep(3);
+      setEmail(completeProfileUser.email || '');
+      if (completeProfileUser.name && completeProfileUser.name !== 'Registered Member') {
+        setApplicantName(completeProfileUser.name);
+      }
+      if (completeProfileUser.phone) setPhone(completeProfileUser.phone);
+      if (completeProfileUser.cnic) setCnic(completeProfileUser.cnic);
+      if (completeProfileUser.country) setCountry(completeProfileUser.country);
+      if (completeProfileUser.stateProvince) setStateProvince(completeProfileUser.stateProvince);
+      if (completeProfileUser.district) setDistrict(completeProfileUser.district);
+      if (completeProfileUser.tehsil) setTehsil(completeProfileUser.tehsil);
+      if (completeProfileUser.cityTown) setCityTown(completeProfileUser.cityTown);
+      if (completeProfileUser.unionCouncil) setUnionCouncil(completeProfileUser.unionCouncil);
+      if (completeProfileUser.address) setAddress(completeProfileUser.address);
+      if (completeProfileUser.avatarUrl || completeProfileUser.photoUrl) {
+        setAvatarUrl(completeProfileUser.avatarUrl || completeProfileUser.photoUrl || '');
+      }
+    } else if (isOpen && !completeProfileUser) {
+      setStep(1);
+    }
+  }, [isOpen, completeProfileUser]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -230,7 +258,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               <BrandEmblem3D size="sm" />
               <div>
                 <h3 className="text-base font-extrabold kc-gold-gradient-text">
-                  {translate(language, 'registerBtn')}
+                  {isCompletingExistingProfile ? 'Complete Your Member Profile' : translate(language, 'registerBtn')}
                 </h3>
                 <p className="text-[11px] text-slate-400">
                   {step === 1
@@ -693,7 +721,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose })
               form="kc-register-step3-form"
               className="flex items-center gap-1.5 px-5 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
             >
-              <span>{translate(language, 'completeSignupBtn')}</span>
+              <span>{isCompletingExistingProfile ? 'Save & Unlock Features' : translate(language, 'completeSignupBtn')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
