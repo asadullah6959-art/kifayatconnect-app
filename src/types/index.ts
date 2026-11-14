@@ -102,6 +102,9 @@ export interface User {
   avatar?: string;
   status?: string;
   profileCompleted?: boolean;
+  isOnline?: boolean;
+  lastSeen?: string;
+  province?: string;
   lastLoginAt?: string;
   createdAt?: string;
   cnic: string;
@@ -301,7 +304,9 @@ export type NotificationType =
   | 'ANNOUNCEMENT_NEW'
   | 'STAFF_ROLE_CHANGE'
   | 'OFFICE_BEARER_APPOINTMENT'
-  | 'CHAT_MESSAGE';
+  | 'CHAT_MESSAGE'
+  | 'USER_SIGNUP'
+  | 'USER_LOGIN';
 
 export interface AppNotification {
   id: string;
@@ -398,8 +403,10 @@ export interface ChatMessage {
   senderBubbleColor?: string;
   recipientId: string;
   recipientName: string;
+  participants?: string[];
   text: string;
   timestamp: string;
+  createdAt?: string;
   read: boolean;
   deliveryStatus?: MessageDeliveryStatus;
   attachmentUrl?: string;

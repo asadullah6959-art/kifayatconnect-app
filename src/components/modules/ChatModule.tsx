@@ -228,6 +228,9 @@ const ChatModuleContent: React.FC = () => {
     muteChatUser,
     updateLiveChatAppearance,
     minimizeLiveChat,
+    closeAndHideLiveChat,
+    preferredChatMode,
+    setPreferredChatMode,
     appSettings,
     activeChatUser,
     setActiveChatUser,
@@ -237,7 +240,8 @@ const ChatModuleContent: React.FC = () => {
   } = useApp();
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
-  const [chatMode, setChatMode] = useState<'COMMUNITY' | 'DIRECT'>(activeChatUser ? 'DIRECT' : 'COMMUNITY');
+  const chatMode = preferredChatMode;
+  const setChatMode = setPreferredChatMode;
 
   // Direct Chat States
   const [searchQuery, setSearchQuery] = useState('');
@@ -273,11 +277,10 @@ const ChatModuleContent: React.FC = () => {
   const communityMessageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    if (activeChatUser) {
-      setChatMode('DIRECT');
+    if (preferredChatMode === 'DIRECT' && activeChatUser) {
       setMobileShowThread(true);
     }
-  }, [activeChatUser]);
+  }, [preferredChatMode, activeChatUser]);
 
   useEffect(() => {
     return () => {
@@ -659,133 +662,151 @@ const ChatModuleContent: React.FC = () => {
   };
 
   const activeThemeId: CommunityScenicThemeId = appSettings.liveChatTheme || 'OBSIDIAN_GOLD';
+  const onlineMembersCount = users.filter(u =>
+    u.id === currentUser.id || (u.isOnline !== undefined ? Boolean(u.isOnline) : u.status === 'online')
+  ).length;
 
   return (
     <div className="space-y-4 max-w-full">
-      {/* Header + Dual Mode Switcher */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/25">
-        <div className="min-w-0">
-          <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
-            Kifayat Connect · Live &amp; Direct Network
-          </span>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-[#F5D061] shrink-0" />
-            <span>{chatMode === 'COMMUNITY' ? 'Live Community Room' : translate(language, 'chatHeader')}</span>
-          </h1>
-          <p className="text-xs text-slate-400">
-            {chatMode === 'COMMUNITY'
-              ? 'Real-time organization hall with voice notes, Islamic greetings & scenic themes.'
-              : translate(language, 'chatSubtitle')}
-          </p>
-        </div>
+      {/* Header + Dual Mode Switcher (shown in Direct Messages view) */}
+      {chatMode === 'DIRECT' && (
+        <>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/25">
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+                Kifayat Connect · Live &amp; Direct Network
+              </span>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-[#F5D061] shrink-0" />
+                <span>{translate(language, 'chatHeader')}</span>
+              </h1>
+              <p className="text-xs text-slate-400">
+                {translate(language, 'chatSubtitle')}
+              </p>
+            </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex p-1 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30">
-            <button
-              type="button"
-              onClick={() => setChatMode('COMMUNITY')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                chatMode === 'COMMUNITY'
-                  ? 'kc-gold-button'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5 shrink-0" />
-              <span>Live Community Room</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex p-1 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30">
+                <button
+                  type="button"
+                  onClick={() => setChatMode('COMMUNITY')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer text-slate-300 hover:text-white"
+                >
+                  <Globe className="w-3.5 h-3.5 shrink-0" />
+                  <span>Live Community Room</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setChatMode('DIRECT')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                chatMode === 'DIRECT'
-                  ? 'kc-gold-button'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span>Direct Messages</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setChatMode('DIRECT')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer kc-gold-button"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                  <span>Direct Messages</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={minimizeLiveChat}
+                title="Minimize Live Chat to Floating Bubble"
+                aria-label="Minimize Live Chat"
+                className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-extrabold cursor-pointer shrink-0"
+              >
+                <Minus className="w-4 h-4" />
+                <span className="hidden sm:inline text-[11px]">Minimize</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={closeAndHideLiveChat}
+                title="Close & Hide Chat"
+                aria-label="Close & Hide Chat"
+                className="inline-flex items-center justify-center p-2 rounded-xl bg-[#111622] hover:bg-rose-950/60 border border-[#D4AF37]/40 text-slate-300 hover:text-white text-xs font-extrabold cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={minimizeLiveChat}
-            title="Minimize Live Chat to Floating Bubble"
-            aria-label="Minimize Live Chat"
-            className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-extrabold cursor-pointer shrink-0"
-          >
-            <Minus className="w-4 h-4" />
-            <span className="hidden sm:inline text-[11px]">Minimize</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Offline Queue Banner */}
-      {(!isOnline || queuedMessageCount > 0) && (
-        <div className="p-3 rounded-xl bg-amber-950/50 border border-[#D4AF37]/40 text-amber-200 text-xs font-semibold flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <WifiOff className="w-4 h-4 text-[#F5D061] shrink-0" />
-            <span>{translate(language, 'chatOfflineBanner')}</span>
-          </div>
-          {queuedMessageCount > 0 && (
-            <span className="px-2 py-0.5 rounded-md bg-amber-500 text-[#0A0D12] font-extrabold text-[10px] shrink-0">
-              {queuedMessageCount} Queued
-            </span>
+          {(!isOnline || queuedMessageCount > 0) && (
+            <div className="p-3 rounded-xl bg-amber-950/50 border border-[#D4AF37]/40 text-amber-200 text-xs font-semibold flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <WifiOff className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <span>{translate(language, 'chatOfflineBanner')}</span>
+              </div>
+              {queuedMessageCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-500 text-[#0A0D12] font-extrabold text-[10px] shrink-0">
+                  {queuedMessageCount} Queued
+                </span>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {chatError && (
-        <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center justify-between gap-2">
-          <span>{chatError}</span>
-          <button type="button" onClick={() => setChatError(null)} className="p-1 cursor-pointer shrink-0">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+          {chatError && (
+            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center justify-between gap-2">
+              <span>{chatError}</span>
+              <button type="button" onClick={() => setChatError(null)} className="p-1 cursor-pointer shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ============================================================
-          MODE 1: ULTRA-LUXURY LIVE COMMUNITY ROOM
+          MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM
           ============================================================ */}
       {chatMode === 'COMMUNITY' && (
-        <div className="relative rounded-2xl border border-[#D4AF37]/30 shadow-2xl overflow-hidden flex flex-col h-[calc(100dvh-265px)] min-h-[470px] bg-[#0A0D12]">
-          {/* Live Scenic GPU-Only SVG/CSS Background */}
+        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#0A0D12]">
+          {/* Live Scenic GPU-Only SVG/CSS Wallpaper Background */}
           <ScenicChatBackground
             themeId={activeThemeId}
             customBgUrl={appSettings.liveChatCustomBgUrl}
           />
 
-          {/* Room Top Bar */}
-          <div className="relative z-10 px-3.5 py-2.5 border-b border-[#D4AF37]/25 bg-[#0A0D12]/90 flex flex-wrap items-center justify-between gap-2">
+          {/* Full-Screen Top Bar */}
+          <div className="relative z-10 px-3 sm:px-5 py-2.5 border-b border-[#D4AF37]/30 bg-black/55 flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F5D061] to-[#8A6218] text-[#0A0D12] flex items-center justify-center font-black text-sm shrink-0">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#F5D061] to-[#8A6218] text-[#0A0D12] flex items-center justify-center font-black text-sm shrink-0 shadow">
                 🌐
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <h2 className="text-xs sm:text-sm font-extrabold text-white truncate">
-                    Kifayat Global Community Hall
+                    Live Community Room
                   </h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/30">
-                    {users.length} Members
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/35">
+                    🟢 {onlineMembersCount} Online · {users.length} Members
                   </span>
                 </div>
-                <p className="text-[10px] text-[#F5D061]/85 truncate">
-                  Theme: {activeThemeId === 'CUSTOM' ? 'Founder Custom Scenic Photo' : (SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId)?.label || 'Obsidian & Royal Gold')}
+                <p className="text-[10px] text-[#F5D061]/90 truncate">
+                  {activeThemeId === 'CUSTOM'
+                    ? 'Founder Custom Scenic Wallpaper'
+                    : (SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId)?.label || 'Obsidian & Royal Gold')}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() => setChatMode('DIRECT')}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/35 text-slate-100 text-[11px] font-bold cursor-pointer"
+                title="Switch to 1-on-1 Direct Messages"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                <span>Direct</span>
+              </button>
+
               {isFounder && (
                 <button
                   type="button"
                   onClick={() => setIsBubbleColorModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C] hover:bg-[#1E273B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer"
                 >
                   <Crown className="w-3.5 h-3.5 shrink-0" />
-                  <span>My Bubble</span>
+                  <span className="hidden sm:inline">My Bubble</span>
                 </button>
               )}
 
@@ -793,28 +814,64 @@ const ChatModuleContent: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsThemeModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C] hover:bg-[#1E273B] border border-[#D4AF37]/40 text-slate-100 text-[11px] font-bold cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/40 text-slate-100 text-[11px] font-bold cursor-pointer"
                 >
                   <Palette className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
-                  <span>Scenic Theme</span>
+                  <span className="hidden sm:inline">Theme</span>
                 </button>
               )}
 
+              {/* Minimize (—) to Floating Bubble */}
               <button
                 type="button"
                 onClick={minimizeLiveChat}
                 title="Minimize Live Chat to Floating Bubble"
                 aria-label="Minimize Live Chat Room"
-                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C] hover:bg-[#1E273B] border border-[#D4AF37]/45 text-[#F5D061] font-extrabold cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-[#1E273B] border border-[#D4AF37]/50 text-[#F5D061] font-extrabold cursor-pointer shrink-0"
               >
                 <Minus className="w-4 h-4" />
+              </button>
+
+              {/* Hide / Close (✕) Completely */}
+              <button
+                type="button"
+                onClick={closeAndHideLiveChat}
+                title="Close & Hide Live Chat"
+                aria-label="Close and Hide Live Chat"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-rose-950/80 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* Offline Queue & Error Banners inside Full-Screen Chat */}
+          {(!isOnline || queuedMessageCount > 0) && (
+            <div className="relative z-10 mx-3 mt-2 p-2.5 rounded-xl bg-amber-950/80 border border-[#D4AF37]/40 text-amber-200 text-xs font-semibold flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <WifiOff className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <span>{translate(language, 'chatOfflineBanner')}</span>
+              </div>
+              {queuedMessageCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-500 text-[#0A0D12] font-extrabold text-[10px] shrink-0">
+                  {queuedMessageCount} Queued
+                </span>
+              )}
+            </div>
+          )}
+
+          {chatError && (
+            <div className="relative z-10 mx-3 mt-2 p-2.5 rounded-xl bg-rose-950/85 border border-rose-500/50 text-rose-200 text-xs font-semibold flex items-center justify-between gap-2 shrink-0">
+              <span>{chatError}</span>
+              <button type="button" onClick={() => setChatError(null)} className="p-1 cursor-pointer shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Sticky Founder Pinned Message Banner */}
           {pinnedMessage && (
-            <div className="relative z-10 px-3.5 py-2 bg-[#1A1508]/95 border-b border-[#F5D061]/45 flex items-center justify-between gap-2">
+            <div className="relative z-10 px-3.5 py-2 bg-[#1A1508]/85 border-b border-[#F5D061]/45 flex items-center justify-between gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => scrollToMessageId(pinnedMessage.id)}
@@ -843,8 +900,8 @@ const ChatModuleContent: React.FC = () => {
             </div>
           )}
 
-          {/* Community Feed */}
-          <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5">
+          {/* Community Feed (Transparent over Scenic Wallpaper) */}
+          <div className="relative z-10 flex-1 min-h-0 overflow-y-auto bg-transparent p-3 sm:p-5 space-y-3.5">
             {communityMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div className="w-14 h-14 rounded-2xl bg-[#111622] border border-[#D4AF37]/40 flex items-center justify-center mb-3">
@@ -915,7 +972,7 @@ const ChatModuleContent: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => authorRecord && setInspectedUserProfile(authorRecord)}
-                      className="shrink-0 mt-0.5 cursor-pointer"
+                      className="relative shrink-0 mt-0.5 cursor-pointer"
                       title={`View ${msg.senderName}`}
                     >
                       {avatarSrc ? (
@@ -936,6 +993,15 @@ const ChatModuleContent: React.FC = () => {
                         >
                           {msg.senderName.charAt(0).toUpperCase()}
                         </div>
+                      )}
+                      {authorRecord && (
+                        <span
+                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#0A0D12] ${
+                            (isMine || (authorRecord.isOnline !== undefined ? Boolean(authorRecord.isOnline) : authorRecord.status === 'online'))
+                              ? 'bg-emerald-500'
+                              : 'bg-slate-500'
+                          }`}
+                        />
                       )}
                     </button>
 
@@ -1141,7 +1207,7 @@ const ChatModuleContent: React.FC = () => {
 
           {/* Drawers & Previews above Composer */}
           {showIslamicGifDrawer && !isUserMutedInCommunity && (
-            <div className="relative z-10 p-3 bg-[#0A0D12]/95 border-t border-[#D4AF37]/30 max-h-56 overflow-y-auto">
+            <div className="relative z-10 p-3 bg-black/75 border-t border-[#D4AF37]/30 max-h-56 overflow-y-auto shrink-0">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-extrabold text-[#F5D061]">☪️ Send Animated Islamic Card</span>
                 <button
@@ -1168,7 +1234,7 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {showEmojiStrip && !isUserMutedInCommunity && (
-            <div className="relative z-10 px-3 py-2 bg-[#0A0D12]/95 border-t border-[#D4AF37]/25 flex flex-wrap items-center gap-2">
+            <div className="relative z-10 px-3 py-2 bg-black/75 border-t border-[#D4AF37]/25 flex flex-wrap items-center gap-2 shrink-0">
               {QUICK_EMOJIS.map(em => (
                 <button
                   key={em}
@@ -1183,7 +1249,7 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {replyingTo && (
-            <div className="relative z-10 px-3.5 py-2 bg-[#161D2C] border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
+            <div className="relative z-10 px-3.5 py-2 bg-[#161D2C]/95 border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs shrink-0">
               <div className="min-w-0">
                 <span className="font-bold text-[#F5D061] block">Replying to {replyingTo.senderName}</span>
                 <span className="text-slate-300 truncate block">
@@ -1197,7 +1263,7 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {communityAttachment && (
-            <div className="relative z-10 px-3.5 py-2 bg-[#161D2C] border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs text-[#F5D061]">
+            <div className="relative z-10 px-3.5 py-2 bg-[#161D2C]/95 border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs text-[#F5D061] shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <ImageIcon className="w-4 h-4 shrink-0" />
                 <span className="truncate font-semibold">{communityAttachment.name} (Compressed &lt;450KB)</span>
@@ -1210,16 +1276,16 @@ const ChatModuleContent: React.FC = () => {
 
           {/* Composer Area */}
           {requiresProfileCompletion ? (
-            <div className="relative z-10 p-3 bg-[#0A0D12]/95 border-t border-[#D4AF37]/30">
+            <div className="relative z-10 p-3 bg-black/65 border-t border-[#D4AF37]/30 shrink-0">
               <ProfileCompletionGate compact featureName="Live Community Chat" />
             </div>
           ) : isUserMutedInCommunity ? (
-            <div className="relative z-10 p-3 bg-rose-950/90 border-t border-rose-500/40 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2">
+            <div className="relative z-10 p-3 bg-rose-950/90 border-t border-rose-500/40 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2 shrink-0">
               <VolumeX className="w-4 h-4 text-rose-400 shrink-0" />
               <span>You are currently muted from posting in Community Chat. Direct Messages remain available.</span>
             </div>
           ) : isRecording ? (
-            <div className="relative z-10 p-3 bg-[#111622]/95 border-t border-[#D4AF37]/40 flex items-center justify-between gap-3">
+            <div className="relative z-10 p-3 bg-black/75 border-t border-[#D4AF37]/40 flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="w-3 h-3 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                 <span className="text-xs font-extrabold text-white">Recording Voice Note...</span>
@@ -1249,7 +1315,7 @@ const ChatModuleContent: React.FC = () => {
           ) : (
             <form
               onSubmit={handleSendCommunityMessage}
-              className="relative z-10 p-2.5 sm:p-3 bg-[#0A0D12]/95 border-t border-[#D4AF37]/25 flex items-center gap-1.5 sm:gap-2"
+              className="relative z-10 p-2.5 sm:p-3.5 bg-black/60 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2 shrink-0"
             >
               <button
                 type="button"
@@ -1297,7 +1363,7 @@ const ChatModuleContent: React.FC = () => {
                 value={communityText}
                 onChange={(e) => setCommunityText(e.target.value)}
                 placeholder={isCompressingMedia ? 'Compressing photo...' : 'Message Community Room...'}
-                className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622] text-white focus:outline-hidden focus:border-[#D4AF37]"
+                className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622]/90 text-white focus:outline-hidden focus:border-[#D4AF37]"
               />
 
               <button
@@ -1379,6 +1445,7 @@ const ChatModuleContent: React.FC = () => {
                   const convo = chats.find(c => c.id === pairId);
                   const unreadForMe = convo?.unreadCounts?.[currentUser.id] || 0;
                   const userAvatar = user.photoUrl || user.avatarUrl;
+                  const isMemberOnline = user.isOnline !== undefined ? Boolean(user.isOnline) : user.status === 'online';
 
                   return (
                     <button
@@ -1406,6 +1473,12 @@ const ChatModuleContent: React.FC = () => {
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                         )}
+                        <span
+                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0A0D12] ${
+                            isMemberOnline ? 'bg-emerald-500' : 'bg-slate-500'
+                          }`}
+                          title={isMemberOnline ? 'Online' : 'Offline'}
+                        />
                         {unreadForMe > 0 && (
                           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F5D061] text-[#0A0D12] text-[10px] font-extrabold flex items-center justify-center">
                             {unreadForMe}
@@ -1424,11 +1497,20 @@ const ChatModuleContent: React.FC = () => {
                             isAuditOfficer={user.isAuditOfficer}
                             compact
                           />
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                              isMemberOnline
+                                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/35'
+                                : 'bg-slate-900 text-slate-400 border border-slate-700'
+                            }`}
+                          >
+                            {isMemberOnline ? '🟢 Online' : '⚫ Offline'}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5 truncate">
                           <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="truncate">{user.cityTown || user.district}, {user.stateProvince}</span>
+                          <span className="truncate">{user.cityTown || user.district || 'Pakistan'}{user.stateProvince ? `, ${user.stateProvince}` : ''}</span>
                         </div>
                       </div>
                     </button>
@@ -1453,20 +1535,29 @@ const ChatModuleContent: React.FC = () => {
                       <ArrowLeft className="w-4 h-4" />
                     </button>
 
-                    {(activeRecipient.photoUrl || activeRecipient.avatarUrl) ? (
-                      <img
-                        src={activeRecipient.photoUrl || activeRecipient.avatarUrl}
-                        alt={activeRecipient.name}
-                        className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/40 shrink-0"
+                    <div className="relative shrink-0">
+                      {(activeRecipient.photoUrl || activeRecipient.avatarUrl) ? (
+                        <img
+                          src={activeRecipient.photoUrl || activeRecipient.avatarUrl}
+                          alt={activeRecipient.name}
+                          className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/40"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#043927] text-[#F5D061] flex items-center justify-center font-bold text-sm border border-[#D4AF37]/40">
+                          {activeRecipient.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span
+                        className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0A0D12] ${
+                          (activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
+                            ? 'bg-emerald-500'
+                            : 'bg-slate-500'
+                        }`}
                       />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-[#043927] text-[#F5D061] flex items-center justify-center font-bold text-sm border border-[#D4AF37]/40 shrink-0">
-                        {activeRecipient.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    </div>
 
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-bold text-sm text-white truncate">
                           {activeRecipient.name}
                         </h3>
@@ -1476,10 +1567,21 @@ const ChatModuleContent: React.FC = () => {
                           isAuditOfficer={activeRecipient.isAuditOfficer}
                           compact
                         />
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            (activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
+                              ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/35'
+                              : 'bg-slate-900 text-slate-400 border border-slate-700'
+                          }`}
+                        >
+                          {(activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
+                            ? '🟢 Online'
+                            : '⚫ Offline'}
+                        </span>
                       </div>
                       <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
                         <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                        <span className="truncate">{activeRecipient.cityTown || activeRecipient.district}, {activeRecipient.stateProvince}</span>
+                        <span className="truncate">{activeRecipient.cityTown || activeRecipient.district || 'Pakistan'}{activeRecipient.stateProvince ? `, ${activeRecipient.stateProvince}` : ''}</span>
                       </p>
                     </div>
                   </div>
@@ -1629,7 +1731,7 @@ const ChatModuleContent: React.FC = () => {
       {/* Direct Chat File Attachment Modal */}
       {isAttachmentModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsAttachmentModalOpen(false)}
         >
           <div
@@ -1666,7 +1768,7 @@ const ChatModuleContent: React.FC = () => {
       {/* Scenic Live Chat Theme Modal (Leadership + Founder Custom BG Upload) */}
       {isThemeModalOpen && isLeadership && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsThemeModalOpen(false)}
         >
           <div
@@ -1750,7 +1852,7 @@ const ChatModuleContent: React.FC = () => {
       {/* Founder Exclusive Bubble Color Picker Modal */}
       {isBubbleColorModalOpen && isFounder && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
           onClick={() => setIsBubbleColorModalOpen(false)}
         >
           <div
@@ -1800,7 +1902,7 @@ const ChatModuleContent: React.FC = () => {
       {/* Fullscreen Image Preview Modal */}
       {previewImageUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/95 p-4"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#0A0D12]/95 p-4"
           onClick={() => setPreviewImageUrl(null)}
         >
           <div className="relative max-w-2xl w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>

@@ -68,6 +68,10 @@ import {
   saveCommunityMessageToFirestore,
   saveChatConversationToFirestore,
   subscribeToFirestoreCollection,
+  markUserOfflineInFirestore,
+  findExistingFirestoreUserByEmail,
+  buildSafeEmailUserId,
+  toIsoTimestamp,
   requestEmailOTP,
   verifyEmailOTP,
   getPendingEmailOTP,
@@ -129,25 +133,37 @@ function normalizeUserRecord(u: User): User {
     : u.profileCompleted !== undefined
     ? Boolean(u.profileCompleted)
     : Boolean((u.cnic && u.cnic.trim()) || (u.address && u.address.trim()) || role !== 'MEMBER');
+  const onlineFlag = u.isOnline !== undefined ? Boolean(u.isOnline) : u.status === 'online';
+  const safeLastLogin = toIsoTimestamp(u.lastLoginAt, '');
+  const safeLastSeen = toIsoTimestamp(u.lastSeen, safeLastLogin || u.joinDate || '');
+  const safeCreatedAt = toIsoTimestamp(u.createdAt, u.joinDate || new Date().toISOString());
+  const prov = u.stateProvince || u.province || 'Punjab';
+
   return {
     ...u,
+    email: (u.email || '').trim().toLowerCase(),
     role,
     isFounder,
     isAuditOfficer: Boolean(u.isAuditOfficer),
     isMutedInChat: isFounder ? false : Boolean(u.isMutedInChat),
     profileCompleted,
+    stateProvince: prov,
+    province: prov,
     avatarUrl: photo,
     photoUrl: photo,
     membershipId: memId,
     memberId: memId,
-    status: u.status || 'online',
-    createdAt: u.createdAt || u.joinDate || new Date().toISOString(),
+    isOnline: onlineFlag,
+    lastSeen: safeLastSeen,
+    lastLoginAt: safeLastLogin || safeLastSeen || undefined,
+    status: onlineFlag ? 'online' : 'offline',
+    createdAt: safeCreatedAt,
     isStaff: role !== 'MEMBER',
     hasPassword: u.hasPassword || hasLocalPasswordCredential(u.email)
   };
 }
 
-function mergeUsersLists(localList: User[], remoteList: User[]): User[] {
+function mergeUsersLists(localList: User[], remoteList: User[], preferRemote = false): User[] {
   const byKey = new Map<string, User>();
   const getKey = (u: User) => (u.email?.trim().toLowerCase() || u.id);
 
@@ -167,9 +183,13 @@ function mergeUsersLists(localList: User[], remoteList: User[]): User[] {
       byKey.set(key, normalizeUserRecord({
         ...existing,
         ...rem,
-        id: existing.id || rem.id,
+        id: preferRemote ? (rem.id || existing.id) : (existing.id || rem.id),
         avatarUrl: photo,
         photoUrl: photo,
+        isOnline: preferRemote
+          ? Boolean(rem.isOnline)
+          : Boolean(rem.isOnline ?? existing.isOnline),
+        lastSeen: rem.lastSeen || existing.lastSeen,
         profileCompleted: isFounderUser(existing) || isFounderUser(rem)
           ? true
           : Boolean(rem.profileCompleted || existing.profileCompleted),
@@ -247,9 +267,13 @@ interface AppContextType {
   // Live Chat Window Display Mode (Full / Minimized Bubble / Hidden)
   liveChatDisplayMode: 'FULL' | 'MINIMIZED' | 'HIDDEN';
   unreadCommunityCount: number;
+  preferredChatMode: 'COMMUNITY' | 'DIRECT';
+  setPreferredChatMode: (mode: 'COMMUNITY' | 'DIRECT') => void;
   minimizeLiveChat: () => void;
   hideLiveChat: () => void;
+  closeAndHideLiveChat: () => void;
   restoreLiveChat: () => void;
+  openPersonalMessage: (user: User) => void;
 
   // Profile Viewer Modal
   inspectedUserProfile: User | null;
@@ -500,6 +524,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTabState] = useState<string>('dashboard');
   const lastNonChatTabRef = useRef<string>('dashboard');
   const [liveChatDisplayMode, setLiveChatDisplayMode] = useState<'FULL' | 'MINIMIZED' | 'HIDDEN'>('FULL');
+  const [preferredChatMode, setPreferredChatMode] = useState<'COMMUNITY' | 'DIRECT'>('COMMUNITY');
   const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(0);
   const lastSeenCommunityIdsRef = useRef<Set<string> | null>(null);
   const [isCompleteProfileModalOpen, setIsCompleteProfileModalOpen] = useState<boolean>(false);
@@ -529,9 +554,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLiveChatDisplayMode('HIDDEN');
   }, []);
 
+  const closeAndHideLiveChat = useCallback(() => {
+    setLiveChatDisplayMode('HIDDEN');
+    const targetBackTab = lastNonChatTabRef.current && lastNonChatTabRef.current !== 'chat'
+      ? lastNonChatTabRef.current
+      : 'dashboard';
+    setActiveTabState(targetBackTab);
+  }, []);
+
   const restoreLiveChat = useCallback(() => {
     setLiveChatDisplayMode('FULL');
+    setPreferredChatMode('COMMUNITY');
     setUnreadCommunityCount(0);
+    setActiveTabState('chat');
+  }, []);
+
+  const openPersonalMessage = useCallback((targetUser: User) => {
+    setActiveChatUser(targetUser);
+    setPreferredChatMode('DIRECT');
+    setLiveChatDisplayMode('FULL');
     setActiveTabState('chat');
   }, []);
 
@@ -688,19 +729,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Helper to push all local users to cloud & merge remote directory
   const syncAllUsersToCloud = useCallback(async (): Promise<number> => {
     try {
-      const session = await ensureFirebaseAuthSession();
-      if (!session) return users.length;
-
+      await ensureFirebaseAuthSession().catch(() => null);
       const remoteUsers = await fetchAllUsersFromFirestore();
       const remoteKeys = new Set(remoteUsers.map(r => (r.email?.trim().toLowerCase() || r.id)));
       const localMissingFromCloud = users.filter(u => !remoteKeys.has(u.email?.trim().toLowerCase() || u.id));
 
       await Promise.all(
-        localMissingFromCloud.map(u => saveUserToFirestore(u).catch(() => {}))
+        localMissingFromCloud.map(u => saveUserToFirestore(u, { isOnline: u.id === currentUserId }).catch(() => {}))
       );
 
       if (remoteUsers.length > 0) {
-        const merged = mergeUsersLists(users, remoteUsers);
+        const merged = mergeUsersLists(users, remoteUsers, true);
         setUsers(merged);
         return merged.length;
       }
@@ -708,201 +747,337 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {
       return users.length;
     }
-  }, [users]);
+  }, [users, currentUserId]);
 
-  // Firebase Auth Lifecycle & Subscriptions (Supports both Google Verified & OTP/Password bridged sessions)
+  const currentAuthIdentityRef = useRef<{ uid: string; role: UserRole; email: string; isStaff: boolean; isAuditor: boolean }>({
+    uid: '',
+    role: 'MEMBER',
+    email: '',
+    isStaff: false,
+    isAuditor: false
+  });
+  currentAuthIdentityRef.current = {
+    uid: currentUser?.id || currentUserId || firebaseUser?.uid || '',
+    role: currentUser?.role || 'MEMBER',
+    email: currentUser?.email || firebaseUser?.email || '',
+    isStaff: Boolean(currentUser?.isStaff),
+    isAuditor: Boolean(currentUser?.isAuditOfficer)
+  };
+
+  // Effect A: Firebase Google Auth Session Lifecycle
   useEffect(() => {
-    let unsubs: (() => void)[] = [];
-
     const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
-      if (fbUser) {
-        setIsFirebaseLive(true);
-        setIsCloudSyncing(true);
-
+      if (fbUser && !fbUser.isAnonymous) {
         try {
-          let activeProfile: User | null = null;
-          const storedUid = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
-          const storedUsers = readStorage<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS).map(normalizeUserRecord);
-
-          if (!fbUser.isAnonymous) {
-            const syncedProfileRaw = await syncUserWithFirestore(fbUser);
-            activeProfile = normalizeUserRecord(syncedProfileRaw);
-            if (activeProfile) {
-              setUsers(prev => mergeUsersLists(prev, [activeProfile!]));
-              setCurrentUserId(activeProfile.id);
-            }
-          } else if (storedUid) {
-            activeProfile = storedUsers.find(u => u.id === storedUid) || null;
-          }
-
-          // Backfill all locally registered users (previous + new) to Firestore /users collection
-          storedUsers.forEach(u => {
-            saveUserToFirestore(u).catch(() => {});
+          const syncedProfileRaw = await syncUserWithFirestore(fbUser);
+          const activeProfile = normalizeUserRecord({
+            ...syncedProfileRaw,
+            isOnline: true,
+            status: 'online'
           });
-
-          const role = activeProfile?.role || 'MEMBER';
-          const uid = activeProfile?.id || storedUid || fbUser.uid;
-          const userEmail = activeProfile?.email || fbUser.email || '';
-          const isAuditor = Boolean(activeProfile?.isAuditOfficer);
-
-          const unsubUsers = subscribeToFirestoreCollection<User>('users', (remote) => {
-            if (remote && remote.length > 0) {
-              setUsers(prev => {
-                const remoteKeys = new Set(remote.map(r => (r.email?.trim().toLowerCase() || r.id)));
-                prev.forEach(localU => {
-                  if (!remoteKeys.has(localU.email?.trim().toLowerCase() || localU.id)) {
-                    saveUserToFirestore(localU).catch(() => {});
-                  }
-                });
-                return mergeUsersLists(prev, remote);
-              });
-            }
-          });
-          const unsubApps = subscribeToFirestoreCollection<MembershipApplication>(
-            'applications',
-            (remote) => {
-              if (remote && remote.length > 0) setApplications(remote);
-            },
-            (activeProfile?.isStaff || isAuditor) ? undefined : (userEmail ? { field: 'email', value: userEmail } : undefined)
-          );
-          const unsubPayments = subscribeToFirestoreCollection<PaymentTransaction>(
-            'payments',
-            (remote) => {
-              if (remote && remote.length > 0) setPayments(remote);
-            },
-            (role === 'SUPER_ADMIN' || role === 'ADMIN' || isAuditor)
-              ? undefined
-              : { field: 'userId', value: uid }
-          );
-          const unsubComplaints = subscribeToFirestoreCollection<Complaint>(
-            'complaints',
-            (remote) => {
-              if (remote && remote.length > 0) setComplaints(remote);
-            },
-            (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN')
-              ? undefined
-              : { field: 'userId', value: uid }
-          );
-          const unsubAnnounce = subscribeToFirestoreCollection<Announcement>('announcements', (remote) => {
-            if (remote && remote.length > 0) setAnnouncements(remote);
-          });
-          const unsubUpdates = subscribeToFirestoreCollection<AppUpdate>('app_updates', (remote) => {
-            if (remote && remote.length > 0) setAppUpdates(remote);
-          });
-          const unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
-            if (remote && remote.length > 0) setOfficeBearers(remote);
-          });
-          const unsubSettings = subscribeToFirestoreCollection<AppSettings & { id?: string }>('app_settings', (remote) => {
-            if (remote && remote.length > 0) {
-              setAppSettings(prev => mergeAppSettings({ ...prev, ...remote[0] }));
-            }
-          });
-          const unsubAuditLogs = subscribeToFirestoreCollection<AuditLog>('audit_logs', (remote) => {
-            if (remote && remote.length > 0) {
-              setAuditLogs(prev => {
-                const map = new Map<string, AuditLog>();
-                prev.forEach(a => map.set(a.id, a));
-                remote.forEach(a => map.set(a.id, a));
-                return Array.from(map.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-              });
-            }
-          });
-          const unsubChats = subscribeToFirestoreCollection<ChatConversation>(
-            'chats',
-            (remote) => {
-              if (remote && remote.length > 0) setChats(remote);
-            },
-            role === 'SUPER_ADMIN'
-              ? undefined
-              : { field: 'participantIds', value: uid, op: 'array-contains' }
-          );
-
-          const mergeMessages = (incoming: ChatMessage[]) => {
-            if (!incoming || incoming.length === 0) return;
-            setChatMessages(prev => {
-              const map = new Map<string, ChatMessage>();
-              prev.forEach(m => map.set(m.id, m));
-              incoming.forEach(m => map.set(m.id, { ...m, deliveryStatus: m.read ? 'SEEN' : (m.deliveryStatus || 'DELIVERED') }));
-              return Array.from(map.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-            });
-          };
-
-          const unsubMsgsSent = subscribeToFirestoreCollection<ChatMessage>(
-            'chat_messages',
-            mergeMessages,
-            { field: 'senderId', value: uid }
-          );
-          const unsubMsgsRecv = subscribeToFirestoreCollection<ChatMessage>(
-            'chat_messages',
-            mergeMessages,
-            { field: 'recipientId', value: uid }
-          );
-
-          const unsubCommunityMsgs = subscribeToFirestoreCollection<ChatMessage>(
-            'community_chat_messages',
-            (incoming) => {
-              if (!incoming || incoming.length === 0) return;
-              setCommunityMessages(prev => {
-                const map = new Map<string, ChatMessage>();
-                prev.forEach(m => map.set(m.id, m));
-                incoming.forEach(m => map.set(m.id, { ...m, deliveryStatus: 'DELIVERED' }));
-                return Array.from(map.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-              });
-            }
-          );
-
-          unsubs = [
-            unsubUsers,
-            unsubApps,
-            unsubPayments,
-            unsubComplaints,
-            unsubAnnounce,
-            unsubUpdates,
-            unsubOB,
-            unsubSettings,
-            unsubAuditLogs,
-            unsubChats,
-            unsubMsgsSent,
-            unsubMsgsRecv,
-            unsubCommunityMsgs
-          ];
+          setUsers(prev => mergeUsersLists(prev, [activeProfile], true));
+          setCurrentUserId(activeProfile.id);
         } catch (err) {
-          console.warn('Firestore live sync init warning:', err);
-        } finally {
-          setIsCloudSyncing(false);
+          console.warn('Google auth sync warning:', err);
         }
-      } else {
-        setIsFirebaseLive(false);
-        unsubs.forEach(u => u());
-        unsubs = [];
       }
     });
 
     return () => {
       unsubscribeAuth();
-      unsubs.forEach(u => u());
     };
   }, []);
 
+  // Effect B: True Real-Time Firestore Subscriptions (Works for BOTH Google & Email OTP/APK Users!)
+  useEffect(() => {
+    const activeUid = currentUserId || (firebaseUser && !firebaseUser.isAnonymous ? firebaseUser.uid : null);
+    if (!activeUid) {
+      setIsFirebaseLive(false);
+      return;
+    }
+
+    setIsFirebaseLive(true);
+    setIsCloudSyncing(true);
+
+    const identity = currentAuthIdentityRef.current;
+    const role = identity.role;
+    const userEmail = identity.email;
+    const isAuditor = identity.isAuditor;
+
+    const unsubUsers = subscribeToFirestoreCollection<User>('users', (remote) => {
+      setIsCloudSyncing(false);
+      if (remote && remote.length > 0) {
+        const normalizedRemote = remote.map(u => normalizeUserRecord(u));
+        setUsers(prev => mergeUsersLists(prev, normalizedRemote, true));
+      }
+    });
+
+    const unsubNotifications = subscribeToFirestoreCollection<AppNotification & { createdAt?: unknown }>(
+      'notifications',
+      (remote) => {
+        if (!remote) return;
+        const normalizedNotifs: AppNotification[] = remote.map(n => ({
+          ...n,
+          timestamp: toIsoTimestamp(n.timestamp || n.createdAt, new Date().toISOString()),
+          read: Boolean(n.read)
+        }));
+        setNotifications(prev => {
+          const map = new Map<string, AppNotification>();
+          prev.forEach(n => map.set(n.id, n));
+          normalizedNotifs.forEach(n => map.set(n.id, n));
+          return Array.from(map.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+        });
+      }
+    );
+
+    const unsubApps = subscribeToFirestoreCollection<MembershipApplication>(
+      'applications',
+      (remote) => {
+        if (remote && remote.length > 0) setApplications(remote);
+      },
+      (identity.isStaff || isAuditor) ? undefined : (userEmail ? { field: 'email', value: userEmail } : undefined)
+    );
+
+    const unsubPayments = subscribeToFirestoreCollection<PaymentTransaction>(
+      'payments',
+      (remote) => {
+        if (remote && remote.length > 0) setPayments(remote);
+      },
+      (role === 'SUPER_ADMIN' || role === 'ADMIN' || isAuditor)
+        ? undefined
+        : { field: 'userId', value: activeUid }
+    );
+
+    const unsubComplaints = subscribeToFirestoreCollection<Complaint>(
+      'complaints',
+      (remote) => {
+        if (remote && remote.length > 0) setComplaints(remote);
+      },
+      (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CO_ADMIN')
+        ? undefined
+        : { field: 'userId', value: activeUid }
+    );
+
+    const unsubAnnounce = subscribeToFirestoreCollection<Announcement>('announcements', (remote) => {
+      if (remote && remote.length > 0) setAnnouncements(remote);
+    });
+
+    const unsubUpdates = subscribeToFirestoreCollection<AppUpdate>('app_updates', (remote) => {
+      if (remote && remote.length > 0) setAppUpdates(remote);
+    });
+
+    const unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
+      if (remote && remote.length > 0) setOfficeBearers(remote);
+    });
+
+    const unsubSettings = subscribeToFirestoreCollection<AppSettings & { id?: string }>('app_settings', (remote) => {
+      if (remote && remote.length > 0) {
+        setAppSettings(prev => mergeAppSettings({ ...prev, ...remote[0] }));
+      }
+    });
+
+    const unsubAuditLogs = subscribeToFirestoreCollection<AuditLog>('audit_logs', (remote) => {
+      if (remote && remote.length > 0) {
+        setAuditLogs(prev => {
+          const map = new Map<string, AuditLog>();
+          prev.forEach(a => map.set(a.id, a));
+          remote.forEach(a => map.set(a.id, a));
+          return Array.from(map.values()).sort((a, b) =>
+            toIsoTimestamp(b.timestamp, '').localeCompare(toIsoTimestamp(a.timestamp, ''))
+          );
+        });
+      }
+    });
+
+    const unsubChats = subscribeToFirestoreCollection<ChatConversation>(
+      'chats',
+      (remote) => {
+        if (remote && remote.length > 0) {
+          setChats(prev => {
+            const map = new Map<string, ChatConversation>();
+            prev.forEach(c => map.set(c.id, c));
+            remote.forEach(c => map.set(c.id, c));
+            return Array.from(map.values()).sort((a, b) =>
+              toIsoTimestamp(b.lastMessageTime, '').localeCompare(toIsoTimestamp(a.lastMessageTime, ''))
+            );
+          });
+        }
+      },
+      role === 'SUPER_ADMIN'
+        ? undefined
+        : { field: 'participantIds', value: activeUid, op: 'array-contains' }
+    );
+
+    const mergeDirectMessages = (incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
+      if (!incoming || incoming.length === 0) return;
+      setChatMessages(prev => {
+        const map = new Map<string, ChatMessage>();
+        prev.forEach(m => map.set(m.id, m));
+        incoming.forEach(m => {
+          const safeTs = toIsoTimestamp(m.timestamp || m.createdAt || m.serverCreatedAt, new Date().toISOString());
+          const safeCreated = toIsoTimestamp(m.createdAt || m.serverCreatedAt || m.timestamp, safeTs);
+          map.set(m.id, {
+            ...m,
+            timestamp: safeTs,
+            createdAt: safeCreated,
+            deliveryStatus: m.read ? 'SEEN' : (m.deliveryStatus || 'DELIVERED')
+          });
+        });
+        return Array.from(map.values()).sort((a, b) =>
+          (a.createdAt || a.timestamp).localeCompare(b.createdAt || b.timestamp)
+        );
+      });
+    };
+
+    const unsubDirectMsgs = subscribeToFirestoreCollection<ChatMessage>(
+      'direct_messages',
+      mergeDirectMessages,
+      { field: 'participants', value: activeUid, op: 'array-contains' }
+    );
+    const unsubMsgsSent = subscribeToFirestoreCollection<ChatMessage>(
+      'chat_messages',
+      mergeDirectMessages,
+      { field: 'senderId', value: activeUid }
+    );
+    const unsubMsgsRecv = subscribeToFirestoreCollection<ChatMessage>(
+      'chat_messages',
+      mergeDirectMessages,
+      { field: 'recipientId', value: activeUid }
+    );
+
+    const mergeCommunityMessages = (incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
+      if (!incoming || incoming.length === 0) return;
+      setCommunityMessages(prev => {
+        const map = new Map<string, ChatMessage>();
+        prev.forEach(m => map.set(m.id, m));
+        incoming.forEach(m => {
+          const safeTs = toIsoTimestamp(m.timestamp || m.createdAt || m.serverCreatedAt, new Date().toISOString());
+          const safeCreated = toIsoTimestamp(m.createdAt || m.serverCreatedAt || m.timestamp, safeTs);
+          map.set(m.id, {
+            ...m,
+            timestamp: safeTs,
+            createdAt: safeCreated,
+            deliveryStatus: 'DELIVERED'
+          });
+        });
+        return Array.from(map.values()).sort((a, b) =>
+          (a.createdAt || a.timestamp).localeCompare(b.createdAt || b.timestamp)
+        );
+      });
+    };
+
+    const unsubCommunityMsgsPrimary = subscribeToFirestoreCollection<ChatMessage>(
+      'community_messages',
+      mergeCommunityMessages,
+      undefined,
+      { field: 'createdAt', direction: 'asc' }
+    );
+    const unsubCommunityMsgsLegacy = subscribeToFirestoreCollection<ChatMessage>(
+      'community_chat_messages',
+      mergeCommunityMessages
+    );
+
+    return () => {
+      unsubUsers();
+      unsubNotifications();
+      unsubApps();
+      unsubPayments();
+      unsubComplaints();
+      unsubAnnounce();
+      unsubUpdates();
+      unsubOB();
+      unsubSettings();
+      unsubAuditLogs();
+      unsubChats();
+      unsubDirectMsgs();
+      unsubMsgsSent();
+      unsubMsgsRecv();
+      unsubCommunityMsgsPrimary();
+      unsubCommunityMsgsLegacy();
+    };
+  }, [currentUserId, firebaseUser?.uid]);
+
+  // Effect C: Live Online/Offline Presence Heartbeat & Page-Close Marker
+  useEffect(() => {
+    if (!currentUserId || !isOnline) return;
+    const active = users.find(u => u.id === currentUserId);
+    if (!active) return;
+
+    saveUserToFirestore(active, { isOnline: true }).catch(() => {});
+
+    const heartbeat = window.setInterval(() => {
+      saveUserToFirestore(active, { isOnline: true }).catch(() => {});
+    }, 60000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        saveUserToFirestore(active, { isOnline: true }).catch(() => {});
+      }
+    };
+
+    const handlePageHide = () => {
+      markUserOfflineInFirestore(active).catch(() => {});
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [currentUserId, isOnline]);
+
+  const emitAuthAlertNotification = (eventType: 'USER_SIGNUP' | 'USER_LOGIN', targetUser: User) => {
+    const locationPart = [targetUser.district, targetUser.stateProvince].filter(Boolean).join(', ');
+    const notif: AppNotification = {
+      id: `notif_${eventType.toLowerCase()}_${targetUser.id}_${Date.now()}`,
+      type: eventType,
+      title: eventType === 'USER_SIGNUP'
+        ? `New Member Signed Up: ${targetUser.name}`
+        : `Member Signed In: ${targetUser.name}`,
+      message: `${targetUser.name} (${targetUser.email})${locationPart ? ` from ${locationPart}` : ''} is now Online.`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      targetRole: 'SUPER_ADMIN',
+      linkTab: 'members',
+      entityId: targetUser.id
+    };
+    setNotifications(prev => [notif, ...prev]);
+    saveNotificationToFirestore(notif).catch(() => {});
+  };
+
   const loginWithGoogleAuth = async (): Promise<User> => {
     const fbUser = await loginWithGoogle();
-    const synced = normalizeUserRecord(await syncUserWithFirestore(fbUser));
-    setUsers(prev => {
-      const idx = prev.findIndex(u => u.id === synced.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = synced;
-        return next;
-      }
-      return [synced, ...prev];
+    const rawSynced = await syncUserWithFirestore(fbUser);
+    const synced = normalizeUserRecord({
+      ...rawSynced,
+      isOnline: true,
+      status: 'online'
     });
+    const existed = users.some(u => u.email.toLowerCase() === synced.email.toLowerCase());
+    setUsers(prev => mergeUsersLists(prev, [synced], true));
     setCurrentUserId(synced.id);
     setActiveTab('dashboard');
+    saveUserToFirestore(synced, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(existed ? 'USER_LOGIN' : 'USER_SIGNUP', synced);
     return synced;
   };
 
   const logoutFirebaseAuth = async (): Promise<void> => {
+    const exitingUser = currentUser;
+    if (exitingUser) {
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === exitingUser.id
+            ? { ...u, isOnline: false, status: 'offline', lastSeen: new Date().toISOString() }
+            : u
+        )
+      );
+      await markUserOfflineInFirestore(exitingUser).catch(() => {});
+    }
     try {
       await logoutUser();
     } catch {
@@ -925,8 +1100,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return res;
   };
 
-  const upsertVerifiedUserByEmail = (normEmail: string, options?: { hasPassword?: boolean; name?: string }): User => {
-    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+  const upsertVerifiedUserByEmail = (
+    normEmail: string,
+    options?: { hasPassword?: boolean; name?: string; remoteExisting?: User | null }
+  ): { user: User; isNewSignup: boolean } => {
+    const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
+    const existing = options?.remoteExisting
+      ? normalizeUserRecord({ ...(localExisting || {}), ...options.remoteExisting })
+      : localExisting;
     const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
     const nowIso = new Date().toISOString();
 
@@ -934,18 +1115,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (existing) {
         const updatedSuperAdmin: User = normalizeUserRecord({
           ...existing,
+          id: existing.id || 'usr_super_admin',
           role: 'SUPER_ADMIN',
           isFounder: true,
           isStaff: true,
           isSuspended: false,
           profileCompleted: true,
+          isOnline: true,
+          lastSeen: nowIso,
           status: 'online',
           lastLoginAt: nowIso,
           hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
         });
-        setUsers(prev => prev.map(u => (u.id === existing.id ? updatedSuperAdmin : u)));
-        ensureFirebaseAuthSession().then(() => saveUserToFirestore(updatedSuperAdmin)).catch(() => {});
-        return updatedSuperAdmin;
+        setUsers(prev => mergeUsersLists(prev, [updatedSuperAdmin], true));
+        saveUserToFirestore(updatedSuperAdmin, { isOnline: true }).catch(() => {});
+        return { user: updatedSuperAdmin, isNewSignup: false };
       }
 
       const joinDate = nowIso.split('T')[0];
@@ -960,6 +1144,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role: 'SUPER_ADMIN',
         isFounder: true,
         profileCompleted: true,
+        isOnline: true,
+        lastSeen: nowIso,
+        province: 'Islamabad Capital Territory',
         status: 'online',
         lastLoginAt: nowIso,
         createdAt: nowIso,
@@ -983,21 +1170,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isStaff: true,
         notes: 'Verified Founder Super Admin'
       });
-      setUsers(prev => [founderUser, ...prev]);
-      ensureFirebaseAuthSession().then(() => saveUserToFirestore(founderUser)).catch(() => {});
-      return founderUser;
+      setUsers(prev => mergeUsersLists(prev, [founderUser], true));
+      saveUserToFirestore(founderUser, { isOnline: true }).catch(() => {});
+      return { user: founderUser, isNewSignup: false };
     }
 
     if (existing) {
       const updatedExisting = normalizeUserRecord({
         ...existing,
+        isOnline: true,
+        lastSeen: nowIso,
         status: 'online',
         lastLoginAt: nowIso,
         hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
       });
-      setUsers(prev => prev.map(u => (u.id === existing.id ? updatedExisting : u)));
-      ensureFirebaseAuthSession().then(() => saveUserToFirestore(updatedExisting)).catch(() => {});
-      return updatedExisting;
+      setUsers(prev => mergeUsersLists(prev, [updatedExisting], true));
+      saveUserToFirestore(updatedExisting, { isOnline: true }).catch(() => {});
+      return { user: updatedExisting, isNewSignup: false };
     }
 
     const joinDate = nowIso.split('T')[0];
@@ -1009,13 +1198,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'New Member';
 
     const newMember: User = normalizeUserRecord({
-      id: `usr_${Date.now()}`,
+      id: buildSafeEmailUserId(normEmail),
       name: derivedName,
       email: normEmail,
       phone: '',
       role: 'MEMBER',
       isFounder: false,
       profileCompleted: false,
+      isOnline: true,
+      lastSeen: nowIso,
+      province: 'Punjab',
       status: 'online',
       lastLoginAt: nowIso,
       createdAt: nowIso,
@@ -1040,9 +1232,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notes: 'Instant login cloud sync (Profile Pending)'
     });
 
-    setUsers(prev => [newMember, ...prev]);
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(newMember)).catch(() => {});
-    return newMember;
+    setUsers(prev => mergeUsersLists(prev, [newMember], true));
+    saveUserToFirestore(newMember, { isOnline: true }).catch(() => {});
+    return { user: newMember, isNewSignup: true };
   };
 
   const verifyOTP = async (email: string, code: string): Promise<OTPVerifyResult & { user?: User }> => {
@@ -1056,7 +1248,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearPendingEmailOTP();
 
     const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
-    const matched = upsertVerifiedUserByEmail(normEmail);
+    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
+    const { user: matched, isNewSignup } = upsertVerifiedUserByEmail(normEmail, { remoteExisting });
     if (matched.isSuspended && !isFounderUser(matched)) {
       return {
         success: false,
@@ -1066,7 +1259,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCurrentUserId(matched.id);
     setActiveTab('dashboard');
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(matched)).catch(() => {});
+    saveUserToFirestore(matched, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', matched);
     return { ...res, user: matched };
   };
 
@@ -1082,7 +1276,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Please enter your password.' };
     }
 
-    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
+    const existing = remoteExisting || users.find(u => u.email.toLowerCase() === normEmail);
     const hasPwd = hasLocalPasswordCredential(normEmail);
 
     if (!hasPwd) {
@@ -1108,10 +1303,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    const loggedInUser = upsertVerifiedUserByEmail(normEmail, { hasPassword: true });
+    const { user: loggedInUser, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
+      hasPassword: true,
+      remoteExisting
+    });
     setCurrentUserId(loggedInUser.id);
     setActiveTab('dashboard');
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(loggedInUser)).catch(() => {});
+    saveUserToFirestore(loggedInUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', loggedInUser);
     return { success: true, message: 'Signed in successfully.', user: loggedInUser };
   };
 
@@ -1124,10 +1323,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Password must be at least 6 characters long.' };
     }
     await saveLocalPasswordCredential(normEmail, password);
-    const user = upsertVerifiedUserByEmail(normEmail, { hasPassword: true });
+    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
+    const { user, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
+      hasPassword: true,
+      remoteExisting
+    });
     setCurrentUserId(user.id);
     setActiveTab('dashboard');
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(user)).catch(() => {});
+    saveUserToFirestore(user, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', user);
     return { success: true, message: 'Password saved and signed in.', user };
   };
 
@@ -1144,7 +1348,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map(u => {
         if (u.email.toLowerCase() === normEmail) {
           const updated = { ...u, hasPassword: true };
-          saveUserToFirestore(updated).catch(() => {});
+          saveUserToFirestore(updated, { isOnline: u.id === currentUserId }).catch(() => {});
           return updated;
         }
         return u;
@@ -1202,11 +1406,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev =>
+      prev.map(n => {
+        if (n.id === id) {
+          const updated = { ...n, read: true };
+          saveNotificationToFirestore(updated).catch(() => {});
+          return updated;
+        }
+        return n;
+      })
+    );
   };
 
   const markAllNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev =>
+      prev.map(n => {
+        if (!n.read) {
+          const updated = { ...n, read: true };
+          saveNotificationToFirestore(updated).catch(() => {});
+          return updated;
+        }
+        return n;
+      })
+    );
   };
 
   const clearAllNotifications = () => {
@@ -1640,8 +1862,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setApplications(prev => [newApp, ...prev]);
     ensureFirebaseAuthSession().then(() => saveApplicationToFirestore(newApp)).catch(() => {});
 
-    // Also create / sign in persistent user profile so OTP-verified signup logs straight in cleanly
-    const existing = users.find(u => u.email.toLowerCase() === normEmail);
+    const remoteRegMatch = await findExistingFirestoreUserByEmail(normEmail);
+    const existing = remoteRegMatch || users.find(u => u.email.toLowerCase() === normEmail);
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
     const joinDate = new Date().toISOString().split('T')[0];
@@ -1657,18 +1879,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           avatarUrl: photo,
           photoUrl: photo,
           stateProvince: prov,
+          province: prov,
           district: dist,
           tehsil: data.tehsil || data.cityTown || dist,
           cityTown: data.cityTown || dist,
           unionCouncil: data.unionCouncil || existing.unionCouncil,
           address: data.address || existing.address,
           profileCompleted: true,
+          isOnline: true,
+          lastSeen: nowIso,
           status: 'online',
           lastLoginAt: nowIso,
           hasPassword: Boolean(data.password) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
         })
       : normalizeUserRecord({
-          id: `usr_${Date.now()}`,
+          id: buildSafeEmailUserId(normEmail),
           name: data.applicantName,
           email: normEmail,
           phone: data.phone,
@@ -1702,18 +1927,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           notes: 'Registered via Email OTP + Password flow'
         });
 
-    setUsers(prev => {
-      const idx = prev.findIndex(u => u.id === registeredUser.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = registeredUser;
-        return next;
-      }
-      return [registeredUser, ...prev];
-    });
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(registeredUser)).catch(() => {});
+    setUsers(prev => mergeUsersLists(prev, [registeredUser], true));
+    saveUserToFirestore(registeredUser, { isOnline: true }).catch(() => {});
     setCurrentUserId(registeredUser.id);
     setActiveTab('dashboard');
+    emitAuthAlertNotification('USER_SIGNUP', registeredUser);
 
     logAudit(
       'NEW_MEMBERSHIP_APPLICATION_SUBMITTED',
@@ -2608,6 +2826,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
     const deliveryStatus = isOnline ? 'DELIVERED' : 'QUEUED';
 
+    const nowIso = new Date().toISOString();
     const newMsg: ChatMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       chatId,
@@ -2616,8 +2835,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderRole: currentUser.role,
       recipientId,
       recipientName: recipient.name,
+      participants: sortedIds,
       text: cleanText,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
+      createdAt: nowIso,
       read: false,
       deliveryStatus,
       attachmentUrl: attachment?.url,
@@ -2748,6 +2969,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!cleanText) return { success: false, error: 'Cannot send an empty message.' };
 
+    const nowIso = new Date().toISOString();
     const msg: ChatMessage = {
       id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       chatId: 'community_global_room',
@@ -2761,7 +2983,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       recipientId: 'ALL',
       recipientName: 'Kifayat Community Room',
       text: cleanText,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
+      createdAt: nowIso,
       read: true,
       deliveryStatus: isOnline ? 'DELIVERED' : 'QUEUED',
       attachmentUrl: payload.attachment?.url,
@@ -3057,9 +3280,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeCompleteProfileModal,
         liveChatDisplayMode,
         unreadCommunityCount,
+        preferredChatMode,
+        setPreferredChatMode,
         minimizeLiveChat,
         hideLiveChat,
+        closeAndHideLiveChat,
         restoreLiveChat,
+        openPersonalMessage,
         inspectedUserProfile,
         setInspectedUserProfile,
         canAccess,

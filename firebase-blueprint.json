@@ -34,6 +34,9 @@
         "joinDate": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
         "lastLoginAt": { "type": "string", "maxLength": 50 },
+        "isOnline": { "type": "boolean" },
+        "lastSeen": { "type": "string", "maxLength": 60 },
+        "province": { "type": "string", "maxLength": 100 },
         "status": { "type": "string", "maxLength": 40 },
         "profileCompleted": { "type": "boolean" },
         "isStaff": { "type": "boolean" },
@@ -150,8 +153,10 @@
         "chatId": { "type": "string", "maxLength": 128 },
         "senderId": { "type": "string", "maxLength": 128 },
         "recipientId": { "type": "string", "maxLength": 128 },
+        "participants": { "type": "array" },
         "text": { "type": "string", "maxLength": 2000 },
-        "timestamp": { "type": "string", "maxLength": 40 }
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "maxLength": 40 }
       },
       "required": ["id", "senderId", "recipientId", "text", "timestamp"]
     },
@@ -171,12 +176,29 @@
         "senderBubbleColor": { "type": "string", "maxLength": 40 },
         "text": { "type": "string", "maxLength": 4000 },
         "timestamp": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "maxLength": 40 },
         "islamicGifId": { "type": "string", "maxLength": 64 },
         "isHighlighted": { "type": "boolean" },
         "isPinned": { "type": "boolean" },
         "isDeleted": { "type": "boolean" }
       },
       "required": ["id", "chatId", "senderId", "senderName", "senderRole", "text", "timestamp"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Real-time cross-device alerts including Super Admin sign-up/login bells, approvals, and payments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "maxLength": 60 },
+        "title": { "type": "string", "maxLength": 160 },
+        "message": { "type": "string", "maxLength": 500 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "read": { "type": "boolean" },
+        "targetRole": { "type": "string", "maxLength": 40 },
+        "targetUserId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "type", "title", "message", "timestamp", "read"]
     }
   },
   "firestore": {
@@ -208,13 +230,25 @@
       "schema": { "$ref": "#/entities/ChatConversation" },
       "description": "Private 1-to-1 chat threads"
     },
+    "/direct_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Private 1-on-1 direct messages synced across devices"
+    },
     "/chat_messages/{messageId}": {
       "schema": { "$ref": "#/entities/ChatMessage" },
-      "description": "Direct chat messages and attachments"
+      "description": "Direct chat messages and attachments (legacy alias)"
+    },
+    "/community_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/CommunityChatMessage" },
+      "description": "Live Community Room messages synced across devices"
     },
     "/community_chat_messages/{messageId}": {
       "schema": { "$ref": "#/entities/CommunityChatMessage" },
-      "description": "Live Community Room messages, voice notes, Islamic GIFs, reactions, and Founder pins"
+      "description": "Live Community Room messages (legacy alias)"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "Real-time user and Super Admin alerts"
     }
   }
 }

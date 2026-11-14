@@ -23,6 +23,7 @@ import { AssignRoleModal } from '../common/AssignRoleModal';
 
 interface MemberRowProps {
   member: User;
+  isCurrentUser: boolean;
   canViewSensitive: boolean;
   canAssignRole: boolean;
   onInspect: (u: User) => void;
@@ -32,8 +33,15 @@ interface MemberRowProps {
   onAssignRole: (u: User) => void;
 }
 
+function isMemberOnline(member: User, isSelf: boolean): boolean {
+  if (isSelf) return true;
+  if (member.isOnline !== undefined) return Boolean(member.isOnline);
+  return member.status === 'online';
+}
+
 const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   member,
+  isCurrentUser,
   canViewSensitive,
   canAssignRole,
   onInspect,
@@ -46,24 +54,43 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   const dist = member.district || fallback.district;
   const isProfilePending = member.profileCompleted === false && !member.isFounder;
   const avatarSrc = member.avatarUrl || member.photoUrl;
+  const onlineNow = isMemberOnline(member, isCurrentUser);
 
   return (
     <div className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#111622] space-y-2.5 shadow-2xs">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          {avatarSrc ? (
-            <img
-              src={avatarSrc}
-              alt={member.name}
-              className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/40 shrink-0"
+          <div className="relative shrink-0">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={member.name}
+                className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/40"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-sm">
+                {member.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#111622] ${
+                onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
+              }`}
             />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-sm shrink-0">
-              {member.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          </div>
           <div className="min-w-0">
-            <span className="font-bold text-xs text-white block truncate">{member.name}</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-xs text-white truncate">{member.name}</span>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                  onlineNow
+                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                }`}
+              >
+                {onlineNow ? '🟢 Online' : '⚫ Offline'}
+              </span>
+            </div>
             <span className="font-mono text-[10px] text-[#F5D061] font-semibold block">
               {member.membershipId || 'KC-PENDING'}
             </span>
@@ -155,8 +182,7 @@ export const MemberDirectory: React.FC = () => {
     users,
     setSelectedCardUser,
     setInspectedUserProfile,
-    setActiveChatUser,
-    setActiveTab,
+    openPersonalMessage,
     syncAllUsersToCloud
   } = useApp();
 
@@ -222,8 +248,7 @@ export const MemberDirectory: React.FC = () => {
   };
 
   const handleOpenMessage = (member: User) => {
-    setActiveChatUser(member);
-    setActiveTab('chat');
+    openPersonalMessage(member);
   };
 
   return (
@@ -343,6 +368,7 @@ export const MemberDirectory: React.FC = () => {
             <MemberCardMobile
               key={member.id}
               member={member}
+              isCurrentUser={member.id === currentUser.id}
               canViewSensitive={isPrivilegedViewer || member.id === currentUser.id}
               canAssignRole={currentIsFounder && !isFounderUser(member)}
               onInspect={setInspectedUserProfile}
@@ -385,24 +411,43 @@ export const MemberDirectory: React.FC = () => {
                   const canSeeSensitive = isPrivilegedViewer || member.id === currentUser.id;
                   const isProfilePending = member.profileCompleted === false && !member.isFounder;
                   const avatarSrc = member.avatarUrl || member.photoUrl;
+                  const onlineNow = isMemberOnline(member, member.id === currentUser.id);
 
                   return (
                     <tr key={member.id} className="hover:bg-[#161D2C]/60 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          {avatarSrc ? (
-                            <img
-                              src={avatarSrc}
-                              alt={member.name}
-                              className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40 shrink-0"
+                          <div className="relative shrink-0">
+                            {avatarSrc ? (
+                              <img
+                                src={avatarSrc}
+                                alt={member.name}
+                                className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#111622] ${
+                                onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
+                              }`}
                             />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs shrink-0">
-                              {member.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          </div>
                           <div>
-                            <span className="font-bold text-white block">{member.name}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-white">{member.name}</span>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                  onlineNow
+                                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
+                                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                }`}
+                              >
+                                {onlineNow ? '🟢 Online' : '⚫ Offline'}
+                              </span>
+                            </div>
                             <span className="font-mono text-[11px] text-[#F5D061] font-semibold">
                               {member.membershipId || 'KC-PENDING'}
                             </span>

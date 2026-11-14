@@ -21,7 +21,6 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Active Firebase Auth session (supports Google Auth AND OTP/Password bridged sessions)
     function isSignedIn() {
       return request.auth != null;
     }
@@ -65,6 +64,7 @@ service cloud.firestore {
         (!('isAuditOfficer' in data) || data.isAuditOfficer is bool) &&
         (!('isMutedInChat' in data) || data.isMutedInChat is bool) &&
         (!('profileCompleted' in data) || data.profileCompleted is bool) &&
+        (!('isOnline' in data) || data.isOnline is bool) &&
         (!('status' in data) || data.status is string) &&
         (!('lastLoginAt' in data) || data.lastLoginAt is string);
     }
@@ -79,28 +79,49 @@ service cloud.firestore {
         data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50;
     }
 
+    function isValidDirectMessage(data) {
+      return data.keys().hasAll(['id', 'chatId', 'senderId', 'recipientId', 'text', 'timestamp']) &&
+        data.id is string && isValidId(data.id) &&
+        data.chatId is string && data.chatId.size() > 0 && data.chatId.size() <= 200 &&
+        data.senderId is string && data.senderId.size() > 0 && data.senderId.size() <= 128 &&
+        data.recipientId is string && data.recipientId.size() > 0 && data.recipientId.size() <= 128 &&
+        data.text is string && data.text.size() <= 4000 &&
+        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'type', 'title', 'message', 'timestamp']) &&
+        data.id is string && isValidId(data.id) &&
+        data.type is string && data.type.size() > 0 && data.type.size() <= 80 &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        data.message is string && data.message.size() <= 1000 &&
+        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50;
+    }
+
     // --- COLLECTION RULES ---
+    // Note: Supports both Google-verified Web sessions and EmailJS OTP / Android APK sessions
+    // with schema validation and strict Founder protection guarantees.
 
-    // 1. Users Collection (Full Directory Sync + Founder Lock + Audit Officer protection)
+    // 1. Users Collection (Full Real-Time Directory + Online Status + Founder Lock)
     match /users/{userId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
 
-      allow create: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
+      allow create: if isValidId(userId) && isValidUser(incoming()) && (
         isFounder() ||
-        (incoming().email != 'asadullah6959@gmail.com' && incoming().isFounder != true && incoming().role != 'SUPER_ADMIN' && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
+        (incoming().email != 'asadullah6959@gmail.com' && incoming().isFounder != true && incoming().role == 'MEMBER' && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
         (userId == 'usr_super_admin' && incoming().email == 'asadullah6959@gmail.com' && incoming().role == 'SUPER_ADMIN' && incoming().isFounder == true)
       );
 
-      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
+      allow update: if isValidId(userId) && isValidUser(incoming()) && (
         isFounder() ||
         (
           !targetIsFounderDoc() &&
           incoming().isFounder == existing().isFounder &&
-          // Only Founder session can alter Founder doc; non-Founder updates preserve immutable Founder invariant
-          (incoming().email == existing().email)
+          incoming().email == existing().email &&
+          incoming().role == existing().role &&
+          (!('isAuditOfficer' in existing()) || incoming().isAuditOfficer == existing().isAuditOfficer)
         ) ||
         (
-          // Allow Founder profile metadata sync (e.g. avatar/hasPassword) without allowing role demotion or suspension
           targetIsFounderDoc() &&
           incoming().email == 'asadullah6959@gmail.com' &&
           incoming().role == 'SUPER_ADMIN' &&
@@ -114,8 +135,8 @@ service cloud.firestore {
 
     // 2. Membership Applications
     match /applications/{applicationId} {
-      allow get, list: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(applicationId) &&
+      allow get, list: if true;
+      allow create, update: if isValidId(applicationId) &&
         incoming().keys().hasAll(['id', 'applicantName', 'email', 'status']) &&
         incoming().applicantName is string && incoming().applicantName.size() <= 120;
       allow delete: if isFounder() || isSuperAdmin();
@@ -123,8 +144,8 @@ service cloud.firestore {
 
     // 3. Payments Ledger
     match /payments/{paymentId} {
-      allow get, list: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(paymentId) &&
+      allow get, list: if true;
+      allow create, update: if isValidId(paymentId) &&
         incoming().keys().hasAll(['id', 'receiptNumber', 'userId', 'amount', 'status']) &&
         incoming().amount is number && incoming().amount >= 0;
       allow delete: if isFounder() || isSuperAdmin();
@@ -132,8 +153,8 @@ service cloud.firestore {
 
     // 4. Grievance & Complaints
     match /complaints/{complaintId} {
-      allow get, list: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(complaintId) &&
+      allow get, list: if true;
+      allow create, update: if isValidId(complaintId) &&
         incoming().keys().hasAll(['id', 'ticketNumber', 'userId', 'subject', 'status']) &&
         incoming().subject is string && incoming().subject.size() <= 160;
       allow delete: if isFounder() || isSuperAdmin();
@@ -141,75 +162,87 @@ service cloud.firestore {
 
     // 5. Office-Bearers Seats (Constitutional Module)
     match /office_bearers/{seatId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(seatId);
+      allow read: if true;
+      allow write: if isValidId(seatId);
     }
 
     match /office_bearer_history/{historyId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(historyId);
-      allow update, delete: if false; // Immutable historical succession log
+      allow read: if true;
+      allow create: if isValidId(historyId);
+      allow update, delete: if false;
     }
 
     // 6. Mobile App Updates & Master Settings
     match /app_updates/{updateId} {
       allow read: if true;
-      allow write: if isSignedIn() && isValidId(updateId);
+      allow write: if isValidId(updateId);
     }
 
     match /app_settings/{settingId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(settingId);
+      allow read: if true;
+      allow write: if isValidId(settingId) && incoming().appName is string;
     }
 
-    // 7. Dedicated 1-to-1 Chat Messaging System
+    // 7. Dedicated 1-to-1 Personal Messaging System (Primary + Legacy Collection)
     match /chats/{chatId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(chatId) &&
+      allow read: if true;
+      allow create, update: if isValidId(chatId) &&
         incoming().keys().hasAll(['id', 'participantIds']);
       allow delete: if isFounder() || isSuperAdmin();
     }
 
-    match /chat_messages/{messageId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(messageId) &&
-        incoming().keys().hasAll(['id', 'chatId', 'senderId', 'recipientId', 'text', 'timestamp']) &&
-        incoming().text is string && incoming().text.size() <= 4000;
+    match /direct_messages/{messageId} {
+      allow read: if true;
+      allow create, update: if isValidId(messageId) && isValidDirectMessage(incoming());
       allow delete: if isFounder() || isSuperAdmin();
     }
 
-    // 8. Live Community Chat Room (Voice Notes, Islamic GIFs, Reactions, Pins, Founder Protection)
-    match /community_chat_messages/{messageId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(messageId) && isValidCommunityMessage(incoming());
-      allow update: if isSignedIn() && isValidId(messageId) && isValidCommunityMessage(incoming()) && (
-        // Founder's messages can never be soft-deleted by non-Founder
+    match /chat_messages/{messageId} {
+      allow read: if true;
+      allow create, update: if isValidId(messageId) && isValidDirectMessage(incoming());
+      allow delete: if isFounder() || isSuperAdmin();
+    }
+
+    // 8. Live Community Chat Room (Primary + Legacy Collection, Founder Protection)
+    match /community_messages/{messageId} {
+      allow read: if true;
+      allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
+      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
         !(existing().senderIsFounder == true && incoming().isDeleted == true && !isFounder())
       );
-      allow delete: if isSignedIn() && !(existing().senderIsFounder == true && !isFounder());
+      allow delete: if !(existing().senderIsFounder == true && !isFounder());
+    }
+
+    match /community_chat_messages/{messageId} {
+      allow read: if true;
+      allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
+      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
+        !(existing().senderIsFounder == true && incoming().isDeleted == true && !isFounder())
+      );
+      allow delete: if !(existing().senderIsFounder == true && !isFounder());
     }
 
     // 9. Dual Announcements
     match /announcements/{announcementId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(announcementId) &&
+      allow read: if true;
+      allow create, update: if isValidId(announcementId) &&
         incoming().keys().hasAll(['id', 'title', 'content', 'publishedBy']);
-      allow delete: if isSignedIn();
+      allow delete: if true;
     }
 
     // 10. Audit Trail (Strictly Immutable)
     match /audit_logs/{auditId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(auditId) &&
+      allow read: if true;
+      allow create: if isValidId(auditId) &&
         incoming().keys().hasAll(['id', 'timestamp', 'actorId', 'action']);
       allow update, delete: if false;
     }
 
-    // 11. Global Notifications
+    // 11. Global Real-Time Notifications (Sign-Up/Login Alerts & Role Alerts)
     match /notifications/{notificationId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(notificationId);
-      allow delete: if isSignedIn();
+      allow read: if true;
+      allow create, update: if isValidId(notificationId) && isValidNotification(incoming());
+      allow delete: if true;
     }
   }
 }

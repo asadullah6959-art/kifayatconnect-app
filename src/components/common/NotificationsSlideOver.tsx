@@ -14,7 +14,8 @@ import {
   AlertTriangle, 
   Megaphone,
   ArrowRight,
-  Filter
+  UserPlus,
+  LogIn
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AppNotification, NotificationType } from '../../types';
@@ -110,6 +111,10 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
         return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
       case 'ANNOUNCEMENT_NEW':
         return <Megaphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
+      case 'USER_SIGNUP':
+        return <UserPlus className="w-5 h-5 text-emerald-500" />;
+      case 'USER_LOGIN':
+        return <LogIn className="w-5 h-5 text-[#F5D061]" />;
       default:
         return <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />;
     }
@@ -119,7 +124,10 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     switch (type) {
       case 'MEMBERSHIP_APPROVED':
       case 'PAYMENT_VERIFIED':
+      case 'USER_SIGNUP':
         return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+      case 'USER_LOGIN':
+        return 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
       case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':

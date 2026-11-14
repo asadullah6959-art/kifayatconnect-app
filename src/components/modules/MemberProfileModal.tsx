@@ -22,11 +22,12 @@ interface MemberProfileModalProps {
 }
 
 export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, onClose }) => {
-  const { currentUser, setActiveTab, setActiveChatUser, language, setSelectedCardUser } = useApp();
+  const { currentUser, openPersonalMessage, language, setSelectedCardUser } = useApp();
 
   if (!user || !currentUser) return null;
 
   const isSelf = currentUser.id === user.id;
+  const isUserOnline = isSelf || (user.isOnline !== undefined ? Boolean(user.isOnline) : user.status === 'online');
   const isPrivilegedViewer =
     currentUser.role === 'SUPER_ADMIN' ||
     currentUser.role === 'ADMIN' ||
@@ -35,8 +36,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
   const showContact = isSelf || isPrivilegedViewer;
 
   const handleStartChat = () => {
-    setActiveChatUser(user);
-    setActiveTab('chat');
+    openPersonalMessage(user);
     onClose();
   };
 
@@ -45,10 +45,10 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
     onClose();
   };
 
-  const avatarSrc = user.avatarUrl || user.avatar;
+  const avatarSrc = user.avatarUrl || user.photoUrl || user.avatar;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] bg-slate-950/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div
         className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-y-auto relative my-auto max-h-[92dvh]"
         style={{ WebkitOverflowScrolling: 'touch' }}
@@ -79,16 +79,27 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               )}
               <span
                 className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-900 ${
-                  (user.membershipStatus || user.status) === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
+                  isUserOnline ? 'bg-emerald-500' : 'bg-slate-500'
                 }`}
               />
             </div>
 
             <div className="flex flex-col items-end gap-1.5">
               <RoleBadge role={user.role} isFounder={Boolean(user.isFounder)} isAuditOfficer={Boolean(user.isAuditOfficer)} />
-              <span className="text-[11px] font-mono font-medium text-amber-400">
-                {user.membershipId || 'KC-PENDING'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    isUserOnline
+                      ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}
+                >
+                  {isUserOnline ? '🟢 Online' : '⚫ Offline'}
+                </span>
+                <span className="text-[11px] font-mono font-medium text-amber-400">
+                  {user.membershipId || 'KC-PENDING'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -178,11 +189,12 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
           <div className="mt-6 flex items-center gap-3">
             {!isSelf && (
               <button
+                type="button"
                 onClick={handleStartChat}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>{language === 'ur' ? 'پیغام بھیجیں' : 'Message'}</span>
+                <span>{language === 'ur' ? 'ذاتی پیغام (💬)' : 'Personal Message'}</span>
               </button>
             )}
 

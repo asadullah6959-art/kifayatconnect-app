@@ -14,13 +14,14 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  updateDoc,
   deleteDoc,
   collection,
   onSnapshot,
   getDocFromServer,
   query,
   where,
+  orderBy,
+  serverTimestamp,
   Unsubscribe
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -173,50 +174,130 @@ export async function logoutUser(): Promise<void> {
   }
 }
 
+export function toIsoTimestamp(val: unknown, fallback = ''): string {
+  if (!val) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') {
+    try {
+      return new Date(val).toISOString();
+    } catch {
+      return fallback;
+    }
+  }
+  if (val instanceof Date) {
+    return Number.isNaN(val.getTime()) ? fallback : val.toISOString();
+  }
+  if (typeof val === 'object') {
+    const obj = val as { toDate?: () => Date; seconds?: number };
+    if (typeof obj.toDate === 'function') {
+      try {
+        const d = obj.toDate();
+        return Number.isNaN(d.getTime()) ? fallback : d.toISOString();
+      } catch {
+        return fallback;
+      }
+    }
+    if (typeof obj.seconds === 'number') {
+      try {
+        return new Date(obj.seconds * 1000).toISOString();
+      } catch {
+        return fallback;
+      }
+    }
+  }
+  return fallback;
+}
+
+export function buildSafeEmailUserId(email: string): string {
+  const norm = email.trim().toLowerCase();
+  if (norm === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+    return 'usr_super_admin';
+  }
+  const sanitized = norm.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return `usr_${sanitized.slice(0, 80) || Date.now().toString()}`;
+}
+
+export async function findExistingFirestoreUserByEmail(email: string): Promise<User | null> {
+  const normEmail = email.trim().toLowerCase();
+  if (!normEmail) return null;
+  try {
+    const q = query(collection(db, 'users'), where('email', '==', normEmail));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs[0].data() as User;
+    }
+    const candidateId = buildSafeEmailUserId(normEmail);
+    const directSnap = await getDoc(doc(db, 'users', candidateId));
+    if (directSnap.exists()) {
+      return directSnap.data() as User;
+    }
+  } catch (err) {
+    console.warn('Firestore user email lookup warning:', err);
+  }
+  return null;
+}
+
 /**
  * Synchronizes the Firebase authenticated user with their Firestore /users/{uid} document.
- * Enforces trusted server-side authorization:
- * - If email is asadullah6959@gmail.com, assigns SUPER_ADMIN role with full governance authority.
- * - Otherwise defaults strictly to MEMBER role unless previously appointed as ADMIN/CO_ADMIN.
+ * Preserves existing Email-OTP account record if matched by email so no duplicate users appear.
  */
 export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise<User> {
-  const userDocRef = doc(db, 'users', firebaseUser.uid);
-  const path = `users/${firebaseUser.uid}`;
+  const normEmail = (firebaseUser.email || '').trim().toLowerCase();
+  const existingByEmail = normEmail ? await findExistingFirestoreUserByEmail(normEmail) : null;
+  const targetDocId = existingByEmail?.id || (
+    normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase() ? 'usr_super_admin' : firebaseUser.uid
+  );
+  const userDocRef = doc(db, 'users', targetDocId);
+  const path = `users/${targetDocId}`;
 
   try {
-    const docSnap = await getDoc(userDocRef);
-    const isSuperAdminEmail = firebaseUser.email?.toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+    const docSnap = existingByEmail ? { exists: () => true, data: () => existingByEmail } : await getDoc(userDocRef);
+    const isSuperAdminEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
 
     if (docSnap.exists()) {
       const existingData = docSnap.data() as User;
-      const normalizedRole = normalizeLegacyRole(existingData.role, firebaseUser.email || existingData.email);
+      const normalizedRole = normalizeLegacyRole(existingData.role, normEmail || existingData.email);
       const shouldBeFounder = isSuperAdminEmail || existingData.isFounder === true;
-      const hasPwd = existingData.hasPassword || hasLocalPasswordCredential(firebaseUser.email || existingData.email);
+      const hasPwd = existingData.hasPassword || hasLocalPasswordCredential(normEmail || existingData.email);
       const inferredProfileCompleted = shouldBeFounder
         ? true
         : existingData.profileCompleted !== undefined
         ? Boolean(existingData.profileCompleted)
         : Boolean((existingData.cnic && existingData.cnic.trim()) || (existingData.address && existingData.address.trim()) || normalizedRole !== 'MEMBER');
       const nowIso = new Date().toISOString();
+      const photo = existingData.photoUrl || existingData.avatarUrl || firebaseUser.photoURL || undefined;
 
       const updated: User = {
         ...existingData,
+        id: targetDocId,
+        email: normEmail || existingData.email,
         role: normalizedRole,
         isFounder: shouldBeFounder,
         isStaff: normalizedRole !== 'MEMBER',
         hasPassword: hasPwd,
         profileCompleted: inferredProfileCompleted,
+        photoUrl: photo,
+        avatarUrl: photo,
+        isOnline: true,
+        lastSeen: nowIso,
         status: 'online',
         lastLoginAt: nowIso
       };
       await setDoc(
         userDocRef,
         {
+          id: targetDocId,
+          email: normEmail || existingData.email,
           role: normalizedRole,
           isFounder: shouldBeFounder,
           isStaff: normalizedRole !== 'MEMBER',
           hasPassword: hasPwd,
           profileCompleted: inferredProfileCompleted,
+          photoUrl: photo || '',
+          avatarUrl: photo || '',
+          province: existingData.stateProvince || existingData.province || 'Punjab',
+          isOnline: true,
+          lastSeen: serverTimestamp(),
           status: 'online',
           lastLoginAt: nowIso
         },
@@ -230,19 +311,22 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
     const joinDate = nowIso.split('T')[0];
     const expiryDate = new Date();
     expiryDate.setFullYear(expiryDate.getFullYear() + 3);
-    const emailPrefix = firebaseUser.email
-      ? firebaseUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    const emailPrefix = normEmail
+      ? normEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
       : 'Registered Member';
 
     const newUser: User = {
-      id: firebaseUser.uid,
+      id: targetDocId,
       name: isSuperAdminEmail ? 'Asadullah (Founder Super Admin)' : (firebaseUser.displayName || emailPrefix),
-      email: firebaseUser.email || '',
+      email: normEmail,
       phone: firebaseUser.phoneNumber || '',
       role: isSuperAdminEmail ? 'SUPER_ADMIN' : 'MEMBER',
       isFounder: isSuperAdminEmail,
-      hasPassword: hasLocalPasswordCredential(firebaseUser.email || ''),
+      hasPassword: hasLocalPasswordCredential(normEmail),
       profileCompleted: isSuperAdminEmail,
+      isOnline: true,
+      lastSeen: nowIso,
+      province: isSuperAdminEmail ? 'Islamabad Capital Territory' : 'Punjab',
       status: 'online',
       lastLoginAt: nowIso,
       createdAt: nowIso,
@@ -256,6 +340,7 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       membershipStatus: 'ACTIVE',
       verificationStatus: 'VERIFIED',
       avatarUrl: firebaseUser.photoURL || undefined,
+      photoUrl: firebaseUser.photoURL || undefined,
       cnic: '',
       address: isSuperAdminEmail ? 'Central Secretariat, Islamabad' : '',
       joinDate,
@@ -267,7 +352,10 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       notes: isSuperAdminEmail ? 'Verified Founder Super Admin authorized via Google Identity' : 'Authenticated Member (Profile Pending)'
     };
 
-    await setDoc(userDocRef, normalizeUserForCloud(newUser), { merge: true });
+    await setDoc(userDocRef, {
+      ...normalizeUserForCloud(newUser, { isOnline: true }),
+      lastSeen: serverTimestamp()
+    }, { merge: true });
     return newUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
@@ -854,45 +942,81 @@ function stripUndefinedDeep<T>(value: T): T {
   return value;
 }
 
-export function normalizeUserForCloud(user: User): Record<string, unknown> {
+export function normalizeUserForCloud(
+  user: User,
+  options?: { isOnline?: boolean }
+): Record<string, unknown> {
   const photo = user.photoUrl || user.avatarUrl || user.avatar || '';
   const memId = user.memberId || user.membershipId || '';
-  const statusStr = user.status || 'online';
+  const onlineFlag = options?.isOnline !== undefined ? options.isOnline : (user.isOnline !== undefined ? user.isOnline : user.status !== 'offline');
+  const statusStr = onlineFlag ? 'online' : 'offline';
   const nowIso = new Date().toISOString();
+  const provinceVal = user.stateProvince || user.province || 'Punjab';
   return stripUndefinedDeep({
     ...user,
+    email: (user.email || '').trim().toLowerCase(),
     uid: user.id,
     memberId: memId,
     membershipId: memId,
     photoUrl: photo,
     avatarUrl: photo,
-    province: user.stateProvince,
+    province: provinceVal,
+    stateProvince: provinceVal,
     city: user.cityTown,
     uc: user.unionCouncil,
+    isOnline: onlineFlag,
     status: statusStr,
     profileCompleted: Boolean(user.profileCompleted),
     lastLoginAt: user.lastLoginAt || nowIso,
     isAuditOfficer: Boolean(user.isAuditOfficer),
     isMutedInChat: Boolean(user.isMutedInChat),
-    createdAt: user.createdAt || user.joinDate || nowIso
+    createdAt: toIsoTimestamp(user.createdAt, user.joinDate || nowIso)
   });
 }
 
-export async function saveUserToFirestore(user: User): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
+async function tryEnsureSessionBestEffort(): Promise<void> {
+  if (!auth.currentUser) {
+    await ensureFirebaseAuthSession().catch(() => null);
+  }
+}
+
+export async function saveUserToFirestore(
+  user: User,
+  options?: { isOnline?: boolean; useServerLastSeen?: boolean }
+): Promise<void> {
+  await tryEnsureSessionBestEffort();
   const path = `users/${user.id}`;
+  const cloudPayload = normalizeUserForCloud(user, { isOnline: options?.isOnline });
+  if (options?.useServerLastSeen !== false) {
+    cloudPayload.lastSeen = serverTimestamp();
+  }
   try {
-    await setDoc(doc(db, 'users', user.id), normalizeUserForCloud(user), { merge: true });
+    await setDoc(doc(db, 'users', user.id), cloudPayload, { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore user write warning (${path}):`, err);
+  }
+}
+
+export async function markUserOfflineInFirestore(user: User): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  try {
+    await setDoc(
+      doc(db, 'users', user.id),
+      {
+        isOnline: false,
+        status: 'offline',
+        lastSeen: serverTimestamp()
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Firestore mark offline warning:', err);
   }
 }
 
 export async function fetchAllUsersFromFirestore(): Promise<User[]> {
   try {
-    const session = auth.currentUser || (await ensureFirebaseAuthSession());
-    if (!session) return [];
+    await tryEnsureSessionBestEffort();
     const snap = await getDocs(collection(db, 'users'));
     const list: User[] = [];
     snap.forEach(docSnap => {
@@ -906,183 +1030,189 @@ export async function fetchAllUsersFromFirestore(): Promise<User[]> {
 }
 
 export async function saveApplicationToFirestore(app: MembershipApplication): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `applications/${app.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'applications', app.id), stripUndefinedDeep(app));
+    await setDoc(doc(db, 'applications', app.id), stripUndefinedDeep(app), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore application write warning (applications/${app.id}):`, err);
   }
 }
 
 export async function savePaymentToFirestore(payment: PaymentTransaction): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `payments/${payment.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'payments', payment.id), stripUndefinedDeep(payment));
+    await setDoc(doc(db, 'payments', payment.id), stripUndefinedDeep(payment), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore payment write warning (payments/${payment.id}):`, err);
   }
 }
 
 export async function saveComplaintToFirestore(complaint: Complaint): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `complaints/${complaint.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'complaints', complaint.id), stripUndefinedDeep(complaint));
+    await setDoc(doc(db, 'complaints', complaint.id), stripUndefinedDeep(complaint), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore complaint write warning (complaints/${complaint.id}):`, err);
   }
 }
 
 export async function saveAnnouncementToFirestore(announcement: Announcement): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `announcements/${announcement.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'announcements', announcement.id), stripUndefinedDeep(announcement));
+    await setDoc(doc(db, 'announcements', announcement.id), stripUndefinedDeep(announcement), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore announcement write warning (announcements/${announcement.id}):`, err);
   }
 }
 
 export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `announcements/${announcementId}`;
+  await tryEnsureSessionBestEffort();
   try {
     await deleteDoc(doc(db, 'announcements', announcementId));
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, path);
+    console.warn(`Firestore announcement delete warning (announcements/${announcementId}):`, err);
   }
 }
 
 export async function saveAuditLogToFirestore(log: AuditLog): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `audit_logs/${log.id}`;
+  await tryEnsureSessionBestEffort();
   try {
     await setDoc(doc(db, 'audit_logs', log.id), stripUndefinedDeep(log));
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore audit log write warning (audit_logs/${log.id}):`, err);
   }
 }
 
 export async function saveNotificationToFirestore(notif: AppNotification): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `notifications/${notif.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'notifications', notif.id), stripUndefinedDeep(notif));
+    await setDoc(
+      doc(db, 'notifications', notif.id),
+      {
+        ...stripUndefinedDeep(notif),
+        createdAt: serverTimestamp()
+      },
+      { merge: true }
+    );
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore notification write warning (notifications/${notif.id}):`, err);
   }
 }
 
 export async function saveOfficeBearerToFirestore(ob: OfficeBearer): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `office_bearers/${ob.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'office_bearers', ob.id), stripUndefinedDeep(ob));
+    await setDoc(doc(db, 'office_bearers', ob.id), stripUndefinedDeep(ob), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore office bearer write warning (office_bearers/${ob.id}):`, err);
   }
 }
 
 export async function saveOfficeBearerHistoryToFirestore(obh: OfficeBearerHistory): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `office_bearer_history/${obh.id}`;
+  await tryEnsureSessionBestEffort();
   try {
     await setDoc(doc(db, 'office_bearer_history', obh.id), stripUndefinedDeep(obh));
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore office bearer history write warning:`, err);
   }
 }
 
 export async function saveAppUpdateToFirestore(update: AppUpdate): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `app_updates/${update.id}`;
+  await tryEnsureSessionBestEffort();
   try {
-    await setDoc(doc(db, 'app_updates', update.id), stripUndefinedDeep(update));
+    await setDoc(doc(db, 'app_updates', update.id), stripUndefinedDeep(update), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore app update write warning:`, err);
   }
 }
 
 export async function saveAppSettingsToFirestore(settings: AppSettings): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `app_settings/global`;
+  await tryEnsureSessionBestEffort();
   try {
     await setDoc(doc(db, 'app_settings', 'global'), stripUndefinedDeep(settings), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore app settings write warning:`, err);
   }
 }
 
 export async function saveChatMessageToFirestore(msg: ChatMessage): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `chat_messages/${msg.id}`;
-  try {
-    await setDoc(doc(db, 'chat_messages', msg.id), stripUndefinedDeep(msg));
-  } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
-  }
+  await tryEnsureSessionBestEffort();
+  const participants = msg.participants || [msg.senderId, msg.recipientId].sort();
+  const payload = {
+    ...stripUndefinedDeep({
+      ...msg,
+      participants,
+      createdAt: msg.createdAt || msg.timestamp || new Date().toISOString()
+    }),
+    serverCreatedAt: serverTimestamp()
+  };
+  await Promise.all([
+    setDoc(doc(db, 'direct_messages', msg.id), payload, { merge: true }).catch(err => {
+      console.warn(`Firestore direct_messages write warning (direct_messages/${msg.id}):`, err);
+    }),
+    setDoc(doc(db, 'chat_messages', msg.id), payload, { merge: true }).catch(err => {
+      console.warn(`Firestore chat_messages mirror warning (chat_messages/${msg.id}):`, err);
+    })
+  ]);
 }
 
 export async function saveCommunityMessageToFirestore(msg: ChatMessage): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `community_chat_messages/${msg.id}`;
-  try {
-    await setDoc(doc(db, 'community_chat_messages', msg.id), stripUndefinedDeep(msg), { merge: true });
-  } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
-  }
+  await tryEnsureSessionBestEffort();
+  const payload = {
+    ...stripUndefinedDeep({
+      ...msg,
+      createdAt: msg.createdAt || msg.timestamp || new Date().toISOString()
+    }),
+    serverCreatedAt: serverTimestamp()
+  };
+  await Promise.all([
+    setDoc(doc(db, 'community_messages', msg.id), payload, { merge: true }).catch(err => {
+      console.warn(`Firestore community_messages write warning (community_messages/${msg.id}):`, err);
+    }),
+    setDoc(doc(db, 'community_chat_messages', msg.id), payload, { merge: true }).catch(err => {
+      console.warn(`Firestore community_chat_messages mirror warning:`, err);
+    })
+  ]);
 }
 
 export async function deleteCommunityMessageFromFirestore(messageId: string): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `community_chat_messages/${messageId}`;
-  try {
-    await deleteDoc(doc(db, 'community_chat_messages', messageId));
-  } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, path);
-  }
+  await tryEnsureSessionBestEffort();
+  await Promise.all([
+    deleteDoc(doc(db, 'community_messages', messageId)).catch(() => {}),
+    deleteDoc(doc(db, 'community_chat_messages', messageId)).catch(() => {})
+  ]);
 }
 
 export async function saveChatConversationToFirestore(chat: ChatConversation): Promise<void> {
-  const session = auth.currentUser || (await ensureFirebaseAuthSession());
-  if (!session) return;
-  const path = `chats/${chat.id}`;
+  await tryEnsureSessionBestEffort();
   try {
     await setDoc(doc(db, 'chats', chat.id), stripUndefinedDeep(chat), { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
+    console.warn(`Firestore chats write warning (chats/${chat.id}):`, err);
   }
 }
 
 export function subscribeToFirestoreCollection<T>(
-  collectionName: string, 
+  collectionName: string,
   onData: (items: T[]) => void,
-  userConstraint?: { field: string; value: string; op?: '==' | 'array-contains' }
+  userConstraint?: { field: string; value: string; op?: '==' | 'array-contains' },
+  orderByConstraint?: { field: string; direction?: 'asc' | 'desc' }
 ): Unsubscribe {
-  if (!auth.currentUser) {
-    return () => {};
-  }
   const path = collectionName;
   const colRef = collection(db, collectionName);
-  const targetQuery = userConstraint
-    ? query(colRef, where(userConstraint.field, userConstraint.op || '==', userConstraint.value))
-    : colRef;
+
+  let targetQuery = query(colRef);
+  if (userConstraint && orderByConstraint) {
+    targetQuery = query(
+      colRef,
+      where(userConstraint.field, userConstraint.op || '==', userConstraint.value),
+      orderBy(orderByConstraint.field, orderByConstraint.direction || 'asc')
+    );
+  } else if (userConstraint) {
+    targetQuery = query(colRef, where(userConstraint.field, userConstraint.op || '==', userConstraint.value));
+  } else if (orderByConstraint) {
+    targetQuery = query(colRef, orderBy(orderByConstraint.field, orderByConstraint.direction || 'asc'));
+  }
 
   return onSnapshot(
     targetQuery,
@@ -1107,5 +1237,5 @@ export function subscribeToFirestoreCollection<T>(
   );
 }
 
-export { onAuthStateChanged };
+export { onAuthStateChanged, serverTimestamp };
 export type { FirebaseUser };

@@ -191,7 +191,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
       <div
         className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
         style={{ WebkitOverflowScrolling: 'touch' }}
