@@ -137,9 +137,9 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#043927]/50 rounded-xl border border-[#D4AF37]/35 text-[11px] text-[#F5D061]">
+        <div className="flex items-center gap-2 px-3 py-2 kc-emerald-panel rounded-xl text-[11px] text-[#F5D061]">
           <ShieldCheck className="w-4 h-4 shrink-0" />
-          <span>Max {appSettings.maxAdminsPerDistrict} District Admins per District enforced.</span>
+          <span className="tabular-nums">Max {appSettings.maxAdminsPerDistrict} District Admins per District enforced.</span>
         </div>
       </div>
 
@@ -158,9 +158,9 @@ export const AdminDashboard: React.FC = () => {
                 key={card.label}
                 type="button"
                 onClick={card.onClick}
-                className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 hover:border-[#F5D061]/60 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+                className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-xl bg-[#043927]/80 border border-[#D4AF37]/35 flex items-center justify-center mb-2">
+                <div className="w-9 h-9 rounded-xl kc-emerald-panel flex items-center justify-center mb-2">
                   <Icon className="w-4 h-4 text-[#F5D061]" />
                 </div>
                 <span className="text-xs font-extrabold text-white block truncate">{card.label}</span>
@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC = () => {
       {/* KPI Cards */}
       {vis.showKpiGrid && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+          <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">District Members</span>
               <Users className="w-4 h-4 text-[#F5D061]" />
@@ -185,7 +185,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="mt-2 text-[11px] text-slate-400">Active verified community members</div>
           </div>
 
-          <div className="p-4 bg-[#111622] rounded-2xl border border-[#F5D061]/40">
+          <div className="p-4 kc-obsidian-card rounded-2xl border-[#F5D061]/50">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">Pending Verification</span>
               <CheckSquare className="w-4 h-4 text-[#F5D061]" />
@@ -197,21 +197,21 @@ export const AdminDashboard: React.FC = () => {
             <div className="mt-2 text-[11px] text-slate-400">Requires address & CNIC check</div>
           </div>
 
-          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+          <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">District Grievances</span>
               <MessageSquareWarning className="w-4 h-4 text-rose-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{districtComplaints.length}</span>
-              <span className="text-xs text-rose-400 font-semibold">
+              <span className="text-xs text-rose-400 font-semibold tabular-nums">
                 {districtComplaints.filter(c => c.status === 'OPEN').length} Open
               </span>
             </div>
             <div className="mt-2 text-[11px] text-slate-400">Member support tickets</div>
           </div>
 
-          <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+          <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">Local Bulletins</span>
               <Megaphone className="w-4 h-4 text-emerald-400" />
@@ -226,8 +226,8 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* Stage 1 District Verification */}
-      <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="kc-obsidian-card rounded-2xl p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/20">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-[#F5D061]" />
@@ -237,19 +237,19 @@ export const AdminDashboard: React.FC = () => {
               Confirm applicant address, inspect CNIC validity, and submit recommendation
             </p>
           </div>
-          <span className="text-xs font-mono font-bold text-[#F5D061] bg-amber-500/10 px-2.5 py-1 rounded-full border border-[#D4AF37]/30">
+          <span className="text-xs font-mono tabular-nums font-bold text-[#F5D061] bg-[#090D16] px-2.5 py-1 rounded-full border border-[#D4AF37]/35">
             {pendingDistrictApps.length} in Queue
           </span>
         </div>
 
         <div className="mt-4 space-y-3">
           {pendingDistrictApps.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-500">
+            <div className="py-8 text-center text-xs text-slate-400">
               No pending applications awaiting District verification for {assignedDistrict}.
             </div>
           ) : (
             pendingDistrictApps.map(app => (
-              <div key={app.id} className="p-4 rounded-xl border border-slate-800 bg-[#0A0D12]">
+              <div key={app.id} className="p-4 rounded-xl border border-[#D4AF37]/25 bg-[#090D16]">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="shrink-0">
                     {reviewingAppId === app.id ? (
-                      <div className="w-full sm:w-80 bg-[#111622] p-3.5 rounded-xl border border-[#D4AF37]/40 shadow-lg space-y-2.5">
+                      <div className="w-full sm:w-80 kc-obsidian-card p-3.5 rounded-xl space-y-2.5">
                         <span className="text-[11px] font-semibold text-slate-200 block">
                           Submit Recommendation to Super Admin:
                         </span>
@@ -280,10 +280,10 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setRecommendation('APPROVE')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 kc-pressable cursor-pointer ${
                               recommendation === 'APPROVE'
                                 ? 'bg-emerald-700 text-white border-emerald-500'
-                                : 'bg-slate-800 text-slate-300 border-slate-700'
+                                : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25'
                             }`}
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -293,10 +293,10 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setRecommendation('REJECT')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 kc-pressable cursor-pointer ${
                               recommendation === 'REJECT'
                                 ? 'bg-rose-700 text-white border-rose-500'
-                                : 'bg-slate-800 text-slate-300 border-slate-700'
+                                : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25'
                             }`}
                           >
                             <XCircle className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export const AdminDashboard: React.FC = () => {
                           value={remarks}
                           onChange={(e) => setRemarks(e.target.value)}
                           rows={2}
-                          className="w-full text-xs p-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white resize-none"
+                          className="w-full text-xs p-2 rounded-lg kc-luxury-input resize-none"
                         />
 
                         <div className="flex items-center justify-end gap-2 pt-1">
@@ -349,18 +349,18 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Grid: District Member Directory & Grievances */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="kc-obsidian-card rounded-2xl p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
             <div>
               <h3 className="text-sm font-bold text-white">{assignedDistrict} Community Members</h3>
               <p className="text-xs text-slate-400">Registered members in your district</p>
             </div>
-            <span className="text-xs font-mono font-semibold text-[#F5D061]">{districtMembers.length} Members</span>
+            <span className="text-xs font-mono tabular-nums font-semibold text-[#F5D061]">{districtMembers.length} Members</span>
           </div>
 
-          <div className="mt-3 divide-y divide-slate-800/70 max-h-80 overflow-y-auto">
+          <div className="mt-3 divide-y divide-[#D4AF37]/10 max-h-80 overflow-y-auto">
             {districtMembers.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-500">No active members in {assignedDistrict} yet.</div>
+              <div className="py-6 text-center text-xs text-slate-400">No active members in {assignedDistrict} yet.</div>
             ) : (
               districtMembers.map(member => (
                 <div key={member.id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
@@ -368,7 +368,7 @@ export const AdminDashboard: React.FC = () => {
                     {(member.avatarUrl || member.avatar) ? (
                       <img src={member.avatarUrl || member.avatar} alt={member.name} className="w-8 h-8 rounded-full border border-[#D4AF37]/40 object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#042920] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs shrink-0">
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -387,7 +387,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setInspectedUserProfile(member)}
-                      className="p-1.5 text-slate-400 hover:text-[#F5D061] hover:bg-slate-800 rounded-lg cursor-pointer"
+                      className="p-1.5 text-slate-300 hover:text-[#F5D061] hover:bg-[#1A233A] rounded-lg kc-pressable cursor-pointer"
                       title="View Member Profile"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -395,7 +395,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleOpenChat(member)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#043927] text-[#F5D061] hover:bg-emerald-900 rounded-lg border border-[#D4AF37]/35 cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#042920] text-[#F5D061] hover:bg-[#063B2E] rounded-lg border border-[#D4AF37]/40 kc-pressable cursor-pointer"
                     >
                       <MessageSquare className="w-3 h-3" />
                       <span>Chat</span>
@@ -407,21 +407,21 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="kc-obsidian-card rounded-2xl p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
             <div>
               <h3 className="text-sm font-bold text-white">District Grievance Tickets</h3>
               <p className="text-xs text-slate-400">Support requests from {assignedDistrict}</p>
             </div>
-            <span className="text-xs font-mono text-rose-400 font-bold">{districtComplaints.length} Tickets</span>
+            <span className="text-xs font-mono tabular-nums text-rose-400 font-bold">{districtComplaints.length} Tickets</span>
           </div>
 
           <div className="mt-3 space-y-3 max-h-80 overflow-y-auto">
             {districtComplaints.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-500">No active complaints filed in {assignedDistrict}.</div>
+              <div className="py-6 text-center text-xs text-slate-400">No active complaints filed in {assignedDistrict}.</div>
             ) : (
               districtComplaints.map(cmp => (
-                <div key={cmp.id} className="p-3 rounded-xl border border-slate-800 bg-[#0A0D12] text-xs">
+                <div key={cmp.id} className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] text-xs">
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-bold text-white">{cmp.subject}</span>
@@ -429,15 +429,15 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                       cmp.status === 'RESOLVED'
-                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/35'
+                        : 'bg-rose-950/70 text-rose-300 border border-rose-500/35'
                     }`}>
                       {cmp.status}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.status !== 'RESOLVED' && (
-                    <div className="mt-2 pt-2 border-t border-slate-800">
+                    <div className="mt-2 pt-2 border-t border-[#D4AF37]/15">
                       {activeComplaintId === cmp.id ? (
                         <div className="space-y-2">
                           <input
@@ -445,7 +445,7 @@ export const AdminDashboard: React.FC = () => {
                             placeholder="Resolution notes..."
                             value={complaintNote}
                             onChange={(e) => setComplaintNote(e.target.value)}
-                            className="w-full text-xs p-1.5 border border-slate-700 rounded-lg bg-[#111622] text-white"
+                            className="w-full text-xs p-2 kc-luxury-input rounded-lg"
                           />
                           <div className="flex justify-end gap-2">
                             <button type="button" onClick={() => setActiveComplaintId(null)} className="text-[11px] text-slate-400 hover:text-white cursor-pointer">
@@ -458,7 +458,7 @@ export const AdminDashboard: React.FC = () => {
                                 setActiveComplaintId(null);
                                 setComplaintNote('');
                               }}
-                              className="px-2.5 py-1 text-[11px] bg-emerald-600 text-white rounded-md font-semibold cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-semibold kc-pressable cursor-pointer"
                             >
                               Mark Resolved
                             </button>
@@ -479,8 +479,8 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* District Bulletins Dispatcher */}
-      <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="p-5 kc-obsidian-card rounded-2xl">
+        <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-[#F5D061]" />
@@ -502,14 +502,14 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {isCreatingAnnouncement && (
-          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#0A0D12] p-4 rounded-xl border border-slate-800">
+          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#090D16] p-4 rounded-xl border border-[#D4AF37]/25">
             <input
               type="text"
               required
               placeholder="e.g. Free Medical Checkup Camp at Model Town..."
               value={announcementTitle}
               onChange={(e) => setAnnouncementTitle(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white"
+              className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
             />
             <textarea
               required
@@ -517,7 +517,7 @@ export const AdminDashboard: React.FC = () => {
               placeholder="Detailed instructions for district members..."
               value={announcementContent}
               onChange={(e) => setAnnouncementContent(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#111622] text-white resize-none"
+              className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input resize-none"
             />
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-3 text-xs">

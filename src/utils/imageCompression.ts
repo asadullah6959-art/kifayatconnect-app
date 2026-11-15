@@ -167,3 +167,27 @@ export async function compressImageFile(
     }
   });
 }
+
+export const AVATAR_MAX_DIMENSION = 200;
+export const AVATAR_MAX_BYTES = 35 * 1024; // 35KB ceiling for crisp, instant-loading avatars
+
+/**
+ * Compresses profile avatars to <= 200x200px JPEG (starting at quality 0.72, strictly < 35KB)
+ * so Member Directory renders dozens of members in milliseconds across low-RAM phones.
+ */
+export async function compressAvatarFile(file: File): Promise<CompressedImageResult> {
+  const initial = await compressImageFile(file, AVATAR_MAX_DIMENSION, 0.72, AVATAR_MAX_BYTES);
+  if (initial.sizeBytes <= AVATAR_MAX_BYTES) {
+    return initial;
+  }
+
+  // Fallback progressive downscale if a dense photo remained over 35KB at 200px
+  for (const dim of [160, 128, 96]) {
+    const attempt = await compressImageFile(file, dim, 0.55, AVATAR_MAX_BYTES);
+    if (attempt.sizeBytes <= AVATAR_MAX_BYTES) {
+      return attempt;
+    }
+  }
+  return initial;
+}
+

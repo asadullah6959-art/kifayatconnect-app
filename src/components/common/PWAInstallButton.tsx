@@ -54,8 +54,8 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
   if (isInstalled) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-        <Check className="w-3.5 h-3.5" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#042920] text-emerald-300 border border-[#D4AF37]/35">
+        <Check className="w-3.5 h-3.5 text-[#F5D061]" />
         <span>{language === 'ur' ? 'انسٹال شدہ' : 'PWA Ready'}</span>
       </span>
     );
@@ -66,10 +66,10 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
       <button
         onClick={handleInstallClick}
         title={language === 'ur' ? 'کفایت کنیکٹ ایپ انسٹال کریں' : 'Install Kifayat Connect App'}
-        className={`inline-flex items-center gap-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+        className={`inline-flex items-center gap-1.5 rounded-xl font-bold kc-pressable cursor-pointer ${
           compact
-            ? 'px-2 py-1 text-xs bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40'
-            : 'px-3 py-1.5 text-xs bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-md shadow-amber-500/15'
+            ? 'px-2.5 py-1.5 text-xs bg-[#141B2D] text-[#F5D061] hover:bg-[#1A233A] border border-[#D4AF37]/40'
+            : 'px-3.5 py-2 text-xs kc-gold-button font-extrabold'
         }`}
       >
         <Smartphone className="w-3.5 h-3.5 shrink-0" />
@@ -78,27 +78,27 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
       {/* iOS or fallback modal */}
       {showIosModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-white">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 relative text-white">
             <button
               onClick={() => setShowIosModal(false)}
-              className="absolute top-4 right-4 p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-2 mb-3">
-              <Smartphone className="w-5 h-5 text-amber-400" />
-              <h4 className="font-bold text-sm">Install Kifayat Connect</h4>
+              <Smartphone className="w-5 h-5 text-[#F5D061]" />
+              <h4 className="font-extrabold text-sm text-white">Install Kifayat Connect</h4>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               Install Kifayat Connect on your home screen for quick offline access and fast native performance:
             </p>
 
-            <div className="space-y-2.5 text-xs text-slate-300 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <div className="space-y-2.5 text-xs text-slate-200 bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/30">
               <div className="flex items-center gap-2.5">
-                <Share className="w-4 h-4 text-blue-400 shrink-0" />
+                <Share className="w-4 h-4 text-[#F5D061] shrink-0" />
                 <span>1. Tap the <strong>Share</strong> button in browser toolbar</span>
               </div>
               <div className="flex items-center gap-2.5">
@@ -107,10 +107,10 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+            <div className="mt-4 pt-3 border-t border-[#D4AF37]/25 flex justify-end">
               <button
                 onClick={() => setShowIosModal(false)}
-                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs"
+                className="px-4 py-2 rounded-xl kc-gold-button font-extrabold text-xs cursor-pointer"
               >
                 Got it
               </button>

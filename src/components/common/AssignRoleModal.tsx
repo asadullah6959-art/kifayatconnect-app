@@ -92,15 +92,15 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#111622] border border-[#D4AF37]/45 rounded-2xl shadow-2xl p-5 space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-xs text-white"
+        className="kc-luxury-modal w-full max-w-md rounded-2xl p-5 space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-xs text-white"
         style={{ WebkitOverflowScrolling: 'touch' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-[#D4AF37]/25 pb-3">
           <div className="min-w-0">
             <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-1.5">
               <Crown className="w-4 h-4 shrink-0" />
@@ -113,13 +113,13 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-[#161D2C] text-slate-300 hover:text-white cursor-pointer shrink-0"
+            className="kc-pressable p-1.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0A0D12] border border-slate-800 flex items-center justify-between gap-2">
+        <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 flex items-center justify-between gap-2">
           <span className="text-[11px] text-slate-400">Current Role:</span>
           <RoleBadge
             role={targetUser.role}
@@ -130,7 +130,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-200 flex items-start gap-2">
+          <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/45 text-rose-200 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -148,7 +148,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => handleSelectRole(opt)}
-                className={`w-full p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-colors hover:border-[#F5D061] cursor-pointer ${opt.accent}`}
+                className={`kc-pressable w-full p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-colors hover:border-[#F5D061] cursor-pointer ${opt.accent}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -158,7 +158,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
                   <p className="text-[10px] opacity-80 mt-0.5 leading-snug">{opt.subtitle}</p>
                 </div>
                 {isCurrent && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5D061] text-[#0A0D12] text-[10px] font-extrabold shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5D061] text-[#090D16] text-[10px] font-extrabold shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
                     <span>Active</span>
                   </span>

@@ -605,11 +605,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     type="button"
                     onClick={handleGoogleSignIn}
                     disabled={isGoogleLoading || !isOnline}
-                    className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs flex items-center justify-center gap-3 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                    className="w-full py-3 px-4 rounded-xl bg-[#141B2D] hover:bg-[#1A233A] text-white border border-[#D4AF37]/45 hover:border-[#F5D061]/70 font-bold text-xs flex items-center justify-center gap-3 transition-colors cursor-pointer shadow-lg shadow-black/40 kc-pressable disabled:opacity-50"
                   >
                     {isGoogleLoading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#F5D061]" />
                         <span>Connecting...</span>
                       </>
                     ) : (

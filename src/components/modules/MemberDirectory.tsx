@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Users,
@@ -9,6 +9,8 @@ import {
   RefreshCw,
   Crown,
   CheckCircle2,
+  XCircle,
+  Clock,
   Lock
 } from 'lucide-react';
 import { User } from '../../types';
@@ -17,6 +19,7 @@ import {
   getDistrictsForProvince,
   mapLegacyRegionToHierarchy
 } from '../../data/locationData';
+import { resolveUserApprovalStatus } from '../../services/firebase';
 import { RoleBadge } from '../common/RoleBadge';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { AssignRoleModal } from '../common/AssignRoleModal';
@@ -24,13 +27,16 @@ import { AssignRoleModal } from '../common/AssignRoleModal';
 interface MemberRowProps {
   member: User;
   isCurrentUser: boolean;
+  isFocused: boolean;
   canViewSensitive: boolean;
   canAssignRole: boolean;
+  canApprove: boolean;
   onInspect: (u: User) => void;
   onCard: (u: User) => void;
   onMessage: (u: User) => void;
   onShowLocation: (u: User) => void;
   onAssignRole: (u: User) => void;
+  onApproveDecision: (u: User, approved: boolean) => void;
 }
 
 function isMemberOnline(member: User, isSelf: boolean): boolean {
@@ -42,12 +48,15 @@ function isMemberOnline(member: User, isSelf: boolean): boolean {
 const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   member,
   isCurrentUser,
+  isFocused,
   canViewSensitive,
   canAssignRole,
+  canApprove,
   onInspect,
   onCard,
   onMessage,
-  onAssignRole
+  onAssignRole,
+  onApproveDecision
 }) => {
   const fallback = mapLegacyRegionToHierarchy(member.region);
   const prov = member.stateProvince || fallback.stateProvince;
@@ -55,9 +64,18 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   const isProfilePending = member.profileCompleted === false && !member.isFounder;
   const avatarSrc = member.avatarUrl || member.photoUrl;
   const onlineNow = isMemberOnline(member, isCurrentUser);
+  const approvalState = resolveUserApprovalStatus(member);
+  const targetIsFounder = isFounderUser(member);
 
   return (
-    <div className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#111622] space-y-2.5 shadow-2xs">
+    <div
+      id={`member-card-${member.id}`}
+      className={`p-3.5 rounded-2xl kc-obsidian-card space-y-2.5 transition-colors ${
+        isFocused
+          ? 'border-[#F5D061] ring-2 ring-[#F5D061]/35'
+          : ''
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="relative shrink-0">
@@ -65,6 +83,8 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
               <img
                 src={avatarSrc}
                 alt={member.name}
+                loading="lazy"
+                decoding="async"
                 className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/40"
               />
             ) : (
@@ -103,9 +123,22 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
             isAuditOfficer={Boolean(member.isAuditOfficer)}
             compact
           />
-          {isProfilePending && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[9px] font-extrabold uppercase">
-              Profile Pending
+          {approvalState === 'pending' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[9px] font-extrabold uppercase">
+              <Clock className="w-2.5 h-2.5" />
+              <span>{isProfilePending ? 'Profile Pending' : 'Pending Approval'}</span>
+            </span>
+          )}
+          {approvalState === 'approved' && !targetIsFounder && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[9px] font-extrabold uppercase">
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              <span>Approved</span>
+            </span>
+          )}
+          {approvalState === 'rejected' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-300 text-[9px] font-extrabold uppercase">
+              <XCircle className="w-2.5 h-2.5" />
+              <span>Rejected</span>
             </span>
           )}
         </div>
@@ -117,7 +150,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
           <span className="truncate">{member.cityTown || dist}, {prov}</span>
         </span>
         {canViewSensitive && (
-          <span className="font-mono font-bold text-white shrink-0">
+          <span className="font-mono tabular-nums font-bold text-white shrink-0">
             PKR {(member.totalContributed || 0).toLocaleString()}
           </span>
         )}
@@ -136,7 +169,30 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+      {canApprove && !targetIsFounder && approvalState !== 'approved' && (
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => onApproveDecision(member, true)}
+            className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] rounded-lg kc-pressable cursor-pointer"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Approve</span>
+          </button>
+          {approvalState !== 'rejected' && (
+            <button
+              type="button"
+              onClick={() => onApproveDecision(member, false)}
+              className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-bold text-[11px] rounded-lg kc-pressable cursor-pointer"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              <span>Reject</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#D4AF37]/15">
         <button
           type="button"
           onClick={() => onMessage(member)}
@@ -148,14 +204,14 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
         <button
           type="button"
           onClick={() => onInspect(member)}
-          className="py-1.5 px-2.5 bg-[#161D2C] text-slate-200 border border-slate-700 font-semibold text-[11px] rounded-lg cursor-pointer"
+          className="py-1.5 px-2.5 bg-[#090D16] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/25 font-semibold text-[11px] rounded-lg kc-pressable cursor-pointer"
         >
           Profile
         </button>
         <button
           type="button"
           onClick={() => onCard(member)}
-          className="py-1.5 px-2.5 bg-[#161D2C] text-slate-200 border border-slate-700 font-semibold text-[11px] rounded-lg cursor-pointer"
+          className="py-1.5 px-2.5 bg-[#090D16] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/25 font-semibold text-[11px] rounded-lg kc-pressable cursor-pointer"
         >
           Card
         </button>
@@ -163,7 +219,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
           <button
             type="button"
             onClick={() => onAssignRole(member)}
-            className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold text-[11px] rounded-lg cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-[#090D16] hover:bg-[#1A233A] border border-[#F5D061]/55 text-[#F5D061] font-extrabold text-[11px] rounded-lg kc-pressable cursor-pointer"
           >
             <Crown className="w-3.5 h-3.5" />
             <span>Assign Role</span>
@@ -176,6 +232,220 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
 
 MemberCardMobile.displayName = 'MemberCardMobile';
 
+const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
+  member,
+  isCurrentUser,
+  isFocused,
+  canViewSensitive,
+  canAssignRole,
+  canApprove,
+  onInspect,
+  onCard,
+  onMessage,
+  onShowLocation,
+  onAssignRole,
+  onApproveDecision
+}) => {
+  const fallback = mapLegacyRegionToHierarchy(member.region);
+  const prov = member.stateProvince || fallback.stateProvince;
+  const dist = member.district || fallback.district;
+  const isProfilePending = member.profileCompleted === false && !member.isFounder;
+  const avatarSrc = member.avatarUrl || member.photoUrl;
+  const onlineNow = isMemberOnline(member, isCurrentUser);
+  const approvalState = resolveUserApprovalStatus(member);
+  const targetIsFounder = isFounderUser(member);
+
+  return (
+    <tr
+      id={`member-row-${member.id}`}
+      className={`transition-colors ${
+        isFocused
+          ? 'bg-[#231D0B]/70 ring-1 ring-inset ring-[#F5D061]/60'
+          : 'hover:bg-[#1A233A]/55'
+      }`}
+    >
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={member.name}
+                loading="lazy"
+                decoding="async"
+                className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs">
+                {member.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#111622] ${
+                onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
+              }`}
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-white">{member.name}</span>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  onlineNow
+                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                }`}
+              >
+                {onlineNow ? '🟢 Online' : '⚫ Offline'}
+              </span>
+            </div>
+            <span className="font-mono text-[11px] text-[#F5D061] font-semibold">
+              {member.membershipId || 'KC-PENDING'}
+            </span>
+          </div>
+        </div>
+      </td>
+
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+          <span className="font-bold text-white">{member.cityTown || dist}</span>
+          <span className="text-slate-500">·</span>
+          <span className="text-slate-300">{prov}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onShowLocation(member)}
+          className="text-[10px] text-emerald-400 hover:underline font-semibold mt-0.5 cursor-pointer"
+        >
+          Location Trail
+        </button>
+      </td>
+
+      <td className="py-3 px-4 font-mono text-slate-300">
+        {canViewSensitive ? (
+          member.cnic || '—'
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+            <Lock className="w-3 h-3" />
+            <span>Protected</span>
+          </span>
+        )}
+      </td>
+
+      <td className="py-3 px-4 text-slate-300">
+        {canViewSensitive ? (
+          <>
+            <div>{member.phone || '—'}</div>
+            <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{member.email}</div>
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+            <Lock className="w-3 h-3" />
+            <span>Protected</span>
+          </span>
+        )}
+      </td>
+
+      <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-white">
+        {canViewSensitive ? `PKR ${(member.totalContributed || 0).toLocaleString()}` : '—'}
+      </td>
+
+      <td className="py-3 px-4 text-center">
+        <div className="flex flex-col items-center gap-1">
+          <RoleBadge
+            role={member.role}
+            isFounder={member.isFounder}
+            isAuditOfficer={Boolean(member.isAuditOfficer)}
+            compact
+          />
+          {approvalState === 'pending' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[9px] font-extrabold uppercase">
+              <Clock className="w-2.5 h-2.5" />
+              <span>{isProfilePending ? 'Profile Pending' : 'Pending Approval'}</span>
+            </span>
+          )}
+          {approvalState === 'approved' && !targetIsFounder && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[9px] font-extrabold uppercase">
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              <span>Approved</span>
+            </span>
+          )}
+          {approvalState === 'rejected' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-300 text-[9px] font-extrabold uppercase">
+              <XCircle className="w-2.5 h-2.5" />
+              <span>Rejected</span>
+            </span>
+          )}
+        </div>
+      </td>
+
+      <td className="py-3 px-4 text-right">
+        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+          {canApprove && !targetIsFounder && approvalState !== 'approved' && (
+            <>
+              <button
+                type="button"
+                onClick={() => onApproveDecision(member, true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-extrabold kc-pressable cursor-pointer"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Approve</span>
+              </button>
+              {approvalState !== 'rejected' && (
+                <button
+                  type="button"
+                  onClick={() => onApproveDecision(member, false)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 rounded-lg font-bold kc-pressable cursor-pointer"
+                >
+                  <XCircle className="w-3 h-3" />
+                  <span>Reject</span>
+                </button>
+              )}
+            </>
+          )}
+          {canAssignRole && (
+            <button
+              type="button"
+              onClick={() => onAssignRole(member)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#090D16] hover:bg-[#1A233A] border border-[#F5D061]/55 text-[#F5D061] rounded-lg font-extrabold kc-pressable cursor-pointer"
+            >
+              <Crown className="w-3 h-3" />
+              <span>Assign Role</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onMessage(member)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 kc-gold-button rounded-lg font-bold cursor-pointer"
+            title="Send Direct Message"
+          >
+            <MessageSquare className="w-3 h-3" />
+            <span>Message</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onInspect(member)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/25 text-slate-200 rounded-lg font-medium kc-pressable cursor-pointer"
+          >
+            <span>Profile</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onCard(member)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/25 text-slate-200 rounded-lg font-medium kc-pressable cursor-pointer"
+          >
+            <IdCard className="w-3.5 h-3.5 text-[#F5D061]" />
+            <span>Card</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+MemberRowDesktop.displayName = 'MemberRowDesktop';
+
 export const MemberDirectory: React.FC = () => {
   const {
     currentUser,
@@ -183,10 +453,21 @@ export const MemberDirectory: React.FC = () => {
     setSelectedCardUser,
     setInspectedUserProfile,
     openPersonalMessage,
-    syncAllUsersToCloud
+    syncAllUsersToCloud,
+    approveMemberAccount,
+    focusedMemberId,
+    setFocusedMemberId,
+    memberDirectoryFilter,
+    setMemberDirectoryFilter
   } = useApp();
 
   const currentIsFounder = isFounderUser(currentUser);
+  const canApproveMembers = Boolean(
+    currentUser &&
+      (currentUser.role === 'SUPER_ADMIN' ||
+        currentUser.role === 'ADMIN' ||
+        currentUser.permissions?.canApproveMembers)
+  );
   const isPrivilegedViewer = Boolean(
     currentUser &&
       (currentUser.role === 'SUPER_ADMIN' ||
@@ -204,39 +485,77 @@ export const MemberDirectory: React.FC = () => {
   const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
   const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
 
-  if (!currentUser) return null;
+  useEffect(() => {
+    if (!focusedMemberId) return;
+    const timer = window.setTimeout(() => {
+      const mobileEl = document.getElementById(`member-card-${focusedMemberId}`);
+      const desktopEl = document.getElementById(`member-row-${focusedMemberId}`);
+      const target = (desktopEl && desktopEl.offsetParent !== null) ? desktopEl : mobileEl;
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [focusedMemberId, memberDirectoryFilter]);
 
-  const allowedMembers = users.filter(u => {
-    if (roleFilter === 'MEMBER' && u.role !== 'MEMBER') return false;
-    if (roleFilter === 'STAFF' && u.role === 'MEMBER' && !u.isAuditOfficer) return false;
-    return true;
-  });
+  const pendingApprovalsCount = useMemo(
+    () => users.filter(u => !isFounderUser(u) && resolveUserApprovalStatus(u) === 'pending').length,
+    [users]
+  );
 
-  const filteredMembers = allowedMembers.filter(member => {
-    const memLoc = mapLegacyRegionToHierarchy(member.region);
-    const mProvince = member.stateProvince || memLoc.stateProvince;
-    const mDistrict = member.district || memLoc.district;
-    const mTehsil = member.tehsil || memLoc.tehsil || '';
-    const mCity = member.cityTown || memLoc.cityTown || '';
+  const allowedMembers = useMemo(() => {
+    return users.filter(u => {
+      if (memberDirectoryFilter === 'PENDING_APPROVAL') {
+        if (isFounderUser(u) || resolveUserApprovalStatus(u) !== 'pending') return false;
+      }
+      if (roleFilter === 'MEMBER' && u.role !== 'MEMBER') return false;
+      if (roleFilter === 'STAFF' && u.role === 'MEMBER' && !u.isAuditOfficer) return false;
+      return true;
+    });
+  }, [users, memberDirectoryFilter, roleFilter]);
 
-    const canSeeMemberPII = isPrivilegedViewer || member.id === currentUser.id;
+  const filteredMembers = useMemo(() => {
+    if (!currentUser) return [];
     const q = searchTerm.toLowerCase();
-    const matchesSearch =
-      !q ||
-      member.name.toLowerCase().includes(q) ||
-      (member.membershipId && member.membershipId.toLowerCase().includes(q)) ||
-      (canSeeMemberPII && member.cnic && member.cnic.includes(searchTerm)) ||
-      (canSeeMemberPII && member.email.toLowerCase().includes(q)) ||
-      mDistrict.toLowerCase().includes(q) ||
-      mProvince.toLowerCase().includes(q) ||
-      mTehsil.toLowerCase().includes(q) ||
-      mCity.toLowerCase().includes(q);
+    return allowedMembers.filter(member => {
+      const memLoc = mapLegacyRegionToHierarchy(member.region);
+      const mProvince = member.stateProvince || memLoc.stateProvince;
+      const mDistrict = member.district || memLoc.district;
+      const mTehsil = member.tehsil || memLoc.tehsil || '';
+      const mCity = member.cityTown || memLoc.cityTown || '';
 
-    const matchesProvince = selectedProvinceFilter === 'ALL' || mProvince === selectedProvinceFilter;
-    const matchesDistrict = selectedDistrictFilter === 'ALL' || mDistrict === selectedDistrictFilter;
+      const canSeeMemberPII = isPrivilegedViewer || member.id === currentUser.id;
+      const matchesSearch =
+        !q ||
+        member.name.toLowerCase().includes(q) ||
+        (member.membershipId && member.membershipId.toLowerCase().includes(q)) ||
+        (canSeeMemberPII && member.cnic && member.cnic.includes(searchTerm)) ||
+        (canSeeMemberPII && member.email.toLowerCase().includes(q)) ||
+        mDistrict.toLowerCase().includes(q) ||
+        mProvince.toLowerCase().includes(q) ||
+        mTehsil.toLowerCase().includes(q) ||
+        mCity.toLowerCase().includes(q);
 
-    return matchesSearch && matchesProvince && matchesDistrict;
-  });
+      const matchesProvince = selectedProvinceFilter === 'ALL' || mProvince === selectedProvinceFilter;
+      const matchesDistrict = selectedDistrictFilter === 'ALL' || mDistrict === selectedDistrictFilter;
+
+      return matchesSearch && matchesProvince && matchesDistrict;
+    });
+  }, [allowedMembers, currentUser, isPrivilegedViewer, searchTerm, selectedProvinceFilter, selectedDistrictFilter]);
+
+  const handleOpenMessage = useCallback((member: User) => {
+    openPersonalMessage(member);
+  }, [openPersonalMessage]);
+
+  const handleApproveDecision = useCallback((member: User, approved: boolean) => {
+    const res = approveMemberAccount(member.id, approved);
+    setRoleFeedback(res.message);
+    if (focusedMemberId === member.id) {
+      setFocusedMemberId(null);
+    }
+  }, [approveMemberAccount, focusedMemberId, setFocusedMemberId]);
+
+  if (!currentUser) return null;
 
   const handleManualCloudSync = async () => {
     setIsSyncingDir(true);
@@ -245,10 +564,6 @@ export const MemberDirectory: React.FC = () => {
     } finally {
       setIsSyncingDir(false);
     }
-  };
-
-  const handleOpenMessage = (member: User) => {
-    openPersonalMessage(member);
   };
 
   return (
@@ -275,20 +590,20 @@ export const MemberDirectory: React.FC = () => {
             type="button"
             onClick={handleManualCloudSync}
             disabled={isSyncingDir}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-bold hover:border-[#D4AF37] transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#042920] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-bold hover:border-[#F5D061] kc-pressable cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDir ? 'animate-spin' : ''}`} />
-            <span>Sync Cloud ({allowedMembers.length})</span>
+            <span className="tabular-nums">Sync Cloud ({allowedMembers.length})</span>
           </button>
 
           <div className="relative flex-1 sm:flex-initial">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search member, ID, city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-white focus:outline-none focus:border-[#D4AF37] w-full sm:w-52"
+              className="pl-8 pr-3 py-1.5 text-xs kc-luxury-input rounded-xl w-full sm:w-52"
             />
           </div>
 
@@ -341,16 +656,59 @@ export const MemberDirectory: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick-Filter Pills (Always visible at top so Pending Approvals are never hidden) */}
+      <div className="inline-flex flex-wrap items-center gap-1.5 p-1.5 kc-tab-shell rounded-2xl">
+        <button
+          type="button"
+          onClick={() => {
+            setMemberDirectoryFilter('ALL');
+            setFocusedMemberId(null);
+          }}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
+            memberDirectoryFilter === 'ALL'
+              ? 'kc-gold-button'
+              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span className="tabular-nums">All Members ({users.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMemberDirectoryFilter('PENDING_APPROVAL')}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
+            memberDirectoryFilter === 'PENDING_APPROVAL'
+              ? 'kc-gold-button'
+              : 'text-[#F5D061] hover:bg-[#141B2D]'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Pending Approvals</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black tabular-nums ${
+              memberDirectoryFilter === 'PENDING_APPROVAL'
+                ? 'bg-[#090D16] text-[#F5D061]'
+                : pendingApprovalsCount > 0
+                ? 'bg-rose-600 text-white'
+                : 'bg-[#141B2D] text-slate-400'
+            }`}
+          >
+            {pendingApprovalsCount}
+          </span>
+        </button>
+      </div>
+
       {roleFeedback && (
-        <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold flex items-center justify-between gap-2">
+        <div className="p-3.5 rounded-2xl kc-emerald-panel text-emerald-100 text-xs font-semibold flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#F5D061] shrink-0" />
             <span>{roleFeedback}</span>
           </div>
           <button
             type="button"
             onClick={() => setRoleFeedback(null)}
-            className="text-emerald-300 hover:text-white text-xs font-bold cursor-pointer"
+            className="text-[#F5D061] hover:text-white text-xs font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -360,8 +718,10 @@ export const MemberDirectory: React.FC = () => {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {filteredMembers.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400 bg-[#111622] rounded-xl border border-[#D4AF37]/25">
-            No registered members found yet.
+          <div className="p-8 text-center text-xs text-slate-400 kc-obsidian-card rounded-2xl">
+            {memberDirectoryFilter === 'PENDING_APPROVAL'
+              ? 'No pending member approvals right now.'
+              : 'No registered members found yet.'}
           </div>
         ) : (
           filteredMembers.map(member => (
@@ -369,24 +729,27 @@ export const MemberDirectory: React.FC = () => {
               key={member.id}
               member={member}
               isCurrentUser={member.id === currentUser.id}
+              isFocused={focusedMemberId === member.id}
               canViewSensitive={isPrivilegedViewer || member.id === currentUser.id}
               canAssignRole={currentIsFounder && !isFounderUser(member)}
+              canApprove={canApproveMembers}
               onInspect={setInspectedUserProfile}
               onCard={setSelectedCardUser}
               onMessage={handleOpenMessage}
               onShowLocation={setSelectedMemberForHierarchy}
               onAssignRole={setRoleModalUser}
+              onApproveDecision={handleApproveDecision}
             />
           ))
         )}
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-[#111622] rounded-xl border border-[#D4AF37]/25 overflow-hidden shadow-xs">
+      <div className="hidden md:block kc-obsidian-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className="border-b border-slate-800 bg-[#0A0D12] text-slate-400 font-medium">
+              <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
                 <th className="py-3 px-4">Member Name &amp; ID</th>
                 <th className="py-3 px-4">Location</th>
                 <th className="py-3 px-4">CNIC Number</th>
@@ -396,167 +759,33 @@ export const MemberDirectory: React.FC = () => {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/70">
+            <tbody className="divide-y divide-[#D4AF37]/10">
               {filteredMembers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    No registered members found yet.
+                    {memberDirectoryFilter === 'PENDING_APPROVAL'
+                      ? 'No pending member approvals right now.'
+                      : 'No registered members found yet.'}
                   </td>
                 </tr>
               ) : (
-                filteredMembers.map(member => {
-                  const fallback = mapLegacyRegionToHierarchy(member.region);
-                  const prov = member.stateProvince || fallback.stateProvince;
-                  const dist = member.district || fallback.district;
-                  const canSeeSensitive = isPrivilegedViewer || member.id === currentUser.id;
-                  const isProfilePending = member.profileCompleted === false && !member.isFounder;
-                  const avatarSrc = member.avatarUrl || member.photoUrl;
-                  const onlineNow = isMemberOnline(member, member.id === currentUser.id);
-
-                  return (
-                    <tr key={member.id} className="hover:bg-[#161D2C]/60 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative shrink-0">
-                            {avatarSrc ? (
-                              <img
-                                src={avatarSrc}
-                                alt={member.name}
-                                className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <span
-                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#111622] ${
-                                onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
-                              }`}
-                            />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-white">{member.name}</span>
-                              <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                                  onlineNow
-                                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
-                                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                }`}
-                              >
-                                {onlineNow ? '🟢 Online' : '⚫ Offline'}
-                              </span>
-                            </div>
-                            <span className="font-mono text-[11px] text-[#F5D061] font-semibold">
-                              {member.membershipId || 'KC-PENDING'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
-                          <span className="font-bold text-white">{member.cityTown || dist}</span>
-                          <span className="text-slate-500">·</span>
-                          <span className="text-slate-300">{prov}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMemberForHierarchy(member)}
-                          className="text-[10px] text-emerald-400 hover:underline font-semibold mt-0.5 cursor-pointer"
-                        >
-                          Location Trail
-                        </button>
-                      </td>
-
-                      <td className="py-3 px-4 font-mono text-slate-300">
-                        {canSeeSensitive ? (
-                          member.cnic || '—'
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                            <Lock className="w-3 h-3" />
-                            <span>Protected</span>
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 text-slate-300">
-                        {canSeeSensitive ? (
-                          <>
-                            <div>{member.phone || '—'}</div>
-                            <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{member.email}</div>
-                          </>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                            <Lock className="w-3 h-3" />
-                            <span>Protected</span>
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-white">
-                        {canSeeSensitive ? `PKR ${(member.totalContributed || 0).toLocaleString()}` : '—'}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <RoleBadge
-                            role={member.role}
-                            isFounder={member.isFounder}
-                            isAuditOfficer={Boolean(member.isAuditOfficer)}
-                            compact
-                          />
-                          {isProfilePending && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[9px] font-extrabold uppercase">
-                              Profile Pending
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          {currentIsFounder && !isFounderUser(member) && (
-                            <button
-                              type="button"
-                              onClick={() => setRoleModalUser(member)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] rounded font-extrabold cursor-pointer"
-                            >
-                              <Crown className="w-3 h-3" />
-                              <span>Assign Role</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenMessage(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 kc-gold-button rounded font-bold transition-colors cursor-pointer"
-                            title="Send Direct Message"
-                          >
-                            <MessageSquare className="w-3 h-3" />
-                            <span>Message</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setInspectedUserProfile(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#161D2C] hover:bg-slate-800 border border-slate-700 text-slate-200 rounded font-medium cursor-pointer"
-                          >
-                            <span>Profile</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCardUser(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#161D2C] hover:bg-slate-800 border border-slate-700 text-slate-200 rounded font-medium cursor-pointer"
-                          >
-                            <IdCard className="w-3.5 h-3.5 text-[#F5D061]" />
-                            <span>Card</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                filteredMembers.map(member => (
+                  <MemberRowDesktop
+                    key={member.id}
+                    member={member}
+                    isCurrentUser={member.id === currentUser.id}
+                    isFocused={focusedMemberId === member.id}
+                    canViewSensitive={isPrivilegedViewer || member.id === currentUser.id}
+                    canAssignRole={currentIsFounder && !isFounderUser(member)}
+                    canApprove={canApproveMembers}
+                    onInspect={setInspectedUserProfile}
+                    onCard={setSelectedCardUser}
+                    onMessage={handleOpenMessage}
+                    onShowLocation={setSelectedMemberForHierarchy}
+                    onAssignRole={setRoleModalUser}
+                    onApproveDecision={handleApproveDecision}
+                  />
+                ))
               )}
             </tbody>
           </table>
@@ -572,9 +801,9 @@ export const MemberDirectory: React.FC = () => {
 
       {/* Location Hierarchy Modal */}
       {selectedMemberForHierarchy && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-          <div className="w-full max-w-md bg-[#111622] rounded-xl shadow-2xl border border-[#D4AF37]/35 p-5 space-y-4 my-auto text-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-4 overflow-y-auto">
+          <div className="w-full max-w-md kc-luxury-modal rounded-2xl p-5 space-y-4 my-auto text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-[#F5D061]" />
                 <div>
@@ -585,13 +814,13 @@ export const MemberDirectory: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedMemberForHierarchy(null)}
-                className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer"
+                className="p-1.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-3 bg-[#0A0D12] rounded-lg border border-slate-800 space-y-2 text-xs">
+            <div className="p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/25 space-y-2 text-xs">
               {[
                 { label: 'Country', val: selectedMemberForHierarchy.country || 'Pakistan' },
                 { label: 'Province / State', val: selectedMemberForHierarchy.stateProvince || 'Punjab' },
@@ -599,7 +828,7 @@ export const MemberDirectory: React.FC = () => {
                 { label: 'City / Town', val: selectedMemberForHierarchy.customCity || selectedMemberForHierarchy.cityTown || selectedMemberForHierarchy.district },
                 { label: 'Union Council', val: selectedMemberForHierarchy.unionCouncil || '—' }
               ].map((st) => (
-                <div key={st.label} className="flex items-center justify-between py-1 border-b border-slate-800/70 last:border-0">
+                <div key={st.label} className="flex items-center justify-between py-1 border-b border-[#D4AF37]/10 last:border-0">
                   <span className="text-slate-400">{st.label}:</span>
                   <span className="font-bold text-white">{st.val}</span>
                 </div>
@@ -610,7 +839,7 @@ export const MemberDirectory: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedMemberForHierarchy(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg cursor-pointer"
+                className="px-4 py-1.5 bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-white text-xs font-semibold rounded-xl kc-pressable cursor-pointer"
               >
                 Close
               </button>

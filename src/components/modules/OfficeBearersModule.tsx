@@ -89,49 +89,49 @@ export const OfficeBearersModule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Title and Constitutional Notice */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[#F5D061] uppercase tracking-wider">
               Organizational Leadership & Governance
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">10 Proposed Titles · 13 Constitutional Seats</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-xs text-slate-400">10 Proposed Titles · 13 Constitutional Seats</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5 flex items-center gap-2">
-            <Award className="w-6 h-6 text-amber-500" />
+          <h1 className="text-2xl font-bold text-white mt-0.5 flex items-center gap-2">
+            <Award className="w-6 h-6 text-[#F5D061]" />
             <span>Office-Bearers Management Center</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             Maintain official appointments, terms, jurisdictions, and immutable historical succession records.
           </p>
         </div>
 
         {/* Quick Stats Pill */}
-        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+        <div className="flex items-center gap-3 kc-obsidian-card px-4 py-2.5 rounded-xl text-xs">
           <div>
             <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Seats</span>
-            <span className="font-mono font-bold text-slate-900 dark:text-white">13</span>
+            <span className="font-mono font-bold text-white tabular-nums">13</span>
           </div>
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="h-6 w-px bg-[#D4AF37]/25" />
           <div>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block uppercase font-bold">Occupied</span>
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{activeCount}</span>
+            <span className="text-[10px] text-emerald-300 block uppercase font-bold">Occupied</span>
+            <span className="font-mono font-bold text-emerald-300 tabular-nums">{activeCount}</span>
           </div>
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="h-6 w-px bg-[#D4AF37]/25" />
           <div>
-            <span className="text-[10px] text-amber-600 dark:text-amber-400 block uppercase font-bold">Vacant</span>
-            <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{vacantCount}</span>
+            <span className="text-[10px] text-[#F5D061] block uppercase font-bold">Vacant</span>
+            <span className="font-mono font-bold text-[#F5D061] tabular-nums">{vacantCount}</span>
           </div>
         </div>
       </div>
 
       {/* Official Constitutional Disclaimer Banner */}
-      <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
-        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="p-4 rounded-2xl kc-emerald-panel flex items-start gap-3 text-xs text-slate-100">
+        <AlertCircle className="w-5 h-5 text-[#F5D061] shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-bold">Proposed Constitutional Governance Notice</p>
-          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+          <p className="font-bold text-[#F5D061]">Proposed Constitutional Governance Notice</p>
+          <p className="text-slate-200 leading-relaxed">
             These 10 titles and 13 seats (including all 4 distinct Vice President seats) are proposed organizational positions subject to final verification against the official Dastoor (Constitution). Appointment to an organizational office title does not automatically grant technical app privileges; software permissions are managed strictly through Role-Based Access Control.
           </p>
         </div>
@@ -139,13 +139,13 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* Tabs and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs">
+        <div className="flex items-center gap-1.5 p-1.5 kc-tab-shell rounded-xl text-xs">
           <button
             onClick={() => setActiveSubTab('SEATS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable tabular-nums ${
               activeSubTab === 'SEATS'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'kc-gold-button font-bold'
+                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
             <Award className="w-3.5 h-3.5" />
@@ -154,10 +154,10 @@ export const OfficeBearersModule: React.FC = () => {
 
           <button
             onClick={() => setActiveSubTab('HISTORY')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable tabular-nums ${
               activeSubTab === 'HISTORY'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'kc-gold-button font-bold'
+                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -207,31 +207,31 @@ export const OfficeBearersModule: React.FC = () => {
             return (
               <div 
                 key={ob.id}
-                className={`p-5 rounded-xl border bg-white dark:bg-slate-900 transition-all space-y-3 flex flex-col justify-between ${
+                className={`p-5 rounded-2xl transition-all space-y-3 flex flex-col justify-between ${
                   isOccupied
-                    ? 'border-slate-200 dark:border-slate-800 shadow-xs'
-                    : 'border-dashed border-amber-300 dark:border-amber-800/80 bg-amber-50/20 dark:bg-amber-950/10'
+                    ? 'kc-obsidian-card'
+                    : 'bg-[#090D16] border border-dashed border-[#D4AF37]/45 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]'
                 }`}
               >
                 <div>
                   {/* Top Bar of Card */}
-                  <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/60">
+                  <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/20">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
                         {ob.jurisdiction} JURISDICTION {ob.stateProvince ? `· ${ob.stateProvince}` : ''}
                       </span>
-                      <h3 className="font-bold text-base text-slate-900 dark:text-white leading-tight mt-0.5">
+                      <h3 className="font-bold text-base text-white leading-tight mt-0.5">
                         {ob.title}
                       </h3>
-                      <p className="text-[11px] text-slate-500 font-medium">
+                      <p className="text-[11px] text-slate-400 font-medium">
                         {ob.seatLabel}
                       </p>
                     </div>
 
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase shrink-0 ${
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-lg font-bold uppercase shrink-0 ${
                       isOccupied
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
+                        : 'bg-[#111726] text-[#F5D061] border border-[#D4AF37]/40'
                     }`}>
                       {ob.status}
                     </span>
@@ -241,7 +241,7 @@ export const OfficeBearersModule: React.FC = () => {
                   {isOccupied ? (
                     <div className="pt-3 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                        <span className="font-semibold text-white text-sm">
                           {ob.assignedUserName}
                         </span>
                         {ob.assignedUserId && (
@@ -250,43 +250,43 @@ export const OfficeBearersModule: React.FC = () => {
                               const found = users.find(u => u.id === ob.assignedUserId);
                               if (found) setInspectedUserProfile(found);
                             }}
-                            className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-0.5"
+                            className="text-[11px] text-[#F5D061] hover:underline flex items-center gap-0.5 cursor-pointer font-semibold"
                           >
                             Profile
                           </button>
                         )}
                       </div>
 
-                      <div className="space-y-1 text-slate-600 dark:text-slate-400 text-[11px]">
+                      <div className="space-y-1 text-slate-300 text-[11px]">
                         {ob.assignedUserLocation && (
                           <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
                             <span>{ob.assignedUserLocation}</span>
                           </div>
                         )}
                         {ob.assignedUserPhone && (
                           <div className="flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{ob.assignedUserPhone}</span>
+                            <Phone className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                            <span className="font-mono tabular-nums">{ob.assignedUserPhone}</span>
                           </div>
                         )}
                         {ob.appointedDate && (
                           <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>Appointed: {ob.appointedDate} ({ob.termYears}-Year Term)</span>
+                            <Calendar className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                            <span className="tabular-nums">Appointed: {ob.appointedDate} ({ob.termYears}-Year Term)</span>
                           </div>
                         )}
                       </div>
 
                       {ob.notes && (
-                        <p className="text-[11px] italic text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800/40">
+                        <p className="text-[11px] italic text-slate-300 pt-2 border-t border-[#D4AF37]/15">
                           "{ob.notes}"
                         </p>
                       )}
                     </div>
                   ) : (
-                    <div className="py-6 text-center text-xs text-amber-700 dark:text-amber-400 space-y-1">
-                      <AlertCircle className="w-6 h-6 mx-auto opacity-70" />
+                    <div className="py-6 text-center text-xs text-[#F5D061] space-y-1">
+                      <AlertCircle className="w-6 h-6 mx-auto opacity-80" />
                       <p className="font-semibold">Position Currently Vacant</p>
                       <p className="text-[11px] text-slate-400">
                         {isSuperAdmin 
@@ -299,12 +299,12 @@ export const OfficeBearersModule: React.FC = () => {
 
                 {/* Super Admin Action Controls */}
                 {isSuperAdmin && (
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 text-xs">
+                  <div className="pt-3 border-t border-[#D4AF37]/20 flex items-center justify-end gap-2 text-xs">
                     {isOccupied ? (
                       <>
                         <button
                           onClick={() => setSelectedSeatForVacate(ob)}
-                          className="px-2.5 py-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded border border-rose-200 dark:border-rose-800 transition-colors"
+                          className="px-3 py-1.5 text-rose-300 bg-rose-950/60 hover:bg-rose-900/70 rounded-xl border border-rose-500/40 transition-colors cursor-pointer kc-pressable font-semibold"
                         >
                           Declare Vacant
                         </button>
@@ -314,7 +314,7 @@ export const OfficeBearersModule: React.FC = () => {
                             setSelectedUserId(ob.assignedUserId || '');
                             setAppointmentNotes(ob.notes || '');
                           }}
-                          className="px-3 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-slate-950 font-bold rounded transition-colors shadow-xs"
+                          className="px-3.5 py-1.5 kc-gold-button font-bold rounded-xl cursor-pointer"
                         >
                           Reassign
                         </button>
@@ -326,7 +326,7 @@ export const OfficeBearersModule: React.FC = () => {
                           setSelectedUserId('');
                           setAppointmentNotes('');
                         }}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>Appoint Office-Bearer</span>
@@ -340,17 +340,17 @@ export const OfficeBearersModule: React.FC = () => {
         </div>
       ) : (
         /* Subtab 2: Succession & Historical Record Log */
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
+        <div className="kc-obsidian-card rounded-2xl overflow-hidden">
+          <div className="p-4 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+              <h3 className="font-bold text-sm text-white">
                 Historical Succession Registry
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 Preserved record of all past appointments. Records are never deleted or overwritten.
               </p>
             </div>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-[#F5D061] tabular-nums">
               {officeBearerHistory.length} total historical entries
             </span>
           </div>
@@ -358,7 +358,7 @@ export const OfficeBearersModule: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50/50 dark:bg-slate-950/50 font-semibold">
+                <tr className="border-b border-[#D4AF37]/25 text-[#F5D061] bg-[#090D16] font-semibold">
                   <th className="py-3 px-4">Seat / Office Title</th>
                   <th className="py-3 px-4">Incumbent Name</th>
                   <th className="py-3 px-4">Term Tenure</th>
@@ -366,7 +366,7 @@ export const OfficeBearersModule: React.FC = () => {
                   <th className="py-3 px-4">Reason / Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <tbody className="divide-y divide-[#D4AF37]/15">
                 {officeBearerHistory.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-slate-400">
@@ -375,21 +375,21 @@ export const OfficeBearersModule: React.FC = () => {
                   </tr>
                 ) : (
                   officeBearerHistory.map(hist => (
-                    <tr key={hist.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                    <tr key={hist.id} className="hover:bg-[#161F33]/70 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-white">
                         <div>{hist.title}</div>
                         <div className="text-[10px] text-slate-400 font-normal">{hist.seatLabel}</div>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
+                      <td className="py-3 px-4 font-medium text-slate-200">
                         {hist.userName}
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-500">
+                      <td className="py-3 px-4 font-mono text-slate-300 tabular-nums">
                         {hist.startDate} → {hist.endDate} ({hist.termYears}y)
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                      <td className="py-3 px-4 text-slate-300">
                         {hist.terminatedBy}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 italic max-w-xs truncate">
+                      <td className="py-3 px-4 text-slate-400 italic max-w-xs truncate">
                         "{hist.reason}"
                       </td>
                     </tr>
@@ -403,32 +403,32 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Appoint Office-Bearer */}
       {selectedSeatForAppoint && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div>
-              <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider">
                 Super Admin Appointment Authority
               </span>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+              <h3 className="text-base font-bold text-white mt-0.5">
                 Appoint to {selectedSeatForAppoint.title}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-300">
                 {selectedSeatForAppoint.seatLabel} ({selectedSeatForAppoint.jurisdiction} Jurisdiction)
               </p>
             </div>
 
             {actionError && (
-              <div className="p-3 rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 text-xs">
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-200 text-xs">
                 {actionError}
               </div>
             )}
 
             <form onSubmit={handleAppointSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Select Active Appointee / Member *
                 </label>
                 <LuxurySelect
@@ -446,7 +446,7 @@ export const OfficeBearersModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Appointment Reference / Resolution Remarks
                 </label>
                 <textarea
@@ -454,21 +454,21 @@ export const OfficeBearersModule: React.FC = () => {
                   value={appointmentNotes}
                   onChange={(e) => setAppointmentNotes(e.target.value)}
                   placeholder="Appointed under bylaws minute. Approved by CEC..."
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
+                  className="w-full p-2.5 rounded-xl kc-luxury-input resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
                 <button
                   type="button"
                   onClick={() => setSelectedSeatForAppoint(null)}
-                  className="px-3.5 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+                  className="px-3.5 py-2 text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/20 rounded-xl font-medium cursor-pointer kc-pressable"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-sm"
+                  className="px-4 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
                 >
                   Confirm Appointment
                 </button>
@@ -480,26 +480,26 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Declare Seat Vacant */}
       {selectedSeatForVacate && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div>
-              <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-rose-300 uppercase tracking-wider">
                 Termination of Office Term
               </span>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+              <h3 className="text-base font-bold text-white mt-0.5">
                 Declare {selectedSeatForVacate.seatLabel} Vacant?
               </h3>
-              <p className="text-xs text-slate-500">
-                Current Incumbent: <strong>{selectedSeatForVacate.assignedUserName}</strong>. A historical tenure record will be preserved automatically.
+              <p className="text-xs text-slate-300">
+                Current Incumbent: <strong className="text-white">{selectedSeatForVacate.assignedUserName}</strong>. A historical tenure record will be preserved automatically.
               </p>
             </div>
 
             <form onSubmit={handleVacateSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Reason for Vacating *
                 </label>
                 <textarea
@@ -508,21 +508,21 @@ export const OfficeBearersModule: React.FC = () => {
                   value={vacateReason}
                   onChange={(e) => setVacateReason(e.target.value)}
                   placeholder="Term completed, resignation, or administrative restructuring..."
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
+                  className="w-full p-2.5 rounded-xl kc-luxury-input resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
                 <button
                   type="button"
                   onClick={() => setSelectedSeatForVacate(null)}
-                  className="px-3.5 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+                  className="px-3.5 py-2 text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/20 rounded-xl font-medium cursor-pointer kc-pressable"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-sm"
+                  className="px-4 py-2 bg-rose-700 hover:bg-rose-600 border border-rose-500/50 text-white font-bold rounded-xl cursor-pointer kc-pressable"
                 >
                   Declare Vacant & Record History
                 </button>

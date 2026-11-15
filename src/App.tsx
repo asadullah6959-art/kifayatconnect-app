@@ -46,7 +46,9 @@ import {
   User as UserIcon,
   LogOut,
   Wrench,
-  X
+  X,
+  UserCheck,
+  ArrowRight
 } from 'lucide-react';
 import { translate } from './data/translations';
 
@@ -70,7 +72,10 @@ const MainLayout: React.FC = () => {
     liveChatDisplayMode,
     unreadCommunityCount,
     restoreLiveChat,
-    hideLiveChat
+    hideLiveChat,
+    userNotifications,
+    markNotificationAsRead,
+    jumpToMemberApproval
   } = useApp();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -111,11 +116,17 @@ const MainLayout: React.FC = () => {
   // Maintenance Screen for non-Super-Admin users when Maintenance Mode is enabled
   if (appSettings.maintenanceMode && currentUser.role !== 'SUPER_ADMIN') {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#0A0D12] text-white flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-[#111622] border border-[#D4AF37]/35 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+      <div
+        className="min-h-[100dvh] w-full text-white flex flex-col items-center justify-center p-6 text-center"
+        style={{
+          backgroundColor: '#090D16',
+          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08), transparent 55%), radial-gradient(circle at 15% 85%, rgba(4, 41, 32, 0.35), transparent 50%)'
+        }}
+      >
+        <div className="max-w-md w-full kc-luxury-modal rounded-2xl p-6 sm:p-8 space-y-5">
           <div className="flex flex-col items-center gap-3">
             <BrandEmblem3D size="lg" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-[#D4AF37]/40 text-[#F5D061] text-[11px] font-bold uppercase">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] text-[11px] font-bold uppercase shadow-sm">
               <Wrench className="w-3.5 h-3.5" />
               <span>{translate(language, 'maintenanceTitle')}</span>
             </span>
@@ -123,13 +134,13 @@ const MainLayout: React.FC = () => {
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
             {translate(language, 'maintenanceDesc', appSettings.textOverrides)}
           </p>
-          <p className="text-[11px] text-slate-500 font-mono">
+          <p className="text-[11px] text-slate-400 font-mono tabular-nums">
             {appSettings.contactHelpline} · {appSettings.contactEmail}
           </p>
           <button
             type="button"
             onClick={logoutFirebaseAuth}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/30 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer kc-pressable"
           >
             <LogOut className="w-4 h-4 text-[#F5D061]" />
             <span>{translate(language, 'logout')}</span>
@@ -196,10 +207,19 @@ const MainLayout: React.FC = () => {
 
   const isRtl = language === 'ur';
 
+  const liveApprovalAlert =
+    currentUser.role === 'SUPER_ADMIN'
+      ? userNotifications.find(n => n.type === 'approval_request' && !n.read) || null
+      : null;
+
   return (
     <div
       className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-slate-100"
-      style={{ backgroundColor: 'var(--kc-bg, #0A0D12)' }}
+      style={{
+        backgroundColor: 'var(--kc-bg, #090D16)',
+        backgroundImage:
+          'radial-gradient(circle at 82% 8%, rgba(212, 175, 55, 0.06), transparent 42%), radial-gradient(circle at 12% 88%, rgba(4, 41, 32, 0.28), transparent 48%)'
+      }}
     >
       {/* Global Keyboard Shortcuts Handler */}
       <GlobalShortcutsHandler
@@ -263,7 +283,46 @@ const MainLayout: React.FC = () => {
 
         {/* Scrollable Center Content Viewport */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
-          <div className="max-w-7xl mx-auto w-full min-w-0">
+          <div className="max-w-7xl mx-auto w-full min-w-0 space-y-4">
+            {liveApprovalAlert && (
+              <div className="p-3.5 rounded-xl kc-emerald-panel flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#090D16] border border-[#D4AF37]/50 flex items-center justify-center shrink-0 shadow-inner">
+                    <UserCheck className="w-4 h-4 text-[#F5D061]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-[#F5D061] truncate">
+                      {liveApprovalAlert.title}
+                    </div>
+                    <div className="text-[11px] text-slate-200 truncate">
+                      {liveApprovalAlert.message}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markNotificationAsRead(liveApprovalAlert.id);
+                      jumpToMemberApproval(liveApprovalAlert.memberUid || liveApprovalAlert.entityId || null);
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg kc-gold-button font-extrabold text-[11px] cursor-pointer"
+                  >
+                    <span>Review &amp; Approve</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => markNotificationAsRead(liveApprovalAlert.id)}
+                    aria-label="Dismiss approval alert"
+                    className="p-1.5 rounded-lg bg-[#090D16]/80 hover:bg-[#161F33] border border-[#D4AF37]/25 text-slate-300 cursor-pointer kc-pressable"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <ErrorBoundary key={activeTab} title="View Recovery Shield">
               {renderContent()}
             </ErrorBoundary>
@@ -274,7 +333,7 @@ const MainLayout: React.FC = () => {
       {/* Fixed Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-[#111622] border-t border-[#D4AF37]/25 px-1.5 py-1.5 z-30 flex items-center justify-around select-none overscroll-none touch-pan-y"
+        className="md:hidden shrink-0 w-full max-w-full bg-[#090D16] border-t border-[#D4AF37]/40 px-1.5 py-1.5 z-30 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(252,227,138,0.14)]"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -287,14 +346,16 @@ const MainLayout: React.FC = () => {
                 setActiveTab(tab.id);
                 setIsMobileSidebarOpen(false);
               }}
-              className={`relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl text-[10px] font-semibold transition-colors cursor-pointer ${
-                isActive ? 'text-[#F5D061] bg-[#043927]/60 border border-[#D4AF37]/30' : 'text-slate-400 hover:text-slate-200'
+              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-all cursor-pointer kc-pressable ${
+                isActive
+                  ? 'text-[#F5D061] bg-[#042920] border border-[#D4AF37]/50 shadow-[0_4px_12px_rgba(212,175,55,0.18),inset_0_1px_0_rgba(252,227,138,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
               }`}
             >
               <div className="relative">
                 <Icon className="w-4 h-4 mb-0.5" />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#0A0D12] text-[9px] font-extrabold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#090D16] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
                     {tab.badge > 9 ? '9+' : tab.badge}
                   </span>
                 ) : null}
@@ -336,17 +397,17 @@ const MainLayout: React.FC = () => {
 
       {/* Floating Golden Chat Bubble when Live Chat is Minimized */}
       {liveChatDisplayMode === 'MINIMIZED' && activeTab !== 'chat' && (
-        <div className="fixed bottom-[72px] md:bottom-5 right-3 sm:right-5 z-40 flex items-center rounded-full bg-[#111622] border-2 border-[#D4AF37] shadow-[0_8px_28px_rgba(212,175,55,0.28)] overflow-hidden transition-transform duration-200 hover:-translate-y-0.5">
+        <div className="fixed bottom-[72px] md:bottom-5 right-3 sm:right-5 z-40 flex items-center rounded-full bg-[#111726] border border-[#D4AF37]/70 shadow-[0_12px_32px_rgba(0,0,0,0.75),0_4px_18px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(252,227,138,0.22)] overflow-hidden transition-transform duration-200 hover:-translate-y-0.5">
           <button
             type="button"
             onClick={restoreLiveChat}
-            className="flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161D2C] cursor-pointer"
+            className="flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161F33] cursor-pointer kc-pressable"
             title="Restore Live Chat Room"
           >
             <span className="relative flex items-center justify-center">
               <MessageSquare className="w-4 h-4 text-[#F5D061]" />
               {unreadCommunityCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-[#0A0D12]">
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-[#090D16] tabular-nums">
                   {unreadCommunityCount > 99 ? '99+' : unreadCommunityCount}
                 </span>
               )}
@@ -361,7 +422,7 @@ const MainLayout: React.FC = () => {
             }}
             aria-label="Hide Live Chat bubble"
             title="Hide Live Chat bubble"
-            className="px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/25 cursor-pointer"
+            className="px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/30 cursor-pointer kc-pressable"
           >
             <X className="w-3.5 h-3.5" />
           </button>

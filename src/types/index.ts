@@ -123,6 +123,13 @@ export interface User {
   bio?: string;
   customCity?: string;
   verificationStatus?: 'VERIFIED' | 'PENDING' | 'UNVERIFIED';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  approvalRequestSentAt?: string;
   region?: string; // Legacy fallback
 }
 
@@ -306,7 +313,8 @@ export type NotificationType =
   | 'OFFICE_BEARER_APPOINTMENT'
   | 'CHAT_MESSAGE'
   | 'USER_SIGNUP'
-  | 'USER_LOGIN';
+  | 'USER_LOGIN'
+  | 'approval_request';
 
 export interface AppNotification {
   id: string;
@@ -316,12 +324,17 @@ export interface AppNotification {
   timestamp: string;
   read: boolean;
   targetUserId?: string;
-  targetRole?: UserRole | 'ALL';
+  targetRole?: UserRole | 'ALL' | 'Super Admin';
   targetStateProvince?: string;
   targetDistrict?: string;
   linkTab?: string;
   entityId?: string;
   actionUrl?: string;
+  memberId?: string;
+  memberUid?: string;
+  memberName?: string;
+  memberEmail?: string;
+  district?: string;
 }
 
 // ----------------------------------------------------

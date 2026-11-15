@@ -212,52 +212,52 @@ export const AnnouncementsManager: React.FC = () => {
       </div>
 
       {/* 3 Channel Tabs: Official App 👑 | Community 📢 | History Archive */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+      <div className="inline-flex items-center gap-1.5 p-1.5 kc-tab-shell rounded-2xl overflow-x-auto max-w-full text-xs">
         <button
           type="button"
           onClick={() => setActiveChannel('OFFICIAL_APP')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'OFFICIAL_APP'
               ? 'kc-gold-button'
-              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
           }`}
         >
           <Crown className="w-3.5 h-3.5" />
           <span>{translate(language, 'tabOfficialApp')}</span>
-          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{officialList.length}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/25 text-[10px] font-mono tabular-nums">{officialList.length}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveChannel('COMMUNITY')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'COMMUNITY'
               ? 'kc-gold-button'
-              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
           }`}
         >
           <Megaphone className="w-3.5 h-3.5" />
           <span>{translate(language, 'tabCommunity')}</span>
-          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{communityList.length}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/25 text-[10px] font-mono tabular-nums">{communityList.length}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveChannel('ARCHIVE')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'ARCHIVE'
               ? 'kc-gold-button'
-              : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
           }`}
         >
           <Archive className="w-3.5 h-3.5" />
           <span>{translate(language, 'tabArchive')}</span>
-          <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-mono">{archiveList.length}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-black/25 text-[10px] font-mono tabular-nums">{archiveList.length}</span>
         </button>
       </div>
 
       {canPublishAny && activeChannel !== 'ARCHIVE' && (
-        <div className="p-3 rounded-xl bg-[#043927]/40 border border-[#D4AF37]/30 flex items-center gap-2.5 text-xs text-emerald-200">
+        <div className="p-3.5 rounded-2xl kc-emerald-panel flex items-center gap-2.5 text-xs text-emerald-100">
           <MailCheck className="w-4 h-4 text-[#F5D061] shrink-0" />
           <span>
             Auto-Broadcast Active: Official App announcements (👑) require Super Admin authority; Community notices reach targeted province/district inboxes.
@@ -268,7 +268,7 @@ export const AnnouncementsManager: React.FC = () => {
       {/* List */}
       <div className="space-y-3.5">
         {displayedList.length === 0 ? (
-          <div className="p-10 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/20 text-xs text-slate-400">
+          <div className="p-10 text-center kc-obsidian-card rounded-2xl text-xs text-slate-400">
             {activeChannel === 'ARCHIVE'
               ? translate(language, 'noArchivedAnnouncements')
               : translate(language, 'noAnnouncements')}
@@ -280,12 +280,12 @@ export const AnnouncementsManager: React.FC = () => {
             return (
               <div
                 key={ann.id}
-                className={`p-4 sm:p-5 rounded-2xl border shadow-sm text-xs space-y-2.5 ${
+                className={`p-4 sm:p-5 rounded-2xl text-xs space-y-2.5 ${
                   ann.urgency === 'URGENT'
-                    ? 'bg-rose-950/25 border-rose-500/40'
+                    ? 'bg-rose-950/30 border border-rose-500/45 shadow-lg'
                     : isOfficial
-                    ? 'bg-[#111622] border-[#D4AF37]/40'
-                    : 'bg-[#111622] border-slate-800'
+                    ? 'kc-obsidian-card border-[#D4AF37]/45'
+                    : 'kc-obsidian-card'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -293,15 +293,15 @@ export const AnnouncementsManager: React.FC = () => {
                     <span
                       className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
                         isOfficial
-                          ? 'bg-amber-500/15 border-[#F5D061]/50 text-[#F5D061]'
-                          : 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                          ? 'bg-[#090D16] border-[#F5D061]/50 text-[#F5D061]'
+                          : 'bg-[#042920] border-emerald-500/40 text-emerald-300'
                       }`}
                     >
                       {isOfficial ? '👑 OFFICIAL APP' : '📢 COMMUNITY'}
                     </span>
 
                     {ann.isPinned && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#042920] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
                         <Pin className="w-3 h-3" />
                         <span>{translate(language, 'pinnedBadge')}</span>
                       </span>
@@ -314,14 +314,14 @@ export const AnnouncementsManager: React.FC = () => {
                     )}
 
                     {expired && (
-                      <span className="text-[10px] font-bold text-slate-300 uppercase px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700">
+                      <span className="text-[10px] font-bold text-slate-300 uppercase px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/20">
                         {translate(language, 'expiredOn')}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#0A0D12] border border-slate-800 px-2.5 py-0.5 rounded-lg text-emerald-300">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#090D16] border border-[#D4AF37]/25 px-2.5 py-0.5 rounded-lg text-emerald-300">
                       <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                       {ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS' || !ann.targetScope
                         ? 'All Pakistan'
@@ -334,7 +334,7 @@ export const AnnouncementsManager: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => deleteAnnouncement(ann.id)}
-                        className="p-1.5 rounded-lg bg-[#0A0D12] hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800 cursor-pointer"
+                        className="p-1.5 rounded-lg bg-[#090D16] hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-[#D4AF37]/25 kc-pressable cursor-pointer"
                         title={translate(language, 'deleteLabel')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -345,11 +345,11 @@ export const AnnouncementsManager: React.FC = () => {
 
                 <h3 className="font-extrabold text-base text-white">{ann.title}</h3>
 
-                <p className="text-slate-300 leading-relaxed text-xs whitespace-pre-wrap">
+                <p className="text-slate-200 leading-relaxed text-xs whitespace-pre-wrap">
                   {ann.content}
                 </p>
 
-                <div className="pt-2.5 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+                <div className="pt-2.5 border-t border-[#D4AF37]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span>
                       By <strong className="text-white">{ann.publishedBy}</strong>
@@ -357,7 +357,7 @@ export const AnnouncementsManager: React.FC = () => {
                     <RoleBadge role={ann.publisherRole} compact />
                   </div>
 
-                  <div className="flex items-center gap-3 font-mono text-[10px]">
+                  <div className="flex items-center gap-3 font-mono tabular-nums text-[10px]">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="w-3 h-3 text-[#F5D061]" />
                       {new Date(ann.publishedAt).toLocaleString()}
@@ -378,19 +378,19 @@ export const AnnouncementsManager: React.FC = () => {
 
       {/* Publish Modal */}
       {isPublishModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto text-xs space-y-4"
+            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto text-xs space-y-4"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-[#D4AF37]/20">
               <h3 className="text-base font-bold text-white">
                 {translate(language, 'publishAnnouncementBtn')}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsPublishModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                className="p-1.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -405,10 +405,10 @@ export const AnnouncementsManager: React.FC = () => {
                     type="button"
                     disabled={!canPublishOfficial}
                     onClick={() => setAnnType('OFFICIAL_APP')}
-                    className={`p-2.5 rounded-xl border text-left font-bold cursor-pointer disabled:opacity-40 ${
+                    className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'OFFICIAL_APP'
-                        ? 'border-[#F5D061] bg-[#043927]/70 text-[#F5D061]'
-                        : 'border-slate-800 bg-[#0A0D12] text-slate-400'
+                        ? 'border-[#F5D061] bg-[#042920] text-[#F5D061]'
+                        : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
                     }`}
                   >
                     👑 Official App
@@ -419,10 +419,10 @@ export const AnnouncementsManager: React.FC = () => {
                     type="button"
                     disabled={!canPublishCommunity}
                     onClick={() => setAnnType('COMMUNITY')}
-                    className={`p-2.5 rounded-xl border text-left font-bold cursor-pointer disabled:opacity-40 ${
+                    className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'COMMUNITY'
-                        ? 'border-[#F5D061] bg-[#043927]/70 text-[#F5D061]'
-                        : 'border-slate-800 bg-[#0A0D12] text-slate-400'
+                        ? 'border-[#F5D061] bg-[#042920] text-[#F5D061]'
+                        : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
                     }`}
                   >
                     📢 Community
@@ -439,7 +439,7 @@ export const AnnouncementsManager: React.FC = () => {
                   placeholder="e.g. Monthly Welfare Assembly Notice"
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white text-xs"
+                  className="w-full px-3 py-2 kc-luxury-input rounded-xl text-xs"
                 />
               </div>
 
@@ -447,7 +447,7 @@ export const AnnouncementsManager: React.FC = () => {
                 <div>
                   <label className="font-semibold text-slate-300 block mb-1">Target Audience</label>
                   {isDistrictAdmin ? (
-                    <div className="p-2.5 bg-[#0A0D12] border border-slate-800 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
+                    <div className="p-2.5 bg-[#090D16] border border-[#D4AF37]/25 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{currentUser.assignedDistrict || currentUser.district}</span>
                     </div>
@@ -504,7 +504,7 @@ export const AnnouncementsManager: React.FC = () => {
                   placeholder="Write the full announcement message..."
                   value={annContent}
                   onChange={(e) => setAnnContent(e.target.value)}
-                  className="w-full p-2.5 border border-slate-700 rounded-xl bg-[#0A0D12] text-white text-xs resize-none"
+                  className="w-full p-2.5 kc-luxury-input rounded-xl text-xs resize-none"
                 />
               </div>
 
@@ -516,11 +516,11 @@ export const AnnouncementsManager: React.FC = () => {
                   type="datetime-local"
                   value={annExpiresAt}
                   onChange={(e) => setAnnExpiresAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-[#0A0D12] text-white font-mono text-xs"
+                  className="w-full px-3 py-2 kc-luxury-input rounded-xl font-mono text-xs"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#D4AF37]/20">
                 <div className="flex items-center gap-4 text-slate-200">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -553,7 +553,7 @@ export const AnnouncementsManager: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 px-4 py-2 kc-gold-button font-extrabold rounded-xl shadow-xs cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 kc-gold-button font-extrabold rounded-xl cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Broadcast Now</span>

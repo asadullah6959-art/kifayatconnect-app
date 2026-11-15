@@ -99,8 +99,8 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
           compact ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2.5 text-sm'
         } ${
           disabled
-            ? 'bg-slate-900/50 border-slate-800 text-slate-500 cursor-not-allowed'
-            : 'bg-[#0A0D12] border-[#D4AF37]/35 hover:border-[#D4AF37] text-slate-100 cursor-pointer'
+            ? 'bg-[#090D16]/60 border-slate-800 text-slate-500 cursor-not-allowed'
+            : 'kc-luxury-input hover:border-[#F5D061]/70 cursor-pointer'
         } ${buttonClassName}`}
       >
         <span className={`truncate font-semibold ${selectedOption ? 'text-slate-100' : 'text-slate-400'}`}>
@@ -111,22 +111,22 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4"
           onClick={handleClose}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-sm max-h-[55vh] flex flex-col bg-[#111622] border border-[#D4AF37]/50 rounded-2xl shadow-2xl overflow-hidden text-slate-100"
+            className="w-full max-w-sm max-h-[55vh] flex flex-col kc-luxury-modal rounded-2xl overflow-hidden text-slate-100"
             onClick={e => e.stopPropagation()}
           >
             {/* Compact Header with top-right Close (X) */}
-            <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#0A0D12] flex items-center justify-between gap-2 shrink-0">
+            <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-wider text-[#F5D061] truncate">
                   {label || placeholder}
                 </p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-400 font-mono tabular-nums">
                   {normalizedOptions.length} option{normalizedOptions.length === 1 ? '' : 's'}
                 </p>
               </div>
@@ -134,7 +134,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label="Close selector"
-                className="w-8 h-8 rounded-lg bg-[#161D2C] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:border-[#D4AF37] flex items-center justify-center shrink-0 transition"
+                className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -142,7 +142,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
 
             {/* Optional Search Bar */}
             {shouldShowSearch && (
-              <div className="px-3 py-2 border-b border-slate-800 bg-[#0E131D] shrink-0">
+              <div className="px-3 py-2 border-b border-[#D4AF37]/20 bg-[#0E1422] shrink-0">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
@@ -150,13 +150,13 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder={searchPlaceholder}
-                    className="w-full pl-8 pr-7 py-1.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
+                    className="w-full pl-8 pr-7 py-1.5 kc-luxury-input rounded-lg text-xs"
                   />
                   {query && (
                     <button
                       type="button"
                       onClick={() => setQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -166,7 +166,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
             )}
 
             {/* Options List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-800/70 p-1.5" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/10 p-1.5" style={{ WebkitOverflowScrolling: 'touch' }}>
               {filteredOptions.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-400">
                   No matching options found.
@@ -179,10 +179,10 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                       key={`${opt.value}-${opt.label}`}
                       type="button"
                       onClick={() => handleSelect(opt.value)}
-                      className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 text-left transition ${
+                      className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 text-left kc-pressable cursor-pointer ${
                         active
-                          ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#F5D061]'
-                          : 'hover:bg-[#161D2C] text-slate-200 border border-transparent'
+                          ? 'bg-[#042920] border border-[#D4AF37]/50 text-[#F5D061]'
+                          : 'hover:bg-[#1A233A] text-slate-200 border border-transparent'
                       }`}
                     >
                       <div className="min-w-0 flex-1">
@@ -193,7 +193,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {opt.badge && (
-                          <span className="px-1.5 py-0.5 rounded bg-[#0A0D12] border border-[#D4AF37]/30 text-[10px] font-bold text-[#F5D061]">
+                          <span className="px-1.5 py-0.5 rounded bg-[#090D16] border border-[#D4AF37]/30 text-[10px] font-bold text-[#F5D061] tabular-nums">
                             {opt.badge}
                           </span>
                         )}

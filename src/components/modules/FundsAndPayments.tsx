@@ -209,7 +209,7 @@ export const FundsAndPayments: React.FC = () => {
   const renderStatusPill = (status: PaymentTransaction['status']) => {
     if (status === 'VERIFIED') {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#064E3B]/70 text-emerald-300 border border-emerald-500/40">
+        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#042920] text-emerald-300 border border-emerald-500/45">
           <CheckCircle2 className="w-3 h-3" />
           Approved
         </span>
@@ -224,7 +224,7 @@ export const FundsAndPayments: React.FC = () => {
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-rose-950/70 text-rose-300 border border-rose-500/40">
+      <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-rose-950/75 text-rose-300 border border-rose-500/45">
         <XCircle className="w-3 h-3" />
         Rejected
       </span>
@@ -235,7 +235,7 @@ export const FundsAndPayments: React.FC = () => {
     <div className="space-y-5 max-w-full">
       {downloadToast && (
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
-          <div className="bg-[#0F141F] text-white text-xs px-4 py-2.5 rounded-lg shadow-xl border border-[#D4AF37]/50 flex items-center gap-2">
+          <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span className="font-semibold">Financial ledger CSV downloaded!</span>
           </div>
@@ -276,7 +276,7 @@ export const FundsAndPayments: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#151C2B] hover:bg-[#1C2538] text-slate-200 border border-[#D4AF37]/35 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <FileDown className="w-3.5 h-3.5 text-emerald-400" />
             <span>Export CSV</span>
@@ -284,7 +284,7 @@ export const FundsAndPayments: React.FC = () => {
 
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#151C2B] hover:bg-[#1C2538] text-slate-200 border border-[#D4AF37]/35 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-[#F5D061]" />
             <span>Print</span>
@@ -298,7 +298,7 @@ export const FundsAndPayments: React.FC = () => {
                 setIsSubmitModalOpen(true);
               }
             }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#F5D061] hover:from-[#E5C158] hover:to-[#FFF0A5] text-[#0A0D12] text-xs font-extrabold rounded-lg shadow-[0_6px_18px_rgba(212,175,55,0.25)] border border-[#FFF2B2]/40 transition-all cursor-pointer"
+            className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Submit Payment</span>
@@ -312,7 +312,7 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="p-4 bg-[#0F141F] rounded-xl border border-[#D4AF37]/35 shadow-lg">
+        <div className="kc-obsidian-card p-4 rounded-2xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
             Total Approved Funds
           </span>
@@ -322,12 +322,12 @@ export const FundsAndPayments: React.FC = () => {
             </span>
             <span className="text-[11px] text-emerald-400 font-bold">Cleared</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-1 tabular-nums">
             {verifiedPayments.length} approved transactions
           </p>
         </div>
 
-        <div className="p-4 bg-[#151C2B] rounded-xl border border-[#D4AF37]/50 shadow-lg">
+        <div className="kc-obsidian-card p-4 rounded-2xl !border-[#F5D061]/55">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#F5D061] block">
             Pending Verification
           </span>
@@ -335,7 +335,7 @@ export const FundsAndPayments: React.FC = () => {
             <span className="text-xl sm:text-2xl font-extrabold text-[#F5D061] font-mono tabular-nums">
               PKR {pendingSum.toLocaleString()}
             </span>
-            <span className="text-[11px] text-[#F5D061] font-bold font-mono">
+            <span className="text-[11px] text-[#F5D061] font-bold font-mono tabular-nums">
               {pendingPayments.length} Queue
             </span>
           </div>
@@ -344,8 +344,8 @@ export const FundsAndPayments: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-4 bg-[#0F141F] rounded-xl border border-[#D4AF37]/35 shadow-lg">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+        <div className="kc-emerald-panel p-4 rounded-2xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 block">
             Digital Ledger Integrity
           </span>
           <div className="mt-2 flex items-baseline justify-between gap-2">
@@ -357,14 +357,14 @@ export const FundsAndPayments: React.FC = () => {
               Audited
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[11px] text-emerald-100/80 mt-1">
             Every approved payment issues an E-Receipt
           </p>
         </div>
       </div>
 
       {/* Filters + Ledger */}
-      <div className="report-print-area bg-[#0F141F] rounded-xl border border-[#D4AF37]/35 p-4 sm:p-5 space-y-4 shadow-xl">
+      <div className="report-print-area kc-obsidian-card rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/20 no-print">
           <div>
             <h3 className="text-sm font-bold text-[#F5D061]">
@@ -377,13 +377,13 @@ export const FundsAndPayments: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 sm:flex-initial">
-              <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search ref, member, district..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs bg-[#151C2B] text-white placeholder-slate-400 border border-[#D4AF37]/30 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#D4AF37] w-full sm:w-52"
+                className="kc-luxury-input pl-8 pr-3 py-1.5 text-xs rounded-xl w-full sm:w-52"
               />
             </div>
 
@@ -472,7 +472,7 @@ export const FundsAndPayments: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 rounded-xl border border-[#D4AF37]/30 bg-[#151C2B] space-y-2.5"
+                  className="p-3.5 rounded-xl border border-[#D4AF37]/35 bg-[#090D16] shadow-[inset_0_1px_0_rgba(252,227,138,0.08)] space-y-2.5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -492,10 +492,10 @@ export const FundsAndPayments: React.FC = () => {
                       <span className="text-[10px] font-mono text-slate-400">Ref: {tx.referenceNumber}</span>
                     </div>
                     <div className="text-right">
-                      <span className="font-mono font-extrabold text-sm text-white">
+                      <span className="font-mono tabular-nums font-extrabold text-sm text-white">
                         PKR {tx.amount.toLocaleString()}
                       </span>
-                      <span className="text-[10px] text-slate-400 block">{tx.date}</span>
+                      <span className="text-[10px] text-slate-400 block tabular-nums">{tx.date}</span>
                     </div>
                   </div>
 
@@ -517,7 +517,7 @@ export const FundsAndPayments: React.FC = () => {
                       {tx.status === 'VERIFIED' && (
                         <button
                           onClick={() => setSelectedReceipt(tx)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#0A0D12] border border-[#D4AF37]/35 text-slate-100 rounded-md font-semibold cursor-pointer"
+                          className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-md font-semibold cursor-pointer"
                         >
                           <Printer className="w-3 h-3 text-emerald-400" />
                           <span>E-Receipt</span>
@@ -527,14 +527,14 @@ export const FundsAndPayments: React.FC = () => {
                         <>
                           <button
                             onClick={() => verifyPayment(tx.id, true)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-semibold cursor-pointer"
+                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded-md font-bold cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3 h-3" />
+                            <CheckCircle2 className="w-3 h-3 text-emerald-300" />
                             <span>Approve</span>
                           </button>
                           <button
                             onClick={() => setRejectTxId(tx.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-rose-600 hover:bg-rose-500 text-white rounded-md font-semibold cursor-pointer"
+                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded-md font-semibold cursor-pointer"
                           >
                             <XCircle className="w-3 h-3" />
                             <span>Reject</span>
@@ -550,10 +550,10 @@ export const FundsAndPayments: React.FC = () => {
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto rounded-xl border border-[#D4AF37]/25">
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className="border-b border-[#D4AF37]/25 bg-[#0A0D12] text-[#D4AF37] font-semibold">
+              <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
                 <th className="py-2.5 px-3">Receipt No.</th>
                 <th className="py-2.5 px-3">Date</th>
                 <th className="py-2.5 px-3">Member & Location</th>
@@ -578,11 +578,11 @@ export const FundsAndPayments: React.FC = () => {
                   const dist = tx.district || fallback.district;
 
                   return (
-                    <tr key={tx.id} className="hover:bg-[#151C2B] transition-colors">
+                    <tr key={tx.id} className="hover:bg-[#161F33]/70 transition-colors">
                       <td className="py-2.5 px-3 font-mono font-bold text-[#F5D061]">
                         {tx.receiptNumber}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-slate-300">
+                      <td className="py-2.5 px-3 font-mono tabular-nums text-slate-300">
                         {tx.date}
                       </td>
                       <td className="py-2.5 px-3">
@@ -624,7 +624,7 @@ export const FundsAndPayments: React.FC = () => {
                           {tx.status === 'VERIFIED' ? (
                             <button
                               onClick={() => setSelectedReceipt(tx)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#151C2B] hover:bg-[#1C2538] border border-[#D4AF37]/35 text-slate-100 rounded font-medium transition-colors cursor-pointer"
+                              className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/40 text-slate-100 rounded font-medium transition-colors cursor-pointer"
                             >
                               <Printer className="w-3 h-3 text-emerald-400" />
                               <span>Receipt</span>
@@ -633,14 +633,14 @@ export const FundsAndPayments: React.FC = () => {
                             <>
                               <button
                                 onClick={() => verifyPayment(tx.id, true)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition-colors cursor-pointer"
+                                className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded font-bold transition-colors cursor-pointer"
                               >
-                                <CheckCircle2 className="w-3 h-3" />
+                                <CheckCircle2 className="w-3 h-3 text-emerald-300" />
                                 <span>Approve</span>
                               </button>
                               <button
                                 onClick={() => setRejectTxId(tx.id)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-rose-600 hover:bg-rose-500 text-white rounded font-medium transition-colors cursor-pointer"
+                                className="kc-pressable inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded font-medium transition-colors cursor-pointer"
                               >
                                 <XCircle className="w-3 h-3" />
                               </button>
@@ -663,9 +663,9 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* 3-Step Payment Submission Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg bg-[#0F141F] rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.9)] border border-[#D4AF37]/45 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
@@ -699,8 +699,8 @@ export const FundsAndPayments: React.FC = () => {
                     step === item.num
                       ? 'bg-[#D4AF37]/20 text-[#F5D061] border-[#D4AF37]'
                       : step > item.num
-                      ? 'bg-[#064E3B]/60 text-emerald-300 border-emerald-500/40'
-                      : 'bg-[#151C2B] text-slate-400 border-[#D4AF37]/20'
+                      ? 'bg-[#042920] text-emerald-300 border-emerald-500/45'
+                      : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/20'
                   }`}
                 >
                   {item.num}. {item.label}
@@ -741,7 +741,7 @@ export const FundsAndPayments: React.FC = () => {
                       placeholder="Enter deposited amount in PKR"
                       value={payAmount}
                       onChange={(e) => setPayAmount(e.target.value)}
-                      className="w-full text-sm font-mono font-bold px-3.5 py-2.5 rounded-xl border border-[#D4AF37]/35 bg-[#151C2B] text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#D4AF37] focus:border-[#D4AF37]"
+                      className="kc-luxury-input w-full text-sm font-mono tabular-nums font-bold px-3.5 py-2.5 rounded-xl"
                     />
                   </div>
 
@@ -750,7 +750,7 @@ export const FundsAndPayments: React.FC = () => {
                       type="button"
                       disabled={!isPayAmountValid}
                       onClick={() => setStep(2)}
-                      className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#F5D061] hover:from-[#E5C158] hover:to-[#FFF0A5] disabled:opacity-45 text-[#0A0D12] font-extrabold text-xs rounded-xl transition-all cursor-pointer"
+                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 disabled:opacity-45 font-extrabold text-xs rounded-xl cursor-pointer"
                     >
                       <span>Next: Payment Method</span>
                       <ArrowRight className="w-4 h-4" />
@@ -771,10 +771,10 @@ export const FundsAndPayments: React.FC = () => {
                           key={m.id}
                           type="button"
                           onClick={() => setPayMethod(m.id)}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`kc-pressable p-3 rounded-xl border text-left transition-all cursor-pointer ${
                             payMethod === m.id
-                              ? 'bg-[#D4AF37]/15 border-[#D4AF37] text-[#F5D061]'
-                              : 'bg-[#151C2B] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/50'
+                              ? 'bg-[#D4AF37]/15 border-[#F5D061] text-[#F5D061]'
+                              : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/55'
                           }`}
                         >
                           <div className="text-xs font-bold">{m.label}</div>
@@ -793,7 +793,7 @@ export const FundsAndPayments: React.FC = () => {
                       placeholder="e.g. TID-84920192 (auto-generated for Cash if blank)"
                       value={payRef}
                       onChange={(e) => setPayRef(e.target.value)}
-                      className="w-full text-xs font-mono px-3 py-2.5 rounded-xl border border-[#D4AF37]/30 bg-[#151C2B] text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#D4AF37]"
+                      className="kc-luxury-input w-full text-xs font-mono px-3 py-2.5 rounded-xl"
                     />
                   </div>
 
@@ -806,7 +806,7 @@ export const FundsAndPayments: React.FC = () => {
                       placeholder="e.g. April welfare contribution"
                       value={payNotes}
                       onChange={(e) => setPayNotes(e.target.value)}
-                      className="w-full text-xs px-3 py-2.5 rounded-xl border border-[#D4AF37]/30 bg-[#151C2B] text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#D4AF37]"
+                      className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                     />
                   </div>
 
@@ -814,7 +814,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Back</span>
@@ -822,7 +822,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setStep(3)}
-                      className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#F5D061] hover:from-[#E5C158] hover:to-[#FFF0A5] text-[#0A0D12] font-extrabold text-xs rounded-xl transition-all cursor-pointer"
+                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 font-extrabold text-xs rounded-xl cursor-pointer"
                     >
                       <span>Next: Upload Receipt</span>
                       <ArrowRight className="w-4 h-4" />
@@ -833,10 +833,10 @@ export const FundsAndPayments: React.FC = () => {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-[#151C2B] border border-[#D4AF37]/35 flex items-center justify-between text-xs">
+                  <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between text-xs">
                     <div>
                       <span className="text-slate-400 block">{payFund} · {payMethod}</span>
-                      <span className="font-mono font-bold text-[#F5D061]">
+                      <span className="font-mono tabular-nums font-bold text-[#F5D061]">
                         PKR {Math.round(numericPayAmount || 0).toLocaleString()}
                       </span>
                     </div>
@@ -850,7 +850,7 @@ export const FundsAndPayments: React.FC = () => {
                       Upload Payment Screenshot / Receipt Photo (Gallery or Camera)
                     </label>
 
-                    <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D4AF37]/45 hover:border-[#F5D061] bg-[#151C2B] cursor-pointer transition-colors">
+                    <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D4AF37]/45 hover:border-[#F5D061] bg-[#090D16] cursor-pointer transition-colors">
                       <Upload className="w-6 h-6 text-[#F5D061] mb-1.5" />
                       <span className="text-xs font-bold text-white">
                         {isCompressing ? 'Optimizing image...' : receiptImageUrl ? 'Change Receipt Photo' : 'Tap to Select or Capture Receipt'}
@@ -871,7 +871,7 @@ export const FundsAndPayments: React.FC = () => {
                     )}
 
                     {receiptImageUrl && (
-                      <div className="mt-3 p-2.5 rounded-xl border border-emerald-500/40 bg-[#064E3B]/30 flex items-center justify-between gap-3">
+                      <div className="mt-3 p-2.5 rounded-xl kc-emerald-panel flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <img
                             src={receiptImageUrl}
@@ -893,7 +893,7 @@ export const FundsAndPayments: React.FC = () => {
                             setReceiptImageUrl('');
                             setReceiptImageName('');
                           }}
-                          className="p-1.5 text-slate-400 hover:text-rose-400 cursor-pointer"
+                          className="p-1.5 text-slate-300 hover:text-rose-400 cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -905,7 +905,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Back</span>
@@ -913,7 +913,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isCompressing || !isPayAmountValid}
-                      className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#064E3B] to-[#086E4E] hover:from-[#086E4E] hover:to-[#0A8A62] disabled:opacity-50 text-[#F5D061] border border-[#D4AF37]/50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
+                      className="kc-pressable flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 disabled:opacity-50 text-[#F5D061] border border-[#D4AF37]/50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Submit for Approval</span>
@@ -929,20 +929,20 @@ export const FundsAndPayments: React.FC = () => {
       {/* Receipt Image Preview Modal */}
       {previewTx && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-[#0F141F] rounded-2xl border border-[#D4AF37]/45 max-w-md w-full p-4 space-y-3 shadow-2xl my-auto max-h-[92dvh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="kc-luxury-modal rounded-2xl max-w-md w-full p-4 space-y-3 my-auto max-h-[92dvh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex items-center justify-between pb-2 border-b border-[#D4AF37]/25">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
                   <ImageIcon className="w-4 h-4 text-[#F5D061]" />
                   <span>{previewTx.receiptNumber} Proof</span>
                 </h4>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 tabular-nums">
                   {previewTx.userName} · PKR {previewTx.amount.toLocaleString()} ({previewTx.paymentMethod})
                 </p>
               </div>
               <button
                 onClick={() => setPreviewTx(null)}
-                className="p-1 text-slate-400 hover:text-[#F5D061] cursor-pointer"
+                className="p-1 text-slate-300 hover:text-[#F5D061] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -951,7 +951,7 @@ export const FundsAndPayments: React.FC = () => {
               <img
                 src={previewTx.receiptImageUrl}
                 alt="Payment proof"
-                className="w-full max-h-[60vh] object-contain rounded-xl bg-[#0A0D12] border border-[#D4AF37]/25"
+                className="w-full max-h-[60vh] object-contain rounded-xl bg-[#090D16] border border-[#D4AF37]/25"
               />
             )}
           </div>
@@ -961,7 +961,7 @@ export const FundsAndPayments: React.FC = () => {
       {/* Rejection Reason Modal */}
       {rejectTxId && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-[#0F141F] rounded-2xl border border-[#D4AF37]/45 max-w-sm w-full p-5 space-y-3 shadow-2xl my-auto">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 my-auto">
             <h4 className="text-sm font-bold text-white">Reject Payment Proof</h4>
             <p className="text-xs text-slate-400">
               Provide a brief reason so the member can resubmit a valid receipt.
@@ -971,7 +971,7 @@ export const FundsAndPayments: React.FC = () => {
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. Transaction ID mismatch or unclear receipt"
-              className="w-full text-xs px-3 py-2.5 rounded-lg border border-[#D4AF37]/30 bg-[#151C2B] text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#D4AF37]"
+              className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
             />
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -980,14 +980,14 @@ export const FundsAndPayments: React.FC = () => {
                   setRejectTxId(null);
                   setRejectReason('');
                 }}
-                className="px-3 py-1.5 text-xs text-slate-300 hover:text-white font-semibold cursor-pointer"
+                className="kc-pressable px-3 py-1.5 text-xs text-slate-300 hover:text-white font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmReject}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg cursor-pointer"
+                className="kc-pressable px-4 py-1.5 bg-rose-900 hover:bg-rose-800 border border-rose-500/50 text-white text-xs font-bold rounded-lg cursor-pointer"
               >
                 Confirm Rejection
               </button>

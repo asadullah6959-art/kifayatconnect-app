@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   User, 
   UserRole,
@@ -79,6 +79,9 @@ import {
   saveLocalPasswordCredential,
   verifyLocalPasswordCredential,
   hasLocalPasswordCredential,
+  approveOrRejectUserInFirestore,
+  sendApprovalRequestNotificationToFirestore,
+  resolveUserApprovalStatus,
   StoredOTP,
   OTPRequestResult,
   OTPVerifyResult,
@@ -139,6 +142,8 @@ function normalizeUserRecord(u: User): User {
   const safeCreatedAt = toIsoTimestamp(u.createdAt, u.joinDate || new Date().toISOString());
   const prov = u.stateProvince || u.province || 'Punjab';
 
+  const resolvedApproval = resolveUserApprovalStatus({ ...u, isFounder });
+
   return {
     ...u,
     email: (u.email || '').trim().toLowerCase(),
@@ -156,7 +161,8 @@ function normalizeUserRecord(u: User): User {
     isOnline: onlineFlag,
     lastSeen: safeLastSeen,
     lastLoginAt: safeLastLogin || safeLastSeen || undefined,
-    status: onlineFlag ? 'online' : 'offline',
+    approvalStatus: resolvedApproval,
+    status: resolvedApproval,
     createdAt: safeCreatedAt,
     isStaff: role !== 'MEMBER',
     hasPassword: u.hasPassword || hasLocalPasswordCredential(u.email)
@@ -180,6 +186,13 @@ function mergeUsersLists(localList: User[], remoteList: User[], preferRemote = f
       byKey.set(key, rem);
     } else {
       const photo = rem.photoUrl || rem.avatarUrl || existing.photoUrl || existing.avatarUrl;
+      const remDecisionTs = rem.approvedAt || rem.rejectedAt || '';
+      const extDecisionTs = existing.approvedAt || existing.rejectedAt || '';
+      const keepLocalDecision = extDecisionTs > remDecisionTs;
+      const mergedApproval = keepLocalDecision
+        ? existing.approvalStatus
+        : rem.approvalStatus || existing.approvalStatus;
+
       byKey.set(key, normalizeUserRecord({
         ...existing,
         ...rem,
@@ -190,9 +203,18 @@ function mergeUsersLists(localList: User[], remoteList: User[], preferRemote = f
           ? Boolean(rem.isOnline)
           : Boolean(rem.isOnline ?? existing.isOnline),
         lastSeen: rem.lastSeen || existing.lastSeen,
+        approvalStatus: mergedApproval,
+        status: mergedApproval,
+        membershipStatus: keepLocalDecision ? existing.membershipStatus : (rem.membershipStatus || existing.membershipStatus),
+        verificationStatus: keepLocalDecision ? existing.verificationStatus : (rem.verificationStatus || existing.verificationStatus),
+        approvedBy: keepLocalDecision ? existing.approvedBy : (rem.approvedBy || existing.approvedBy),
+        approvedAt: keepLocalDecision ? existing.approvedAt : (rem.approvedAt || existing.approvedAt),
+        rejectedBy: keepLocalDecision ? existing.rejectedBy : (rem.rejectedBy || existing.rejectedBy),
+        rejectedAt: keepLocalDecision ? existing.rejectedAt : (rem.rejectedAt || existing.rejectedAt),
         profileCompleted: isFounderUser(existing) || isFounderUser(rem)
           ? true
           : Boolean(rem.profileCompleted || existing.profileCompleted),
+        approvalRequestSentAt: rem.approvalRequestSentAt || existing.approvalRequestSentAt,
         isFounder: isFounderUser(existing) || isFounderUser(rem),
         isAuditOfficer: Boolean(rem.isAuditOfficer ?? existing.isAuditOfficer),
         isMutedInChat: isFounderUser(existing) || isFounderUser(rem) ? false : Boolean(rem.isMutedInChat ?? existing.isMutedInChat)
@@ -258,6 +280,11 @@ interface AppContextType {
   toggleLanguage: () => void;
   setSelectedReceipt: (tx: PaymentTransaction | null) => void;
   setSelectedCardUser: (user: User | null) => void;
+  focusedMemberId: string | null;
+  setFocusedMemberId: (id: string | null) => void;
+  memberDirectoryFilter: 'ALL' | 'PENDING_APPROVAL';
+  setMemberDirectoryFilter: (filter: 'ALL' | 'PENDING_APPROVAL') => void;
+  jumpToMemberApproval: (memberIdOrUid?: string | null) => void;
 
   // Profile Completion Modal Trigger
   isCompleteProfileModalOpen: boolean;
@@ -348,6 +375,7 @@ interface AppContextType {
   demoteSuperAdmin: (userId: string) => { success: boolean; error?: string };
   assignAuditOfficer: (userId: string, assigned: boolean) => { success: boolean; error?: string };
   syncAllUsersToCloud: () => Promise<number>;
+  approveMemberAccount: (userId: string, approved: boolean, reason?: string) => { success: boolean; message: string; error?: string };
   toggleUserSuspension: (userId: string, suspended: boolean) => { success: boolean; error?: string };
   updateUserPermissions: (userId: string, permissions: Partial<RolePermissions>) => { success: boolean; error?: string };
   broadcastAdminAlert: (title: string, message: string, target: 'ALL' | 'STAFF') => void;
@@ -413,12 +441,17 @@ interface AppContextType {
     title: string;
     message: string;
     targetUserId?: string;
-    targetRole?: UserRole | 'ALL';
+    targetRole?: UserRole | 'ALL' | 'Super Admin';
     targetStateProvince?: string;
     targetDistrict?: string;
     linkTab?: string;
     entityId?: string;
     actionUrl?: string;
+    memberId?: string;
+    memberUid?: string;
+    memberName?: string;
+    memberEmail?: string;
+    district?: string;
   }) => void;
 
   // Auth, Password & Email OTP
@@ -528,6 +561,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(0);
   const lastSeenCommunityIdsRef = useRef<Set<string> | null>(null);
   const [isCompleteProfileModalOpen, setIsCompleteProfileModalOpen] = useState<boolean>(false);
+  const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null);
+  const [memberDirectoryFilter, setMemberDirectoryFilter] = useState<'ALL' | 'PENDING_APPROVAL'>('ALL');
 
   const openCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(true), []);
   const closeCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(false), []);
@@ -541,6 +576,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setActiveTabState(tab);
   }, []);
+
+  const jumpToMemberApproval = useCallback((memberIdOrUid?: string | null) => {
+    setMemberDirectoryFilter('PENDING_APPROVAL');
+    setFocusedMemberId(memberIdOrUid || null);
+    setActiveTab('members');
+  }, [setActiveTab]);
 
   const minimizeLiveChat = useCallback(() => {
     setLiveChatDisplayMode('MINIMIZED');
@@ -688,35 +729,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshGitHubRelease(false);
   }, [refreshGitHubRelease]);
 
-  // Sync collections to localStorage
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); }, [users]);
+  // Sync collections to localStorage asynchronously so tab transitions & 0ms UI updates never block on JSON.stringify
   useEffect(() => {
-    if (currentUserId) localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
-    else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+    try {
+      if (currentUserId) localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
+      else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+    } catch { /* ignore quota errors */ }
   }, [currentUserId]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(applications)); }, [applications]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints)); }, [complaints]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements)); }, [announcements]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs)); }, [auditLogs]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)); }, [notifications]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARERS, JSON.stringify(officeBearers)); }, [officeBearers]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARER_HISTORY, JSON.stringify(officeBearerHistory)); }, [officeBearerHistory]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APP_UPDATES, JSON.stringify(appUpdates)); }, [appUpdates]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); }, [appSettings]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); }, [chats]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); }, [chatMessages]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.COMMUNITY_MESSAGES, JSON.stringify(communityMessages)); }, [communityMessages]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, JSON.stringify(offlineChatQueue)); }, [offlineChatQueue]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.LANGUAGE, language); }, [language]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [users]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(applications)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [applications]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [payments]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [complaints]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [announcements]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [auditLogs]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [notifications]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARERS, JSON.stringify(officeBearers)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [officeBearers]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARER_HISTORY, JSON.stringify(officeBearerHistory)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [officeBearerHistory]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APP_UPDATES, JSON.stringify(appUpdates)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [appUpdates]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [appSettings]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [chats]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [chatMessages]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.COMMUNITY_MESSAGES, JSON.stringify(communityMessages)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [communityMessages]);
+  useEffect(() => {
+    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, JSON.stringify(offlineChatQueue)); } catch {} }, 0);
+    return () => window.clearTimeout(id);
+  }, [offlineChatQueue]);
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.LANGUAGE, language); } catch {} }, [language]);
   useEffect(() => {
     if (acknowledgedUpdateVersion) {
-      localStorage.setItem(STORAGE_KEYS.ACK_VERSION, acknowledgedUpdateVersion);
+      try { localStorage.setItem(STORAGE_KEYS.ACK_VERSION, acknowledgedUpdateVersion); } catch {}
     }
   }, [acknowledgedUpdateVersion]);
 
-  const currentUser = currentUserId ? (users.find(u => u.id === currentUserId) || null) : null;
-  const latestPublishedUpdate = appUpdates.find(u => u.isPublished) || null;
+  const currentUser = useMemo(
+    () => (currentUserId ? (users.find(u => u.id === currentUserId) || null) : null),
+    [currentUserId, users]
+  );
+  const latestPublishedUpdate = useMemo(
+    () => appUpdates.find(u => u.isPublished) || null,
+    [appUpdates]
+  );
 
   // Test Firestore connection on boot and bridge local logged-in user into Firebase Auth if needed
   useEffect(() => {
@@ -1123,7 +1217,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           profileCompleted: true,
           isOnline: true,
           lastSeen: nowIso,
-          status: 'online',
+          approvalStatus: 'approved',
+          status: 'approved',
           lastLoginAt: nowIso,
           hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
         });
@@ -1147,7 +1242,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isOnline: true,
         lastSeen: nowIso,
         province: 'Islamabad Capital Territory',
-        status: 'online',
+        approvalStatus: 'approved',
+        status: 'approved',
         lastLoginAt: nowIso,
         createdAt: nowIso,
         hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
@@ -1176,11 +1272,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (existing) {
+      const existingApproval = resolveUserApprovalStatus(existing);
       const updatedExisting = normalizeUserRecord({
         ...existing,
         isOnline: true,
         lastSeen: nowIso,
-        status: 'online',
+        approvalStatus: existingApproval,
+        status: existingApproval,
         lastLoginAt: nowIso,
         hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
       });
@@ -1208,7 +1306,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isOnline: true,
       lastSeen: nowIso,
       province: 'Punjab',
-      status: 'online',
+      approvalStatus: 'pending',
+      status: 'pending',
       lastLoginAt: nowIso,
       createdAt: nowIso,
       hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
@@ -1219,8 +1318,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cityTown: 'Lahore',
       unionCouncil: '',
       membershipId: `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      membershipStatus: 'ACTIVE',
-      verificationStatus: 'VERIFIED',
+      membershipStatus: 'PENDING_DISTRICT_REVIEW',
+      verificationStatus: 'PENDING',
       cnic: '',
       address: '',
       joinDate,
@@ -1388,12 +1487,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     title: string;
     message: string;
     targetUserId?: string;
-    targetRole?: UserRole | 'ALL';
+    targetRole?: UserRole | 'ALL' | 'Super Admin';
     targetStateProvince?: string;
     targetDistrict?: string;
     linkTab?: string;
     entityId?: string;
     actionUrl?: string;
+    memberId?: string;
+    memberUid?: string;
+    memberName?: string;
+    memberEmail?: string;
+    district?: string;
   }) => {
     const newNotif: AppNotification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1405,7 +1509,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveNotificationToFirestore(newNotif).catch(() => {});
   };
 
-  const markNotificationAsRead = (id: string) => {
+  const markNotificationAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(n => {
         if (n.id === id) {
@@ -1416,9 +1520,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return n;
       })
     );
-  };
+  }, []);
 
-  const markAllNotificationsAsRead = () => {
+  const markAllNotificationsAsRead = useCallback(() => {
     setNotifications(prev =>
       prev.map(n => {
         if (!n.read) {
@@ -1429,31 +1533,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return n;
       })
     );
-  };
+  }, []);
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = useCallback(() => {
     setNotifications([]);
-  };
+  }, []);
 
-  const userNotifications = currentUser
-    ? notifications.filter(n => {
-        if (n.targetUserId && n.targetUserId === currentUser.id) return true;
-        if (n.targetRole === 'ALL' || !n.targetRole) return true;
-        if (currentUser.role === 'SUPER_ADMIN' && n.type === 'PAYMENT_PENDING') return true;
-        if (n.targetRole === currentUser.role) {
-          if (currentUser.role === 'ADMIN' && n.targetDistrict && n.targetDistrict !== currentUser.district) {
-            return false;
-          }
-          if (currentUser.role === 'CO_ADMIN' && n.targetStateProvince && n.targetStateProvince !== currentUser.stateProvince) {
-            return false;
-          }
+  const userNotifications = useMemo(() => {
+    if (!currentUser) return [];
+    return notifications.filter(n => {
+      if (n.targetUserId && n.targetUserId === currentUser.id) return true;
+      if (n.targetRole === 'ALL' || !n.targetRole) return true;
+      if (currentUser.role === 'SUPER_ADMIN') {
+        if (
+          n.type === 'PAYMENT_PENDING' ||
+          n.type === 'approval_request' ||
+          n.targetRole === 'Super Admin' ||
+          n.targetRole === 'SUPER_ADMIN'
+        ) {
           return true;
         }
-        return false;
-      })
-    : [];
+      }
+      if (n.targetRole === currentUser.role) {
+        if (currentUser.role === 'ADMIN' && n.targetDistrict && n.targetDistrict !== currentUser.district) {
+          return false;
+        }
+        if (currentUser.role === 'CO_ADMIN' && n.targetStateProvince && n.targetStateProvince !== currentUser.stateProvince) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    });
+  }, [currentUser, notifications]);
 
-  const unreadNotificationsCount = userNotifications.filter(n => !n.read).length;
+  const unreadNotificationsCount = useMemo(
+    () => userNotifications.filter(n => !n.read).length,
+    [userNotifications]
+  );
 
   const toggleLanguage = () => {
     setLanguage(prev => (prev === 'en' ? 'ur' : 'en'));
@@ -1870,6 +1987,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const photo = data.avatarUrl || existing?.avatarUrl || existing?.photoUrl;
     const nowIso = new Date().toISOString();
+    const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+    const alreadyApproved = Boolean(
+      isFounderEmail ||
+      (existing && resolveUserApprovalStatus(existing) === 'approved' && existing.profileCompleted)
+    );
+    const nextApprovalStatus: 'approved' | 'pending' = alreadyApproved ? 'approved' : 'pending';
+    const shouldEmitApprovalReq = !isFounderEmail && !alreadyApproved && !existing?.approvalRequestSentAt;
+
     const registeredUser: User = existing
       ? normalizeUserRecord({
           ...existing,
@@ -1886,9 +2011,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           unionCouncil: data.unionCouncil || existing.unionCouncil,
           address: data.address || existing.address,
           profileCompleted: true,
+          approvalStatus: nextApprovalStatus,
+          status: nextApprovalStatus,
+          membershipStatus: alreadyApproved ? 'ACTIVE' : 'PENDING_DISTRICT_REVIEW',
+          verificationStatus: alreadyApproved ? 'VERIFIED' : 'PENDING',
+          approvalRequestSentAt: shouldEmitApprovalReq ? nowIso : existing.approvalRequestSentAt,
           isOnline: true,
           lastSeen: nowIso,
-          status: 'online',
           lastLoginAt: nowIso,
           hasPassword: Boolean(data.password) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
         })
@@ -1898,10 +2027,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           email: normEmail,
           phone: data.phone,
           role: 'MEMBER',
-          isFounder: normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase(),
+          isFounder: isFounderEmail,
           isAuditOfficer: false,
           profileCompleted: true,
-          status: 'online',
+          approvalStatus: nextApprovalStatus,
+          status: nextApprovalStatus,
+          approvalRequestSentAt: isFounderEmail ? undefined : nowIso,
           lastLoginAt: nowIso,
           hasPassword: Boolean(data.password) || hasLocalPasswordCredential(normEmail),
           country: data.country || 'Pakistan',
@@ -1911,8 +2042,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cityTown: data.cityTown || dist,
           unionCouncil: data.unionCouncil || '',
           membershipId: `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-          membershipStatus: 'ACTIVE',
-          verificationStatus: 'VERIFIED',
+          membershipStatus: isFounderEmail ? 'ACTIVE' : 'PENDING_DISTRICT_REVIEW',
+          verificationStatus: isFounderEmail ? 'VERIFIED' : 'PENDING',
           avatarUrl: photo,
           photoUrl: photo,
           cnic: data.cnic,
@@ -1933,6 +2064,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab('dashboard');
     emitAuthAlertNotification('USER_SIGNUP', registeredUser);
 
+    if (shouldEmitApprovalReq || !existing) {
+      const approvalNotifId = `notif_approval_${registeredUser.id}_${Date.now()}`;
+      const approvalNotif: AppNotification = {
+        id: approvalNotifId,
+        type: 'approval_request',
+        targetRole: 'Super Admin',
+        title: `Approval Request: ${registeredUser.name}`,
+        message: `${registeredUser.name} (${registeredUser.district}) — New profile awaiting approval`,
+        memberId: registeredUser.membershipId || registeredUser.id,
+        memberUid: registeredUser.id,
+        memberName: registeredUser.name,
+        memberEmail: registeredUser.email,
+        district: registeredUser.district,
+        read: false,
+        timestamp: nowIso,
+        linkTab: 'members',
+        entityId: registeredUser.id
+      };
+      setNotifications(prev => [approvalNotif, ...prev]);
+      sendApprovalRequestNotificationToFirestore(registeredUser, approvalNotifId).catch(() => {});
+    }
+
     logAudit(
       'NEW_MEMBERSHIP_APPLICATION_SUBMITTED',
       'MEMBERSHIP',
@@ -1948,8 +2101,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       message: `${data.applicantName} registered in ${dist}. Please conduct background verification.`,
       targetRole: 'ADMIN',
       targetDistrict: dist,
-      linkTab: 'approvals',
-      entityId: newApp.id
+      linkTab: 'members',
+      entityId: registeredUser.id
     });
   };
 
@@ -2676,23 +2829,180 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit('MASTER_NOTIFICATION_BROADCAST', 'SETTINGS', title, `Dispatched live notification alert to ${target}.`);
   };
 
+  // Instant One-Tap Member Approval (0ms Optimistic Update + Background Firestore Sync)
+  const approveMemberAccount = useCallback((
+    userId: string,
+    approved: boolean,
+    reason?: string
+  ): { success: boolean; message: string; error?: string } => {
+    if (!currentUser) {
+      return { success: false, message: 'Authentication required.', error: 'Authentication required.' };
+    }
+    const hasAuthority =
+      currentUser.role === 'SUPER_ADMIN' ||
+      currentUser.role === 'ADMIN' ||
+      Boolean(currentUser.permissions?.canApproveMembers);
+
+    if (!hasAuthority) {
+      return {
+        success: false,
+        message: 'Insufficient authority to approve or reject member accounts.',
+        error: 'Insufficient authority to approve or reject member accounts.'
+      };
+    }
+
+    const target = users.find(u => u.id === userId);
+    if (!target) {
+      return { success: false, message: 'Member account not found.', error: 'Member account not found.' };
+    }
+    if (!approved && isFounderUser(target)) {
+      return {
+        success: false,
+        message: 'Founder Protection: Main Super Admin (Founder) cannot be rejected.',
+        error: 'Founder Protection: Main Super Admin (Founder) cannot be rejected.'
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatedUser: User = normalizeUserRecord({
+      ...target,
+      status: approved ? 'approved' : 'rejected',
+      approvalStatus: approved ? 'approved' : 'rejected',
+      approvedBy: approved ? currentUser.name : target.approvedBy,
+      approvedAt: approved ? nowIso : target.approvedAt,
+      rejectedBy: approved ? undefined : currentUser.name,
+      rejectedAt: approved ? undefined : nowIso,
+      rejectionReason: approved ? undefined : (reason || 'Rejected by administration.'),
+      membershipStatus: approved ? 'ACTIVE' : 'REJECTED',
+      verificationStatus: approved ? 'VERIFIED' : 'UNVERIFIED'
+    });
+
+    // 0ms Optimistic State Flip
+    setUsers(prev => prev.map(u => (u.id === userId ? updatedUser : u)));
+
+    // Also sync matching membership application optimistically
+    setApplications(prev =>
+      prev.map(app => {
+        if (app.email.toLowerCase() === target.email.toLowerCase()) {
+          const updatedApp: MembershipApplication = {
+            ...app,
+            status: approved ? 'ACTIVE' : 'REJECTED',
+            superAdminRemarks: approved
+              ? `Instant approval granted by ${currentUser.name}`
+              : (reason || `Rejected by ${currentUser.name}`),
+            superAdminApprovedAt: approved ? nowIso : app.superAdminApprovedAt,
+            generatedMembershipId: approved ? (target.membershipId || app.generatedMembershipId) : app.generatedMembershipId
+          };
+          saveApplicationToFirestore(updatedApp).catch(() => {});
+          return updatedApp;
+        }
+        return app;
+      })
+    );
+
+    // Mark related approval_request notifications as read locally + Firestore
+    setNotifications(prev =>
+      prev.map(n => {
+        if (
+          n.type === 'approval_request' &&
+          !n.read &&
+          (n.memberUid === userId || n.entityId === userId || n.memberEmail?.toLowerCase() === target.email.toLowerCase())
+        ) {
+          const readNotif = { ...n, read: true };
+          saveNotificationToFirestore(readNotif).catch(() => {});
+          return readNotif;
+        }
+        return n;
+      })
+    );
+
+    // Background Firestore write (non-blocking)
+    approveOrRejectUserInFirestore(updatedUser, {
+      approved,
+      actorName: currentUser.name,
+      reason
+    }).catch(() => {});
+
+    logAudit(
+      approved ? 'MEMBER_ACCOUNT_INSTANT_APPROVED' : 'MEMBER_ACCOUNT_REJECTED',
+      'MEMBERSHIP',
+      target.name,
+      `${currentUser.name} ${approved ? 'approved' : 'rejected'} member ${target.name} (${target.email}).`,
+      target.district,
+      target.stateProvince
+    );
+
+    addNotification({
+      type: approved ? 'MEMBERSHIP_APPROVED' : 'MEMBERSHIP_REJECTED',
+      title: approved ? 'Membership Approved ✅' : 'Membership Application Declined',
+      message: approved
+        ? `Congratulations ${target.name}! Your Kifayat Connect profile has been approved by ${currentUser.name}.`
+        : `Your profile review was declined by ${currentUser.name}. ${reason ? `Reason: ${reason}` : ''}`.trim(),
+      targetUserId: target.id,
+      linkTab: 'dashboard',
+      entityId: target.id
+    });
+
+    return {
+      success: true,
+      message: approved
+        ? `${target.name} approved instantly ✅`
+        : `${target.name} marked as rejected`
+    };
+  }, [currentUser, users]);
+
   const updateUserProfile = (profileData: Partial<User>) => {
     if (!currentUser) return;
+    const nowIso = new Date().toISOString();
     const hasDetailsCompleted = Boolean(
       profileData.profileCompleted ||
       currentUser.profileCompleted ||
       ((profileData.cnic ?? currentUser.cnic)?.trim() && (profileData.address ?? currentUser.address)?.trim())
     );
+    const nextProfileCompleted = isFounderUser(currentUser) ? true : hasDetailsCompleted;
+    const isTransitioningToCompleted =
+      !isFounderUser(currentUser) &&
+      nextProfileCompleted &&
+      (!currentUser.profileCompleted || !currentUser.approvalRequestSentAt) &&
+      resolveUserApprovalStatus(currentUser) !== 'approved';
+
     const updated: User = normalizeUserRecord({
       ...currentUser,
       ...profileData,
       role: currentUser.role,
       isFounder: isFounderUser(currentUser),
-      profileCompleted: isFounderUser(currentUser) ? true : hasDetailsCompleted,
-      lastLoginAt: new Date().toISOString()
+      profileCompleted: nextProfileCompleted,
+      approvalStatus: isTransitioningToCompleted ? 'pending' : currentUser.approvalStatus,
+      status: isTransitioningToCompleted ? 'pending' : currentUser.status,
+      verificationStatus: isTransitioningToCompleted ? 'PENDING' : currentUser.verificationStatus,
+      membershipStatus: isTransitioningToCompleted ? 'PENDING_DISTRICT_REVIEW' : currentUser.membershipStatus,
+      approvalRequestSentAt: isTransitioningToCompleted ? nowIso : currentUser.approvalRequestSentAt,
+      lastLoginAt: nowIso
     });
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
     ensureFirebaseAuthSession().then(() => saveUserToFirestore(updated)).catch(() => {});
+
+    if (isTransitioningToCompleted) {
+      const approvalNotifId = `notif_approval_${updated.id}_${Date.now()}`;
+      const approvalNotif: AppNotification = {
+        id: approvalNotifId,
+        type: 'approval_request',
+        targetRole: 'Super Admin',
+        title: `Approval Request: ${updated.name}`,
+        message: `${updated.name} (${updated.district || 'Pakistan'}) — New profile awaiting approval`,
+        memberId: updated.membershipId || updated.id,
+        memberUid: updated.id,
+        memberName: updated.name,
+        memberEmail: updated.email,
+        district: updated.district || updated.stateProvince || 'Pakistan',
+        read: false,
+        timestamp: nowIso,
+        linkTab: 'members',
+        entityId: updated.id
+      };
+      setNotifications(prev => [approvalNotif, ...prev]);
+      sendApprovalRequestNotificationToFirestore(updated, approvalNotifId).catch(() => {});
+    }
   };
 
   // Office-Bearers Operations
@@ -3280,6 +3590,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleLanguage,
         setSelectedReceipt,
         setSelectedCardUser,
+        focusedMemberId,
+        setFocusedMemberId,
+        memberDirectoryFilter,
+        setMemberDirectoryFilter,
+        jumpToMemberApproval,
         isCompleteProfileModalOpen,
         openCompleteProfileModal,
         closeCompleteProfileModal,
@@ -3314,6 +3629,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         demoteSuperAdmin,
         assignAuditOfficer,
         syncAllUsersToCloud,
+        approveMemberAccount,
         toggleUserSuspension,
         updateUserPermissions,
         broadcastAdminAlert,

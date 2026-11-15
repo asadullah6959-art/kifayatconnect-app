@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
     `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=043927&color=F5D061&size=64`;
 
   return (
-    <header className="shrink-0 z-30 w-full max-w-[100vw] box-border px-[10px] py-[8px] sm:px-4 md:px-6 sm:py-2.5 flex items-center justify-between gap-[6px] sm:gap-3 md:gap-5 bg-[#0A0D12] border-b border-[#D4AF37]/25 text-white shadow-md">
+    <header className="shrink-0 z-30 w-full max-w-[100vw] box-border px-[10px] py-[8px] sm:px-4 md:px-6 sm:py-2.5 flex items-center justify-between gap-[6px] sm:gap-3 md:gap-5 bg-[#090D16] border-b border-[#D4AF37]/35 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(212,175,55,0.12)]">
       {/* Zone 1: Mobile Hamburger & Compact 3D Brand Emblem */}
       <div className="flex items-center gap-[6px] sm:gap-3 flex-1 xl:flex-initial min-w-0 overflow-hidden">
         <button
@@ -249,7 +249,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={toggleLanguage}
-          className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-bold text-[#F5D061] bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/35 rounded-full sm:rounded-xl transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+          className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-bold text-[#F5D061] bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/40 rounded-full sm:rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
           title="Switch Language (English / اردو)"
           aria-label="Switch Language"
         >
@@ -261,13 +261,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={onOpenNotifications}
-          className="relative p-1.5 sm:p-2 text-slate-200 hover:text-[#F5D061] bg-[#111622] hover:bg-[#161D2C] rounded-xl transition-colors shrink-0 cursor-pointer border border-[#D4AF37]/30"
+          className="relative p-1.5 sm:p-2 text-slate-200 hover:text-[#F5D061] bg-[#111726] hover:bg-[#161F33] rounded-xl transition-all shrink-0 cursor-pointer border border-[#D4AF37]/40 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
           title={translate(language, 'notifications')}
           aria-label={translate(language, 'notifications')}
         >
           <Bell className="w-4 h-4 text-[#F5D061]" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#0A0D12] bg-[#F5D061] rounded-full shadow-xs">
+            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#090D16] bg-[#F5D061] rounded-full shadow-xs tabular-nums">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
             </span>
           )}
@@ -277,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => setSelectedCardUser(currentUser)}
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl kc-gold-button hover:brightness-110 transition-all cursor-pointer shrink-0"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl kc-gold-button cursor-pointer shrink-0"
         >
           <IdCard className="w-3.5 h-3.5" />
           <span>{translate(language, 'viewDigitalId')}</span>
@@ -291,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-expanded={showProfileMenu}
             aria-haspopup="menu"
             aria-label="Account Menu"
-            className="flex items-center gap-1.5 p-0.5 sm:p-1 rounded-full lg:rounded-xl bg-[#111622] hover:bg-[#161D2C] transition-colors text-start cursor-pointer border border-[#D4AF37]/40 shrink-0"
+            className="flex items-center gap-1.5 p-0.5 sm:p-1 rounded-full lg:rounded-xl bg-[#111726] hover:bg-[#161F33] transition-all text-start cursor-pointer border border-[#D4AF37]/45 shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
           >
             {!avatarFailed ? (
               <img
@@ -328,7 +328,7 @@ export const Header: React.FC<HeaderProps> = ({
                 language === 'ur'
                   ? 'left-[8px] sm:left-0 sm:right-auto'
                   : 'right-[8px] sm:right-0 sm:left-auto'
-              } sm:absolute sm:top-full sm:mt-2 w-[272px] max-w-[calc(100vw-16px)] bg-[#111622] border border-[#D4AF37]/45 rounded-2xl shadow-2xl py-2 z-50 text-xs text-slate-200`}
+              } sm:absolute sm:top-full sm:mt-2 w-[272px] max-w-[calc(100vw-16px)] kc-luxury-modal rounded-2xl py-2 z-50 text-xs text-slate-200`}
             >
               {/* User Name, Email & 3D Role Badge */}
               <div className="px-3.5 py-2.5 border-b border-[#D4AF37]/20">

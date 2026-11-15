@@ -60,12 +60,12 @@ export const StaffManagement: React.FC = () => {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-12 text-center bg-white dark:bg-[#111622] rounded-xl border border-slate-200 dark:border-[#D4AF37]/20">
-        <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-3">
+      <div className="kc-obsidian-card p-12 text-center rounded-2xl">
+        <ShieldAlert className="w-12 h-12 text-rose-400 mx-auto" />
+        <h3 className="text-base font-bold text-white mt-3">
           {language === 'ur' ? 'سپر ایڈمن کی اجازت درکار ہے' : 'Super Admin Authorization Required'}
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+        <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
           {language === 'ur'
             ? 'صرف سپر ایڈمن کو انتظامی عملے کی تقرری، عہدہ تبدیلی یا معطلی کا اختیار ہے۔'
             : 'Under Kifayat Connect governance bylaws, only a Super Admin can appoint, promote, suspend, or reassign administrative leadership roles.'}
@@ -178,22 +178,22 @@ export const StaffManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#D4AF37]/20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
               {language === 'ur' ? 'قیادت اور رسائی کا اختیار' : 'Governance & Access Delegation'}
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-xs text-slate-300">
               {language === 'ur' ? '4-سطحی نظام' : 'Strict 4-Role Hierarchy'}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#D4AF37]" />
+          <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-[#F5D061]" />
             <span>{t('navStaff')}</span>
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {language === 'ur'
               ? 'صرف چار عہدے: سپر ایڈمن، ایڈمن، کو ایڈمن، اور ممبر۔ ہر تبدیلی آڈٹ لاگ میں محفوظ ہوتی ہے۔'
               : 'Appoint, promote, or suspend officials across our 4-role architecture: Super Admin, Admin, Co-Admin, and Member.'}
@@ -202,7 +202,7 @@ export const StaffManagement: React.FC = () => {
 
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#F5D061] via-[#D4AF37] to-[#8A6218] text-[#0A0D12] text-xs font-extrabold rounded-lg shadow-md hover:brightness-110 transition-all"
+          className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
         >
           <UserPlus className="w-3.5 h-3.5" />
           <span>{language === 'ur' ? 'نیا عہدیدار مقرر کریں' : 'Appoint New Official'}</span>
@@ -213,21 +213,21 @@ export const StaffManagement: React.FC = () => {
         <div
           className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
             actionFeedback.type === 'ok'
-              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-              : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+              ? 'kc-emerald-panel text-emerald-200'
+              : 'bg-rose-950/60 border-rose-500/45 text-rose-200'
           }`}
         >
           {actionFeedback.type === 'ok' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           ) : (
-            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
           )}
           <span>{actionFeedback.msg}</span>
         </div>
       )}
 
       {/* Security Principles Banner */}
-      <div className="p-4 bg-[#111622] text-white rounded-xl border border-[#D4AF37]/30 flex items-start gap-3">
+      <div className="kc-emerald-panel p-4 text-white rounded-2xl flex items-start gap-3">
         <Lock className="w-5 h-5 text-[#F5D061] shrink-0 mt-0.5" />
         <div className="text-xs">
           <span className="font-bold text-[#F5D061]">
@@ -235,7 +235,7 @@ export const StaffManagement: React.FC = () => {
               ? 'بانی کا تحفظ اور 4-سطحی کردار'
               : 'Founder Protection & Strict 4-Role Governance'}
           </span>
-          <p className="text-slate-300 mt-1 leading-relaxed">
+          <p className="text-slate-200 mt-1 leading-relaxed">
             {language === 'ur'
               ? 'سپر ایڈمن پورے نظام کی نگرانی کرتا ہے، ایڈمن اپنے ضلع اور فنڈز کی تصدیق سنبھالتے ہیں (فی ضلع زیادہ سے زیادہ 10)، کو ایڈمن صوبائی کوآرڈینیشن سنبھالتے ہیں (فی صوبہ 3)۔ کوئی اضافی سپر ایڈمن بانی کے اکاؤنٹ میں تبدیلی نہیں کر سکتا۔'
               : 'District Admins manage district operations and payment verification (max 10/district); State Co-Admins oversee provincial coordination (max 3/province). Only the Main Super Admin (Founder) can promote/demote Additional Super Admins, and the Founder account is permanently protected from edits or suspension.'}
@@ -252,32 +252,32 @@ export const StaffManagement: React.FC = () => {
           return (
             <div
               key={staff.id}
-              className={`p-4 bg-white dark:bg-[#111622] rounded-xl border flex flex-col justify-between space-y-3 shadow-xs ${
+              className={`kc-obsidian-card p-4 rounded-2xl flex flex-col justify-between space-y-3 ${
                 staffIsFounder
-                  ? 'border-[#D4AF37]/60'
+                  ? '!border-[#F5D061]/70'
                   : staff.isSuspended
-                  ? 'border-rose-500/40 opacity-80'
-                  : 'border-slate-200 dark:border-[#D4AF37]/20'
+                  ? '!border-rose-500/45 opacity-80'
+                  : ''
               }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      <h3 className="font-bold text-sm text-white truncate">
                         {staff.name}
                       </h3>
                       {staffIsFounder && (
                         <span
                           title="Main Super Admin (Founder) — Protected"
-                          className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/40 shrink-0"
+                          className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/45 shrink-0"
                         >
                           <Crown className="w-2.5 h-2.5" />
                           Founder
                         </span>
                       )}
                       {staff.isSuspended && (
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-500/40 shrink-0">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-950/70 text-rose-300 border border-rose-500/45 shrink-0">
                           Suspended
                         </span>
                       )}
@@ -296,12 +296,12 @@ export const StaffManagement: React.FC = () => {
                   />
                 </div>
 
-                <div className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                <div className="mt-3 space-y-1 text-xs text-slate-300 border-t border-[#D4AF37]/20 pt-2.5">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
                     <span>
                       Jurisdiction:{' '}
-                      <strong className="text-slate-900 dark:text-slate-100">
+                      <strong className="text-white">
                         {staff.district
                           ? `${staff.district}, ${staff.stateProvince || 'Pakistan'}`
                           : staff.region || 'Pakistan'}
@@ -309,44 +309,44 @@ export const StaffManagement: React.FC = () => {
                     </span>
                   </div>
                   {(staff.tehsil || staff.unionCouncil) && (
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 pl-5">
+                    <div className="text-[11px] text-slate-400 pl-5">
                       Tehsil: {staff.tehsil || 'All'} · UC: {staff.unionCouncil || 'All'}
                     </div>
                   )}
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    CNIC: <span className="font-mono">{staff.cnic}</span>
+                  <div className="text-[11px] text-slate-400">
+                    CNIC: <span className="font-mono text-slate-200">{staff.cnic}</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Phone: <span>{staff.phone}</span>
+                  <div className="text-[11px] text-slate-400">
+                    Phone: <span className="font-mono text-slate-200">{staff.phone}</span>
                   </div>
                 </div>
 
                 {staff.notes && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mt-2 bg-slate-50 dark:bg-[#0A0D12] p-2 rounded border border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] text-slate-300 italic mt-2 bg-[#090D16] p-2.5 rounded-xl border border-[#D4AF37]/20">
                     "{staff.notes}"
                   </p>
                 )}
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-[10px] font-mono text-slate-400">
+              <div className="pt-2.5 border-t border-[#D4AF37]/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-[10px] font-mono text-[#F5D061]/80">
                   {staff.membershipId || 'KC-STF'}
                 </span>
 
                 {lockedByFounder ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#D4AF37]">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#F5D061]">
                     <Lock className="w-3 h-3" />
                     Founder Protected
                   </span>
                 ) : staff.id === currentUser.id ? (
-                  <span className="text-[10px] font-semibold text-slate-400 italic">
+                  <span className="text-[10px] font-semibold text-emerald-400 italic">
                     Current Session
                   </span>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => openEditModal(staff)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-[#D4AF37] hover:text-[#F5D061]"
+                      className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-[#F5D061] hover:text-white cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>Edit</span>
@@ -355,7 +355,7 @@ export const StaffManagement: React.FC = () => {
                     {currentIsFounder && staff.role !== 'SUPER_ADMIN' && (
                       <button
                         onClick={() => handlePromote(staff)}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 hover:text-emerald-400"
+                        className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 cursor-pointer"
                         title="Promote to Additional Super Admin"
                       >
                         <ArrowUpCircle className="w-3 h-3" />
@@ -366,7 +366,7 @@ export const StaffManagement: React.FC = () => {
                     {currentIsFounder && staff.role === 'SUPER_ADMIN' && !staffIsFounder && (
                       <button
                         onClick={() => handleDemote(staff)}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-amber-500 hover:text-amber-400"
+                        className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 cursor-pointer"
                         title="Demote Additional Super Admin to District Admin"
                       >
                         <ArrowDownCircle className="w-3 h-3" />
@@ -381,7 +381,7 @@ export const StaffManagement: React.FC = () => {
                           if (!res.success) showToast('err', res.error || 'Could not update Audit Officer role.');
                           else showToast('ok', `${staff.name} ${staff.isAuditOfficer ? 'removed from' : 'assigned as'} Audit Officer.`);
                         }}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300"
+                        className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 cursor-pointer"
                       >
                         <ShieldCheck className="w-3 h-3" />
                         <span>{staff.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
@@ -391,7 +391,7 @@ export const StaffManagement: React.FC = () => {
                     {!staffIsFounder && (
                       <button
                         onClick={() => handleToggleSuspend(staff)}
-                        className={`flex items-center gap-1 text-[11px] font-semibold ${
+                        className={`kc-pressable flex items-center gap-1 text-[11px] font-semibold cursor-pointer ${
                           staff.isSuspended
                             ? 'text-emerald-400 hover:text-emerald-300'
                             : 'text-rose-400 hover:text-rose-300'
@@ -421,8 +421,8 @@ export const StaffManagement: React.FC = () => {
       {/* APPOINT / MODIFY STAFF MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 my-auto max-h-[92dvh] flex flex-col overflow-hidden text-white">
-            <div className="px-6 py-4 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
+          <div className="kc-luxury-modal relative w-full max-w-lg rounded-2xl my-auto max-h-[92dvh] flex flex-col overflow-hidden text-white">
+            <div className="px-6 py-4 border-b border-[#D4AF37]/25 bg-[#090D16] shrink-0">
               <h3 className="text-base font-bold text-[#F5D061]">
                 {editingStaff ? `Modify Official: ${editingStaff.name}` : 'Appoint New Official'}
               </h3>
@@ -430,7 +430,7 @@ export const StaffManagement: React.FC = () => {
 
             <div className="flex-1 overflow-y-auto p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
             {formError && (
-              <div className="mb-3 p-2.5 rounded-lg bg-rose-950/60 border border-rose-800 text-xs text-rose-300 font-medium">
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-950/70 border border-rose-500/45 text-xs text-rose-200 font-medium">
                 {formError}
               </div>
             )}
@@ -438,7 +438,7 @@ export const StaffManagement: React.FC = () => {
             <form id="kc-staff-modal-form" onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Official Full Name
                   </label>
                   <input
@@ -447,12 +447,12 @@ export const StaffManagement: React.FC = () => {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="Full Legal Name"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
+                    className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Official Email
                   </label>
                   <input
@@ -461,14 +461,14 @@ export const StaffManagement: React.FC = () => {
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="official@kifayatconnect.org"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
+                    className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     CNIC Identity Number
                   </label>
                   <input
@@ -477,12 +477,12 @@ export const StaffManagement: React.FC = () => {
                     value={formCnic}
                     onChange={(e) => setFormCnic(e.target.value)}
                     placeholder="35201-1234567-1"
-                    className="w-full text-xs font-mono px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
+                    className="kc-luxury-input w-full text-xs font-mono px-3 py-2.5 rounded-xl"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Official Phone Contact
                   </label>
                   <input
@@ -490,14 +490,14 @@ export const StaffManagement: React.FC = () => {
                     required
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-700 bg-[#0A0D12] text-white"
+                    className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Assigned Role (4-Role Hierarchy)
                   </label>
                   <LuxurySelect
@@ -533,7 +533,7 @@ export const StaffManagement: React.FC = () => {
                 />
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Union Council (UC) <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
                   </label>
                   <input
@@ -541,13 +541,13 @@ export const StaffManagement: React.FC = () => {
                     value={formUnionCouncil}
                     onChange={(e) => setFormUnionCouncil(e.target.value)}
                     placeholder="e.g. UC-112 or All"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                    className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-200 block mb-1">
                   Appointment Notes / Administrative Terms
                 </label>
                 <input
@@ -555,25 +555,25 @@ export const StaffManagement: React.FC = () => {
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="e.g. Authorized to oversee district verifications"
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0A0D12] text-slate-900 dark:text-white"
+                  className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                 />
               </div>
 
             </form>
             </div>
 
-            <div className="px-6 py-3.5 border-t border-[#D4AF37]/20 bg-[#0A0D12] flex items-center justify-end gap-3 shrink-0">
+            <div className="px-6 py-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white font-medium"
+                className="kc-pressable px-3.5 py-2 text-xs text-slate-300 hover:text-white font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="kc-staff-modal-form"
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#F5D061] via-[#D4AF37] to-[#8A6218] text-[#0A0D12] text-xs font-extrabold rounded-lg shadow-xs hover:brightness-110"
+                className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>{editingStaff ? 'Save Role Changes' : 'Approve Credentials'}</span>

@@ -123,22 +123,22 @@ export const ComplaintsManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
               Member Grievances & Resolution
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">
+            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-xs text-slate-300">
               {isMember ? 'My Tickets' : isDistrictAdmin ? `${currentUser.assignedDistrict || currentUser.district || 'District'} Desk` : isCoAdmin ? `${currentUser.assignedStateProvince || currentUser.stateProvince || 'State'} Desk` : 'Central Desk'}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <MessageSquareWarning className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+          <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
+            <MessageSquareWarning className="w-6 h-6 text-[#F5D061]" />
             <span>Complaints & Support Center</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {isMember 
               ? 'Submit inquiries, report membership card delivery issues, or request welfare support.' 
               : 'Review and resolve tickets submitted by community members in your jurisdiction.'}
@@ -153,7 +153,7 @@ export const ComplaintsManager: React.FC = () => {
               setIsSubmitModalOpen(true);
             }
           }}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+          className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>File New Grievance Ticket</span>
@@ -166,43 +166,43 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+        <div className="kc-tab-shell flex items-center gap-1 p-1 rounded-xl flex-wrap">
           <button
             onClick={() => setActiveTab('ALL')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`kc-pressable px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer tabular-nums ${
               activeTab === 'ALL'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
+                ? 'kc-gold-button'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             All Tickets ({visibleComplaints.length})
           </button>
           <button
             onClick={() => setActiveTab('OPEN')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`kc-pressable px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer tabular-nums ${
               activeTab === 'OPEN'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
+                ? 'kc-gold-button'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             Open ({visibleComplaints.filter(c => c.status === 'OPEN').length})
           </button>
           <button
             onClick={() => setActiveTab('UNDER_REVIEW')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`kc-pressable px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer tabular-nums ${
               activeTab === 'UNDER_REVIEW'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
+                ? 'kc-gold-button'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             Under Review ({visibleComplaints.filter(c => c.status === 'UNDER_REVIEW').length})
           </button>
           <button
             onClick={() => setActiveTab('RESOLVED')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`kc-pressable px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer tabular-nums ${
               activeTab === 'RESOLVED'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
+                ? 'kc-gold-button'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             Resolved ({visibleComplaints.filter(c => c.status === 'RESOLVED').length})
@@ -270,7 +270,7 @@ export const ComplaintsManager: React.FC = () => {
       {/* Tickets List */}
       <div className="space-y-3">
         {filteredComplaints.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 text-xs text-slate-400">
+          <div className="kc-obsidian-card p-12 text-center rounded-2xl text-xs text-slate-400">
             No complaints found under this view.
           </div>
         ) : (
@@ -284,73 +284,73 @@ export const ComplaintsManager: React.FC = () => {
             return (
               <div 
                 key={cmp.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 text-xs"
+                className="kc-obsidian-card p-5 rounded-2xl space-y-3 text-xs"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-slate-400 font-bold">{cmp.ticketNumber}</span>
-                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{cmp.subject}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[#F5D061] font-bold">{cmp.ticketNumber}</span>
+                      <span className="font-bold text-sm text-white">{cmp.subject}</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500">
-                      <span>From: <strong>{cmp.userName}</strong></span>
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                      <span>From: <strong className="text-slate-200">{cmp.userName}</strong></span>
                       <span>·</span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
                         <MapPin className="w-3 h-3" />
                         {cDist}, {cProv}
                       </span>
                       {cTeh && <span>(Tehsil: {cTeh}{cUC ? `, UC: ${cUC}` : ''})</span>}
                       <span>·</span>
-                      <span>Category: <strong className="text-slate-700 dark:text-slate-300">{cmp.category}</strong></span>
+                      <span>Category: <strong className="text-slate-200">{cmp.category}</strong></span>
                       <span>·</span>
-                      <span>Priority: {cmp.priority}</span>
+                      <span>Priority: <strong className="text-[#F5D061]">{cmp.priority}</strong></span>
                     </div>
                   </div>
 
-                <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold uppercase ${
-                  cmp.status === 'RESOLVED'
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                    : cmp.status === 'UNDER_REVIEW'
-                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                    : 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                }`}>
-                  {cmp.status}
-                </span>
-              </div>
-
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                {cmp.description}
-              </p>
-
-              {cmp.responseNote && (
-                <div className="p-3 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 text-xs">
-                  <span className="font-bold text-emerald-800 dark:text-emerald-300">
-                    Official Response ({cmp.assignedOfficerName}):
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-md font-bold uppercase shrink-0 ${
+                    cmp.status === 'RESOLVED'
+                      ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
+                      : cmp.status === 'UNDER_REVIEW'
+                      ? 'bg-amber-500/15 text-[#F5D061] border border-[#D4AF37]/45'
+                      : 'bg-rose-950/80 text-rose-300 border border-rose-500/45'
+                  }`}>
+                    {cmp.status}
                   </span>
-                  <p className="text-slate-800 dark:text-slate-200 mt-1">
-                    {cmp.responseNote}
-                  </p>
-                  {cmp.resolvedAt && (
-                    <span className="block text-[10px] text-slate-400 font-mono mt-1">
-                      Resolved: {new Date(cmp.resolvedAt).toLocaleString()}
-                    </span>
-                  )}
                 </div>
-              )}
 
-              {/* Action buttons */}
-              {(isSuperAdmin || isDistrictAdmin || isCoAdmin) && (
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                  <button
-                    onClick={() => handleOpenResponse(cmp)}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white text-xs font-semibold rounded shadow-xs"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Update Ticket & Respond</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                <p className="text-slate-200 leading-relaxed bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/20">
+                  {cmp.description}
+                </p>
+
+                {cmp.responseNote && (
+                  <div className="p-3.5 rounded-xl kc-emerald-panel text-xs">
+                    <span className="font-bold text-[#F5D061]">
+                      Official Response ({cmp.assignedOfficerName}):
+                    </span>
+                    <p className="text-slate-100 mt-1">
+                      {cmp.responseNote}
+                    </p>
+                    {cmp.resolvedAt && (
+                      <span className="block text-[10px] text-emerald-300/80 font-mono mt-1">
+                        Resolved: {new Date(cmp.resolvedAt).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                {(isSuperAdmin || isDistrictAdmin || isCoAdmin) && (
+                  <div className="pt-2.5 border-t border-[#D4AF37]/20 flex justify-end">
+                    <button
+                      onClick={() => handleOpenResponse(cmp)}
+                      className="kc-pressable flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 border border-emerald-400/45 text-white text-xs font-bold rounded-lg shadow-md cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>Update Ticket & Respond</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             );
           })
         )}
@@ -358,19 +358,19 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: SUBMIT COMPLAINT */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <h3 className="text-base font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-base font-bold text-[#F5D061] pb-2.5 border-b border-[#D4AF37]/25">
               Submit Grievance or Inquiry Ticket
             </h3>
 
             <form onSubmit={handleNewTicketSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Category
                   </label>
                   <LuxurySelect
@@ -390,7 +390,7 @@ export const ComplaintsManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Urgency Priority
                   </label>
                   <LuxurySelect
@@ -408,7 +408,7 @@ export const ComplaintsManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-200 block mb-1">
                   Subject Line
                 </label>
                 <input
@@ -417,12 +417,12 @@ export const ComplaintsManager: React.FC = () => {
                   placeholder="State the primary reason for your request..."
                   value={cmpSubject}
                   onChange={(e) => setCmpSubject(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-200 block mb-1">
                   Detailed Explanation
                 </label>
                 <textarea
@@ -431,21 +431,21 @@ export const ComplaintsManager: React.FC = () => {
                   placeholder="Please provide full details..."
                   value={cmpDescription}
                   onChange={(e) => setCmpDescription(e.target.value)}
-                  className="w-full text-xs p-3 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 resize-none"
+                  className="kc-luxury-input w-full text-xs p-3 rounded-xl resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                 <button
                   type="button"
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-3.5 py-1.5 text-xs text-slate-500 hover:text-slate-700 font-medium"
+                  className="kc-pressable px-3.5 py-2 text-xs text-slate-300 hover:text-white font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded shadow-xs"
+                  className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Submit Ticket</span>
@@ -458,25 +458,25 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: UPDATE TICKET & RESPOND (STAFF ONLY) */}
       {respondingTicket && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 text-xs my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 text-xs my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div>
-              <span className="text-slate-400 uppercase font-mono font-bold">
+              <span className="text-[#F5D061] uppercase font-mono font-bold">
                 {respondingTicket.ticketNumber}
               </span>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+              <h3 className="text-base font-bold text-white mt-0.5">
                 Respond to: {respondingTicket.subject}
               </h3>
-              <p className="text-slate-500 mt-1">
+              <p className="text-slate-400 mt-1">
                 Filer: {respondingTicket.userName} ({respondingTicket.district || 'Pakistan'})
               </p>
             </div>
 
             <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="font-semibold text-slate-200 block mb-1">
                 Update Status
               </label>
               <LuxurySelect
@@ -493,7 +493,7 @@ export const ComplaintsManager: React.FC = () => {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="font-semibold text-slate-200 block mb-1">
                 Official Resolution Response
               </label>
               <textarea
@@ -502,22 +502,22 @@ export const ComplaintsManager: React.FC = () => {
                 value={responseRemarks}
                 onChange={(e) => setResponseRemarks(e.target.value)}
                 placeholder="State the action taken or delivery details..."
-                className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 resize-none"
+                className="kc-luxury-input w-full p-3 rounded-xl resize-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
               <button
                 type="button"
                 onClick={() => setRespondingTicket(null)}
-                className="px-3 py-1.5 text-slate-500 hover:text-slate-700"
+                className="kc-pressable px-3.5 py-2 text-slate-300 hover:text-white font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveResponse}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded shadow-xs"
+                className="kc-pressable kc-gold-button px-4 py-2 font-extrabold rounded-xl cursor-pointer"
               >
                 Save & Notify Member
               </button>

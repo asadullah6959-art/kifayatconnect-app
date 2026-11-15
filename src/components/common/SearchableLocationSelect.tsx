@@ -84,9 +84,9 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`w-full flex items-center justify-between gap-2 text-left bg-[#0A0D12] border border-[#D4AF37]/35 hover:border-[#D4AF37] rounded-xl px-3 ${
+        className={`w-full flex items-center justify-between gap-2 text-left kc-luxury-input hover:border-[#F5D061]/70 rounded-xl px-3 ${
           compact ? 'py-1.5 text-xs' : 'py-2.5 text-xs'
-        } text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37] transition-colors cursor-pointer`}
+        } cursor-pointer`}
       >
         <div className="flex items-center gap-2 min-w-0">
           <MapPin className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
@@ -99,17 +99,17 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4"
           onClick={handleClose}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-sm max-h-[55vh] flex flex-col bg-[#111622] border border-[#D4AF37]/50 rounded-2xl shadow-2xl overflow-hidden text-slate-100"
+            className="w-full max-w-sm max-h-[55vh] flex flex-col kc-luxury-modal rounded-2xl overflow-hidden text-slate-100"
             onClick={e => e.stopPropagation()}
           >
             {/* Compact Header with top-right Close (X) */}
-            <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#0A0D12] flex items-center justify-between gap-2 shrink-0">
+            <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-wider text-[#F5D061] truncate">
                   {label || 'Select Location'}
@@ -120,14 +120,14 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                 type="button"
                 onClick={handleClose}
                 aria-label="Close location selector"
-                className="w-8 h-8 rounded-lg bg-[#161D2C] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:border-[#D4AF37] flex items-center justify-center shrink-0 transition"
+                className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="p-2.5 border-b border-slate-800 bg-[#0E131D] flex items-center gap-2 shrink-0">
+            <div className="p-2.5 border-b border-[#D4AF37]/20 bg-[#0E1422] flex items-center gap-2 shrink-0">
               <Search className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
               <input
                 type="text"
@@ -137,13 +137,13 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   setCustomMode(false);
                 }}
                 placeholder="Type city, town, tehsil, or district..."
-                className="w-full bg-[#0A0D12] border border-[#D4AF37]/25 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
+                className="w-full kc-luxury-input rounded-lg px-2.5 py-1.5 text-xs"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="text-slate-400 hover:text-white p-1"
+                  className="text-slate-400 hover:text-white p-1 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -152,7 +152,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
 
             {!customMode ? (
               <>
-                <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60 p-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/10 p-1" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {matches.length === 0 ? (
                     <div className="p-4 text-center text-xs text-slate-400">
                       No matching Pakistan city/district found for "{query}".
@@ -175,10 +175,10 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                             });
                             handleClose();
                           }}
-                          className={`w-full px-3 py-2 text-left rounded-xl flex items-center justify-between gap-2 text-xs transition-colors ${
+                          className={`w-full px-3 py-2 text-left rounded-xl flex items-center justify-between gap-2 text-xs kc-pressable cursor-pointer ${
                             isSelected
-                              ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#F5D061] font-bold'
-                              : 'hover:bg-[#161D2C] text-slate-200 border border-transparent'
+                              ? 'bg-[#042920] border border-[#D4AF37]/50 text-[#F5D061] font-bold'
+                              : 'hover:bg-[#1A233A] text-slate-200 border border-transparent'
                           }`}
                         >
                           <div className="min-w-0">
@@ -196,14 +196,14 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   )}
                 </div>
 
-                <div className="p-2 bg-[#0A0D12] border-t border-[#D4AF37]/25 shrink-0">
+                <div className="p-2 bg-[#090D16] border-t border-[#D4AF37]/25 shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setCustomMode(true);
                       setCustomCityText(query);
                     }}
-                    className="w-full py-2 px-3 rounded-xl bg-[#161D2C] hover:bg-[#1E273B] border border-[#D4AF37]/35 text-[#F5D061] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full py-2 px-3 rounded-xl bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/35 text-[#F5D061] text-xs font-bold flex items-center justify-center gap-1.5 kc-pressable cursor-pointer"
                   >
                     <MapPin className="w-3.5 h-3.5" />
                     <span>Other / Village / Custom Town</span>
@@ -211,7 +211,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                 </div>
               </>
             ) : (
-              <div className="p-3.5 space-y-3 bg-[#111622] flex-1 overflow-y-auto">
+              <div className="p-3.5 space-y-3 bg-[#0E1422] flex-1 overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#F5D061]">
                     Enter Custom City / Village
@@ -219,7 +219,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   <button
                     type="button"
                     onClick={() => setCustomMode(false)}
-                    className="text-[11px] text-slate-300 hover:text-[#F5D061] underline font-semibold"
+                    className="text-[11px] text-slate-300 hover:text-[#F5D061] underline font-semibold cursor-pointer"
                   >
                     Back to list
                   </button>
@@ -236,13 +236,13 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   value={customCityText}
                   onChange={(e) => setCustomCityText(e.target.value)}
                   placeholder="Type your exact city, tehsil, or village..."
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/35 text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                 />
                 <button
                   type="button"
                   onClick={handleApplyCustom}
                   disabled={!customCityText.trim()}
-                  className="w-full py-2 rounded-xl kc-gold-button disabled:opacity-50 font-black text-xs transition"
+                  className="w-full py-2 rounded-xl kc-gold-button disabled:opacity-50 font-black text-xs cursor-pointer"
                 >
                   Apply Custom Location
                 </button>

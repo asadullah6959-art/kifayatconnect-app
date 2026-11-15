@@ -38,6 +38,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     payments,
     setSelectedReceipt,
     setSelectedCardUser,
+    jumpToMemberApproval,
     currentUser,
     language
   } = useApp();
@@ -74,6 +75,8 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     if (activeFilter === 'UNREAD') return !n.read;
     if (activeFilter === 'MEMBERSHIPS') {
       return (
+        n.type === 'approval_request' ||
+        n.type === 'USER_SIGNUP' ||
         n.type === 'MEMBERSHIP_PENDING_DISTRICT' ||
         (n.type as any) === 'MEMBERSHIP_PENDING_REGIONAL' ||
         n.type === 'MEMBERSHIP_RECOMMENDED' ||
@@ -93,58 +96,68 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
 
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
+      case 'approval_request':
+        return <UserPlus className="w-5 h-5 text-[#F5D061]" />;
       case 'MEMBERSHIP_APPROVED':
-        return <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+        return <UserCheck className="w-5 h-5 text-emerald-400" />;
       case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':
-        return <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+        return <FileText className="w-5 h-5 text-sky-400" />;
       case 'MEMBERSHIP_REJECTED':
-        return <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />;
+        return <AlertCircle className="w-5 h-5 text-rose-400" />;
       case 'PAYMENT_VERIFIED':
-        return <Receipt className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+        return <Receipt className="w-5 h-5 text-emerald-400" />;
       case 'PAYMENT_PENDING':
-        return <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+        return <Clock className="w-5 h-5 text-[#F5D061]" />;
       case 'PAYMENT_REJECTED':
-        return <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />;
+        return <AlertCircle className="w-5 h-5 text-rose-400" />;
       case 'COMPLAINT_UPDATE':
-        return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+        return <AlertTriangle className="w-5 h-5 text-[#F5D061]" />;
       case 'ANNOUNCEMENT_NEW':
-        return <Megaphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
+        return <Megaphone className="w-5 h-5 text-indigo-400" />;
       case 'USER_SIGNUP':
-        return <UserPlus className="w-5 h-5 text-emerald-500" />;
+        return <UserPlus className="w-5 h-5 text-emerald-400" />;
       case 'USER_LOGIN':
         return <LogIn className="w-5 h-5 text-[#F5D061]" />;
       default:
-        return <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />;
+        return <Bell className="w-5 h-5 text-slate-300" />;
     }
   };
 
   const getNotificationBadgeClass = (type: NotificationType) => {
     switch (type) {
+      case 'approval_request':
+        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/50';
       case 'MEMBERSHIP_APPROVED':
       case 'PAYMENT_VERIFIED':
       case 'USER_SIGNUP':
-        return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+        return 'bg-[#042920] text-emerald-300 border-emerald-500/45';
       case 'USER_LOGIN':
-        return 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
       case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':
-        return 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+        return 'bg-sky-950/60 text-sky-300 border-sky-500/45';
       case 'PAYMENT_PENDING':
       case 'COMPLAINT_UPDATE':
-        return 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
       case 'MEMBERSHIP_REJECTED':
       case 'PAYMENT_REJECTED':
-        return 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800';
+        return 'bg-rose-950/60 text-rose-300 border-rose-500/45';
       default:
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+        return 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25';
     }
   };
 
   const handleNotificationClick = (notification: AppNotification) => {
     markNotificationAsRead(notification.id);
+
+    if (notification.type === 'approval_request') {
+      jumpToMemberApproval(notification.memberUid || notification.entityId || null);
+      onClose();
+      return;
+    }
 
     // Direct action handlers
     if (notification.type === 'PAYMENT_VERIFIED' && notification.entityId) {
@@ -191,30 +204,30 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/75 transition-opacity duration-200 ease-out"
+        className="fixed inset-0 bg-black/80 transition-opacity duration-200 ease-out"
         onClick={onClose}
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300 ease-out">
+        <div className="w-screen max-w-md bg-gradient-to-b from-[#141B2D] to-[#0B101C] shadow-[0_24px_70px_rgba(0,0,0,0.92)] flex flex-col border-l border-[#D4AF37]/45 animate-in slide-in-from-right duration-300 ease-out">
           
           {/* Header */}
-          <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+          <div className="px-6 py-5 border-b border-[#D4AF37]/25 bg-[#090D16]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 flex items-center justify-center relative">
+                <div className="w-9 h-9 rounded-xl bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] flex items-center justify-center relative">
                   <Bell className="w-5 h-5" />
                   {unreadNotificationsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums">
                       {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                     </span>
                   )}
                 </div>
                 <div>
-                  <h2 id="slide-over-title" className="text-base font-semibold text-slate-900 dark:text-white">
+                  <h2 id="slide-over-title" className="text-base font-bold text-white">
                     {language === 'ur' ? 'اطلاعات و الرٹس' : 'Notifications'}
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-400 tabular-nums">
                     {language === 'ur' 
                       ? `${unreadNotificationsCount} غیر خواندہ اطلاعات`
                       : `${unreadNotificationsCount} unread alert${unreadNotificationsCount === 1 ? '' : 's'}`}
@@ -225,7 +238,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
               <div className="flex items-center gap-1">
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="kc-pressable p-2 rounded-lg text-slate-300 hover:text-[#F5D061] hover:bg-[#161F33] transition-colors cursor-pointer"
                   aria-label="Close notifications"
                 >
                   <X className="w-5 h-5" />
@@ -235,46 +248,46 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
 
             {/* Filter Tabs & Quick Actions */}
             <div className="mt-4 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg text-xs font-medium">
+              <div className="kc-tab-shell flex items-center gap-1 p-1 rounded-xl text-xs font-semibold">
                 <button
                   onClick={() => setActiveFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-md transition-colors ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                     activeFilter === 'ALL'
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'kc-gold-button'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   {language === 'ur' ? 'سب' : 'All'}
                 </button>
                 <button
                   onClick={() => setActiveFilter('UNREAD')}
-                  className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer ${
                     activeFilter === 'UNREAD'
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'kc-gold-button'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   <span>{language === 'ur' ? 'غیر خواندہ' : 'Unread'}</span>
                   {unreadNotificationsCount > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveFilter('MEMBERSHIPS')}
-                  className={`px-2.5 py-1 rounded-md transition-colors ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                     activeFilter === 'MEMBERSHIPS'
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'kc-gold-button'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   {language === 'ur' ? 'ممبرشپ' : 'Members'}
                 </button>
                 <button
                   onClick={() => setActiveFilter('PAYMENTS')}
-                  className={`px-2.5 py-1 rounded-md transition-colors ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                     activeFilter === 'PAYMENTS'
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'kc-gold-button'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   {language === 'ur' ? 'ادائیگی' : 'Payments'}
@@ -287,7 +300,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   <button
                     onClick={markAllNotificationsAsRead}
                     title={language === 'ur' ? 'تمام کو پڑھا ہوا نشان زد کریں' : 'Mark all as read'}
-                    className="p-1.5 text-xs text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors flex items-center gap-1"
+                    className="kc-pressable p-1.5 text-xs text-slate-300 hover:text-emerald-400 hover:bg-[#161F33] rounded-md transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <CheckCheck className="w-4 h-4" />
                   </button>
@@ -296,7 +309,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   <button
                     onClick={clearAllNotifications}
                     title={language === 'ur' ? 'تمام صاف کریں' : 'Clear all'}
-                    className="p-1.5 text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors flex items-center gap-1"
+                    className="kc-pressable p-1.5 text-xs text-slate-300 hover:text-rose-400 hover:bg-[#161F33] rounded-md transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -306,16 +319,16 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+          <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/15">
             {filteredNotifications.length === 0 ? (
-              <div className="p-8 text-center flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-500">
-                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-slate-400">
+              <div className="p-8 text-center flex flex-col items-center justify-center h-64 text-slate-400">
+                <div className="w-12 h-12 rounded-full bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-3 text-[#F5D061]">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                <p className="text-sm font-medium text-white">
                   {language === 'ur' ? 'کوئی اطلاع نہیں ہے' : 'All caught up!'}
                 </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
+                <p className="text-xs text-slate-400 mt-1 max-w-xs">
                   {activeFilter === 'UNREAD'
                     ? (language === 'ur' ? 'آپ کے پاس کوئی غیر خواندہ اطلاع نہیں ہے' : 'No unread notifications to display')
                     : (language === 'ur' ? 'اس کیٹیگری میں کوئی نیا الرٹ موجود نہیں ہے' : 'New status updates and administrative alerts will appear here')}
@@ -328,20 +341,20 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 transition-all cursor-pointer relative hover:bg-slate-50 dark:hover:bg-slate-800/60 ${
+                    className={`p-4 transition-all cursor-pointer relative hover:bg-[#161F33]/80 ${
                       !notification.read
-                        ? 'bg-emerald-50/30 dark:bg-emerald-950/20'
+                        ? 'bg-[#042920]/45'
                         : ''
                     }`}
                   >
                     {/* Unread indicator bar */}
                     {!notification.read && (
-                      <span className="absolute left-0 top-3 bottom-3 w-1 bg-emerald-500 rounded-r-md" />
+                      <span className="absolute left-0 top-3 bottom-3 w-1 bg-[#F5D061] rounded-r-md" />
                     )}
 
                     <div className="flex items-start gap-3 pl-1">
                       {/* Icon container */}
-                      <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
 
@@ -350,27 +363,27 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <h4 className={`text-xs font-semibold truncate ${
                             !notification.read 
-                              ? 'text-slate-900 dark:text-white font-bold' 
-                              : 'text-slate-700 dark:text-slate-300'
+                              ? 'text-white font-bold' 
+                              : 'text-slate-200'
                           }`}>
                             {notification.title}
                           </h4>
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0 whitespace-nowrap">
+                          <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap tabular-nums">
                             {formatTimestamp(notification.timestamp)}
                           </span>
                         </div>
 
-                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                           {notification.message}
                         </p>
 
                         <div className="mt-2.5 flex items-center justify-between">
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-sm border ${badgeClass}`}>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${badgeClass}`}>
                             {notification.type.replace(/_/g, ' ')}
                           </span>
 
                           {notification.linkTab && (
-                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 group">
+                            <span className="text-[11px] font-semibold text-[#F5D061] hover:text-white flex items-center gap-1 group">
                               <span>
                                 {notification.type === 'PAYMENT_VERIFIED' 
                                   ? (language === 'ur' ? 'رسید دیکھیں' : 'View Receipt')
@@ -391,8 +404,8 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Footer note */}
-          <div className="p-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-center">
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="p-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] text-center">
+            <p className="text-[11px] text-slate-400">
               {language === 'ur'
                 ? `کردار کی بنیاد پر محفوظ سیکیورٹی: ${currentUser.role}`
                 : `Role-Scoped Feed • Logged in as ${currentUser.role.replace('_', ' ')}`}

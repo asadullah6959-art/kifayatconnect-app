@@ -69,31 +69,31 @@ export const AuditLogsView: React.FC = () => {
   const getCategoryBadge = (category: AuditLog['category']) => {
     switch (category) {
       case 'ROLE_MANAGEMENT':
-        return 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+        return 'bg-purple-950/60 text-purple-300 border-purple-500/40';
       case 'FINANCIAL':
-        return 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+        return 'bg-sky-950/60 text-sky-300 border-sky-500/40';
       case 'MEMBERSHIP':
-        return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+        return 'bg-[#042920] text-emerald-300 border-emerald-500/45';
       case 'REGIONAL':
-        return 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
       case 'SECURITY':
-        return 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800';
+        return 'bg-rose-950/60 text-rose-300 border-rose-500/45';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
               Compliance & Accountability
             </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-xs text-slate-500">
+            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-xs text-slate-300">
               {isSuperAdmin
                 ? 'Master Organization Audit Trail'
                 : isAuditOfficer
@@ -105,11 +105,11 @@ export const AuditLogsView: React.FC = () => {
                 : 'My Personal Account Activity Trail'}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <Clock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
+            <Clock className="w-6 h-6 text-[#F5D061]" />
             <span>Immutable Governance Audit Log</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {canSeeAllLogs
               ? 'Complete historical ledger of approvals, payment certifications, role changes, and administrative actions.'
               : 'Strictly filtered to records necessary for your operational role.'}
@@ -119,13 +119,13 @@ export const AuditLogsView: React.FC = () => {
         {/* Search & Filter */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 sm:flex-initial">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search audit trail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-hidden focus:ring-1 focus:ring-emerald-500 w-full sm:w-64"
+              className="kc-luxury-input pl-8 pr-3 py-2 text-xs rounded-xl w-full sm:w-64"
             />
           </div>
 
@@ -151,11 +151,11 @@ export const AuditLogsView: React.FC = () => {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+      <div className="kc-obsidian-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-400 font-medium">
+              <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
                 <th className="py-3 px-4">Timestamp</th>
                 <th className="py-3 px-4">Actor & Role</th>
                 <th className="py-3 px-4">Action Event</th>
@@ -164,7 +164,7 @@ export const AuditLogsView: React.FC = () => {
                 <th className="py-3 px-4">Detailed Statement</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <tbody className="divide-y divide-[#D4AF37]/15">
               {filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
@@ -173,13 +173,13 @@ export const AuditLogsView: React.FC = () => {
                 </tr>
               ) : (
                 filteredLogs.map(log => (
-                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono text-slate-500 whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-[#161F33]/70 transition-colors">
+                    <td className="py-3 px-4 font-mono tabular-nums text-slate-400 whitespace-nowrap">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
 
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                      <span className="font-semibold text-white block">
                         {log.actorName}
                       </span>
                       <span className="text-[10px] text-slate-400">
@@ -187,21 +187,21 @@ export const AuditLogsView: React.FC = () => {
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                    <td className="py-3 px-4 font-mono font-bold text-[#F5D061] whitespace-nowrap">
                       {log.action}
                     </td>
 
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${getCategoryBadge(log.category)}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${getCategoryBadge(log.category)}`}>
                         {log.category}
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
+                    <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
                       {log.targetEntity}
                     </td>
 
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-md">
+                    <td className="py-3 px-4 text-slate-300 max-w-md">
                       {log.details}
                     </td>
                   </tr>

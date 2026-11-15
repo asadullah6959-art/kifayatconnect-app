@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Settings,
@@ -8,6 +8,8 @@ import {
   Sliders,
   Upload,
   CheckCircle2,
+  XCircle,
+  Clock,
   AlertTriangle,
   PlusCircle,
   ShieldCheck,
@@ -33,7 +35,7 @@ import { SearchableLocationSelect, SelectedLocationValue } from '../common/Searc
 import { RoleBadge } from '../common/RoleBadge';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { LuxurySelect } from '../common/LuxurySelect';
-import { hashSecretString } from '../../services/firebase';
+import { hashSecretString, resolveUserApprovalStatus } from '../../services/firebase';
 import { translate } from '../../data/translations';
 import { AssignRoleModal } from '../common/AssignRoleModal';
 import {
@@ -121,6 +123,7 @@ export const ManageAppModule: React.FC = () => {
     toggleUserSuspension,
     updateUserPermissions,
     broadcastAdminAlert,
+    approveMemberAccount,
     githubRelease,
     refreshGitHubRelease,
     requestOTP,
@@ -201,8 +204,9 @@ export const ManageAppModule: React.FC = () => {
   const [staffQuotaError, setStaffQuotaError] = useState<string | null>(null);
   const [superAdminCandidateId, setSuperAdminCandidateId] = useState('');
 
-  // 6. Member Manager
+  // 6. Member Manager & Instant Approvals
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberApprovalFilter, setMemberApprovalFilter] = useState<'ALL' | 'PENDING'>('ALL');
   const [editingPermUserId, setEditingPermUserId] = useState<string | null>(null);
 
   // 7. Broadcast Alert
@@ -711,18 +715,31 @@ export const ManageAppModule: React.FC = () => {
     { id: 'APK_LOCATIONS', label: '10. APK, Locations & Logs', icon: Smartphone }
   ];
 
-  const superAdminsList = users.filter(u => u.role === 'SUPER_ADMIN');
-  const promotableUsers = users.filter(u => u.role !== 'SUPER_ADMIN' && !u.isSuspended);
-  const filteredMembers = users.filter(u => {
-    if (!memberSearch.trim()) return true;
+  const pendingApprovalsCount = useMemo(
+    () => users.filter(u => !isFounderUser(u) && resolveUserApprovalStatus(u) === 'pending').length,
+    [users]
+  );
+
+  const superAdminsList = useMemo(() => users.filter(u => u.role === 'SUPER_ADMIN'), [users]);
+  const promotableUsers = useMemo(
+    () => users.filter(u => u.role !== 'SUPER_ADMIN' && !u.isSuspended),
+    [users]
+  );
+  const filteredMembers = useMemo(() => {
     const q = memberSearch.toLowerCase();
-    return (
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.district && u.district.toLowerCase().includes(q)) ||
-      (u.membershipId && u.membershipId.toLowerCase().includes(q))
-    );
-  });
+    return users.filter(u => {
+      if (memberApprovalFilter === 'PENDING') {
+        if (isFounderUser(u) || resolveUserApprovalStatus(u) !== 'pending') return false;
+      }
+      if (!memberSearch.trim()) return true;
+      return (
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.district && u.district.toLowerCase().includes(q)) ||
+        (u.membershipId && u.membershipId.toLowerCase().includes(q))
+      );
+    });
+  }, [users, memberSearch, memberApprovalFilter]);
 
   const permLabels: Array<{ key: keyof RolePermissions; label: string }> = [
     { key: 'canManageUsers', label: 'Manage Users' },
@@ -752,6 +769,21 @@ export const ManageAppModule: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('MEMBERS');
+              setMemberApprovalFilter('PENDING');
+            }}
+            className={`text-[11px] px-3 py-1.5 rounded-lg font-extrabold flex items-center gap-1.5 border cursor-pointer transition ${
+              activeTab === 'MEMBERS' && memberApprovalFilter === 'PENDING'
+                ? 'bg-amber-500 text-[#0A0D12] border-amber-400'
+                : 'bg-[#161D2C] text-[#F5D061] border-[#D4AF37]/40 hover:border-[#F5D061]'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Pending Approvals ({pendingApprovalsCount})</span>
+          </button>
           {currentIsFounder && (
             <span className="text-[11px] px-3 py-1.5 bg-[#043927]/70 border border-[#D4AF37]/50 text-[#F5D061] rounded-lg font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
@@ -1302,13 +1334,13 @@ export const ManageAppModule: React.FC = () => {
         </div>
       )}
 
-      {/* 6. MEMBER SUSPENSION & GRANULAR PERMISSIONS */}
+      {/* 6. MEMBER APPROVAL, SUSPENSION & GRANULAR PERMISSIONS */}
       {activeTab === 'MEMBERS' && (
         <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-white">Member Suspension & Permission Matrix</h3>
-              <p className="text-slate-400">Suspend/reactivate accounts or grant granular permissions (Founder Protected).</p>
+              <h3 className="text-base font-bold text-white">Member Approval, Suspension &amp; Permission Matrix</h3>
+              <p className="text-slate-400">One-tap instant member approval, suspend/reactivate accounts, or grant granular permissions (Founder Protected).</p>
             </div>
             <input
               type="text"
@@ -1319,126 +1351,214 @@ export const ManageAppModule: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-            {filteredMembers.map(u => {
-              const targetIsFounder = isFounderUser(u);
-              const isEditing = editingPermUserId === u.id;
-              return (
-                <div key={u.id} className="p-3.5 rounded-xl bg-[#0A0D12] border border-slate-800 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white truncate">{u.name}</span>
-                        <RoleBadge role={u.role} isFounder={targetIsFounder} isAuditOfficer={Boolean(u.isAuditOfficer)} compact />
-                        {u.profileCompleted === false && !targetIsFounder && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[10px] font-extrabold">
-                            PROFILE PENDING
-                          </span>
-                        )}
-                        {u.isSuspended && (
-                          <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
-                            SUSPENDED
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400">
-                        {u.email} · {u.district}, {u.stateProvince}
-                      </span>
-                    </div>
+          {/* Pending Approvals Quick-Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMemberApprovalFilter('ALL')}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition cursor-pointer ${
+                memberApprovalFilter === 'ALL'
+                  ? 'kc-gold-button border-[#F5D061]'
+                  : 'bg-[#0A0D12] text-slate-300 border-[#D4AF37]/25 hover:border-[#D4AF37]/60'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>All Members ({users.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemberApprovalFilter('PENDING')}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition cursor-pointer ${
+                memberApprovalFilter === 'PENDING'
+                  ? 'bg-amber-500 text-[#0A0D12] border-amber-400'
+                  : 'bg-[#0A0D12] text-[#F5D061] border-[#D4AF37]/35 hover:border-[#F5D061]'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Pending Approvals</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  memberApprovalFilter === 'PENDING'
+                    ? 'bg-[#0A0D12] text-[#F5D061]'
+                    : pendingApprovalsCount > 0
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {pendingApprovalsCount}
+              </span>
+            </button>
+          </div>
 
-                    {targetIsFounder ? (
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold flex items-center gap-1 self-start">
-                        <Lock className="w-3 h-3" />
-                        <span>{translate(language, 'founderProtected')}</span>
-                      </span>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        {currentIsFounder && (
+          <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+            {filteredMembers.length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-[#0A0D12] border border-slate-800 text-slate-400">
+                {memberApprovalFilter === 'PENDING'
+                  ? 'No members currently awaiting approval.'
+                  : 'No members match your search.'}
+              </div>
+            ) : (
+              filteredMembers.map(u => {
+                const targetIsFounder = isFounderUser(u);
+                const isEditing = editingPermUserId === u.id;
+                const approvalState = resolveUserApprovalStatus(u);
+
+                return (
+                  <div key={u.id} className="p-3.5 rounded-xl bg-[#0A0D12] border border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-white truncate">{u.name}</span>
+                          <RoleBadge role={u.role} isFounder={targetIsFounder} isAuditOfficer={Boolean(u.isAuditOfficer)} compact />
+                          {approvalState === 'pending' && !targetIsFounder && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[10px] font-extrabold">
+                              <Clock className="w-3 h-3" />
+                              <span>{u.profileCompleted === false ? 'PROFILE PENDING' : 'PENDING APPROVAL'}</span>
+                            </span>
+                          )}
+                          {approvalState === 'approved' && !targetIsFounder && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>APPROVED</span>
+                            </span>
+                          )}
+                          {approvalState === 'rejected' && !targetIsFounder && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/80 border border-rose-500/40 text-rose-300 text-[10px] font-extrabold">
+                              <XCircle className="w-3 h-3" />
+                              <span>REJECTED</span>
+                            </span>
+                          )}
+                          {u.isSuspended && (
+                            <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
+                              SUSPENDED
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {u.email} · {u.district}, {u.stateProvince}
+                        </span>
+                      </div>
+
+                      {targetIsFounder ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold flex items-center gap-1 self-start">
+                          <Lock className="w-3 h-3" />
+                          <span>{translate(language, 'founderProtected')}</span>
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          {approvalState !== 'approved' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const res = approveMemberAccount(u.id, true);
+                                showNotice(res.success ? 'success' : 'error', res.message);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Approve</span>
+                            </button>
+                          )}
+                          {approvalState !== 'approved' && approvalState !== 'rejected' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const res = approveMemberAccount(u.id, false);
+                                showNotice(res.success ? 'success' : 'error', res.message);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>Reject</span>
+                            </button>
+                          )}
+                          {currentIsFounder && (
+                            <button
+                              type="button"
+                              onClick={() => setRoleModalUser(u)}
+                              className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                              <span>Assign Role</span>
+                            </button>
+                          )}
+                          {currentIsFounder && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextVal = !u.isAuditOfficer;
+                                const res = assignAuditOfficer(u.id, nextVal);
+                                if (res.success) {
+                                  showNotice('success', `${u.name} ${nextVal ? 'assigned as Audit Officer 🛡️' : 'removed from Audit Officer role'}.`);
+                                } else {
+                                  showNotice('error', res.error || 'Only Founder can manage Audit Officers.');
+                                }
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer border ${
+                                u.isAuditOfficer
+                                  ? 'bg-cyan-950/70 border-cyan-400/60 text-cyan-200 hover:bg-cyan-900/70'
+                                  : 'bg-[#0A0D12] border-cyan-500/30 text-cyan-300 hover:border-cyan-400'
+                              }`}
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>{u.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => setRoleModalUser(u)}
-                            className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold flex items-center gap-1 cursor-pointer"
+                            onClick={() => setEditingPermUserId(isEditing ? null : u.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-[#F5D061] font-semibold cursor-pointer"
                           >
-                            <Crown className="w-3.5 h-3.5" />
-                            <span>Assign Role</span>
+                            {isEditing ? 'Hide Permissions' : 'Permissions'}
                           </button>
-                        )}
-                        {currentIsFounder && (
                           <button
                             type="button"
                             onClick={() => {
-                              const nextVal = !u.isAuditOfficer;
-                              const res = assignAuditOfficer(u.id, nextVal);
+                              const res = toggleUserSuspension(u.id, !u.isSuspended);
                               if (res.success) {
-                                showNotice('success', `${u.name} ${nextVal ? 'assigned as Audit Officer 🛡️' : 'removed from Audit Officer role'}.`);
+                                showNotice('success', `${u.name} ${u.isSuspended ? 'reactivated' : 'suspended'}.`);
                               } else {
-                                showNotice('error', res.error || 'Only Founder can manage Audit Officers.');
+                                showNotice('error', res.error || 'Action denied.');
                               }
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer border ${
-                              u.isAuditOfficer
-                                ? 'bg-cyan-950/70 border-cyan-400/60 text-cyan-200 hover:bg-cyan-900/70'
-                                : 'bg-[#0A0D12] border-cyan-500/30 text-cyan-300 hover:border-cyan-400'
+                            className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer ${
+                              u.isSuspended
+                                ? 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'
+                                : 'bg-rose-950/70 border border-rose-500/40 text-rose-300'
                             }`}
                           >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>{u.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                            {u.isSuspended ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5" />}
+                            <span>{u.isSuspended ? 'Activate' : 'Suspend'}</span>
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setEditingPermUserId(isEditing ? null : u.id)}
-                          className="px-2.5 py-1.5 rounded-lg bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-[#F5D061] font-semibold cursor-pointer"
-                        >
-                          {isEditing ? 'Hide Permissions' : 'Permissions'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const res = toggleUserSuspension(u.id, !u.isSuspended);
-                            if (res.success) {
-                              showNotice('success', `${u.name} ${u.isSuspended ? 'reactivated' : 'suspended'}.`);
-                            } else {
-                              showNotice('error', res.error || 'Action denied.');
-                            }
-                          }}
-                          className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer ${
-                            u.isSuspended
-                              ? 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'
-                              : 'bg-rose-950/70 border border-rose-500/40 text-rose-300'
-                          }`}
-                        >
-                          {u.isSuspended ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5" />}
-                          <span>{u.isSuspended ? 'Activate' : 'Suspend'}</span>
-                        </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing && !targetIsFounder && (
+                      <div className="pt-2.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {permLabels.map(perm => {
+                          const checked = Boolean(u.permissions?.[perm.key]);
+                          return (
+                            <label key={perm.key} className="flex items-center gap-2 p-2 rounded-lg bg-[#111622] border border-slate-800 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  const res = updateUserPermissions(u.id, { [perm.key]: e.target.checked });
+                                  if (!res.success && res.error) showNotice('error', res.error);
+                                }}
+                                className="accent-amber-500"
+                              />
+                              <span className="text-[11px] text-slate-200">{perm.label}</span>
+                            </label>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-
-                  {isEditing && !targetIsFounder && (
-                    <div className="pt-2.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {permLabels.map(perm => {
-                        const checked = Boolean(u.permissions?.[perm.key]);
-                        return (
-                          <label key={perm.key} className="flex items-center gap-2 p-2 rounded-lg bg-[#111622] border border-slate-800 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) => {
-                                const res = updateUserPermissions(u.id, { [perm.key]: e.target.checked });
-                                if (!res.success && res.error) showNotice('error', res.error);
-                              }}
-                              className="accent-amber-500"
-                            />
-                            <span className="text-[11px] text-slate-200">{perm.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}

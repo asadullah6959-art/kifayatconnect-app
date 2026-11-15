@@ -193,7 +193,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#111622] hover:bg-slate-800 text-white text-xs font-bold rounded-xl border border-[#D4AF37]/40 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 kc-obsidian-card hover:border-[#F5D061]/70 text-white text-xs font-bold rounded-xl kc-pressable cursor-pointer"
           >
             <IdCard className="w-4 h-4 text-[#F5D061]" />
             <span>{translate(language, 'viewDigitalId')}</span>
@@ -235,9 +235,9 @@ export const MemberDashboard: React.FC = () => {
                   setIsPaymentModalOpen(true);
                 }
               }}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-[#043927] to-[#111622] border border-[#D4AF37]/40 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+              className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#F5D061]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#0A0D12]/80 border border-[#D4AF37]/40 flex items-center justify-center mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/40 flex items-center justify-center mb-2">
                 <Coins className="w-4 h-4 text-[#F5D061]" />
               </div>
               <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionPayFunds')}</span>
@@ -247,9 +247,9 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <IdCard className="w-4 h-4 text-[#F5D061]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionDigitalId')}</span>
@@ -258,9 +258,9 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('members')}
-            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <Users className="w-4 h-4 text-[#F5D061]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'navMembers')}</span>
@@ -269,9 +269,9 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('chat')}
-            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-emerald-500/30 flex items-center justify-center mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-emerald-500/35 flex items-center justify-center mb-2">
               <MessageSquare className="w-4 h-4 text-emerald-400" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionOpenChat')}</span>
@@ -280,9 +280,9 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('announcements')}
-            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <Megaphone className="w-4 h-4 text-[#F5D061]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionAnnouncements')}</span>
@@ -298,9 +298,9 @@ export const MemberDashboard: React.FC = () => {
                   setIsComplaintModalOpen(true);
                 }
               }}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-[#111622] to-[#161D2C] border border-[#D4AF37]/30 text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+              className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#0A0D12] border border-rose-500/30 flex items-center justify-center mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-rose-500/35 flex items-center justify-center mb-2">
                 <MessageSquareWarning className="w-4 h-4 text-rose-400" />
               </div>
               <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionComplaints')}</span>
@@ -367,7 +367,7 @@ export const MemberDashboard: React.FC = () => {
 
         {vis.showKpiGrid && (
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 flex flex-col justify-between">
+            <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-semibold uppercase tracking-wider">Total Contributed</span>
@@ -380,13 +380,13 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-emerald-400 font-semibold">Verified</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-slate-800 pt-2 flex items-center justify-between">
-                <span>{ownPayments.filter(p => p.status === 'VERIFIED').length} Cleared Transactions</span>
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
+                <span className="tabular-nums">{ownPayments.filter(p => p.status === 'VERIFIED').length} Cleared Transactions</span>
                 <span className="text-emerald-400 font-semibold">Audited</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 flex flex-col justify-between">
+            <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-semibold uppercase tracking-wider">Monthly Pledge</span>
@@ -399,13 +399,13 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-blue-400 font-semibold">Recurring</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-slate-800 pt-2 flex items-center justify-between">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
                 <span>Cycle ({currentMonthLabel})</span>
                 <span className="text-blue-400 font-semibold">Active</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 flex flex-col justify-between">
+            <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-semibold uppercase tracking-wider">Annual Welfare Pledge</span>
@@ -418,13 +418,13 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-purple-400 font-semibold">Annual</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-slate-800 pt-2 flex items-center justify-between">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
                 <span>Education & Healthcare</span>
                 <span className="text-purple-400 font-semibold">{currentMonthShort}</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 flex flex-col justify-between">
+            <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-semibold uppercase tracking-wider">Verification Status</span>
@@ -437,7 +437,7 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-[#F5D061] font-semibold">In Review</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2">
                 {pendingPayments.length > 0
                   ? 'Admin / Leadership is cross-verifying transaction slip.'
                   : 'All submitted payments have been verified!'}
@@ -448,8 +448,8 @@ export const MemberDashboard: React.FC = () => {
       </div>
 
       {/* Member Payment History */}
-      <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+      <div className="kc-obsidian-card rounded-2xl p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#D4AF37]/20">
           <div>
             <h3 className="text-sm font-bold text-white">My Payment Records & Certified Receipts</h3>
             <p className="text-xs text-slate-400">Only your private transactions are shown under Kifayat Connect privacy rules</p>
@@ -467,10 +467,10 @@ export const MemberDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="overflow-x-auto mt-3">
+        <div className="overflow-x-auto mt-3 rounded-xl border border-[#D4AF37]/20">
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-medium">
+              <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
                 <th className="py-2.5 px-3">Receipt No.</th>
                 <th className="py-2.5 px-3">Date</th>
                 <th className="py-2.5 px-3">Category</th>
@@ -481,11 +481,11 @@ export const MemberDashboard: React.FC = () => {
                 <th className="py-2.5 px-3 text-right">Voucher</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/70">
+            <tbody className="divide-y divide-[#D4AF37]/10">
               {ownPayments.map(tx => (
-                <tr key={tx.id} className="hover:bg-[#161D2C] transition-colors">
+                <tr key={tx.id} className="hover:bg-[#1A233A]/55 transition-colors">
                   <td className="py-2.5 px-3 font-mono font-bold text-white">{tx.receiptNumber}</td>
-                  <td className="py-2.5 px-3 font-mono text-slate-400">{tx.date}</td>
+                  <td className="py-2.5 px-3 font-mono tabular-nums text-slate-400">{tx.date}</td>
                   <td className="py-2.5 px-3 text-emerald-300 font-medium">{tx.fundCategory}</td>
                   <td className="py-2.5 px-3 text-slate-300">{tx.paymentMethod}</td>
                   <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400">{tx.referenceNumber}</td>
@@ -493,10 +493,10 @@ export const MemberDashboard: React.FC = () => {
                   <td className="py-2.5 px-3 text-center">
                     <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
                       tx.status === 'VERIFIED'
-                        ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40'
+                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/40'
                         : tx.status === 'REJECTED'
                         ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
-                        : 'bg-amber-950/70 text-[#F5D061] border border-[#D4AF37]/40'
+                        : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
                     }`}>
                       {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                       <span>{tx.status === 'VERIFIED' ? 'Approved' : tx.status === 'REJECTED' ? 'Rejected' : 'Pending'}</span>
@@ -507,7 +507,7 @@ export const MemberDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedReceipt(tx)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#0A0D12] hover:bg-slate-800 text-[#F5D061] border border-[#D4AF37]/30 rounded-lg font-medium cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#090D16] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-lg font-medium kc-pressable cursor-pointer"
                       >
                         <Printer className="w-3 h-3" />
                         <span>Receipt</span>
@@ -520,7 +520,7 @@ export const MemberDashboard: React.FC = () => {
               ))}
               {ownPayments.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     No contributions submitted yet. Click &quot;Make New Payment&quot; to submit your first contribution.
                   </td>
                 </tr>
@@ -532,8 +532,8 @@ export const MemberDashboard: React.FC = () => {
 
       {/* Grid: My Grievances & Announcements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="kc-obsidian-card rounded-2xl p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
             <div>
               <h3 className="text-sm font-bold text-white">Support Tickets & Grievances</h3>
               <p className="text-xs text-slate-400">Routed to your District Admin ({memberDistrict})</p>
@@ -547,25 +547,25 @@ export const MemberDashboard: React.FC = () => {
 
           <div className="mt-3 space-y-3">
             {ownComplaints.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-500">You have not filed any grievances.</div>
+              <div className="py-6 text-center text-xs text-slate-400">You have not filed any grievances.</div>
             ) : (
               ownComplaints.map(cmp => (
-                <div key={cmp.id} className="p-3 rounded-xl border border-slate-800 bg-[#0A0D12] text-xs">
+                <div key={cmp.id} className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] text-xs">
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-bold text-white">{cmp.subject}</span>
-                      <p className="text-[10px] text-slate-400">{cmp.ticketNumber} · {cmp.category}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">{cmp.ticketNumber} · {cmp.category}</p>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                      cmp.status === 'RESOLVED' ? 'bg-emerald-950 text-emerald-300' : 'bg-amber-950 text-[#F5D061]'
+                      cmp.status === 'RESOLVED' ? 'bg-[#042920] text-emerald-300 border border-emerald-500/35' : 'bg-amber-950/60 text-[#F5D061] border border-[#D4AF37]/35'
                     }`}>
                       {cmp.status}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.responseNote && (
-                    <div className="mt-2 text-[11px] text-emerald-200 bg-[#043927]/50 p-2 rounded border border-emerald-500/30">
-                      <span className="font-bold">Response ({cmp.assignedOfficerName}):</span> {cmp.responseNote}
+                    <div className="mt-2 text-[11px] text-emerald-100 kc-emerald-panel p-2.5 rounded-lg">
+                      <span className="font-bold text-[#F5D061]">Response ({cmp.assignedOfficerName}):</span> {cmp.responseNote}
                     </div>
                   )}
                 </div>
@@ -575,8 +575,8 @@ export const MemberDashboard: React.FC = () => {
         </div>
 
         {vis.showAnnouncementsFeed && (
-          <div className="bg-[#111622] rounded-2xl border border-[#D4AF37]/25 p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="kc-obsidian-card rounded-2xl p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
               <div>
                 <h3 className="text-sm font-bold text-white">Announcements & Official Notices</h3>
                 <p className="text-xs text-slate-400">Latest Official App 👑 & {memberDistrict} notices</p>
@@ -586,15 +586,15 @@ export const MemberDashboard: React.FC = () => {
 
             <div className="mt-3 space-y-3">
               {relevantAnnouncements.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-500">No announcements published yet.</div>
+                <div className="py-6 text-center text-xs text-slate-400">No announcements published yet.</div>
               ) : (
                 relevantAnnouncements.slice(0, 5).map(ann => (
                   <div
                     key={ann.id}
                     className={`p-3 rounded-xl border text-xs ${
                       ann.urgency === 'URGENT'
-                        ? 'border-rose-500/40 bg-rose-950/25'
-                        : 'border-slate-800 bg-[#0A0D12]'
+                        ? 'border-rose-500/45 bg-rose-950/25'
+                        : 'border-[#D4AF37]/25 bg-[#090D16]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -604,9 +604,9 @@ export const MemberDashboard: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">{ann.content}</p>
-                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-800 pt-1.5">
+                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-[#D4AF37]/15 pt-1.5">
                       <span>From: {ann.publishedBy}</span>
-                      <span>{new Date(ann.publishedAt).toLocaleDateString()}</span>
+                      <span className="font-mono tabular-nums">{new Date(ann.publishedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))
@@ -618,12 +618,12 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: SUBMIT PAYMENT (PRESERVED UPLOAD & COMPRESSION) */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <h3 className="text-base font-bold text-white pb-2 border-b border-slate-800">
+            <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
               Submit Payment / Welfare Contribution
             </h3>
 
@@ -663,7 +663,7 @@ export const MemberDashboard: React.FC = () => {
                       step={50}
                       value={payAmount}
                       onChange={(e) => setPayAmount(Number(e.target.value))}
-                      className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
+                      className="w-full text-xs font-mono tabular-nums font-bold px-3 py-2 rounded-xl kc-luxury-input"
                     />
                   </div>
                   <div>
@@ -692,7 +692,7 @@ export const MemberDashboard: React.FC = () => {
                     placeholder="e.g. EP-99281726 or Bank Ref"
                     value={payReference}
                     onChange={(e) => setPayReference(e.target.value)}
-                    className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
+                    className="w-full text-xs font-mono px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
 
@@ -700,7 +700,7 @@ export const MemberDashboard: React.FC = () => {
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Upload Payment Screenshot / Receipt Photo (Compressed)
                   </label>
-                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#0A0D12] cursor-pointer hover:border-[#F5D061] text-xs font-semibold text-slate-200">
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#D4AF37]/45 bg-[#090D16] cursor-pointer hover:border-[#F5D061] text-xs font-semibold text-slate-200 kc-pressable">
                     <Upload className="w-4 h-4 text-[#F5D061]" />
                     <span>
                       {isCompressing
@@ -721,11 +721,11 @@ export const MemberDashboard: React.FC = () => {
                     placeholder={`e.g. ${currentMonthLabel} contribution`}
                     value={payNote}
                     onChange={(e) => setPayNote(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                   <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                     Cancel
                   </button>
@@ -742,12 +742,12 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: COMPLAINT */}
       {isComplaintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <h3 className="text-base font-bold text-white pb-2 border-b border-slate-800">
+            <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
               File Support Ticket or Grievance
             </h3>
             <p className="text-xs text-slate-400 mt-1">
@@ -795,7 +795,7 @@ export const MemberDashboard: React.FC = () => {
                 placeholder="Subject line..."
                 value={cmpSubject}
                 onChange={(e) => setCmpSubject(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
+                className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
               />
 
               <textarea
@@ -804,10 +804,10 @@ export const MemberDashboard: React.FC = () => {
                 placeholder="Provide full details..."
                 value={cmpDescription}
                 onChange={(e) => setCmpDescription(e.target.value)}
-                className="w-full text-xs p-3 rounded-xl border border-slate-700 bg-[#0A0D12] text-white resize-none"
+                className="w-full text-xs p-3 rounded-xl kc-luxury-input resize-none"
               />
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                 <button type="button" onClick={() => setIsComplaintModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                   Cancel
                 </button>

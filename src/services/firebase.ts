@@ -292,6 +292,11 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
         : Boolean((existingData.cnic && existingData.cnic.trim()) || (existingData.address && existingData.address.trim()) || normalizedRole !== 'MEMBER');
       const nowIso = new Date().toISOString();
       const photo = existingData.photoUrl || existingData.avatarUrl || firebaseUser.photoURL || undefined;
+      const resolvedApproval = resolveUserApprovalStatus({
+        ...existingData,
+        isFounder: shouldBeFounder,
+        email: normEmail || existingData.email
+      });
 
       const updated: User = {
         ...existingData,
@@ -306,7 +311,8 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
         avatarUrl: photo,
         isOnline: true,
         lastSeen: nowIso,
-        status: 'online',
+        approvalStatus: resolvedApproval,
+        status: resolvedApproval,
         lastLoginAt: nowIso
       };
       await setDoc(
@@ -324,7 +330,8 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
           province: existingData.stateProvince || existingData.province || 'Punjab',
           isOnline: true,
           lastSeen: serverTimestamp(),
-          status: 'online',
+          approvalStatus: resolvedApproval,
+          status: resolvedApproval,
           lastLoginAt: nowIso
         },
         { merge: true }
@@ -353,7 +360,8 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       isOnline: true,
       lastSeen: nowIso,
       province: isSuperAdminEmail ? 'Islamabad Capital Territory' : 'Punjab',
-      status: 'online',
+      status: isSuperAdminEmail ? 'approved' : 'pending',
+      approvalStatus: isSuperAdminEmail ? 'approved' : 'pending',
       lastLoginAt: nowIso,
       createdAt: nowIso,
       country: 'Pakistan',
@@ -363,8 +371,8 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       cityTown: isSuperAdminEmail ? 'Islamabad' : 'Lahore',
       unionCouncil: isSuperAdminEmail ? 'UC-01 Secretariat' : '',
       membershipId: isSuperAdminEmail ? 'KC-ADM-001' : `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      membershipStatus: 'ACTIVE',
-      verificationStatus: 'VERIFIED',
+      membershipStatus: isSuperAdminEmail ? 'ACTIVE' : 'PENDING_DISTRICT_REVIEW',
+      verificationStatus: isSuperAdminEmail ? 'VERIFIED' : 'PENDING',
       avatarUrl: firebaseUser.photoURL || undefined,
       photoUrl: firebaseUser.photoURL || undefined,
       cnic: '',
@@ -968,6 +976,30 @@ function stripUndefinedDeep<T>(value: T): T {
   return value;
 }
 
+export function resolveUserApprovalStatus(user: Partial<User>): 'approved' | 'rejected' | 'pending' {
+  if (user.isFounder || user.email?.trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+    return 'approved';
+  }
+  if (user.approvalStatus === 'approved' || user.status === 'approved') {
+    return 'approved';
+  }
+  if (user.approvalStatus === 'rejected' || user.status === 'rejected' || user.membershipStatus === 'REJECTED') {
+    return 'rejected';
+  }
+  if (
+    user.approvalStatus === 'pending' ||
+    user.status === 'pending' ||
+    user.verificationStatus === 'PENDING' ||
+    user.membershipStatus === 'PENDING_DISTRICT_REVIEW' ||
+    user.membershipStatus === 'PENDING_REGIONAL_REVIEW' ||
+    user.membershipStatus === 'RECOMMENDED_BY_DISTRICT' ||
+    user.membershipStatus === 'RECOMMENDED_BY_REGION'
+  ) {
+    return 'pending';
+  }
+  return 'approved';
+}
+
 export function normalizeUserForCloud(
   user: User,
   options?: { isOnline?: boolean }
@@ -975,7 +1007,7 @@ export function normalizeUserForCloud(
   const photo = user.photoUrl || user.avatarUrl || user.avatar || '';
   const memId = user.memberId || user.membershipId || '';
   const onlineFlag = options?.isOnline !== undefined ? options.isOnline : (user.isOnline !== undefined ? user.isOnline : user.status !== 'offline');
-  const statusStr = onlineFlag ? 'online' : 'offline';
+  const resolvedApproval = resolveUserApprovalStatus(user);
   const nowIso = new Date().toISOString();
   const provinceVal = user.stateProvince || user.province || 'Punjab';
   return stripUndefinedDeep({
@@ -991,7 +1023,8 @@ export function normalizeUserForCloud(
     city: user.cityTown,
     uc: user.unionCouncil,
     isOnline: onlineFlag,
-    status: statusStr,
+    approvalStatus: resolvedApproval,
+    status: resolvedApproval,
     profileCompleted: Boolean(user.profileCompleted),
     lastLoginAt: user.lastLoginAt || nowIso,
     isAuditOfficer: Boolean(user.isAuditOfficer),
@@ -1023,6 +1056,44 @@ export async function saveUserToFirestore(
   }
 }
 
+export async function approveOrRejectUserInFirestore(
+  user: User,
+  decision: { approved: boolean; actorName: string; reason?: string }
+): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  const nowIso = new Date().toISOString();
+  const approvalPayload = decision.approved
+    ? {
+        status: 'approved',
+        approvalStatus: 'approved',
+        approvedBy: decision.actorName,
+        approvedAt: nowIso,
+        membershipStatus: 'ACTIVE',
+        verificationStatus: 'VERIFIED'
+      }
+    : {
+        status: 'rejected',
+        approvalStatus: 'rejected',
+        rejectedBy: decision.actorName,
+        rejectedAt: nowIso,
+        rejectionReason: decision.reason || 'Rejected by administration.',
+        membershipStatus: 'REJECTED',
+        verificationStatus: 'UNVERIFIED'
+      };
+  try {
+    await setDoc(
+      doc(db, 'users', user.id),
+      {
+        ...normalizeUserForCloud(user),
+        ...approvalPayload
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn(`Firestore approval write warning (users/${user.id}):`, err);
+  }
+}
+
 export async function markUserOfflineInFirestore(user: User): Promise<void> {
   await tryEnsureSessionBestEffort();
   try {
@@ -1030,7 +1101,6 @@ export async function markUserOfflineInFirestore(user: User): Promise<void> {
       doc(db, 'users', user.id),
       {
         isOnline: false,
-        status: 'offline',
         lastSeen: serverTimestamp()
       },
       { merge: true }
@@ -1123,6 +1193,32 @@ export async function saveNotificationToFirestore(notif: AppNotification): Promi
   } catch (err) {
     console.warn(`Firestore notification write warning (notifications/${notif.id}):`, err);
   }
+}
+
+export async function sendApprovalRequestNotificationToFirestore(
+  user: User,
+  notifId?: string
+): Promise<AppNotification> {
+  const nowIso = new Date().toISOString();
+  const id = notifId || `notif_approval_${user.id}_${Date.now()}`;
+  const notif: AppNotification = {
+    id,
+    type: 'approval_request',
+    targetRole: 'Super Admin',
+    title: `Approval Request: ${user.name}`,
+    message: `${user.name} (${user.district || 'Pakistan'}) — New profile awaiting approval`,
+    memberId: user.membershipId || user.memberId || user.id,
+    memberUid: user.id,
+    memberName: user.name,
+    memberEmail: user.email,
+    district: user.district || user.stateProvince || 'Pakistan',
+    read: false,
+    timestamp: nowIso,
+    linkTab: 'members',
+    entityId: user.id
+  };
+  await saveNotificationToFirestore(notif);
+  return notif;
 }
 
 export async function saveOfficeBearerToFirestore(ob: OfficeBearer): Promise<void> {

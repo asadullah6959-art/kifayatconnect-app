@@ -75,60 +75,60 @@ export const AppUpdateModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden relative text-white">
-        <div className="h-1.5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500" />
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="kc-luxury-modal rounded-2xl max-w-lg w-full overflow-hidden relative text-white">
+        <div className="h-1.5 bg-gradient-to-r from-[#FCE38A] via-[#D4AF37] to-[#8A6218]" />
 
-        <div className="p-5 sm:p-6 pb-4 relative bg-[#0a192f] border-b border-slate-800">
+        <div className="p-5 sm:p-6 pb-4 relative bg-[#090D16] border-b border-[#D4AF37]/25">
           {!isMandatory && (
             <button
               type="button"
               onClick={handleDismiss}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           )}
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] flex items-center justify-center text-[#090D16] shadow-lg border border-[#FCE38A]/60">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#042920] text-[#F5D061] border border-[#D4AF37]/40">
                   v{activeVersion}
                 </span>
                 {isMandatory && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40">
                     Required Update
                   </span>
                 )}
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+              <h3 className="text-base sm:text-lg font-extrabold text-white mt-1">
                 {title}
               </h3>
             </div>
           </div>
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 font-mono tabular-nums">
             Released: {releaseDate}
           </p>
         </div>
 
         <div className="p-5 sm:p-6 space-y-4">
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-slate-200 leading-relaxed">
             {description}
           </p>
 
           {notes.length > 0 && (
-            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-              <span className="text-xs font-semibold text-slate-200 block uppercase tracking-wider">
+            <div className="bg-[#090D16] p-4 rounded-xl border border-[#D4AF37]/25 space-y-2">
+              <span className="text-xs font-bold text-[#F5D061] block uppercase tracking-wider">
                 What&apos;s New:
               </span>
               <ul className="space-y-1.5">
                 {notes.map((note, index) => (
-                  <li key={index} className="text-xs text-slate-300 flex items-start gap-2">
+                  <li key={index} className="text-xs text-slate-200 flex items-start gap-2">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                     <span>{note}</span>
                   </li>
@@ -143,7 +143,7 @@ export const AppUpdateModal: React.FC = () => {
                 href={apkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2.5 shadow-xl transition-all cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl kc-gold-button font-extrabold text-xs flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>
@@ -155,9 +155,9 @@ export const AppUpdateModal: React.FC = () => {
             <button
               type="button"
               onClick={handlePwaUpdate}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center justify-center gap-2 border border-slate-700 transition-colors cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#042920] hover:bg-[#063B2E] text-emerald-100 font-semibold text-xs flex items-center justify-center gap-2 border border-[#D4AF37]/40 kc-pressable cursor-pointer"
             >
-              <RefreshCw className="w-4 h-4 text-emerald-400" />
+              <RefreshCw className="w-4 h-4 text-[#F5D061]" />
               <span>
                 {language === 'ur' ? 'ویب / PWA اپڈیٹ ریفریش کریں' : 'Refresh & Update Web / PWA App'}
               </span>
@@ -167,7 +167,7 @@ export const AppUpdateModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="w-full py-2 text-center text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                className="w-full py-2 text-center text-xs text-slate-400 hover:text-[#F5D061] transition-colors cursor-pointer"
               >
                 {language === 'ur' ? 'بعد میں یاد دلائیں' : 'Remind Me Later'}
               </button>

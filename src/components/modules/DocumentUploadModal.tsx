@@ -239,16 +239,16 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const pendingCount = docs.filter(d => !d.verificationStatus || d.verificationStatus === 'PENDING').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/90 p-3 sm:p-5 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/90 p-3 sm:p-5 overflow-y-auto">
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[92dvh] my-auto overflow-hidden"
+        className="kc-luxury-modal rounded-2xl w-full max-w-4xl flex flex-col max-h-[92dvh] my-auto overflow-hidden text-slate-100"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-[#0a192f] text-white flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#D4AF37]/30 bg-gradient-to-r from-[#090D16] via-[#042920]/70 to-[#090D16] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-[#042920] border border-[#D4AF37]/50 flex items-center justify-center text-[#F5D061] shadow-inner">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
@@ -256,12 +256,12 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
                   Dossier & Supporting Documents
                 </h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40">
                   Secure Storage
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Applicant: <strong className="text-amber-300 font-semibold">{application.applicantName}</strong> · CNIC: <span className="font-mono text-slate-200">{application.cnic}</span> · {application.district}, {application.stateProvince}
+                Applicant: <strong className="text-[#F5D061] font-semibold">{application.applicantName}</strong> · CNIC: <span className="font-mono text-slate-200 tabular-nums">{application.cnic}</span> · {application.district}, {application.stateProvince}
               </p>
             </div>
           </div>
@@ -269,7 +269,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 transition-colors cursor-pointer kc-pressable"
           >
             <X className="w-5 h-5" />
           </button>
@@ -280,48 +280,48 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           
           {/* Summary Metric Ribbon */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Total Attached</span>
-              <span className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 block">{docs.length}</span>
+            <div className="p-3.5 rounded-xl kc-obsidian-card">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Attached</span>
+              <span className="text-xl font-bold text-white mt-0.5 block tabular-nums">{docs.length}</span>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50">
-              <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">Verified</span>
-              <span className="text-xl font-bold text-emerald-700 dark:text-emerald-300 mt-0.5 block">{verifiedCount}</span>
+            <div className="p-3.5 rounded-xl kc-emerald-panel">
+              <span className="text-[10px] uppercase font-bold text-emerald-300 block">Verified</span>
+              <span className="text-xl font-bold text-white mt-0.5 block tabular-nums">{verifiedCount}</span>
             </div>
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50">
-              <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Pending Review</span>
-              <span className="text-xl font-bold text-amber-700 dark:text-amber-300 mt-0.5 block">{pendingCount}</span>
+            <div className="p-3.5 rounded-xl kc-obsidian-card">
+              <span className="text-[10px] uppercase font-bold text-[#F5D061] block">Pending Review</span>
+              <span className="text-xl font-bold text-[#F5D061] mt-0.5 block tabular-nums">{pendingCount}</span>
             </div>
-            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50">
-              <span className="text-[10px] uppercase font-bold text-rose-700 dark:text-rose-400 block">Flagged / Action Req.</span>
-              <span className="text-xl font-bold text-rose-700 dark:text-rose-300 mt-0.5 block">{flaggedCount}</span>
+            <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-500/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <span className="text-[10px] uppercase font-bold text-rose-300 block">Flagged / Action Req.</span>
+              <span className="text-xl font-bold text-rose-200 mt-0.5 block tabular-nums">{flaggedCount}</span>
             </div>
           </div>
 
           {/* Section 1: Upload New Supporting Document */}
-          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-4">
+          <div className="p-5 rounded-2xl kc-obsidian-card space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UploadCloud className="w-5 h-5 text-amber-500" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                <UploadCloud className="w-5 h-5 text-[#F5D061]" />
+                <h3 className="text-sm font-bold text-white">
                   Attach New Supporting Document
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400 tabular-nums">
                 Max 5MB · Allowed: JPG, PNG, WEBP, PDF
               </span>
             </div>
 
             {uploadError && (
-              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 flex items-center gap-2 text-xs text-rose-200">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
                 <span>{uploadError}</span>
               </div>
             )}
 
             {uploadSuccess && (
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <div className="p-3 rounded-xl bg-[#042920] border border-emerald-500/40 flex items-center gap-2 text-xs text-emerald-200">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>{uploadSuccess}</span>
               </div>
             )}
@@ -329,7 +329,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
             <form onSubmit={handleUploadSubmit} className="space-y-4">
               {/* Category Selector Grid */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
+                <label className="text-xs font-semibold text-slate-200 block mb-2">
                   Document Classification:
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -338,16 +338,16 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                       key={cat.type}
                       type="button"
                       onClick={() => setSelectedType(cat.type)}
-                      className={`p-2.5 rounded-lg border text-left transition-all flex items-start gap-2.5 ${
+                      className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer kc-pressable ${
                         selectedType === cat.type
-                          ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 dark:border-amber-500 text-slate-900 dark:text-white ring-1 ring-amber-400'
-                          : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                          ? 'bg-[#042920] border-[#F5D061] text-white shadow-[0_4px_14px_rgba(212,175,55,0.18)]'
+                          : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-300 hover:border-[#D4AF37]/60 hover:text-white'
                       }`}
                     >
                       <span className="text-lg leading-none mt-0.5">{cat.icon}</span>
                       <div className="min-w-0">
                         <span className="text-xs font-bold block truncate">{cat.label}</span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block">
+                        <span className="text-[10px] text-slate-400 truncate block">
                           {cat.description}
                         </span>
                       </div>
@@ -363,8 +363,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
                   fileDataUrl
-                    ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20'
-                    : 'border-slate-300 dark:border-slate-700 hover:border-amber-500 bg-white dark:bg-slate-900/60'
+                    ? 'border-emerald-500/60 bg-[#042920]/40'
+                    : 'border-[#D4AF37]/35 hover:border-[#F5D061] bg-[#090D16]'
                 }`}
               >
                 <input
@@ -382,36 +382,36 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                         <img 
                           src={fileDataUrl} 
                           alt="Upload preview" 
-                          className="h-28 max-w-full rounded-lg object-contain shadow-xs border border-slate-200 dark:border-slate-700" 
+                          className="h-28 max-w-full rounded-lg object-contain shadow-xs border border-[#D4AF37]/35" 
                         />
-                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded">
+                        <span className="absolute bottom-1 right-1 bg-[#090D16]/85 text-[#F5D061] text-[9px] px-1.5 py-0.5 rounded border border-[#D4AF37]/30">
                           Preview
                         </span>
                       </div>
                     ) : (
-                      <div className="w-16 h-16 rounded-xl bg-rose-100 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 flex flex-col items-center justify-center text-rose-600 dark:text-rose-400">
+                      <div className="w-16 h-16 rounded-xl bg-rose-950/70 border border-rose-500/40 flex flex-col items-center justify-center text-rose-300">
                         <FileText className="w-8 h-8" />
                         <span className="text-[10px] font-bold uppercase mt-0.5">PDF</span>
                       </div>
                     )}
                     <div className="text-center">
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-sm">
+                      <p className="text-xs font-bold text-white truncate max-w-sm">
                         {fileName}
                       </p>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-slate-400 tabular-nums">
                         {formatFileSize(fileSize)} · Click to change file
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-1.5 py-2">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#042920] border border-[#D4AF37]/40 text-[#F5D061] mx-auto flex items-center justify-center">
                       <UploadCloud className="w-5 h-5" />
                     </div>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Drag & drop document here, or <span className="text-amber-600 underline font-bold">browse</span>
+                    <p className="text-xs font-semibold text-slate-200">
+                      Drag & drop document here, or <span className="text-[#F5D061] underline font-bold">browse</span>
                     </p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[10px] text-slate-400">
                       Supports high-resolution scans, photos of receipts or NADRA CNIC cards
                     </p>
                   </div>
@@ -421,7 +421,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               {/* Title & Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Document Title *
                   </label>
                   <input
@@ -429,11 +429,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                     value={docName}
                     onChange={(e) => setDocName(e.target.value)}
                     placeholder="e.g., CNIC Smart Card Front Scan"
-                    className="w-full text-xs px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-slate-900 dark:text-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-200 block mb-1">
                     Internal Verification Remarks (Optional)
                   </label>
                   <input
@@ -441,7 +441,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g., Verified by District Admin physically"
-                    className="w-full text-xs px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-slate-900 dark:text-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
               </div>
@@ -450,7 +450,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 <button
                   type="submit"
                   disabled={!fileDataUrl || isSubmitting}
-                  className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#0a192f] hover:bg-slate-800 text-amber-400 font-bold text-xs border border-amber-400/40 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl kc-gold-button font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4" />
                   <span>{isSubmitting ? 'Attaching Document...' : 'Attach Document to Dossier'}</span>
@@ -462,43 +462,42 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           {/* Section 2: Attached Documents Gallery & Audit Verification */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileCheck className="w-4 h-4 text-emerald-600" />
-                <span>Existing Dossier Records ({docs.length})</span>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-emerald-400" />
+                <span className="tabular-nums">Existing Dossier Records ({docs.length})</span>
               </h3>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-400">
                 Authorized officers may verify or flag supporting files
               </span>
             </div>
 
             {docs.length === 0 ? (
-              <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-xs text-slate-400">
+              <div className="p-8 text-center bg-[#090D16] rounded-xl border border-dashed border-[#D4AF37]/30 text-xs text-slate-400">
                 No supporting documents attached yet. Upload receipts or identification scans above.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {docs.map(doc => {
-                  const isPdf = doc.fileMime === 'application/pdf' || doc.fileUrl.startsWith('data:application/pdf');
                   const isImage = doc.fileMime.startsWith('image/') || doc.fileUrl.startsWith('data:image/');
 
                   return (
                     <div
                       key={doc.id}
-                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between space-y-3 hover:border-amber-400/50 transition-all"
+                      className="p-4 rounded-xl kc-obsidian-card flex flex-col justify-between space-y-3 hover:border-[#F5D061]/60 transition-all"
                     >
                       <div className="space-y-2">
                         {/* Top row: Type badge & Verification Status */}
                         <div className="flex items-start justify-between gap-2">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/25 text-slate-300 uppercase tracking-wider">
                             {doc.type.replace(/_/g, ' ')}
                           </span>
 
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                             doc.verificationStatus === 'VERIFIED'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                              ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
                               : doc.verificationStatus === 'FLAGGED'
-                              ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
-                              : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                              ? 'bg-rose-950/70 text-rose-300 border border-rose-500/45'
+                              : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
                           }`}>
                             {doc.verificationStatus === 'VERIFIED' ? (
                               <CheckCircle2 className="w-3 h-3" />
@@ -519,47 +518,47 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               setZoomLevel(1);
                               setRotation(0);
                             }}
-                            className="w-14 h-14 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 cursor-pointer group relative flex items-center justify-center hover:opacity-90"
+                            className="w-14 h-14 rounded-lg border border-[#D4AF37]/30 overflow-hidden bg-[#090D16] shrink-0 cursor-pointer group relative flex items-center justify-center hover:opacity-90"
                           >
                             {isImage ? (
                               <img src={doc.fileUrl} alt={doc.name} className="w-full h-full object-cover" />
                             ) : (
-                              <FileText className="w-7 h-7 text-rose-500" />
+                              <FileText className="w-7 h-7 text-rose-400" />
                             )}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
                               <Eye className="w-4 h-4" />
                             </div>
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={doc.name}>
+                            <h4 className="text-xs font-bold text-white truncate" title={doc.name}>
                               {doc.name}
                             </h4>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
+                            <p className="text-[11px] text-slate-400 mt-0.5 tabular-nums">
                               {formatFileSize(doc.fileSize)} · {new Date(doc.uploadedAt).toLocaleDateString()}
                             </p>
                             <p className="text-[10px] text-slate-400">
-                              Uploaded by: <span className="font-semibold text-slate-600 dark:text-slate-300">{doc.uploadedByName}</span>
+                              Uploaded by: <span className="font-semibold text-slate-200">{doc.uploadedByName}</span>
                             </p>
                           </div>
                         </div>
 
                         {/* Notes or Verification Remarks */}
                         {doc.notes && (
-                          <p className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2 rounded border border-slate-100 dark:border-slate-800/60 italic">
+                          <p className="text-[11px] text-slate-300 bg-[#090D16] p-2.5 rounded-lg border border-[#D4AF37]/20 italic">
                             "{doc.notes}"
                           </p>
                         )}
 
                         {doc.verificationNotes && (
-                          <div className="text-[10px] p-2 rounded bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300">
+                          <div className="text-[10px] p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/40 text-rose-200">
                             <strong>Reviewer Note ({doc.verifiedBy}):</strong> {doc.verificationNotes}
                           </div>
                         )}
                       </div>
 
                       {/* Bottom Action Bar */}
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                      <div className="pt-2 border-t border-[#D4AF37]/15 flex items-center justify-between gap-2">
                         {/* Preview and Download */}
                         <div className="flex items-center gap-1.5">
                           <button
@@ -569,9 +568,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               setZoomLevel(1);
                               setRotation(0);
                             }}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-200 bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/25 rounded-lg transition-colors cursor-pointer kc-pressable"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3.5 h-3.5 text-[#F5D061]" />
                             <span>Inspect</span>
                           </button>
 
@@ -580,7 +579,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             download={doc.name || 'kifayat-connect-doc'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded"
+                            className="p-1.5 text-slate-300 hover:text-[#F5D061] rounded-lg hover:bg-[#161F33] transition-colors"
                             title="Download document"
                           >
                             <Download className="w-3.5 h-3.5" />
@@ -590,7 +589,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteDoc(doc)}
-                              className="p-1 text-rose-500 hover:text-rose-700 rounded"
+                              className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/60 rounded-lg transition-colors cursor-pointer"
                               title="Delete file"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -605,7 +604,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               <button
                                 type="button"
                                 onClick={() => verifyApplicationDocument(application.id, doc.id, 'VERIFIED')}
-                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors"
+                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-200 bg-[#042920] hover:bg-[#063B2E] border border-emerald-500/45 rounded-lg transition-colors cursor-pointer kc-pressable"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
                                 <span>Verify</span>
@@ -619,7 +618,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                                   setFlaggingDocId(doc.id);
                                   setFlagReason('');
                                 }}
-                                className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded border border-rose-200 dark:border-rose-800 transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-300 bg-rose-950/60 hover:bg-rose-900/70 rounded-lg border border-rose-500/40 transition-colors cursor-pointer kc-pressable"
                               >
                                 <AlertTriangle className="w-3 h-3" />
                                 <span>Flag</span>
@@ -637,14 +636,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex items-center justify-between text-xs">
-          <span className="text-slate-500">
+        <div className="px-6 py-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between text-xs">
+          <span className="text-slate-400">
             All uploaded records are audited with timestamp and user ID.
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="px-5 py-2 font-semibold text-slate-200 bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 rounded-xl transition-colors cursor-pointer kc-pressable"
           >
             Close Dossier
           </button>
@@ -653,13 +652,13 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
       {/* SUB-MODAL 1: FLAGGING PROMPT */}
       {flaggingDocId && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3">
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#090D16]/85 p-4">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400" />
               <span>Flag Supporting Document</span>
             </h4>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-300">
               Provide a clear reason for the applicant or review committee (e.g., blurry image, expired CNIC, incorrect receipt amount).
             </p>
             <textarea
@@ -670,10 +669,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               }}
               placeholder="Enter reason for flagging..."
               rows={3}
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-rose-500"
+              className="w-full text-xs p-2.5 rounded-xl kc-luxury-input"
             />
             {flagError && (
-              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{flagError}</p>
+              <p className="text-[11px] text-rose-300 font-medium">{flagError}</p>
             )}
             <div className="flex justify-end gap-2 pt-1">
               <button
@@ -682,14 +681,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                   setFlaggingDocId(null);
                   setFlagError(null);
                 }}
-                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                className="px-3.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/25 rounded-lg cursor-pointer kc-pressable"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmFlag(flaggingDocId)}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded"
+                className="px-4 py-1.5 text-xs font-bold text-rose-100 bg-rose-700 hover:bg-rose-600 border border-rose-500/50 rounded-lg cursor-pointer kc-pressable"
               >
                 Confirm Flag
               </button>
@@ -700,20 +699,20 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
       {/* SUB-MODAL 1B: DELETE CONFIRMATION (Replaces window.confirm) */}
       {confirmDeleteDoc && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/85 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3">
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Trash2 className="w-4 h-4 text-rose-600" />
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#090D16]/85 p-4">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-400" />
               <span>Remove Supporting File?</span>
             </h4>
-            <p className="text-xs text-slate-500">
-              Remove <strong>"{confirmDeleteDoc.name}"</strong> from this application dossier? This action is recorded in the audit log.
+            <p className="text-xs text-slate-300">
+              Remove <strong className="text-white">"{confirmDeleteDoc.name}"</strong> from this application dossier? This action is recorded in the audit log.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setConfirmDeleteDoc(null)}
-                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                className="px-3.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/25 rounded-lg cursor-pointer kc-pressable"
               >
                 Cancel
               </button>
@@ -723,7 +722,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                   removeDocumentFromApplication(application.id, confirmDeleteDoc.id);
                   setConfirmDeleteDoc(null);
                 }}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded"
+                className="px-4 py-1.5 text-xs font-bold text-rose-100 bg-rose-700 hover:bg-rose-600 border border-rose-500/50 rounded-lg cursor-pointer kc-pressable"
               >
                 Remove File
               </button>

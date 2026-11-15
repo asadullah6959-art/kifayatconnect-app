@@ -25,7 +25,7 @@ import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { verifyEmailOTP, getPendingEmailOTP, clearPendingEmailOTP } from '../../services/firebase';
-import { compressImageFile } from '../../utils/imageCompression';
+import { compressAvatarFile } from '../../utils/imageCompression';
 import { translate } from '../../data/translations';
 
 import { User } from '../../types';
@@ -105,7 +105,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
     setPhotoError('');
     setPhotoUploading(true);
     try {
-      const compressed = await compressImageFile(file, 1080, 0.78);
+      const compressed = await compressAvatarFile(file);
       setAvatarUrl(compressed.dataUrl);
     } catch (err) {
       setPhotoError(err instanceof Error ? err.message : 'Unable to optimize profile photo.');
@@ -477,7 +477,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </div>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <p className="text-xs font-bold text-[#F5D061]">
-                  Profile Photo <span className="text-[10px] text-slate-400 font-normal">(Optional · Auto-compressed &lt;450KB)</span>
+                  Profile Photo <span className="text-[10px] text-slate-400 font-normal">(Optional · Auto-compressed 200×200 &lt;35KB)</span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg kc-gold-button text-[11px] font-bold cursor-pointer">

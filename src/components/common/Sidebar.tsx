@@ -159,10 +159,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     : (appSettings.appName || translate('en', 'appTitleShort'));
 
   return (
-    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#0A0D12] overflow-hidden overscroll-none touch-pan-y">
+    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#090D16] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
-        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
+        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#D4AF37]/30 bg-[#111726] shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
           <div className="flex items-center gap-2.5">
             <BrandEmblem3D size="xs" />
             <div>
@@ -178,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#161F33] transition-colors cursor-pointer kc-pressable"
           >
             <X className="w-5 h-5 text-[#F5D061]" />
           </button>
@@ -186,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       )}
 
       {/* Role & Jurisdiction Card */}
-      <div className="p-4 border-b border-[#D4AF37]/20 bg-[#111622]/90 shrink-0 space-y-2">
+      <div className="p-4 border-b border-[#D4AF37]/25 bg-gradient-to-b from-[#141B2D] to-[#0E1422] shrink-0 space-y-2 shadow-[inset_0_1px_0_rgba(252,227,138,0.1)]">
         <div className="flex items-center justify-between gap-2">
           <RoleBadge
             role={currentUser.role}
@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
           <span className="text-xs font-bold text-white block truncate">
             {currentUser.name}
           </span>
-          <span className="text-[10px] text-[#D4AF37] block truncate font-mono mt-0.5">
+          <span className="text-[10px] text-[#D4AF37] block truncate font-mono mt-0.5 tabular-nums">
             {currentUser.membershipId || 'KC-PENDING'} · {currentUser.district || 'Pakistan'}
           </span>
         </div>
@@ -222,19 +222,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
                 }
                 if (onClose) onClose();
               }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 text-xs rounded-xl transition-all text-start cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-xs rounded-xl transition-all text-start cursor-pointer kc-pressable ${
                 isActive
                   ? 'kc-gold-button font-bold'
-                  : 'text-slate-300 hover:bg-[#161D2C] hover:text-white border border-transparent hover:border-[#D4AF37]/20'
+                  : 'text-slate-300 hover:bg-[#141B2D] hover:text-white border border-transparent hover:border-[#D4AF37]/25'
               }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0A0D12]' : 'text-[#D4AF37]'}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#090D16]' : 'text-[#D4AF37]'}`} />
                 <span className="truncate">{item.label}</span>
               </div>
 
               {item.badge !== null && item.badge !== undefined && (
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-[#161D2C] text-white'}`}>
+                <span className={`text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-full font-bold leading-none ${item.badgeColor || 'bg-[#161F33] text-white'}`}>
                   {item.badge}
                 </span>
               )}
@@ -244,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       </div>
 
       {/* Footer Install Widget */}
-      <div className="p-3 border-t border-[#D4AF37]/20 bg-[#111622] space-y-2 shrink-0">
+      <div className="p-3 border-t border-[#D4AF37]/25 bg-[#111726] space-y-2 shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-semibold text-slate-400">
             {language === 'ur' ? 'موبائل ایپ' : 'Mobile & PWA App'}
