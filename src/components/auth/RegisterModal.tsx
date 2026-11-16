@@ -24,9 +24,21 @@ import {
 import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
-import { verifyEmailOTP, getPendingEmailOTP, clearPendingEmailOTP } from '../../services/firebase';
+import { TabbarBadge } from '../common/TabbarBadge';
+import {
+  verifyEmailOTP,
+  getPendingEmailOTP,
+  clearPendingEmailOTP,
+  findExistingFirestoreUserByEmail
+} from '../../services/firebase';
 import { compressAvatarFile } from '../../utils/imageCompression';
 import { translate } from '../../data/translations';
+import {
+  TABBAR_CLANS,
+  CUSTOM_TABBAR_ID,
+  getTabbarById,
+  transliterateTabbarToUrdu
+} from '../../data/tabbars';
 
 import { User } from '../../types';
 
@@ -67,6 +79,27 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
   const [cityTown, setCityTown] = useState(() => completeProfileUser?.cityTown || 'Lahore');
   const [unionCouncil, setUnionCouncil] = useState(() => completeProfileUser?.unionCouncil || 'UC-112 Model Town');
   const [address, setAddress] = useState(() => completeProfileUser?.address || '');
+  const [tabbarSelection, setTabbarSelection] = useState<string>(() => {
+    if (!completeProfileUser) return '';
+    if (completeProfileUser.tabbarId) {
+      return getTabbarById(completeProfileUser.tabbarId)?.id || CUSTOM_TABBAR_ID;
+    }
+    if (completeProfileUser.tabbarEnglish || completeProfileUser.tabbarUrdu) {
+      return getTabbarById(completeProfileUser.tabbarEnglish)?.id || CUSTOM_TABBAR_ID;
+    }
+    return '';
+  });
+  const [customTabbarEnglish, setCustomTabbarEnglish] = useState(() =>
+    completeProfileUser?.tabbarId === CUSTOM_TABBAR_ID || !getTabbarById(completeProfileUser?.tabbarId)
+      ? completeProfileUser?.tabbarEnglish || ''
+      : ''
+  );
+  const [customTabbarUrdu, setCustomTabbarUrdu] = useState(() =>
+    completeProfileUser?.tabbarId === CUSTOM_TABBAR_ID || !getTabbarById(completeProfileUser?.tabbarId)
+      ? completeProfileUser?.tabbarUrdu || ''
+      : ''
+  );
+  const [tabbarError, setTabbarError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(() => completeProfileUser?.avatarUrl || completeProfileUser?.photoUrl || '');
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
@@ -91,6 +124,16 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       if (completeProfileUser.cityTown) setCityTown(completeProfileUser.cityTown);
       if (completeProfileUser.unionCouncil) setUnionCouncil(completeProfileUser.unionCouncil);
       if (completeProfileUser.address) setAddress(completeProfileUser.address);
+      if (completeProfileUser.tabbarId || completeProfileUser.tabbarEnglish || completeProfileUser.tabbarUrdu) {
+        const matched = getTabbarById(completeProfileUser.tabbarId || completeProfileUser.tabbarEnglish);
+        if (matched) {
+          setTabbarSelection(matched.id);
+        } else {
+          setTabbarSelection(CUSTOM_TABBAR_ID);
+          setCustomTabbarEnglish(completeProfileUser.tabbarEnglish || '');
+          setCustomTabbarUrdu(completeProfileUser.tabbarUrdu || '');
+        }
+      }
       if (completeProfileUser.avatarUrl || completeProfileUser.photoUrl) {
         setAvatarUrl(completeProfileUser.avatarUrl || completeProfileUser.photoUrl || '');
       }
@@ -151,7 +194,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
     setOtpSuccess('');
     setOtpLoading(true);
     try {
-      const res = await requestOTP(email.trim());
+      const cleanEmail = email.trim().toLowerCase();
+      const existingCloud = await findExistingFirestoreUserByEmail(cleanEmail).catch(() => null);
+      if (existingCloud && (existingCloud.passwordHash || existingCloud.hasPassword) && existingCloud.profileCompleted) {
+        setOtpError(
+          language === 'ur'
+            ? 'یہ ای میل پہلے سے رجسٹرڈ ہے۔ لاگ ان اسکرین پر جا کر ای میل اور پاس ورڈ سے براہِ راست سائن ان کریں۔'
+            : 'This email already has a registered account with a password. Please close this window and sign in directly using Email + Password.'
+        );
+        return;
+      }
+      const res = await requestOTP(cleanEmail);
       if (res.success) {
         setOtpSent(true);
         setOtpSuccess(res.message);
@@ -203,7 +256,32 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTabbarError('');
     if (!applicantName.trim() || !cnic.trim()) return;
+
+    const selectedClan = getTabbarById(tabbarSelection);
+    let finalTabbarId = '';
+    let finalTabbarEnglish = '';
+    let finalTabbarUrdu = '';
+
+    if (selectedClan) {
+      finalTabbarId = selectedClan.id;
+      finalTabbarEnglish = selectedClan.englishName;
+      finalTabbarUrdu = selectedClan.urduName;
+    } else if (tabbarSelection === CUSTOM_TABBAR_ID) {
+      const eng = customTabbarEnglish.trim();
+      const ur = customTabbarUrdu.trim() || transliterateTabbarToUrdu(eng);
+      if (!eng && !ur) {
+        setTabbarError(translate(language, 'tabbarRequiredError'));
+        return;
+      }
+      finalTabbarId = CUSTOM_TABBAR_ID;
+      finalTabbarEnglish = eng || ur;
+      finalTabbarUrdu = ur || eng;
+    } else {
+      setTabbarError(translate(language, 'tabbarRequiredError'));
+      return;
+    }
 
     await registerMember({
       applicantName: applicantName.trim(),
@@ -217,16 +295,16 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       cityTown,
       unionCouncil,
       address: address.trim(),
+      tabbarId: finalTabbarId,
+      tabbarUrdu: finalTabbarUrdu,
+      tabbarEnglish: finalTabbarEnglish,
       isOldMember,
       oldMembershipNo: isOldMember ? oldMembershipNo.trim() : undefined,
       password: password.trim(),
       avatarUrl: avatarUrl || undefined
     });
 
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
+    const resetFormFields = () => {
       setStep(1);
       setApplicantName('');
       setEmail('');
@@ -237,16 +315,44 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       setPhone('+92 300 ');
       setCnic('');
       setAddress('');
+      setTabbarSelection('');
+      setCustomTabbarEnglish('');
+      setCustomTabbarUrdu('');
+      setTabbarError('');
       setAvatarUrl('');
       setPhotoError('');
       setIsOldMember(false);
       setOldMembershipNo('');
-    }, 1800);
+    };
+
+    if (!isCompletingExistingProfile) {
+      resetFormFields();
+      onClose();
+      return;
+    }
+
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      onClose();
+      resetFormFields();
+    }, 1200);
   };
 
   const availableDistricts = getDistrictsForProvince(stateProvince);
   const availableTehsils = getTehsilsForDistrict(stateProvince, district);
   const sampleUCs = getSampleUCsForDistrict(stateProvince, district);
+
+  const previewTabbar =
+    tabbarSelection === CUSTOM_TABBAR_ID
+      ? {
+          tabbarId: CUSTOM_TABBAR_ID,
+          tabbarEnglish: customTabbarEnglish.trim(),
+          tabbarUrdu: customTabbarUrdu.trim() || transliterateTabbarToUrdu(customTabbarEnglish),
+        }
+      : tabbarSelection
+      ? { tabbarId: tabbarSelection }
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
@@ -258,7 +364,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               <BrandEmblem3D size="sm" />
               <div>
                 <h3 className="text-base font-extrabold kc-gold-gradient-text">
-                  {isCompletingExistingProfile ? 'Complete Your Member Profile' : translate(language, 'registerBtn')}
+                  {isCompletingExistingProfile
+                    ? (language === 'ur' ? 'اپنی ممبر پروفائل مکمل کریں' : 'Complete Your Member Profile')
+                    : translate(language, 'registerBtn')}
                 </h3>
                 <p className="text-[11px] text-slate-400">
                   {step === 1
@@ -308,8 +416,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             </p>
           </div>
         ) : step === 1 ? (
-          /* STEP 1: Verify Email via Working 6-Digit EmailJS OTP */
+          /* STEP 1: One-Time Email Verification via Working 6-Digit EmailJS OTP */
           <div className="space-y-4">
+            <div className="p-2.5 rounded-xl bg-[#043927]/45 border border-emerald-500/35 text-[11px] text-emerald-200 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{translate(language, 'oneTimeOtpBadge')}</span>
+            </div>
             {otpError && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -407,7 +519,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
           <form onSubmit={handleConfirmPasswordStep} className="space-y-4">
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{email} verified! Set your account password for quick login.</span>
+              <span>
+                {language === 'ur'
+                  ? `${email} کی تصدیق ہو گئی! فوری لاگ ان کے لیے پاس ورڈ مقرر کریں۔`
+                  : `${email} verified! Set your account password for quick login.`}
+              </span>
             </div>
 
             {pwdError && (
@@ -419,7 +535,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
             <div>
               <label className="font-semibold text-slate-300 block mb-1">
-                {translate(language, 'passwordLabel')} (min 6 chars) *
+                {translate(language, 'passwordLabel')} {language === 'ur' ? '(کم از کم 6 حروف)' : '(min 6 chars)'} *
               </label>
               <div className="relative">
                 <input
@@ -477,12 +593,19 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </div>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <p className="text-xs font-bold text-[#F5D061]">
-                  Profile Photo <span className="text-[10px] text-slate-400 font-normal">(Optional · Auto-compressed 200×200 &lt;35KB)</span>
+                  {language === 'ur' ? 'پروفائل تصویر' : 'Profile Photo'}{' '}
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {language === 'ur' ? '(اختیاری · خودکار کمپریسڈ 200×200)' : '(Optional · Auto-compressed 200×200 <35KB)'}
+                  </span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg kc-gold-button text-[11px] font-bold cursor-pointer">
                     {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                    <span>{avatarUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                    <span>
+                      {avatarUrl
+                        ? (language === 'ur' ? 'تصویر تبدیل کریں' : 'Change Photo')
+                        : (language === 'ur' ? 'تصویر اپ لوڈ کریں' : 'Upload Photo')}
+                    </span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -496,7 +619,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                       onClick={() => setAvatarUrl('')}
                       className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
                     >
-                      Remove
+                      {language === 'ur' ? 'ہٹائیں' : 'Remove'}
                     </button>
                   )}
                 </div>
@@ -507,12 +630,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="font-semibold text-slate-300 block mb-1">
-                  Applicant Full Name *
+                  {language === 'ur' ? 'درخواست گزار کا مکمل نام *' : 'Applicant Full Name *'}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Muhammad Usman"
+                  placeholder={language === 'ur' ? 'مثال: محمد عثمان' : 'e.g. Muhammad Usman'}
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
                   className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061]"
@@ -521,7 +644,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
               <div>
                 <label className="font-semibold text-slate-300 block mb-1">
-                  National ID (CNIC) *
+                  {language === 'ur' ? 'قومی شناختی کارڈ نمبر (CNIC) *' : 'National ID (CNIC) *'}
                 </label>
                 <input
                   type="text"
@@ -537,7 +660,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="font-semibold text-slate-300 block mb-1">
-                  Phone Number *
+                  {language === 'ur' ? 'موبائل / فون نمبر *' : 'Phone Number *'}
                 </label>
                 <input
                   type="text"
@@ -550,7 +673,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
               <div>
                 <label className="font-semibold text-slate-300 block mb-1">
-                  Verified Email
+                  {language === 'ur' ? 'تصدیق شدہ ای میل' : 'Verified Email'}
                 </label>
                 <input
                   type="email"
@@ -561,15 +684,98 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </div>
             </div>
 
+            {/* Tabbar / Branch / Clan Selection (Black & Royal Gold) */}
+            <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/35 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="font-bold text-[#F5D061] text-xs">
+                  {translate(language, 'tabbarLabel')} *
+                </label>
+                {previewTabbar && (previewTabbar.tabbarId !== CUSTOM_TABBAR_ID || previewTabbar.tabbarEnglish || previewTabbar.tabbarUrdu) && (
+                  <TabbarBadge
+                    tabbarId={previewTabbar.tabbarId}
+                    tabbarEnglish={previewTabbar.tabbarEnglish}
+                    tabbarUrdu={previewTabbar.tabbarUrdu}
+                    language={language}
+                    compact
+                  />
+                )}
+              </div>
+
+              <LuxurySelect
+                label={translate(language, 'tabbarShortLabel')}
+                value={tabbarSelection}
+                onChange={(val) => {
+                  setTabbarSelection(val);
+                  setTabbarError('');
+                }}
+                options={[
+                  { value: '', label: translate(language, 'tabbarSelectPlaceholder') },
+                  ...TABBAR_CLANS.map((clan) => ({
+                    value: clan.id,
+                    label: `${clan.emblem} ${clan.urduName} — ${clan.englishName}`
+                  })),
+                  { value: CUSTOM_TABBAR_ID, label: `🏛️ ${translate(language, 'tabbarOtherOption')}` }
+                ]}
+                searchable
+                compact
+              />
+
+              {tabbarSelection === CUSTOM_TABBAR_ID && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      {translate(language, 'tabbarCustomEnglishLabel')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={customTabbarEnglish}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomTabbarEnglish(val);
+                        setCustomTabbarUrdu(transliterateTabbarToUrdu(val));
+                        setTabbarError('');
+                      }}
+                      placeholder="e.g. Yousafzai / Khan Khel"
+                      className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#111622] text-xs text-white focus:border-[#F5D061] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      {translate(language, 'tabbarCustomUrduLabel')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={customTabbarUrdu}
+                      onChange={(e) => {
+                        setCustomTabbarUrdu(e.target.value);
+                        setTabbarError('');
+                      }}
+                      placeholder="مثال: یوسفزئی"
+                      className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#111622] text-xs text-[#F5D061] font-urdu-auto focus:border-[#F5D061] outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {tabbarError && (
+                <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{tabbarError}</span>
+                </p>
+              )}
+            </div>
+
             {/* Preserved Administrative Location Hierarchy */}
             <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/25 space-y-3">
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#F5D061] pb-2 border-b border-[#D4AF37]/15">
                 <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Pakistan Location (All Districts & Cities)</span>
+                <span>
+                  {language === 'ur' ? 'پاکستان لوکیشن (تمام اضلاع اور شہر)' : 'Pakistan Location (All Districts & Cities)'}
+                </span>
               </div>
 
               <SearchableLocationSelect
-                label="Quick Search Any City, Tehsil, or District"
+                label={language === 'ur' ? 'شہر، تحصیل یا ضلع فوری تلاش کریں' : 'Quick Search Any City, Tehsil, or District'}
                 value={{ stateProvince, district, cityTown, tehsil }}
                 onChange={(loc) => {
                   setStateProvince(loc.stateProvince);
@@ -583,9 +789,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Country</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'ملک' : 'Country'}
+                  </label>
                   <LuxurySelect
-                    label="Country"
+                    label={language === 'ur' ? 'ملک' : 'Country'}
                     value={country}
                     onChange={setCountry}
                     options={COUNTRIES}
@@ -594,9 +802,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">State / Province *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'صوبہ / ریاست *' : 'State / Province *'}
+                  </label>
                   <LuxurySelect
-                    label="State / Province"
+                    label={language === 'ur' ? 'صوبہ / ریاست' : 'State / Province'}
                     value={stateProvince}
                     onChange={handleProvinceChange}
                     options={PROVINCE_OPTIONS}
@@ -607,9 +817,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">District *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'ضلع *' : 'District *'}
+                  </label>
                   <LuxurySelect
-                    label="District"
+                    label={language === 'ur' ? 'ضلع' : 'District'}
                     value={district}
                     onChange={handleDistrictChange}
                     options={[...availableDistricts, 'Other / Village']}
@@ -619,7 +831,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Tehsil / Sub-Division *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'تحصیل / سب ڈویژن *' : 'Tehsil / Sub-Division *'}
+                  </label>
                   <input
                     type="text"
                     required
@@ -636,7 +850,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">City / Town *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'شہر / قصبہ *' : 'City / Town *'}
+                  </label>
                   <input
                     type="text"
                     required
@@ -647,7 +863,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Union Council (UC) *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'یونین کونسل (UC) *' : 'Union Council (UC) *'}
+                  </label>
                   <input
                     type="text"
                     required
@@ -664,11 +882,13 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">Permanent Residential Address *</label>
+              <label className="font-semibold text-slate-300 block mb-1">
+                {language === 'ur' ? 'مستقل رہائشی پتہ *' : 'Permanent Residential Address *'}
+              </label>
               <textarea
                 required
                 rows={2}
-                placeholder="House / Street / Sector / City..."
+                placeholder={language === 'ur' ? 'مکان نمبر / گلی / سیکٹر / شہر...' : 'House / Street / Sector / City...'}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white resize-none"
@@ -684,7 +904,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   className="rounded text-[#D4AF37]"
                 />
                 <span className="font-semibold text-slate-200">
-                  I am an existing member from the old manual register
+                  {language === 'ur'
+                    ? 'میں پرانے مینوئل رجسٹر کا پہلے سے موجود ممبر ہوں'
+                    : 'I am an existing member from the old manual register'}
                 </span>
               </label>
 
@@ -693,7 +915,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   <input
                     type="text"
                     required={isOldMember}
-                    placeholder="Previous Manual ID e.g. OLD-LHR-1984"
+                    placeholder={language === 'ur' ? 'سابقہ مینوئل آئی ڈی مثال: OLD-LHR-1984' : 'Previous Manual ID e.g. OLD-LHR-1984'}
                     value={oldMembershipNo}
                     onChange={(e) => setOldMembershipNo(e.target.value)}
                     className="w-full px-2.5 py-1.5 font-mono border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
@@ -721,7 +943,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               form="kc-register-step3-form"
               className="flex items-center gap-1.5 px-5 py-2 kc-gold-button font-bold rounded-xl cursor-pointer"
             >
-              <span>{isCompletingExistingProfile ? 'Save & Unlock Features' : translate(language, 'completeSignupBtn')}</span>
+              <span>
+                {isCompletingExistingProfile
+                  ? (language === 'ur' ? 'محفوظ کریں اور فیچرز کھولیں' : 'Save & Unlock Features')
+                  : translate(language, 'completeSignupBtn')}
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

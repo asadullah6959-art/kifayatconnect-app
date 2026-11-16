@@ -32,19 +32,23 @@ import {
   Crown,
   Smile,
   Upload,
-  Minus
+  Minus,
+  AudioLines
 } from 'lucide-react';
+import { useSpeechDictation, appendDictatedText } from '../../hooks/useSpeechDictation';
 import {
   compressImageFile,
   isGifFile,
   MAX_GALLERY_FILE_BYTES,
   readFileAsDataUrlWithLimit
 } from '../../utils/imageCompression';
-import { uploadMediaToFirebaseStorage } from '../../services/firebase';
+import { uploadMediaToFirebaseStorage, isUserActuallyOnline } from '../../services/firebase';
 import { RoleBadge } from '../common/RoleBadge';
+import { TabbarBadge } from '../common/TabbarBadge';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
-import { translate } from '../../data/translations';
+import { translate, AppLanguage } from '../../data/translations';
+import { resolveUserTabbar } from '../../data/tabbars';
 import {
   ChatMessage,
   ChatReplySnapshot,
@@ -59,6 +63,33 @@ const FOUNDER_EMAIL = 'asadullah6959@gmail.com';
 const MAX_VOICE_SECONDS = 60;
 const QUICK_REACTIONS = ['❤️', '👍', '🤲', '✨'];
 const QUICK_EMOJIS = ['❤️', '👍', '🤲', '✨', '👑', '🕌', '🇵🇰', '😊'];
+
+function getCalendarDayKey(isoOrTs?: string): string {
+  const d = isoOrTs ? new Date(isoOrTs) : new Date();
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatChatDateDivider(isoOrTs: string, language: AppLanguage): string {
+  const d = new Date(isoOrTs);
+  if (Number.isNaN(d.getTime())) return '';
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const key = getCalendarDayKey(isoOrTs);
+  if (key === getCalendarDayKey(today.toISOString())) {
+    return translate(language, 'todayLabel');
+  }
+  if (key === getCalendarDayKey(yesterday.toISOString())) {
+    return translate(language, 'yesterdayLabel');
+  }
+  return d.toLocaleDateString(language === 'ur' ? 'ur-PK' : 'en-PK', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
 
 export const FOUNDER_BUBBLE_COLORS: Array<{
   id: string;
@@ -231,7 +262,11 @@ const ChatModuleContent: React.FC = () => {
     toggleCommunityReaction,
     toggleHighlightCommunityMessage,
     togglePinCommunityMessage,
-    deleteCommunityMessage,
+    deleteCommunityMessageForMe,
+    deleteCommunityMessageForEveryone,
+    clearOldCommunityMessages,
+    deleteDirectMessageForMe,
+    deleteDirectMessageForEveryone,
     muteChatUser,
     updateLiveChatAppearance,
     minimizeLiveChat,
@@ -269,6 +304,23 @@ const ChatModuleContent: React.FC = () => {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isCompressingMedia, setIsCompressingMedia] = useState(false);
 
+  // Delete Message & Founder Clear Old Messages Modals
+  const [deleteModalTarget, setDeleteModalTarget] = useState<{
+    scope: 'COMMUNITY' | 'DIRECT';
+    msg: ChatMessage;
+    canDeleteForEveryone: boolean;
+  } | null>(null);
+  const [isClearOldModalOpen, setIsClearOldModalOpen] = useState(false);
+
+  // Presence heartbeat refresh tick (every 10s)
+  const [presenceNowMs, setPresenceNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPresenceNowMs(Date.now());
+    }, 10000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // Voice Recorder States
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -280,7 +332,62 @@ const ChatModuleContent: React.FC = () => {
   const cancelRecordingFlagRef = useRef<boolean>(false);
 
   const [chatError, setChatError] = useState<string | null>(null);
+  const [micHint, setMicHint] = useState<string | null>(null);
+
+  // Web Speech API Dictation States
+  const [dictationTarget, setDictationTarget] = useState<'COMMUNITY' | 'DIRECT' | null>(null);
+  const [dictationLocale, setDictationLocale] = useState<'en-US' | 'ur-PK'>(
+    language === 'ur' ? 'ur-PK' : 'en-US'
+  );
+
+  const speech = useSpeechDictation({
+    language,
+    speechLangOverride: dictationLocale,
+    onFinalTranscript: (spoken) => {
+      if (dictationTarget === 'COMMUNITY') {
+        setCommunityText(prev => appendDictatedText(prev, spoken));
+      } else if (dictationTarget === 'DIRECT') {
+        setMessageText(prev => appendDictatedText(prev, spoken));
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (speech.error) {
+      setChatError(speech.error);
+    }
+  }, [speech.error]);
+
+  useEffect(() => {
+    setDictationLocale(language === 'ur' ? 'ur-PK' : 'en-US');
+  }, [language]);
+
+  useEffect(() => {
+    if (speech.isListening) {
+      speech.stopDictation();
+      setDictationTarget(null);
+    }
+    // Stop active dictation when switching between COMMUNITY and DIRECT modes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatMode]);
+
+  const toggleChatDictation = (target: 'COMMUNITY' | 'DIRECT') => {
+    setChatError(null);
+    speech.clearError();
+    if (speech.isListening && dictationTarget === target) {
+      speech.stopDictation();
+      setDictationTarget(null);
+      return;
+    }
+    if (isRecording) {
+      stopVoiceRecording(true);
+    }
+    setDictationTarget(target);
+    speech.startDictation(dictationLocale);
+  };
+
   const communityEndRef = useRef<HTMLDivElement | null>(null);
+  const directEndRef = useRef<HTMLDivElement | null>(null);
   const communityMessageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -333,11 +440,15 @@ const ChatModuleContent: React.FC = () => {
     if (selectedUserFilterRole !== 'ALL' && u.role !== selectedUserFilterRole) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
+      const resolvedTab = resolveUserTabbar(u);
       return (
         u.name.toLowerCase().includes(q) ||
         (u.district && u.district.toLowerCase().includes(q)) ||
         (u.stateProvince && u.stateProvince.toLowerCase().includes(q)) ||
-        (u.membershipId && u.membershipId.toLowerCase().includes(q))
+        (u.membershipId && u.membershipId.toLowerCase().includes(q)) ||
+        (u.tabbarEnglish && u.tabbarEnglish.toLowerCase().includes(q)) ||
+        (u.tabbarUrdu && u.tabbarUrdu.toLowerCase().includes(q)) ||
+        (resolvedTab && (resolvedTab.englishName.toLowerCase().includes(q) || resolvedTab.urduName.toLowerCase().includes(q)))
       );
     }
     return true;
@@ -356,9 +467,23 @@ const ChatModuleContent: React.FC = () => {
     }
   }, [chatMode, activeChatId, currentDirectMessages.length, currentUser, markConversationAsSeen]);
 
+  useEffect(() => {
+    if (chatMode === 'DIRECT' && activeChatId) {
+      try {
+        directEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      } catch {
+        // ignore
+      }
+    }
+  }, [chatMode, activeChatId, currentDirectMessages.length]);
+
   const handleSendDirectMessage = (e: React.FormEvent) => {
     e.preventDefault();
     setChatError(null);
+    if (speech.isListening && dictationTarget === 'DIRECT') {
+      speech.stopDictation();
+      setDictationTarget(null);
+    }
     if (!activeRecipient || (!messageText.trim() && !attachmentPreview)) return;
 
     const res = sendChatMessage(
@@ -368,7 +493,7 @@ const ChatModuleContent: React.FC = () => {
     );
 
     if (!res.success) {
-      setChatError(res.error || 'Unable to send message right now.');
+      setChatError(res.error || (language === 'ur' ? 'اس وقت پیغام بھیجنا ممکن نہیں۔' : 'Unable to send message right now.'));
       return;
     }
 
@@ -381,7 +506,7 @@ const ChatModuleContent: React.FC = () => {
     e.target.value = '';
     if (!file) return;
     if (file.size > MAX_GALLERY_FILE_BYTES) {
-      setChatError('Selected file exceeds the 10MB limit.');
+      setChatError(language === 'ur' ? 'منتخب کردہ فائل 10MB کی حد سے زیادہ ہے۔' : 'Selected file exceeds the 10MB limit.');
       return;
     }
     setChatError(null);
@@ -405,7 +530,7 @@ const ChatModuleContent: React.FC = () => {
       });
       setIsAttachmentModalOpen(false);
     } catch (err: any) {
-      setChatError(err?.message || 'Failed to compress selected image.');
+      setChatError(err?.message || (language === 'ur' ? 'منتخب تصویر کمپریس کرنے میں ناکامی ہوئی۔' : 'Failed to compress selected image.'));
     } finally {
       setIsCompressingMedia(false);
     }
@@ -416,7 +541,7 @@ const ChatModuleContent: React.FC = () => {
     e.target.value = '';
     if (!file) return;
     if (file.size > 1.5 * 1024 * 1024) {
-      setChatError('Document must be under 1.5MB for fast mobile delivery.');
+      setChatError(language === 'ur' ? 'تیز موبائل ترسیل کے لیے دستاویز 1.5MB سے کم ہونی چاہیے۔' : 'Document must be under 1.5MB for fast mobile delivery.');
       return;
     }
     const reader = new FileReader();
@@ -437,8 +562,12 @@ const ChatModuleContent: React.FC = () => {
   const handleSendCommunityMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setChatError(null);
+    if (speech.isListening && dictationTarget === 'COMMUNITY') {
+      speech.stopDictation();
+      setDictationTarget(null);
+    }
     if (isUserMutedInCommunity) {
-      setChatError('You are currently muted in Community Chat.');
+      setChatError(translate(language, 'mutedNotice'));
       return;
     }
     if (!communityText.trim() && !communityAttachment) return;
@@ -450,7 +579,7 @@ const ChatModuleContent: React.FC = () => {
     });
 
     if (!res.success) {
-      setChatError(res.error || 'Failed to send community message.');
+      setChatError(res.error || (language === 'ur' ? 'کمیونٹی پیغام بھیجنے میں ناکامی ہوئی۔' : 'Failed to send community message.'));
       return;
     }
 
@@ -468,7 +597,7 @@ const ChatModuleContent: React.FC = () => {
       replyTo: replyingTo || undefined
     });
     if (!res.success) {
-      setChatError(res.error || 'Unable to send Islamic greeting.');
+      setChatError(res.error || (language === 'ur' ? 'اسلامی کارڈ بھیجنے میں ناکامی ہوئی۔' : 'Unable to send Islamic greeting.'));
       return;
     }
     setReplyingTo(null);
@@ -480,10 +609,10 @@ const ChatModuleContent: React.FC = () => {
     storageFolder: string
   ): Promise<string> => {
     if (!file || (!file.type.startsWith('image/') && !isGifFile(file))) {
-      throw new Error('Please choose a valid photo or GIF file.');
+      throw new Error(language === 'ur' ? 'براہ کرم درست تصویر یا GIF فائل منتخب کریں۔' : 'Please choose a valid photo or GIF file.');
     }
     if (file.size > MAX_GALLERY_FILE_BYTES) {
-      throw new Error('Selected file exceeds the 10MB limit. Please choose a smaller file.');
+      throw new Error(language === 'ur' ? 'منتخب کردہ فائل 10MB کی حد سے زیادہ ہے۔' : 'Selected file exceeds the 10MB limit. Please choose a smaller file.');
     }
 
     if (isGifFile(file)) {
@@ -511,7 +640,7 @@ const ChatModuleContent: React.FC = () => {
         type: 'IMAGE'
       });
     } catch (err: any) {
-      setChatError(err?.message || 'Unable to process selected photo or GIF.');
+      setChatError(err?.message || (language === 'ur' ? 'تصویر یا GIF پروسیس کرنے میں ناکامی ہوئی۔' : 'Unable to process selected photo or GIF.'));
     } finally {
       setIsCompressingMedia(false);
     }
@@ -530,12 +659,12 @@ const ChatModuleContent: React.FC = () => {
         liveChatCustomBgUrl: url
       });
       if (!res.success) {
-        setChatError(res.error || 'Could not update custom scenic background.');
+        setChatError(res.error || (language === 'ur' ? 'کسٹم وال پیپر اپڈیٹ نہیں ہو سکا۔' : 'Could not update custom scenic background.'));
       } else {
         setIsThemeModalOpen(false);
       }
     } catch (err: any) {
-      setChatError(err?.message || 'Unable to process custom scenic wallpaper.');
+      setChatError(err?.message || (language === 'ur' ? 'کسٹم وال پیپر پروسیس کرنے میں ناکامی ہوئی۔' : 'Unable to process custom scenic wallpaper.'));
     } finally {
       setIsCompressingMedia(false);
     }
@@ -560,14 +689,33 @@ const ChatModuleContent: React.FC = () => {
 
   const startVoiceRecording = async () => {
     setChatError(null);
+    setMicHint(null);
+    if (speech.isListening) {
+      speech.stopDictation();
+      setDictationTarget(null);
+    }
     if (isUserMutedInCommunity) {
-      setChatError('You are currently muted in Community Chat.');
+      setChatError(translate(language, 'mutedNotice'));
       return;
     }
 
+    const isNativeAndroidApk =
+      typeof window !== 'undefined' &&
+      Boolean(
+        (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+      );
+
     try {
       if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-        setChatError('Voice recording is not supported on this browser or device.');
+        if (!isNativeAndroidApk) {
+          setMicHint(
+            language === 'ur'
+              ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
+              : 'Voice recording requires the installed Android APK with Mic permission.'
+          );
+        } else {
+          setChatError(language === 'ur' ? 'اس براؤزر یا ڈیوائس پر وائس ریکارڈنگ دستیاب نہیں ہے۔' : 'Voice recording is not supported on this browser or device.');
+        }
         return;
       }
 
@@ -622,7 +770,7 @@ const ChatModuleContent: React.FC = () => {
         audioChunksRef.current = [];
 
         if (blob.size > 950 * 1024) {
-          setChatError('Voice note size exceeded mobile cloud limit. Please keep notes shorter.');
+          setChatError(language === 'ur' ? 'وائس نوٹ کا سائز حد سے زیادہ ہے۔ براہ کرم مختصر پیغام ریکارڈ کریں۔' : 'Voice note size exceeded mobile cloud limit. Please keep notes shorter.');
           return;
         }
 
@@ -642,7 +790,7 @@ const ChatModuleContent: React.FC = () => {
             replyTo: replyingTo || undefined
           });
           if (!res.success) {
-            setChatError(res.error || 'Could not send voice note.');
+            setChatError(res.error || (language === 'ur' ? 'وائس نوٹ نہیں بھیجا جا سکا۔' : 'Could not send voice note.'));
           } else {
             setReplyingTo(null);
           }
@@ -661,7 +809,15 @@ const ChatModuleContent: React.FC = () => {
     } catch {
       setIsRecording(false);
       setRecordingSeconds(0);
-      setChatError('Microphone access denied or unavailable. Please allow mic permission in browser/app settings.');
+      if (!isNativeAndroidApk) {
+        setMicHint(
+          language === 'ur'
+            ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
+            : 'Voice recording requires the installed Android APK with Mic permission.'
+        );
+      } else {
+        setChatError(language === 'ur' ? 'مائیکروفون کی اجازت نہیں ملی۔ براہ کرم ایپ کی سیٹنگز میں مائیکروفون آن کریں۔' : 'Microphone access denied or unavailable. Please allow mic permission in browser/app settings.');
+      }
     }
   };
 
@@ -708,8 +864,10 @@ const ChatModuleContent: React.FC = () => {
 
   const activeThemeId: CommunityScenicThemeId = appSettings.liveChatTheme || 'OBSIDIAN_GOLD';
   const onlineMembersCount = users.filter(u =>
-    u.id === currentUser.id || (u.isOnline !== undefined ? Boolean(u.isOnline) : u.status === 'online')
+    isUserActuallyOnline(u, presenceNowMs)
   ).length;
+
+  const visibleCommunityMessages = communityMessages.filter(m => !m.isDeleted);
 
   return (
     <div className="space-y-4 max-w-full">
@@ -719,7 +877,7 @@ const ChatModuleContent: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/25">
             <div className="min-w-0">
               <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
-                Kifayat Connect · Live &amp; Direct Network
+                {language === 'ur' ? 'کفایت کنیکٹ · لائیو اور براہ راست نیٹ ورک' : 'Kifayat Connect · Live & Direct Network'}
               </span>
               <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
                 <MessageSquare className="w-6 h-6 text-[#F5D061] shrink-0" />
@@ -738,7 +896,7 @@ const ChatModuleContent: React.FC = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer text-slate-300 hover:text-white"
                 >
                   <Globe className="w-3.5 h-3.5 shrink-0" />
-                  <span>Live Community Room</span>
+                  <span>{translate(language, 'communityRoomTab')}</span>
                 </button>
 
                 <button
@@ -747,19 +905,21 @@ const ChatModuleContent: React.FC = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer kc-gold-button"
                 >
                   <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                  <span>Direct Messages</span>
+                  <span>{translate(language, 'directMessagesTab')}</span>
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={minimizeLiveChat}
-                title="Minimize Live Chat to Floating Bubble"
+                title={language === 'ur' ? 'چیٹ کو فلوٹنگ ببل میں چھوٹا کریں' : 'Minimize Live Chat to Floating Bubble'}
                 aria-label="Minimize Live Chat"
                 className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-[#111622] hover:bg-[#161D2C] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-extrabold cursor-pointer shrink-0"
               >
                 <Minus className="w-4 h-4" />
-                <span className="hidden sm:inline text-[11px]">Minimize</span>
+                <span className="hidden sm:inline text-[11px]">
+                  {language === 'ur' ? 'چھوٹا کریں' : 'Minimize'}
+                </span>
               </button>
 
               <button
@@ -819,16 +979,19 @@ const ChatModuleContent: React.FC = () => {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <h2 className="text-xs sm:text-sm font-extrabold text-white truncate">
-                    Live Community Room
+                    {translate(language, 'communityRoomTab')}
                   </h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/35">
-                    🟢 {onlineMembersCount} Online · {users.length} Members
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/35 tabular-nums">
+                    🟢 {onlineMembersCount} {translate(language, 'online')} · {users.length} {language === 'ur' ? 'ممبران' : 'Members'}
                   </span>
                 </div>
                 <p className="text-[10px] text-[#F5D061]/90 truncate">
                   {activeThemeId === 'CUSTOM'
-                    ? 'Founder Custom Scenic Wallpaper'
-                    : (SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId)?.label || 'Obsidian & Royal Gold')}
+                    ? (language === 'ur' ? 'بانی کی منتخب کردہ لائیو اسکرین تھیم' : 'Founder Custom Scenic Wallpaper')
+                    : (() => {
+                        const found = SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId);
+                        return found ? (language === 'ur' ? found.labelUr : found.label) : (language === 'ur' ? 'شاہی سیاہ اور سنہرا' : 'Obsidian & Royal Gold');
+                      })()}
                 </p>
               </div>
             </div>
@@ -838,21 +1001,33 @@ const ChatModuleContent: React.FC = () => {
                 type="button"
                 onClick={() => setChatMode('DIRECT')}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/35 text-slate-100 text-[11px] font-bold cursor-pointer"
-                title="Switch to 1-on-1 Direct Messages"
+                title={language === 'ur' ? 'ون آن ون براہ راست پیغامات پر جائیں' : 'Switch to 1-on-1 Direct Messages'}
               >
                 <MessageSquare className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
-                <span>Direct</span>
+                <span>{language === 'ur' ? 'براہ راست' : 'Direct'}</span>
               </button>
 
               {isFounder && (
-                <button
-                  type="button"
-                  onClick={() => setIsBubbleColorModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer"
-                >
-                  <Crown className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden sm:inline">My Bubble</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsBubbleColorModalOpen(true)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{language === 'ur' ? 'میرا ببل' : 'My Bubble'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsClearOldModalOpen(true)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 text-rose-200 text-[11px] font-bold cursor-pointer"
+                    title={translate(language, 'clearOldMessagesBtn')}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{language === 'ur' ? 'صفائی' : 'Clear Chat'}</span>
+                  </button>
+                </>
               )}
 
               {isLeadership && (
@@ -862,7 +1037,7 @@ const ChatModuleContent: React.FC = () => {
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/40 text-slate-100 text-[11px] font-bold cursor-pointer"
                 >
                   <Palette className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
-                  <span className="hidden sm:inline">Theme</span>
+                  <span className="hidden sm:inline">{language === 'ur' ? 'تھیم' : 'Theme'}</span>
                 </button>
               )}
 
@@ -870,7 +1045,7 @@ const ChatModuleContent: React.FC = () => {
               <button
                 type="button"
                 onClick={minimizeLiveChat}
-                title="Minimize Live Chat to Floating Bubble"
+                title={language === 'ur' ? 'فلوٹنگ ببل میں چھوٹا کریں' : 'Minimize Live Chat to Floating Bubble'}
                 aria-label="Minimize Live Chat Room"
                 className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-[#1E273B] border border-[#D4AF37]/50 text-[#F5D061] font-extrabold cursor-pointer shrink-0"
               >
@@ -881,7 +1056,7 @@ const ChatModuleContent: React.FC = () => {
               <button
                 type="button"
                 onClick={closeAndHideLiveChat}
-                title="Close & Hide Live Chat"
+                title={language === 'ur' ? 'لائیو چیٹ بند کریں' : 'Close & Hide Live Chat'}
                 aria-label="Close and Hide Live Chat"
                 className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-rose-950/80 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0"
               >
@@ -899,7 +1074,7 @@ const ChatModuleContent: React.FC = () => {
               </div>
               {queuedMessageCount > 0 && (
                 <span className="px-2 py-0.5 rounded-md bg-amber-500 text-[#0A0D12] font-extrabold text-[10px] shrink-0">
-                  {queuedMessageCount} Queued
+                  {queuedMessageCount} {language === 'ur' ? 'قطار میں' : 'Queued'}
                 </span>
               )}
             </div>
@@ -909,6 +1084,18 @@ const ChatModuleContent: React.FC = () => {
             <div className="relative z-10 mx-3 mt-2 p-2.5 rounded-xl bg-rose-950/85 border border-rose-500/50 text-rose-200 text-xs font-semibold flex items-center justify-between gap-2 shrink-0">
               <span>{chatError}</span>
               <button type="button" onClick={() => setChatError(null)} className="p-1 cursor-pointer shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {micHint && (
+            <div className="relative z-10 mx-3 mt-2 p-2.5 rounded-xl bg-[#161D2C]/95 border border-[#D4AF37]/40 text-[#F5D061] text-xs font-medium flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Mic className="w-3.5 h-3.5 shrink-0 text-[#F5D061]" />
+                <span>{micHint}</span>
+              </div>
+              <button type="button" onClick={() => setMicHint(null)} className="p-1 cursor-pointer shrink-0 text-slate-300 hover:text-white">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -925,7 +1112,7 @@ const ChatModuleContent: React.FC = () => {
                 <Pin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
                 <div className="min-w-0">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#F5D061] block">
-                    Pinned by Founder · {pinnedMessage.senderName}
+                    {translate(language, 'pinnedMessageLabel')} · {pinnedMessage.senderName}
                   </span>
                   <p className="text-xs text-slate-100 truncate">
                     {pinnedMessage.text}
@@ -939,7 +1126,7 @@ const ChatModuleContent: React.FC = () => {
                   onClick={() => togglePinCommunityMessage(pinnedMessage.id)}
                   className="px-2 py-1 rounded-lg bg-[#2A210B] text-[#F5D061] border border-[#D4AF37]/40 text-[10px] font-bold shrink-0 cursor-pointer"
                 >
-                  Unpin
+                  {language === 'ur' ? 'ان پن' : 'Unpin'}
                 </button>
               )}
             </div>
@@ -947,18 +1134,22 @@ const ChatModuleContent: React.FC = () => {
 
           {/* Community Feed (Transparent over Scenic Wallpaper) */}
           <div className="relative z-10 flex-1 min-h-0 overflow-y-auto bg-transparent p-3 sm:p-5 space-y-3.5">
-            {communityMessages.length === 0 ? (
+            {visibleCommunityMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div className="w-14 h-14 rounded-2xl bg-[#111622] border border-[#D4AF37]/40 flex items-center justify-center mb-3">
                   <Globe className="w-7 h-7 text-[#F5D061]" />
                 </div>
-                <p className="text-sm font-bold text-white">Welcome to the Live Community Room</p>
+                <p className="text-sm font-bold text-white">
+                  {language === 'ur' ? 'لائیو کمیونٹی روم میں خوش آمدید' : 'Welcome to the Live Community Room'}
+                </p>
                 <p className="text-xs text-slate-300 max-w-sm mt-1">
-                  Share greetings, send 60s voice notes, or send an animated Islamic card below.
+                  {language === 'ur'
+                    ? 'سلام دعا، 60 سیکنڈ کا وائس نوٹ یا خوبصورت اسلامی کارڈ نیچے سے بھیجیں۔'
+                    : 'Share greetings, send 60s voice notes, or send an animated Islamic card below.'}
                 </p>
               </div>
             ) : (
-              communityMessages.map(msg => {
+              visibleCommunityMessages.map((msg, idx) => {
                 const isMine = msg.senderId === currentUser.id;
                 const authorRecord = getUserRecord(msg.senderId);
                 const msgIsFounder = Boolean(
@@ -969,33 +1160,29 @@ const ChatModuleContent: React.FC = () => {
                 const msgIsAudit = Boolean(msg.senderIsAuditOfficer || authorRecord?.isAuditOfficer);
                 const avatarSrc = authorRecord?.photoUrl || authorRecord?.avatarUrl;
                 const isAuthorMuted = Boolean(authorRecord?.isMutedInChat);
+                const authorOnline = authorRecord
+                  ? isUserActuallyOnline(authorRecord, presenceNowMs)
+                  : false;
 
-                const canDeleteThisMsg =
-                  !msg.isDeleted &&
-                  (isFounder ||
+                const canDeleteForEveryone = Boolean(
+                  isFounder ||
                     (!msgIsFounder &&
                       (currentUser.role === 'SUPER_ADMIN' ||
                         currentUser.role === 'ADMIN' ||
                         currentUser.role === 'CO_ADMIN' ||
-                        isMine)));
+                        isMine))
+                );
 
                 const canMuteThisAuthor =
                   canMuteUsers &&
-                  !msg.isDeleted &&
                   authorRecord &&
                   authorRecord.id !== currentUser.id &&
                   !msgIsFounder &&
                   (authorRecord.role !== 'SUPER_ADMIN' || isFounder);
 
-                if (msg.isDeleted) {
-                  return (
-                    <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                      <div className="px-3 py-1.5 rounded-xl bg-[#111622]/90 border border-slate-800 text-[11px] italic text-slate-400">
-                        🗑️ {msg.text}
-                      </div>
-                    </div>
-                  );
-                }
+                const dayKey = getCalendarDayKey(msg.timestamp);
+                const prevDayKey = idx > 0 ? getCalendarDayKey(visibleCommunityMessages[idx - 1].timestamp) : null;
+                const showDateDivider = idx === 0 || dayKey !== prevDayKey;
 
                 const bubbleContainerClass = msgIsFounder
                   ? getFounderBubbleStyle(msg.senderBubbleColor || appSettings.founderBubbleColor)
@@ -1006,80 +1193,93 @@ const ChatModuleContent: React.FC = () => {
                   : 'bg-[#111622]/95 border-slate-700/80';
 
                 return (
-                  <div
-                    key={msg.id}
-                    ref={(el) => {
-                      communityMessageRefs.current[msg.id] = el;
-                    }}
-                    className={`flex items-start gap-2.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
-                  >
-                    {/* Sender Avatar (clicks to inspect profile) */}
-                    <button
-                      type="button"
-                      onClick={() => authorRecord && setInspectedUserProfile(authorRecord)}
-                      className="relative shrink-0 mt-0.5 cursor-pointer"
-                      title={`View ${msg.senderName}`}
+                  <React.Fragment key={msg.id}>
+                    {showDateDivider && (
+                      <div className="flex justify-center my-2">
+                        <span className="px-3 py-0.5 rounded-full bg-[#090D16]/90 border border-[#D4AF37]/35 text-[10px] font-bold text-[#F5D061] shadow">
+                          {formatChatDateDivider(msg.timestamp, language)}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      ref={(el) => {
+                        communityMessageRefs.current[msg.id] = el;
+                      }}
+                      className={`flex items-start gap-2.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                     >
-                      {avatarSrc ? (
-                        <img
-                          src={avatarSrc}
-                          alt={msg.senderName}
-                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${
-                            msgIsFounder ? 'border-[#F5D061]' : 'border-[#D4AF37]/40'
-                          }`}
-                        />
-                      ) : (
-                        <div
-                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-extrabold text-xs border-2 ${
-                            msgIsFounder
-                              ? 'bg-gradient-to-br from-[#F5D061] to-[#9E7322] text-[#0A0D12] border-[#F5D061]'
-                              : 'bg-[#043927] text-[#F5D061] border-[#D4AF37]/40'
-                          }`}
-                        >
-                          {msg.senderName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      {authorRecord && (
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#0A0D12] ${
-                            (isMine || (authorRecord.isOnline !== undefined ? Boolean(authorRecord.isOnline) : authorRecord.status === 'online'))
-                              ? 'bg-emerald-500'
-                              : 'bg-slate-500'
-                          }`}
-                        />
-                      )}
-                    </button>
-
-                    {/* Message Bubble */}
-                    <div className={`flex flex-col max-w-[84%] sm:max-w-[74%] ${isMine ? 'items-end' : 'items-start'}`}>
-                      <div className={`rounded-2xl border px-3.5 py-2.5 text-xs text-white space-y-2 ${bubbleContainerClass}`}>
-                        {/* Wrapped Header: Name + Badges (Zero overlap!) */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {msgIsFounder && (
-                            <span className="text-[11px]" title="Founder VIP">
-                              👑
-                            </span>
-                          )}
-                          <span className={`font-extrabold text-xs ${msgIsFounder ? 'text-[#F5D061]' : 'text-emerald-300'}`}>
-                            {msg.senderName}
-                          </span>
-                          <RoleBadge
-                            role={msg.senderRole}
-                            isFounder={msgIsFounder}
-                            isAuditOfficer={msgIsAudit}
-                            compact
+                      {/* Sender Avatar (clicks to inspect profile) */}
+                      <button
+                        type="button"
+                        onClick={() => authorRecord && setInspectedUserProfile(authorRecord)}
+                        className="relative shrink-0 mt-0.5 cursor-pointer"
+                        title={authorRecord ? `${msg.senderName}` : msg.senderName}
+                      >
+                        {avatarSrc ? (
+                          <img
+                            src={avatarSrc}
+                            alt={msg.senderName}
+                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${
+                              msgIsFounder ? 'border-[#F5D061]' : 'border-[#D4AF37]/40'
+                            }`}
                           />
-                          {msg.isHighlighted && !msgIsFounder && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#F5D061]/20 border border-[#F5D061]/50 text-[#F5D061] text-[9px] font-bold">
-                              ✨ Highlighted
+                        ) : (
+                          <div
+                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-extrabold text-xs border-2 ${
+                              msgIsFounder
+                                ? 'bg-gradient-to-br from-[#F5D061] to-[#9E7322] text-[#0A0D12] border-[#F5D061]'
+                                : 'bg-[#043927] text-[#F5D061] border-[#D4AF37]/40'
+                            }`}
+                          >
+                            {msg.senderName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {authorRecord && (
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#0A0D12] ${
+                              authorOnline ? 'bg-emerald-500' : 'bg-slate-500'
+                            }`}
+                          />
+                        )}
+                      </button>
+
+                      {/* Message Bubble */}
+                      <div className={`flex flex-col max-w-[84%] sm:max-w-[74%] ${isMine ? 'items-end' : 'items-start'}`}>
+                        <div className={`rounded-2xl border px-3.5 py-2.5 text-xs text-white space-y-2 ${bubbleContainerClass}`}>
+                          {/* Wrapped Header: Name + RoleBadge + TabbarBadge */}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {msgIsFounder && (
+                              <span className="text-[11px]" title="Founder VIP">
+                                👑
+                              </span>
+                            )}
+                            <span className={`font-extrabold text-xs ${msgIsFounder ? 'text-[#F5D061]' : 'text-emerald-300'}`}>
+                              {msg.senderName}
                             </span>
-                          )}
-                          {msg.isPinned && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#F5D061] text-[#0A0D12] text-[9px] font-extrabold">
-                              📌 Pinned
-                            </span>
-                          )}
-                        </div>
+                            <RoleBadge
+                              role={msg.senderRole}
+                              isFounder={msgIsFounder}
+                              isAuditOfficer={msgIsAudit}
+                              compact
+                            />
+                            <TabbarBadge
+                              user={authorRecord}
+                              tabbarId={msg.senderTabbarId || authorRecord?.tabbarId}
+                              tabbarEnglish={msg.senderTabbarEnglish || authorRecord?.tabbarEnglish}
+                              tabbarUrdu={msg.senderTabbarUrdu || authorRecord?.tabbarUrdu}
+                              language={language}
+                              compact
+                            />
+                            {msg.isHighlighted && !msgIsFounder && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#F5D061]/20 border border-[#F5D061]/50 text-[#F5D061] text-[9px] font-bold">
+                                ✨ {language === 'ur' ? 'نمایاں' : 'Highlighted'}
+                              </span>
+                            )}
+                            {msg.isPinned && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#F5D061] text-[#0A0D12] text-[9px] font-extrabold">
+                                📌 {translate(language, 'pinnedBadge')}
+                              </span>
+                            )}
+                          </div>
 
                         {/* Replied-to Quote */}
                         {msg.replyTo && (
@@ -1177,7 +1377,7 @@ const ChatModuleContent: React.FC = () => {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
                         >
                           <Reply className="w-3 h-3" />
-                          <span>Reply</span>
+                          <span>{language === 'ur' ? 'جواب' : 'Reply'}</span>
                         </button>
 
                         {isFounder && (
@@ -1192,7 +1392,11 @@ const ChatModuleContent: React.FC = () => {
                               }`}
                             >
                               <Sparkles className="w-3 h-3" />
-                              <span>{msg.isHighlighted ? 'Unhighlight' : 'Highlight'}</span>
+                              <span>
+                                {msg.isHighlighted
+                                  ? (language === 'ur' ? 'نمایاں ختم' : 'Unhighlight')
+                                  : (language === 'ur' ? 'نمایاں کریں' : 'Highlight')}
+                              </span>
                             </button>
 
                             <button
@@ -1205,24 +1409,29 @@ const ChatModuleContent: React.FC = () => {
                               }`}
                             >
                               <Pin className="w-3 h-3" />
-                              <span>{msg.isPinned ? 'Unpin' : 'Pin'}</span>
+                              <span>
+                                {msg.isPinned
+                                  ? (language === 'ur' ? 'ان پن' : 'Unpin')
+                                  : (language === 'ur' ? 'پن کریں' : 'Pin')}
+                              </span>
                             </button>
                           </>
                         )}
 
-                        {canDeleteThisMsg && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const res = deleteCommunityMessage(msg.id);
-                              if (!res.success && res.error) setChatError(res.error);
-                            }}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-rose-500/35 text-rose-300 hover:bg-rose-950/60 cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteModalTarget({
+                              scope: 'COMMUNITY',
+                              msg,
+                              canDeleteForEveryone
+                            })
+                          }
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-rose-500/35 text-rose-300 hover:bg-rose-950/60 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>{translate(language, 'deleteLabel')}</span>
+                        </button>
 
                         {canMuteThisAuthor && authorRecord && (
                           <button
@@ -1238,12 +1447,17 @@ const ChatModuleContent: React.FC = () => {
                             }`}
                           >
                             {isAuthorMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                            <span>{isAuthorMuted ? 'Unmute' : 'Mute'}</span>
+                            <span>
+                              {isAuthorMuted
+                                ? (language === 'ur' ? 'ان میوٹ' : 'Unmute')
+                                : (language === 'ur' ? 'خاموش کریں' : 'Mute')}
+                            </span>
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
+                  </React.Fragment>
                 );
               })
             )}
@@ -1254,7 +1468,9 @@ const ChatModuleContent: React.FC = () => {
           {showIslamicGifDrawer && !isUserMutedInCommunity && (
             <div className="relative z-10 p-3 bg-black/75 border-t border-[#D4AF37]/30 max-h-56 overflow-y-auto shrink-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold text-[#F5D061]">☪️ Send Animated Islamic Card</span>
+                <span className="text-xs font-extrabold text-[#F5D061]">
+                  {language === 'ur' ? '☪️ اینیمیٹڈ اسلامی کارڈ بھیجیں' : '☪️ Send Animated Islamic Card'}
+                </span>
                 <button
                   type="button"
                   onClick={() => setShowIslamicGifDrawer(false)}
@@ -1296,9 +1512,11 @@ const ChatModuleContent: React.FC = () => {
           {replyingTo && (
             <div className="relative z-10 px-3.5 py-2 bg-[#161D2C]/95 border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs shrink-0">
               <div className="min-w-0">
-                <span className="font-bold text-[#F5D061] block">Replying to {replyingTo.senderName}</span>
+                <span className="font-bold text-[#F5D061] block">
+                  {language === 'ur' ? `${replyingTo.senderName} کو جواب:` : `Replying to ${replyingTo.senderName}`}
+                </span>
                 <span className="text-slate-300 truncate block">
-                  {replyingTo.isVoiceNote ? '🎤 Voice Note' : replyingTo.text}
+                  {replyingTo.isVoiceNote ? (language === 'ur' ? '🎤 وائس نوٹ' : '🎤 Voice Note') : replyingTo.text}
                 </span>
               </div>
               <button type="button" onClick={() => setReplyingTo(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
@@ -1318,7 +1536,9 @@ const ChatModuleContent: React.FC = () => {
                 <div className="min-w-0">
                   <span className="truncate font-semibold block">{communityAttachment.name}</span>
                   <span className="text-[10px] text-emerald-300 block">
-                    {communityAttachment.name.toLowerCase().endsWith('.gif') ? 'GIF Ready · Tap Send ➤' : 'Optimized <750KB · Tap Send ➤'}
+                    {communityAttachment.name.toLowerCase().endsWith('.gif')
+                      ? (language === 'ur' ? 'GIF تیار ہے · بھیجیں دبائیں ➤' : 'GIF Ready · Tap Send ➤')
+                      : (language === 'ur' ? 'فائل تیار ہے · بھیجیں دبائیں ➤' : 'Optimized <750KB · Tap Send ➤')}
                   </span>
                 </div>
               </div>
@@ -1328,22 +1548,68 @@ const ChatModuleContent: React.FC = () => {
             </div>
           )}
 
+          {speech.isListening && dictationTarget === 'COMMUNITY' && !isUserMutedInCommunity && (
+            <div className="relative z-10 px-3.5 py-2 bg-[#042920]/95 border-t border-[#D4AF37]/40 flex items-center justify-between gap-2 text-xs shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-extrabold text-[#F5D061] block">
+                    {language === 'ur' ? 'وائس ڈکٹیشن فعال ہے' : 'Voice Dictation Active'}
+                  </span>
+                  <span className="text-xs text-slate-100 truncate block">
+                    {speech.interimTranscript
+                      ? speech.interimTranscript
+                      : (language === 'ur' ? 'اب بولیں — آپ کا پیغام خودکار لکھا جا رہا ہے...' : 'Speak now — transcribing live into message box...')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = dictationLocale === 'en-US' ? 'ur-PK' : 'en-US';
+                    setDictationLocale(next);
+                    speech.startDictation(next);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold cursor-pointer"
+                  title={language === 'ur' ? 'زبان تبدیل کریں' : 'Switch Dictation Language'}
+                >
+                  {dictationLocale === 'ur-PK' ? 'اردو' : 'EN'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    speech.stopDictation();
+                    setDictationTarget(null);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-950/90 border border-rose-500/60 text-rose-200 text-[10px] font-extrabold cursor-pointer"
+                >
+                  <Square className="w-2.5 h-2.5 fill-current" />
+                  <span>{language === 'ur' ? 'روکیں' : 'Stop'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Composer Area */}
           {requiresProfileCompletion ? (
             <div className="relative z-10 p-3 bg-black/65 border-t border-[#D4AF37]/30 shrink-0">
-              <ProfileCompletionGate compact featureName="Live Community Chat" />
+              <ProfileCompletionGate compact featureName={language === 'ur' ? 'لائیو کمیونٹی چیٹ' : 'Live Community Chat'} />
             </div>
           ) : isUserMutedInCommunity ? (
             <div className="relative z-10 p-3 bg-rose-950/90 border-t border-rose-500/40 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2 shrink-0">
               <VolumeX className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>You are currently muted from posting in Community Chat. Direct Messages remain available.</span>
+              <span>{translate(language, 'mutedNotice')}</span>
             </div>
           ) : isRecording ? (
             <div className="relative z-10 p-3 bg-black/75 border-t border-[#D4AF37]/40 flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="w-3 h-3 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
-                <span className="text-xs font-extrabold text-white">Recording Voice Note...</span>
-                <span className="text-xs font-mono font-bold text-[#F5D061]">
+                <span className="text-xs font-extrabold text-white">
+                  {language === 'ur' ? 'وائس نوٹ ریکارڈ ہو رہا ہے...' : 'Recording Voice Note...'}
+                </span>
+                <span className="text-xs font-mono font-bold text-[#F5D061] tabular-nums">
                   {formatDuration(recordingSeconds)} / 1:00
                 </span>
               </div>
@@ -1354,7 +1620,7 @@ const ChatModuleContent: React.FC = () => {
                   onClick={() => stopVoiceRecording(true)}
                   className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold cursor-pointer"
                 >
-                  Cancel
+                  {translate(language, 'cancel')}
                 </button>
                 <button
                   type="button"
@@ -1362,15 +1628,27 @@ const ChatModuleContent: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl kc-gold-button text-xs font-extrabold cursor-pointer"
                 >
                   <Square className="w-3 h-3 fill-current" />
-                  <span>Stop &amp; Send</span>
+                  <span>{language === 'ur' ? 'روکیں اور بھیجیں' : 'Stop & Send'}</span>
                 </button>
               </div>
             </div>
           ) : (
-            <form
-              onSubmit={handleSendCommunityMessage}
-              className="relative z-10 p-2.5 sm:p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/75 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2 shrink-0"
-            >
+            <div className="relative z-10 shrink-0">
+              {typeof window !== 'undefined' &&
+                !(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() && (
+                <div className="px-3 py-1 bg-black/75 border-t border-[#D4AF37]/15 text-[10px] text-[#F5D061]/85 flex items-center gap-1.5">
+                  <Mic className="w-3 h-3 shrink-0 text-[#F5D061]" />
+                  <span className="truncate">
+                    {language === 'ur'
+                      ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
+                      : 'Voice recording requires the installed Android APK with Mic permission.'}
+                  </span>
+                </div>
+              )}
+              <form
+                onSubmit={handleSendCommunityMessage}
+                className="p-2.5 sm:p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/75 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2"
+              >
               <button
                 type="button"
                 onClick={() => {
@@ -1378,7 +1656,7 @@ const ChatModuleContent: React.FC = () => {
                   setShowIslamicGifDrawer(false);
                 }}
                 className="p-2 rounded-xl bg-[#161D2C] text-slate-300 hover:text-[#F5D061] shrink-0 cursor-pointer"
-                title="Quick Emojis"
+                title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
               >
                 <Smile className="w-4 h-4" />
               </button>
@@ -1390,7 +1668,7 @@ const ChatModuleContent: React.FC = () => {
                   setShowEmojiStrip(false);
                 }}
                 className="px-2 py-2 rounded-xl bg-[#161D2C] text-[#F5D061] border border-[#D4AF37]/30 text-xs font-bold shrink-0 cursor-pointer"
-                title="Islamic Greeting Cards"
+                title={translate(language, 'islamicGifs')}
               >
                 ☪️
               </button>
@@ -1399,7 +1677,7 @@ const ChatModuleContent: React.FC = () => {
               {canUploadGallery && (
                 <label
                   className="p-2 rounded-xl bg-[#161D2C] text-[#F5D061] border border-[#F5D061]/35 hover:bg-[#1E273B] shrink-0 cursor-pointer"
-                  title="Gallery Photo / GIF Upload (Up to 10MB)"
+                  title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
                 >
                   <ImageIcon className="w-4 h-4" />
                   <input
@@ -1416,15 +1694,19 @@ const ChatModuleContent: React.FC = () => {
                 type="text"
                 value={communityText}
                 onChange={(e) => setCommunityText(e.target.value)}
-                placeholder={isCompressingMedia ? 'Optimizing image/GIF...' : 'Message Community Room...'}
-                className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622]/90 text-white focus:outline-hidden focus:border-[#D4AF37]"
+                placeholder={
+                  isCompressingMedia
+                    ? (language === 'ur' ? 'تصویر/GIF تیار کی جا رہی ہے...' : 'Optimizing image/GIF...')
+                    : translate(language, 'chatTypeMessage')
+                }
+                className="flex-1 min-w-[140px] px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622]/90 text-white focus:outline-hidden focus:border-[#D4AF37]"
               />
 
               <button
                 type="button"
                 onClick={startVoiceRecording}
                 className="p-2 rounded-xl bg-[#161D2C] border border-[#D4AF37]/30 text-[#F5D061] hover:bg-[#1E273B] shrink-0 cursor-pointer"
-                title="Record Voice Note (Max 60s)"
+                title={translate(language, 'voiceNoteHold')}
               >
                 <Mic className="w-4 h-4" />
               </button>
@@ -1437,7 +1719,8 @@ const ChatModuleContent: React.FC = () => {
                 <Send className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
               </button>
-            </form>
+              </form>
+            </div>
           )}
         </div>,
         document.body
@@ -1500,7 +1783,7 @@ const ChatModuleContent: React.FC = () => {
                   const convo = chats.find(c => c.id === pairId);
                   const unreadForMe = convo?.unreadCounts?.[currentUser.id] || 0;
                   const userAvatar = user.photoUrl || user.avatarUrl;
-                  const isMemberOnline = user.isOnline !== undefined ? Boolean(user.isOnline) : user.status === 'online';
+                  const isMemberOnline = isUserActuallyOnline(user, presenceNowMs);
 
                   return (
                     <button
@@ -1532,7 +1815,7 @@ const ChatModuleContent: React.FC = () => {
                           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0A0D12] ${
                             isMemberOnline ? 'bg-emerald-500' : 'bg-slate-500'
                           }`}
-                          title={isMemberOnline ? 'Online' : 'Offline'}
+                          title={isMemberOnline ? translate(language, 'online') : translate(language, 'offline')}
                         />
                         {unreadForMe > 0 && (
                           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F5D061] text-[#0A0D12] text-[10px] font-extrabold flex items-center justify-center">
@@ -1552,6 +1835,7 @@ const ChatModuleContent: React.FC = () => {
                             isAuditOfficer={user.isAuditOfficer}
                             compact
                           />
+                          <TabbarBadge user={user} language={language} compact />
                           <span
                             className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                               isMemberOnline
@@ -1559,7 +1843,9 @@ const ChatModuleContent: React.FC = () => {
                                 : 'bg-slate-900 text-slate-400 border border-slate-700'
                             }`}
                           >
-                            {isMemberOnline ? '🟢 Online' : '⚫ Offline'}
+                            {isMemberOnline
+                              ? `🟢 ${translate(language, 'online')}`
+                              : `⚫ ${translate(language, 'offline')}`}
                           </span>
                         </div>
 
@@ -1585,7 +1871,7 @@ const ChatModuleContent: React.FC = () => {
                       type="button"
                       onClick={() => setMobileShowThread(false)}
                       className="md:hidden p-1.5 rounded-lg bg-[#161D2C] text-slate-200 shrink-0 cursor-pointer"
-                      title="Back to Contacts"
+                      title={language === 'ur' ? 'فہرست پر واپس جائیں' : 'Back to Contacts'}
                     >
                       <ArrowLeft className="w-4 h-4" />
                     </button>
@@ -1604,7 +1890,7 @@ const ChatModuleContent: React.FC = () => {
                       )}
                       <span
                         className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0A0D12] ${
-                          (activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
+                          isUserActuallyOnline(activeRecipient, presenceNowMs)
                             ? 'bg-emerald-500'
                             : 'bg-slate-500'
                         }`}
@@ -1622,16 +1908,17 @@ const ChatModuleContent: React.FC = () => {
                           isAuditOfficer={activeRecipient.isAuditOfficer}
                           compact
                         />
+                        <TabbarBadge user={activeRecipient} language={language} compact />
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                            (activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
+                            isUserActuallyOnline(activeRecipient, presenceNowMs)
                               ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/35'
                               : 'bg-slate-900 text-slate-400 border border-slate-700'
                           }`}
                         >
-                          {(activeRecipient.isOnline !== undefined ? Boolean(activeRecipient.isOnline) : activeRecipient.status === 'online')
-                            ? '🟢 Online'
-                            : '⚫ Offline'}
+                          {isUserActuallyOnline(activeRecipient, presenceNowMs)
+                            ? `🟢 ${translate(language, 'online')}`
+                            : `⚫ ${translate(language, 'offline')}`}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
@@ -1647,7 +1934,7 @@ const ChatModuleContent: React.FC = () => {
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#D4AF37]/30 bg-[#161D2C] hover:bg-slate-800 text-slate-200 text-xs font-medium shrink-0 cursor-pointer"
                   >
                     <UserIcon className="w-3.5 h-3.5 text-[#F5D061]" />
-                    <span className="hidden sm:inline">Profile</span>
+                    <span className="hidden sm:inline">{language === 'ur' ? 'پروفائل' : 'Profile'}</span>
                   </button>
                 </div>
 
@@ -1656,71 +1943,111 @@ const ChatModuleContent: React.FC = () => {
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
                       <MessageSquare className="w-10 h-10 text-[#D4AF37]/40 mb-2" />
                       <p className="text-xs font-semibold text-slate-300">
-                        No messages with {activeRecipient.name} yet.
+                        {language === 'ur'
+                          ? `${activeRecipient.name} کے ساتھ ابھی کوئی پیغام نہیں ہے۔`
+                          : `No messages with ${activeRecipient.name} yet.`}
                       </p>
                       <p className="text-[11px] text-slate-500 max-w-xs mt-1">
-                        Send a direct message below — even offline, your message queues and syncs automatically.
+                        {language === 'ur'
+                          ? 'نیچے سے براہ راست پیغام بھیجیں — آف لائن ہونے پر بھی پیغام محفوظ ہو کر خودکار پہنچ جائے گا۔'
+                          : 'Send a direct message below — even offline, your message queues and syncs automatically.'}
                       </p>
                     </div>
                   ) : (
-                    currentDirectMessages.map(msg => {
+                    currentDirectMessages.map((msg, idx) => {
                       const isMine = msg.senderId === currentUser.id;
+                      const recipientIsFounder = Boolean(
+                        activeRecipient.isFounder ||
+                        activeRecipient.email.trim().toLowerCase() === FOUNDER_EMAIL.toLowerCase()
+                      );
+                      const msgFromFounder = isMine ? isFounder : recipientIsFounder;
+                      const canDeleteDirectForEveryone = isFounder || (!msgFromFounder && isMine);
+                      const dayKey = getCalendarDayKey(msg.timestamp);
+                      const prevDayKey = idx > 0 ? getCalendarDayKey(currentDirectMessages[idx - 1].timestamp) : null;
+                      const showDateDivider = idx === 0 || dayKey !== prevDayKey;
+
                       return (
-                        <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                          <div
-                            className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
-                              isMine
-                                ? 'bg-gradient-to-br from-[#043927] to-[#065239] text-white border border-[#D4AF37]/40 rounded-br-none'
-                                : 'bg-[#161D2C] text-slate-100 border border-slate-700/80 rounded-bl-none'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3 text-[10px] opacity-80 font-semibold">
-                              <span className={isMine ? 'text-[#F5D061]' : 'text-emerald-300'}>
-                                {isMine ? 'You' : msg.senderName}
-                              </span>
-                              <span className="font-mono text-slate-300">
-                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <React.Fragment key={msg.id}>
+                          {showDateDivider && (
+                            <div className="flex justify-center my-2">
+                              <span className="px-3 py-0.5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-[10px] font-bold text-[#F5D061]">
+                                {formatChatDateDivider(msg.timestamp, language)}
                               </span>
                             </div>
-
-                            <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
-
-                            {msg.attachmentUrl && (
-                              <div className="pt-1.5 border-t border-white/15">
-                                {msg.attachmentType === 'IMAGE' ? (
+                          )}
+                          <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
+                                isMine
+                                  ? 'bg-gradient-to-br from-[#043927] to-[#065239] text-white border border-[#D4AF37]/40 rounded-br-none'
+                                  : 'bg-[#161D2C] text-slate-100 border border-slate-700/80 rounded-bl-none'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3 text-[10px] opacity-85 font-semibold">
+                                <span className={isMine ? 'text-[#F5D061]' : 'text-emerald-300'}>
+                                  {isMine ? (language === 'ur' ? 'آپ' : 'You') : msg.senderName}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-slate-300">
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
                                   <button
                                     type="button"
-                                    onClick={() => setPreviewImageUrl(msg.attachmentUrl!)}
-                                    className="block cursor-pointer"
+                                    onClick={() =>
+                                      setDeleteModalTarget({
+                                        scope: 'DIRECT',
+                                        msg,
+                                        canDeleteForEveryone: canDeleteDirectForEveryone
+                                      })
+                                    }
+                                    className="text-rose-300 hover:text-rose-200 cursor-pointer"
+                                    title={translate(language, 'deleteLabel')}
                                   >
-                                    <img
-                                      src={msg.attachmentUrl}
-                                      alt="attachment"
-                                      className="w-48 max-w-full h-32 object-cover rounded-lg border border-white/20"
-                                    />
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
-                                ) : (
-                                  <a
-                                    href={msg.attachmentUrl}
-                                    download={msg.attachmentName || 'document'}
-                                    className="flex items-center gap-2 p-2 rounded bg-black/25 text-[11px] underline text-[#F5D061]"
-                                  >
-                                    <FileText className="w-4 h-4 shrink-0" />
-                                    <span className="truncate">{msg.attachmentName || 'Document'}</span>
-                                  </a>
-                                )}
+                                </div>
+                              </div>
+
+                              <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+
+                              {msg.attachmentUrl && (
+                                <div className="pt-1.5 border-t border-white/15">
+                                  {msg.attachmentType === 'IMAGE' ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewImageUrl(msg.attachmentUrl!)}
+                                      className="block cursor-pointer"
+                                    >
+                                      <img
+                                        src={msg.attachmentUrl}
+                                        alt="attachment"
+                                        className="w-48 max-w-full h-32 object-cover rounded-lg border border-white/20"
+                                      />
+                                    </button>
+                                  ) : (
+                                    <a
+                                      href={msg.attachmentUrl}
+                                      download={msg.attachmentName || 'document'}
+                                      className="flex items-center gap-2 p-2 rounded bg-black/25 text-[11px] underline text-[#F5D061]"
+                                    >
+                                      <FileText className="w-4 h-4 shrink-0" />
+                                      <span className="truncate">{msg.attachmentName || 'Document'}</span>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {isMine && (
+                              <div className="flex items-center gap-1 mt-0.5 text-[10px] px-1">
+                                {renderDeliveryTick(msg)}
                               </div>
                             )}
                           </div>
-                          {isMine && (
-                            <div className="flex items-center gap-1 mt-0.5 text-[10px] px-1">
-                              {renderDeliveryTick(msg)}
-                            </div>
-                          )}
-                        </div>
+                        </React.Fragment>
                       );
                     })
                   )}
+                  <div ref={directEndRef} />
                 </div>
 
                 {attachmentPreview && (
@@ -1735,9 +2062,45 @@ const ChatModuleContent: React.FC = () => {
                   </div>
                 )}
 
+                {speech.isListening && dictationTarget === 'DIRECT' && (
+                  <div className="px-3 py-2 bg-[#042920] border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
+                      <span className="text-[#F5D061] truncate">
+                        {speech.interimTranscript
+                          ? speech.interimTranscript
+                          : (language === 'ur' ? 'سن رہے ہیں... اب بولیں' : `Listening (${dictationLocale})... speak your message`)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = dictationLocale === 'en-US' ? 'ur-PK' : 'en-US';
+                          setDictationLocale(next);
+                          speech.startDictation(next);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold cursor-pointer"
+                      >
+                        {dictationLocale === 'ur-PK' ? 'اردو' : 'EN'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          speech.stopDictation();
+                          setDictationTarget(null);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-rose-950/90 border border-rose-500/50 text-rose-200 text-[10px] font-bold cursor-pointer"
+                      >
+                        {language === 'ur' ? 'روکیں' : 'Stop'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {requiresProfileCompletion ? (
                   <div className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 bg-[#0A0D12]">
-                    <ProfileCompletionGate compact featureName="Direct Messaging" />
+                    <ProfileCompletionGate compact featureName={language === 'ur' ? 'براہ راست پیغام رسانی' : 'Direct Messaging'} />
                   </div>
                 ) : (
                 <form onSubmit={handleSendDirectMessage} className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 flex items-center gap-2 bg-[#0A0D12]">
@@ -1745,7 +2108,7 @@ const ChatModuleContent: React.FC = () => {
                     type="button"
                     onClick={() => setIsAttachmentModalOpen(true)}
                     className="p-2 text-slate-400 hover:text-[#F5D061] rounded-xl hover:bg-[#161D2C] cursor-pointer"
-                    title="Attach photo or document"
+                    title={language === 'ur' ? 'تصویر یا فائل منسلک کریں' : 'Attach photo or document'}
                   >
                     <Paperclip className="w-4 h-4" />
                   </button>
@@ -1754,9 +2117,30 @@ const ChatModuleContent: React.FC = () => {
                     type="text"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={isOnline ? translate(language, 'chatTypeMessage') : `${translate(language, 'chatTypeMessage')} (Offline Queue)`}
+                    placeholder={isOnline ? translate(language, 'chatTypeMessage') : `${translate(language, 'chatTypeMessage')} (${language === 'ur' ? 'آف لائن قطار' : 'Offline Queue'})`}
                     className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622] text-white focus:outline-hidden focus:border-[#D4AF37]"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => toggleChatDictation('DIRECT')}
+                    className={`p-2 rounded-xl border shrink-0 cursor-pointer transition-colors ${
+                      speech.isListening && dictationTarget === 'DIRECT'
+                        ? 'bg-rose-950/90 border-rose-500 text-rose-200'
+                        : 'bg-[#161D2C] border-[#D4AF37]/30 text-emerald-300 hover:text-[#F5D061] hover:bg-[#1E273B]'
+                    }`}
+                    title={
+                      speech.isListening && dictationTarget === 'DIRECT'
+                        ? (language === 'ur' ? 'وائس ڈکٹیشن روکیں' : 'Stop Voice Dictation')
+                        : (language === 'ur' ? 'بول کر پیغام لکھیں' : 'Dictate Message with Voice')
+                    }
+                  >
+                    {speech.isListening && dictationTarget === 'DIRECT' ? (
+                      <Square className="w-4 h-4 fill-current" />
+                    ) : (
+                      <AudioLines className="w-4 h-4" />
+                    )}
+                  </button>
 
                   <button
                     type="submit"
@@ -1795,7 +2179,9 @@ const ChatModuleContent: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">Attach Photo or File</h3>
+              <h3 className="text-sm font-bold text-white">
+                {language === 'ur' ? 'تصویر یا فائل منسلک کریں' : 'Attach Photo or File'}
+              </h3>
               <button type="button" onClick={() => setIsAttachmentModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
@@ -1804,15 +2190,23 @@ const ChatModuleContent: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
                 <ImageIcon className="w-6 h-6 text-[#F5D061]" />
-                <span className="text-xs font-semibold text-white">Select Photo / GIF</span>
-                <span className="text-[10px] text-slate-400">Up to 10MB · Smart &lt;750KB</span>
+                <span className="text-xs font-semibold text-white">
+                  {language === 'ur' ? 'تصویر / GIF منتخب کریں' : 'Select Photo / GIF'}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {language === 'ur' ? '10MB تک · خودکار کمپریشن' : 'Up to 10MB · Smart <750KB'}
+                </span>
                 <input type="file" accept="image/*,.gif" onChange={handleDirectImageAttachment} className="hidden" />
               </label>
 
               <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
                 <FileText className="w-6 h-6 text-emerald-400" />
-                <span className="text-xs font-semibold text-white">Select Document</span>
-                <span className="text-[10px] text-slate-400">PDF / Text (&lt;1.5MB)</span>
+                <span className="text-xs font-semibold text-white">
+                  {language === 'ur' ? 'دستاویز منتخب کریں' : 'Select Document'}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {language === 'ur' ? 'پی ڈی ایف / فائل (1.5MB تک)' : 'PDF / Text (<1.5MB)'}
+                </span>
                 <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" onChange={handleDirectDocumentAttachment} className="hidden" />
               </label>
             </div>
@@ -1836,10 +2230,10 @@ const ChatModuleContent: React.FC = () => {
               <div>
                 <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
                   <Palette className="w-4 h-4 text-[#F5D061]" />
-                  <span>Live Community Scenic Themes</span>
+                  <span>{language === 'ur' ? 'لائیو کمیونٹی منظر تھیمز' : 'Live Community Scenic Themes'}</span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  GPU-only animated themes optimized for all Android devices.
+                  {language === 'ur' ? 'تمام اینڈرائیڈ موبائلز کے لیے تیز رفتار جی پی یو تھیمز۔' : 'GPU-only animated themes optimized for all Android devices.'}
                 </p>
               </div>
               <button
@@ -1871,12 +2265,12 @@ const ChatModuleContent: React.FC = () => {
                       <span className="text-base">{theme.emoji}</span>
                       {isActive && (
                         <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#F5D061] text-[#0A0D12]">
-                          Active
+                          {language === 'ur' ? 'فعال' : 'Active'}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs font-bold text-white mt-2">{theme.label}</p>
-                    <p className="text-[10px] text-slate-300/80">{theme.subtitle}</p>
+                    <p className="text-xs font-bold text-white mt-2">{language === 'ur' ? theme.labelUr : theme.label}</p>
+                    <p className="text-[10px] text-slate-300/80">{language === 'ur' ? theme.subtitleUr : theme.subtitle}</p>
                   </button>
                 );
               })}
@@ -1886,11 +2280,15 @@ const ChatModuleContent: React.FC = () => {
               <div className="pt-3 border-t border-slate-800 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#F5D061]">
                   <Crown className="w-3.5 h-3.5" />
-                  <span>Custom Scenic Wallpaper (Super Admin &amp; Admin)</span>
+                  <span>{language === 'ur' ? 'کسٹم وال پیپر (سپر ایڈمن و ایڈمن)' : 'Custom Scenic Wallpaper (Super Admin & Admin)'}</span>
                 </div>
                 <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#F5D061]/50 bg-[#0A0D12] hover:bg-[#161D2C] text-xs font-bold text-[#F5D061] cursor-pointer">
                   <Upload className="w-4 h-4" />
-                  <span>{isCompressingMedia ? 'Optimizing Wallpaper...' : 'Upload Photo or GIF Wallpaper (Up to 10MB)'}</span>
+                  <span>
+                    {isCompressingMedia
+                      ? (language === 'ur' ? 'وال پیپر تیار ہو رہا ہے...' : 'Optimizing Wallpaper...')
+                      : (language === 'ur' ? 'تصویر یا GIF وال پیپر اپلوڈ کریں (10MB تک)' : 'Upload Photo or GIF Wallpaper (Up to 10MB)')}
+                  </span>
                   <input
                     type="file"
                     accept="image/*,.gif"
@@ -1920,7 +2318,7 @@ const ChatModuleContent: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-2">
                 <Crown className="w-4 h-4" />
-                <span>Founder VIP Bubble Style</span>
+                <span>{language === 'ur' ? 'بانی وی آئی پی ببل اسٹائل' : 'Founder VIP Bubble Style'}</span>
               </h3>
               <button
                 type="button"
@@ -1951,6 +2349,172 @@ const ChatModuleContent: React.FC = () => {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Message Modal (Delete for Me vs Delete for Everyone) */}
+      {deleteModalTarget && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[10002] flex items-center justify-center bg-[#0A0D12]/90 p-4"
+          onClick={() => setDeleteModalTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm kc-luxury-modal rounded-2xl p-5 space-y-4 text-xs text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <h3 className="text-sm font-extrabold text-white">
+                  {translate(language, 'deleteMessageTitle')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModalTarget(null)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {translate(language, 'deleteMessagePrompt')}
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const res =
+                    deleteModalTarget.scope === 'COMMUNITY'
+                      ? deleteCommunityMessageForMe(deleteModalTarget.msg.id)
+                      : deleteDirectMessageForMe(deleteModalTarget.msg.id);
+                  if (!res.success && res.error) setChatError(res.error);
+                  setDeleteModalTarget(null);
+                }}
+                className="w-full text-left p-3 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/30 transition-colors cursor-pointer space-y-0.5"
+              >
+                <span className="font-extrabold text-[#F5D061] block">
+                  {translate(language, 'deleteForMeBtn')}
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  {translate(language, 'deleteForMeDesc')}
+                </span>
+              </button>
+
+              {deleteModalTarget.canDeleteForEveryone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const res =
+                      deleteModalTarget.scope === 'COMMUNITY'
+                        ? deleteCommunityMessageForEveryone(deleteModalTarget.msg.id)
+                        : deleteDirectMessageForEveryone(deleteModalTarget.msg.id);
+                    if (!res.success && res.error) setChatError(res.error);
+                    setDeleteModalTarget(null);
+                  }}
+                  className="w-full text-left p-3 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 transition-colors cursor-pointer space-y-0.5"
+                >
+                  <span className="font-extrabold text-rose-200 block">
+                    {translate(language, 'deleteForEveryoneBtn')}
+                  </span>
+                  <span className="text-[11px] text-rose-300/80 block">
+                    {translate(language, 'deleteForEveryoneDesc')}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteModalTarget(null)}
+                className="px-4 py-1.5 rounded-xl bg-[#161D2C] text-slate-300 hover:text-white font-semibold cursor-pointer"
+              >
+                {translate(language, 'cancel')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Founder-Only Clear Old Messages Modal */}
+      {isClearOldModalOpen && isFounder && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[10002] flex items-center justify-center bg-[#0A0D12]/90 p-4"
+          onClick={() => setIsClearOldModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm kc-luxury-modal rounded-2xl p-5 space-y-4 text-xs text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-[#F5D061]" />
+                <h3 className="text-sm font-extrabold text-[#F5D061]">
+                  {translate(language, 'clearOldMessagesTitle')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClearOldModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const res = clearOldCommunityMessages('OLDER_7_DAYS');
+                  if (!res.success && res.error) setChatError(res.error);
+                  setIsClearOldModalOpen(false);
+                }}
+                className="w-full p-3 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/35 text-left font-bold text-[#F5D061] cursor-pointer"
+              >
+                {translate(language, 'clearOlder7Days')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const res = clearOldCommunityMessages('OLDER_24_HOURS');
+                  if (!res.success && res.error) setChatError(res.error);
+                  setIsClearOldModalOpen(false);
+                }}
+                className="w-full p-3 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-amber-500/40 text-left font-bold text-amber-200 cursor-pointer"
+              >
+                {translate(language, 'clearOlder24Hours')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const res = clearOldCommunityMessages('ALL');
+                  if (!res.success && res.error) setChatError(res.error);
+                  setIsClearOldModalOpen(false);
+                }}
+                className="w-full p-3 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 text-left font-extrabold text-rose-200 cursor-pointer"
+              >
+                {translate(language, 'clearAllMessages')}
+              </button>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsClearOldModalOpen(false)}
+                className="px-4 py-1.5 rounded-xl bg-[#161D2C] text-slate-300 hover:text-white font-semibold cursor-pointer"
+              >
+                {translate(language, 'cancel')}
+              </button>
             </div>
           </div>
         </div>,

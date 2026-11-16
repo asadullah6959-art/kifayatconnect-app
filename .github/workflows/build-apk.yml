@@ -70,6 +70,12 @@ jobs:
             if [ -f "android/app/kifayat-release.jks" ]; then
               cp android/app/kifayat-release.jks /tmp/kc_android_preserve/kifayat-release.jks
             fi
+            if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+              cp android/app/src/main/AndroidManifest.xml /tmp/kc_android_preserve/AndroidManifest.xml
+            fi
+            if [ -f "android/app/src/main/java/com/kifayatconnect/app/MainActivity.java" ]; then
+              cp android/app/src/main/java/com/kifayatconnect/app/MainActivity.java /tmp/kc_android_preserve/MainActivity.java
+            fi
             if ls -d android/app/src/main/res/mipmap-* >/dev/null 2>&1; then
               mkdir -p /tmp/kc_android_preserve/res
               cp -r android/app/src/main/res/mipmap-* /tmp/kc_android_preserve/res/
@@ -81,6 +87,13 @@ jobs:
             fi
             if [ -f "/tmp/kc_android_preserve/kifayat-release.jks" ]; then
               cp /tmp/kc_android_preserve/kifayat-release.jks android/app/kifayat-release.jks
+            fi
+            if [ -f "/tmp/kc_android_preserve/AndroidManifest.xml" ]; then
+              cp /tmp/kc_android_preserve/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+            fi
+            if [ -f "/tmp/kc_android_preserve/MainActivity.java" ]; then
+              mkdir -p android/app/src/main/java/com/kifayatconnect/app
+              cp /tmp/kc_android_preserve/MainActivity.java android/app/src/main/java/com/kifayatconnect/app/MainActivity.java
             fi
             if ls -d /tmp/kc_android_preserve/res/mipmap-* >/dev/null 2>&1; then
               rm -rf android/app/src/main/res/mipmap-*

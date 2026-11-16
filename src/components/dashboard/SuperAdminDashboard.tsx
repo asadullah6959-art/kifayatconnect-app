@@ -135,42 +135,44 @@ export const SuperAdminDashboard: React.FC = () => {
   const apolloActions = [
     {
       label: translate(language, 'actionMasterPanel'),
-      sub: 'PIN Console 👑',
+      sub: language === 'ur' ? 'پن کنسول 👑' : 'PIN Console 👑',
       icon: Settings,
       accent: 'from-[#3A2A0A] to-[#141B2D] border-[#F5D061]/55 text-[#F5D061]',
       onClick: () => setActiveTab('manage_app')
     },
     {
       label: translate(language, 'actionManageRoles'),
-      sub: `${totalSuperAdmins + totalAdmins + totalCoAdmins} Staff`,
+      sub: language === 'ur' ? `${totalSuperAdmins + totalAdmins + totalCoAdmins} عملہ` : `${totalSuperAdmins + totalAdmins + totalCoAdmins} Staff`,
       icon: Crown,
       accent: 'from-[#063B2E] to-[#0E1422] border-[#D4AF37]/45 text-emerald-300',
       onClick: () => setActiveTab('staff')
     },
     {
       label: translate(language, 'actionVerifyPayments'),
-      sub: `${payments.filter(p => p.status === 'PENDING_VERIFICATION').length} Pending`,
+      sub: language === 'ur'
+        ? `${payments.filter(p => p.status === 'PENDING_VERIFICATION').length} زیر التواء`
+        : `${payments.filter(p => p.status === 'PENDING_VERIFICATION').length} Pending`,
       icon: Receipt,
       accent: 'from-[#141B2D] to-[#0E1422] border-[#D4AF37]/35 text-[#F5D061]',
       onClick: () => setActiveTab('funds')
     },
     {
       label: translate(language, 'actionAnnouncements'),
-      sub: 'Official 👑 & Community',
+      sub: language === 'ur' ? 'آفیشل 👑 اور کمیونٹی' : 'Official 👑 & Community',
       icon: Megaphone,
       accent: 'from-[#141B2D] to-[#0E1422] border-[#D4AF37]/35 text-amber-300',
       onClick: () => setActiveTab('announcements')
     },
     {
       label: translate(language, 'actionOpenChat'),
-      sub: 'Live Inbox',
+      sub: language === 'ur' ? 'لائیو ان باکس' : 'Live Inbox',
       icon: MessageSquare,
       accent: 'from-[#141B2D] to-[#0E1422] border-emerald-500/35 text-emerald-300',
       onClick: () => setActiveTab('chat')
     },
     {
       label: translate(language, 'actionDigitalId'),
-      sub: 'VIP Card',
+      sub: language === 'ur' ? 'وی آئی پی کارڈ' : 'VIP Card',
       icon: IdCard,
       accent: 'from-[#141B2D] to-[#0E1422] border-[#D4AF37]/35 text-[#F5D061]',
       onClick: () => currentUser && setSelectedCardUser(currentUser)
@@ -260,7 +262,9 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="mt-2">
               <span className="text-xl font-extrabold text-white font-mono tabular-nums">{totalMembers}</span>
             </div>
-            <div className="mt-1 text-[10px] text-emerald-400 font-semibold tabular-nums">{activeMembers} Active</div>
+            <div className="mt-1 text-[10px] text-emerald-400 font-semibold tabular-nums">
+              {language === 'ur' ? `${activeMembers} فعال` : `${activeMembers} Active`}
+            </div>
           </div>
 
           <div
@@ -274,7 +278,9 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="mt-2">
               <span className="text-xl font-extrabold text-white font-mono tabular-nums">{totalSuperAdmins}</span>
             </div>
-            <div className="mt-1 text-[10px] text-[#F5D061] font-semibold">Founder Protected</div>
+            <div className="mt-1 text-[10px] text-[#F5D061] font-semibold">
+              {translate(language, 'founderProtected')}
+            </div>
           </div>
 
           <div
@@ -288,7 +294,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="mt-2">
               <span className="text-xl font-extrabold text-white font-mono tabular-nums">{totalAdmins}</span>
             </div>
-            <div className="mt-1 text-[10px] text-slate-400 tabular-nums">Max {appSettings.maxAdminsPerDistrict}/District</div>
+            <div className="mt-1 text-[10px] text-slate-400 tabular-nums">
+              {language === 'ur'
+                ? `حد: ${appSettings.maxAdminsPerDistrict} فی ضلع`
+                : `Max ${appSettings.maxAdminsPerDistrict}/District`}
+            </div>
           </div>
 
           <div
@@ -302,7 +312,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="mt-2">
               <span className="text-xl font-extrabold text-white font-mono tabular-nums">{totalCoAdmins}</span>
             </div>
-            <div className="mt-1 text-[10px] text-slate-400 tabular-nums">Max {appSettings.maxCoAdminsPerState}/State</div>
+            <div className="mt-1 text-[10px] text-slate-400 tabular-nums">
+              {language === 'ur'
+                ? `حد: ${appSettings.maxCoAdminsPerState} فی صوبہ`
+                : `Max ${appSettings.maxCoAdminsPerState}/State`}
+            </div>
           </div>
 
           <div
@@ -316,7 +330,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="mt-2">
               <span className="text-xl font-extrabold text-white font-mono tabular-nums">{openComplaintsCount}</span>
             </div>
-            <div className="mt-1 text-[10px] text-amber-400 tabular-nums">{appointedOfficeBearers}/13 Office-Bearers</div>
+            <div className="mt-1 text-[10px] text-amber-400 tabular-nums">
+              {language === 'ur'
+                ? `${appointedOfficeBearers}/13 عہدیداران مقرر`
+                : `${appointedOfficeBearers}/13 Office-Bearers`}
+            </div>
           </div>
 
           <div
@@ -332,7 +350,9 @@ export const SuperAdminDashboard: React.FC = () => {
                 PKR {totalVerifiedFunds.toLocaleString()}
               </span>
             </div>
-            <div className="mt-1 text-[10px] text-emerald-400">Audited & Verified</div>
+            <div className="mt-1 text-[10px] text-emerald-400">
+              {language === 'ur' ? 'آڈٹ و تصدیق شدہ' : 'Audited & Verified'}
+            </div>
           </div>
         </div>
       )}
@@ -349,17 +369,19 @@ export const SuperAdminDashboard: React.FC = () => {
                 </span>
                 <span className="text-[11px] font-mono tabular-nums font-bold px-2 py-0.5 rounded-md bg-[#090D16] text-emerald-300 border border-[#D4AF37]/35">
                   {apkUrl
-                    ? `${activeReleaseTag} — APK Available`
+                    ? `${activeReleaseTag} — ${language === 'ur' ? 'APK دستیاب ہے' : 'APK Available'}`
                     : `v${INSTALLED_APP_VERSION} — ${translate(language, 'latestVersionInstalled')}`}
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-white">
                 {hasAdminOverride && latestPublishedUpdate
                   ? latestPublishedUpdate.title
-                  : (githubRelease?.apkUrl ? githubRelease.releaseTitle : 'Kifayat Connect Mobile Release Center')}
+                  : (githubRelease?.apkUrl
+                      ? githubRelease.releaseTitle
+                      : (language === 'ur' ? 'کفایت کنیکٹ موبائل ریلیز سینٹر' : 'Kifayat Connect Mobile Release Center'))}
               </h3>
               <p className="text-xs text-slate-200 max-w-2xl leading-relaxed">
-                Synced with GitHub Releases (
+                {language === 'ur' ? 'گٹ ہب ریلیزز سے منسلک (' : 'Synced with GitHub Releases ('}
                 <a
                   href="https://github.com/asadullah6959-art/kifayatconnect-app"
                   target="_blank"
@@ -399,7 +421,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('manage_app')}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#090D16] hover:bg-[#141B2D] text-slate-200 text-xs font-medium border border-[#D4AF37]/30 kc-pressable cursor-pointer"
               >
-                <span>Master Control</span>
+                <span>{translate(language, 'navMasterControl')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -416,32 +438,36 @@ export const SuperAdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-[#F5D061]" />
-                    <span>Pakistan Geographic & Governance Hierarchy</span>
+                    <span>{language === 'ur' ? 'پاکستان جغرافیائی اور گورننس نظام' : 'Pakistan Geographic & Governance Hierarchy'}</span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Membership counts and verified welfare collections per district
+                    {language === 'ur' ? 'ہر ضلع میں ممبران کی تعداد اور تصدیق شدہ ویلفیئر فنڈز' : 'Membership counts and verified welfare collections per district'}
                   </p>
                 </div>
-                <span className="text-xs text-[#F5D061] font-mono font-semibold">ALL DISTRICTS</span>
+                <span className="text-xs text-[#F5D061] font-mono font-semibold">
+                  {language === 'ur' ? 'تمام اضلاع' : 'ALL DISTRICTS'}
+                </span>
               </div>
 
               <div className="overflow-x-auto mt-3 rounded-xl border border-[#D4AF37]/20">
                 <table className="w-full text-xs text-left">
                   <thead>
                     <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
-                      <th className="py-2.5 px-3">District</th>
-                      <th className="py-2.5 px-3">State / Province</th>
-                      <th className="py-2.5 px-3">Admin</th>
-                      <th className="py-2.5 px-3 text-right">Members</th>
-                      <th className="py-2.5 px-3 text-right">Quota</th>
-                      <th className="py-2.5 px-3 text-right">Funds (PKR)</th>
+                      <th className="py-2.5 px-3">{language === 'ur' ? 'ضلع' : 'District'}</th>
+                      <th className="py-2.5 px-3">{language === 'ur' ? 'صوبہ / علاقہ' : 'State / Province'}</th>
+                      <th className="py-2.5 px-3">{language === 'ur' ? 'ایڈمن' : 'Admin'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'ممبران' : 'Members'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'کوٹہ' : 'Quota'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'فنڈز (PKR)' : 'Funds (PKR)'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#D4AF37]/10">
                     {districtRows.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-slate-400">
-                          No district activity recorded yet. Appoint Admins or approve members to populate district metrics.
+                          {language === 'ur'
+                            ? 'ابھی تک کسی ضلع کی سرگرمی ریکارڈ نہیں ہوئی۔ ضلعی ایڈمن مقرر کریں یا ممبران کی منظوری دیں۔'
+                            : 'No district activity recorded yet. Appoint Admins or approve members to populate district metrics.'}
                         </td>
                       </tr>
                     ) : (
@@ -483,10 +509,12 @@ export const SuperAdminDashboard: React.FC = () => {
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       <Award className="w-4 h-4 text-[#F5D061]" />
-                      <span>Office-Bearers</span>
+                      <span>{translate(language, 'navOfficeBearers')}</span>
                     </h3>
                     <p className="text-[11px] text-slate-400 tabular-nums">
-                      10 Proposed Titles · 13 Constitutional Seats ({vacantOfficeBearers} Vacant)
+                      {language === 'ur'
+                        ? `10 عہدے · 13 آئینی نشستیں (${vacantOfficeBearers} خالی)`
+                        : `10 Proposed Titles · 13 Constitutional Seats (${vacantOfficeBearers} Vacant)`}
                     </p>
                   </div>
                   <button
@@ -494,7 +522,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     onClick={() => setActiveTab('office_bearers')}
                     className="text-xs text-[#F5D061] hover:underline font-semibold cursor-pointer"
                   >
-                    View All →
+                    {language === 'ur' ? 'سب دیکھیں →' : 'View All →'}
                   </button>
                 </div>
 
@@ -507,7 +535,7 @@ export const SuperAdminDashboard: React.FC = () => {
                           {seat.status === 'ACTIVE' ? (
                             <span className="text-slate-300">{seat.assignedUserName}</span>
                           ) : (
-                            <span className="text-[#F5D061]/80 italic">Vacant Seat</span>
+                            <span className="text-[#F5D061]/80 italic">{language === 'ur' ? 'خالی نشست' : 'Vacant Seat'}</span>
                           )}
                         </p>
                       </div>
@@ -518,7 +546,7 @@ export const SuperAdminDashboard: React.FC = () => {
                             : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/30'
                         }`}
                       >
-                        {seat.status}
+                        {seat.status === 'ACTIVE' ? translate(language, 'activeLabel') : (language === 'ur' ? 'خالی' : seat.status)}
                       </span>
                     </div>
                   ))}
@@ -527,7 +555,11 @@ export const SuperAdminDashboard: React.FC = () => {
 
               <div className="mt-4 p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/25 text-[11px] text-slate-300 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#F5D061] shrink-0" />
-                <span>Appointments preserve historical records and require Super Admin approval.</span>
+                <span>
+                  {language === 'ur'
+                    ? 'تقرریاں تاریخی ریکارڈ محفوظ رکھتی ہیں اور ان کے لیے سپر ایڈمن کی منظوری ضروری ہے۔'
+                    : 'Appointments preserve historical records and require Super Admin approval.'}
+                </span>
               </div>
             </div>
           )}

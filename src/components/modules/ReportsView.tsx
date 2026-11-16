@@ -46,6 +46,7 @@ export const ReportsView: React.FC = () => {
     users, 
     language 
   } = useApp();
+  const isUr = language === 'ur';
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
@@ -122,7 +123,7 @@ export const ReportsView: React.FC = () => {
     d.setDate(1);
     d.setMonth(d.getMonth() - (5 - i));
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const label = d.toLocaleString(isUr ? 'ur-PK' : 'en-US', { month: 'short', year: 'numeric' });
     const monthTxs = verifiedPayments.filter(p => (p.date || '').startsWith(key));
     const monthlyPledges = monthTxs
       .filter(p => p.fundCategory === 'Monthly Contribution')
@@ -151,7 +152,7 @@ export const ReportsView: React.FC = () => {
   }>();
 
   users.forEach(u => {
-    const dist = u.district || 'Unassigned';
+    const dist = u.district || (isUr ? 'غیر متعین' : 'Unassigned');
     const prov = u.stateProvince || 'Pakistan';
     const key = `${prov}__${dist}`;
     if (!districtMap.has(key)) {
@@ -159,7 +160,7 @@ export const ReportsView: React.FC = () => {
       districtMap.set(key, {
         district: dist,
         stateProvince: prov,
-        officerInCharge: distAdmin?.name || 'Unassigned',
+        officerInCharge: distAdmin?.name || (isUr ? 'غیر مقرر' : 'Unassigned'),
         totalMembers: 0,
         activeMembers: 0,
         totalCollected: 0,
@@ -175,14 +176,14 @@ export const ReportsView: React.FC = () => {
   });
 
   verifiedPayments.forEach(p => {
-    const dist = p.district || 'Unassigned';
+    const dist = p.district || (isUr ? 'غیر متعین' : 'Unassigned');
     const prov = p.stateProvince || 'Pakistan';
     const key = `${prov}__${dist}`;
     if (!districtMap.has(key)) {
       districtMap.set(key, {
         district: dist,
         stateProvince: prov,
-        officerInCharge: 'Unassigned',
+        officerInCharge: isUr ? 'غیر مقرر' : 'Unassigned',
         totalMembers: 0,
         activeMembers: 0,
         totalCollected: 0,
@@ -281,7 +282,9 @@ export const ReportsView: React.FC = () => {
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
           <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold">Branded CSV report downloaded successfully!</span>
+            <span className="font-semibold">
+              {isUr ? 'آفیشل CSV رپورٹ کامیابی سے ڈاؤن لوڈ ہو گئی!' : 'Branded CSV report downloaded successfully!'}
+            </span>
           </div>
         </div>
       )}
@@ -291,27 +294,29 @@ export const ReportsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
-              Audited Financial & Regional Analytics
+              {isUr ? 'آڈٹ شدہ مالیاتی اور علاقائی تجزیات' : 'Audited Financial & Regional Analytics'}
             </span>
             <span className="text-[#D4AF37]/50">·</span>
             <span className="text-xs text-slate-300">
               {isSuperAdmin
-                ? 'Master Organization Report'
+                ? (isUr ? 'مرکزی تنظیمی رپورٹ' : 'Master Organization Report')
                 : isAuditOfficer
-                ? 'Audit Officer — Read-Only Financial Verification Statement'
+                ? (isUr ? 'آڈٹ آفیسر — صرف مطالعہ مالیاتی بیان' : 'Audit Officer — Read-Only Financial Verification Statement')
                 : isDistrictAdmin
-                ? `${currentUser.assignedDistrict || currentUser.district} District Statement`
+                ? (isUr ? `${currentUser.assignedDistrict || currentUser.district} ضلعی بیان` : `${currentUser.assignedDistrict || currentUser.district} District Statement`)
                 : isCoAdmin
-                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`
-                : 'Personal Welfare Contribution Summary'}
+                ? (isUr ? `${currentUser.assignedStateProvince || currentUser.stateProvince} صوبائی بیان` : `${currentUser.assignedStateProvince || currentUser.stateProvince} Provincial Statement`)
+                : (isUr ? 'ذاتی فلاحی حصہ کا خلاصہ' : 'Personal Welfare Contribution Summary')}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
             <FileText className="w-6 h-6 text-[#F5D061]" />
-            <span>Official Statements & Welfare Reports</span>
+            <span>{isUr ? 'سرکاری اسٹیٹمنٹس اور فلاحی رپورٹس' : 'Official Statements & Welfare Reports'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Verified balance sheet, regional allocation metrics, and certified receipts breakdown.
+            {isUr
+              ? 'تصدیق شدہ بیلنس شیٹ، علاقائی تقسیم اور مصدقہ رسیدوں کی تفصیلات۔'
+              : 'Verified balance sheet, regional allocation metrics, and certified receipts breakdown.'}
           </p>
         </div>
 
@@ -319,19 +324,19 @@ export const ReportsView: React.FC = () => {
           <button
             onClick={handleExportCSV}
             className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-100 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-            title="Download CSV spreadsheet formatted with Kifayat Connect headers"
+            title={isUr ? 'کفایت کنیکٹ ہیڈرز کے ساتھ CSV اسپریڈشیٹ ڈاؤن لوڈ کریں' : 'Download CSV spreadsheet formatted with Kifayat Connect headers'}
           >
             <FileDown className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export to CSV</span>
+            <span>{isUr ? 'CSV برآمد کریں' : 'Export to CSV'}</span>
           </button>
 
           <button
             onClick={handlePrint}
             className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
-            title="Print or Save as PDF with organizational watermark and seal"
+            title={isUr ? 'تنظیمی مہر کے ساتھ PDF محفوظ یا پرنٹ کریں' : 'Print or Save as PDF with organizational watermark and seal'}
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Export to PDF / Print</span>
+            <span>{isUr ? 'PDF / پرنٹ کریں' : 'Export to PDF / Print'}</span>
           </button>
         </div>
       </div>
@@ -348,59 +353,67 @@ export const ReportsView: React.FC = () => {
           <div className="flex items-center gap-3">
             <BrandEmblem3D size="md" className="shrink-0" />
             <div>
-              <h2 className="text-base font-bold text-white print:text-slate-900 uppercase tracking-tight">
-                Kifayat Connect Welfare Trust
+              <h2 className="text-base font-bold text-white uppercase tracking-tight">
+                {isUr ? 'کفایت کنیکٹ ویلفیئر ٹرسٹ' : 'Kifayat Connect Welfare Trust'}
               </h2>
-              <p className="text-xs text-slate-300 print:text-slate-600">
-                Audited Welfare Ledger & Receipts Reconciliation Statement
+              <p className="text-xs text-slate-300">
+                {isUr ? 'آڈٹ شدہ فلاحی کھاتہ اور رسیدوں کی مطابقت کا بیان' : 'Audited Welfare Ledger & Receipts Reconciliation Statement'}
               </p>
-              <p className="text-[10px] text-slate-400 print:text-slate-500">
-                Fiscal Period: Q4 2026 · Generated for {currentUser.name} ({currentUser.role})
+              <p className="text-[10px] text-slate-400">
+                {isUr
+                  ? `مالی مدت: Q4 2026 · برائے ${currentUser.name} (${currentUser.role})`
+                  : `Fiscal Period: Q4 2026 · Generated for ${currentUser.name} (${currentUser.role})`}
               </p>
             </div>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">Document Hash:</span>
-            <span className="font-mono text-xs font-bold text-[#F5D061] print:text-emerald-700 block">
+            <span className="text-[10px] text-slate-400 uppercase font-mono block">{isUr ? 'دستاویز ہیش:' : 'Document Hash:'}</span>
+            <span className="font-mono text-xs font-bold text-[#F5D061] block">
               STMT-2026-KC{Date.now().toString().slice(-6)}
             </span>
             <span className="text-[10px] text-slate-400 font-mono block">
-              Certified by Central Treasury
+              {isUr ? 'مرکزی خزانہ سے مصدقہ' : 'Certified by Central Treasury'}
             </span>
           </div>
         </div>
 
         {/* Aggregate Balance Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#090D16] print:bg-white rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
-              Total Verified Collections
+              {isUr ? 'کل تصدیق شدہ وصولیاں' : 'Total Verified Collections'}
             </span>
-            <span className="text-xl font-bold font-mono text-white print:text-slate-900 tabular-nums block mt-1">
+            <span className="text-xl font-bold font-mono text-white tabular-nums block mt-1">
               PKR {totalVerifiedAmount.toLocaleString()}
             </span>
-            <span className="text-[10px] text-emerald-400 print:text-emerald-700 font-medium">Reconciled against bank statements</span>
+            <span className="text-[10px] text-emerald-400 font-medium">
+              {isUr ? 'بینک ریکارڈ کے مطابق مصدقہ' : 'Reconciled against bank statements'}
+            </span>
           </div>
 
-          <div className="p-4 bg-[#090D16] print:bg-white rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
-              Monthly Subscription Pool
+              {isUr ? 'ماہانہ سبسکرپشن پول' : 'Monthly Subscription Pool'}
             </span>
-            <span className="text-xl font-bold font-mono text-[#F5D061] print:text-blue-700 tabular-nums block mt-1">
+            <span className="text-xl font-bold font-mono text-[#F5D061] tabular-nums block mt-1">
               PKR {monthlyAmount.toLocaleString()}
             </span>
-            <span className="text-[10px] text-slate-400">Fixed operational welfare pledges</span>
+            <span className="text-[10px] text-slate-400">
+              {isUr ? 'مقررہ فلاحی ماہانہ حصے' : 'Fixed operational welfare pledges'}
+            </span>
           </div>
 
-          <div className="p-4 bg-[#090D16] print:bg-white rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
-              Annual Welfare & Relief Fund
+              {isUr ? 'سالانہ فلاحی و امدادی فنڈ' : 'Annual Welfare & Relief Fund'}
             </span>
-            <span className="text-xl font-bold font-mono text-emerald-400 print:text-emerald-700 tabular-nums block mt-1">
+            <span className="text-xl font-bold font-mono text-emerald-400 tabular-nums block mt-1">
               PKR {annualAmount.toLocaleString()}
             </span>
-            <span className="text-[10px] text-slate-400">Healthcare dispensary & student grants</span>
+            <span className="text-[10px] text-slate-400">
+              {isUr ? 'طبی ڈسپنسری اور تعلیمی وظائف' : 'Healthcare dispensary & student grants'}
+            </span>
           </div>
         </div>
 
@@ -408,12 +421,12 @@ export const ReportsView: React.FC = () => {
         <div className="pt-3 border-t border-[#D4AF37]/20 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-white print:text-slate-900 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-[#F5D061]" />
-                <span>Executive Welfare Analytics & Financial Trends</span>
+                <span>{isUr ? 'ایگزیکٹو فلاحی تجزیات اور مالیاتی رجحانات' : 'Executive Welfare Analytics & Financial Trends'}</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Visualizing multi-month trajectory, pledge velocity, and regional collection milestones
+                {isUr ? 'کئی ماہ کا گراف، وصولی کی رفتار اور علاقائی سنگِ میل' : 'Visualizing multi-month trajectory, pledge velocity, and regional collection milestones'}
               </p>
             </div>
 
@@ -426,7 +439,7 @@ export const ReportsView: React.FC = () => {
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Monthly Trajectory (Area)
+                {isUr ? 'ماہانہ گراف (ایریا)' : 'Monthly Trajectory (Area)'}
               </button>
               <button
                 onClick={() => setActiveChartTab('REGIONAL')}
@@ -436,7 +449,7 @@ export const ReportsView: React.FC = () => {
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Regional Collections (Bar)
+                {isUr ? 'علاقائی وصولیاں (بار)' : 'Regional Collections (Bar)'}
               </button>
             </div>
           </div>
@@ -444,15 +457,15 @@ export const ReportsView: React.FC = () => {
           {/* Chart Display Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Main Area / Bar Chart (8 Columns on desktop) */}
-            <div className="lg:col-span-8 p-4 bg-[#090D16] print:bg-white rounded-xl border border-[#D4AF37]/25">
+            <div className="lg:col-span-8 p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/25">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-[#F5D061] print:text-slate-900 uppercase tracking-wide">
+                <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wide">
                   {activeChartTab === 'TRENDS' 
-                    ? '6-Month Contribution Velocity (PKR)' 
-                    : 'District Collection Milestones vs Targets'}
+                    ? (isUr ? '6 ماہ کی وصولیوں کی رفتار (PKR)' : '6-Month Contribution Velocity (PKR)')
+                    : (isUr ? 'ضلعی وصولیاں بمقابلہ ہدف' : 'District Collection Milestones vs Targets')}
                 </span>
                 <span className="text-[10px] font-mono tabular-nums text-emerald-400 font-semibold">
-                  {verifiedPayments.length} Verified Entries
+                  {isUr ? `${verifiedPayments.length} مصدقہ اندراجات` : `${verifiedPayments.length} Verified Entries`}
                 </span>
               </div>
 
@@ -491,7 +504,7 @@ export const ReportsView: React.FC = () => {
                       <Area 
                         type="monotone" 
                         dataKey="monthlyPledges" 
-                        name="Monthly Subscriptions" 
+                        name={isUr ? 'ماہانہ سبسکرپشن' : 'Monthly Subscriptions'} 
                         stroke="#10B981" 
                         strokeWidth={2.5}
                         fillOpacity={1} 
@@ -500,7 +513,7 @@ export const ReportsView: React.FC = () => {
                       <Area 
                         type="monotone" 
                         dataKey="annualFund" 
-                        name="Annual Welfare & Relief" 
+                        name={isUr ? 'سالانہ فلاح و امداد' : 'Annual Welfare & Relief'} 
                         stroke="#F5D061" 
                         strokeWidth={2.5}
                         fillOpacity={1} 
@@ -529,13 +542,13 @@ export const ReportsView: React.FC = () => {
                       />
                       <Bar 
                         dataKey="totalCollected" 
-                        name="Total Collected (PKR)" 
+                        name={isUr ? 'کل وصولی (PKR)' : 'Total Collected (PKR)'} 
                         fill="#10B981" 
                         radius={[4, 4, 0, 0]} 
                       />
                       <Bar 
                         dataKey="targetQuota" 
-                        name="Annual Target Quota (PKR)" 
+                        name={isUr ? 'سالانہ ہدف (PKR)' : 'Annual Target Quota (PKR)'} 
                         fill="#D4AF37" 
                         radius={[4, 4, 0, 0]} 
                       />
@@ -546,20 +559,20 @@ export const ReportsView: React.FC = () => {
             </div>
 
             {/* Supplementary KPI / Growth Metrics (4 Columns on desktop) */}
-            <div className="lg:col-span-4 p-4 bg-[#090D16] print:bg-white rounded-xl border border-[#D4AF37]/25 flex flex-col justify-between space-y-4">
+            <div className="lg:col-span-4 p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/25 flex flex-col justify-between space-y-4">
               <div>
-                <span className="text-xs font-bold text-[#F5D061] print:text-slate-900 uppercase tracking-wide block mb-2">
-                  Fund Distribution Breakdown
+                <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wide block mb-2">
+                  {isUr ? 'فنڈز کی تقسیم کی تفصیل' : 'Fund Distribution Breakdown'}
                 </span>
                 <p className="text-[11px] text-slate-400 mb-3">
-                  Allocations audited across verified welfare disbursements
+                  {isUr ? 'مصدقہ فلاحی وصولیوں کا زمرہ وار تناسب' : 'Allocations audited across verified welfare disbursements'}
                 </p>
 
                 <div className="space-y-2.5 text-xs">
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-300 print:text-slate-700">Monthly Subscriptions</span>
-                      <span className="font-mono tabular-nums font-bold text-white print:text-slate-900">
+                      <span className="font-medium text-slate-300">{isUr ? 'ماہانہ سبسکرپشن' : 'Monthly Subscriptions'}</span>
+                      <span className="font-mono tabular-nums font-bold text-white">
                         {calcPct(monthlyAmount)}% (PKR {monthlyAmount.toLocaleString()})
                       </span>
                     </div>
@@ -570,8 +583,8 @@ export const ReportsView: React.FC = () => {
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-300 print:text-slate-700">Annual Welfare Fund</span>
-                      <span className="font-mono tabular-nums font-bold text-white print:text-slate-900">
+                      <span className="font-medium text-slate-300">{isUr ? 'سالانہ فلاحی فنڈ' : 'Annual Welfare Fund'}</span>
+                      <span className="font-mono tabular-nums font-bold text-white">
                         {calcPct(annualAmount)}% (PKR {annualAmount.toLocaleString()})
                       </span>
                     </div>
@@ -582,8 +595,8 @@ export const ReportsView: React.FC = () => {
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-300 print:text-slate-700">Emergency Relief</span>
-                      <span className="font-mono tabular-nums font-bold text-white print:text-slate-900">
+                      <span className="font-medium text-slate-300">{isUr ? 'ہنگامی امداد' : 'Emergency Relief'}</span>
+                      <span className="font-mono tabular-nums font-bold text-white">
                         {calcPct(emergencyAmount)}% (PKR {emergencyAmount.toLocaleString()})
                       </span>
                     </div>
@@ -594,8 +607,8 @@ export const ReportsView: React.FC = () => {
 
                   <div>
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-medium text-slate-300 print:text-slate-700">Zakat & Sadqah</span>
-                      <span className="font-mono tabular-nums font-bold text-white print:text-slate-900">
+                      <span className="font-medium text-slate-300">{isUr ? 'زکوٰۃ و صدقات' : 'Zakat & Sadqah'}</span>
+                      <span className="font-mono tabular-nums font-bold text-white">
                         {calcPct(zakatAmount)}% (PKR {zakatAmount.toLocaleString()})
                       </span>
                     </div>
@@ -608,14 +621,14 @@ export const ReportsView: React.FC = () => {
 
               <div className="p-3 kc-emerald-panel rounded-xl text-[11px]">
                 <span className="font-bold text-[#F5D061] block mb-0.5">
-                  Audited Treasury Status
+                  {isUr ? 'آڈٹ شدہ خزانہ کی حیثیت' : 'Audited Treasury Status'}
                 </span>
                 <p className="text-slate-200">
                   {totalVerifiedAmount === 0
-                    ? 'Zero verified contributions recorded yet. Ledger starts at PKR 0.'
+                    ? (isUr ? 'ابھی تک کوئی تصدیق شدہ حصہ ریکارڈ نہیں ہوا۔ کھاتہ صفر روپے سے شروع ہوتا ہے۔' : 'Zero verified contributions recorded yet. Ledger starts at PKR 0.')
                     : currentUser.role === 'ADMIN'
-                    ? `${currentUser.assignedDistrict || currentUser.district} live verified statement.`
-                    : `Showing ${verifiedPayments.length} verified ledger receipts.`}
+                    ? (isUr ? `${currentUser.assignedDistrict || currentUser.district} کا لائیو مصدقہ بیان۔` : `${currentUser.assignedDistrict || currentUser.district} live verified statement.`)
+                    : (isUr ? `${verifiedPayments.length} مصدقہ رسیدیں دکھائی جا رہی ہیں۔` : `Showing ${verifiedPayments.length} verified ledger receipts.`)}
                 </p>
               </div>
             </div>
@@ -627,11 +640,11 @@ export const ReportsView: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
-                <h3 className="text-xs font-bold text-[#F5D061] print:text-slate-900 uppercase tracking-wider">
-                  Administrative Hierarchy Performance Matrix (District & Province)
+                <h3 className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+                  {isUr ? 'انتظامی کارکردگی کا جدول (ضلع و صوبہ)' : 'Administrative Hierarchy Performance Matrix (District & Province)'}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  Separated administrative divisions with verified treasury receipts and active member quotas
+                  {isUr ? 'مصدقہ وصولیوں اور فعال اراکین کے ساتھ صوبائی و ضلعی تقسیم' : 'Separated administrative divisions with verified treasury receipts and active member quotas'}
                 </p>
               </div>
 
@@ -645,9 +658,9 @@ export const ReportsView: React.FC = () => {
                         setFilterProvince(val);
                         setFilterDistrict('ALL');
                       }}
-                      label="Province Filter"
+                      label={isUr ? 'صوبہ فلٹر' : 'Province Filter'}
                       options={[
-                        { value: 'ALL', label: 'All Provinces' },
+                        { value: 'ALL', label: isUr ? 'تمام صوبے' : 'All Provinces' },
                         ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
                       ]}
                     />
@@ -659,9 +672,9 @@ export const ReportsView: React.FC = () => {
                       searchable
                       value={filterDistrict}
                       onChange={setFilterDistrict}
-                      label="District Filter"
+                      label={isUr ? 'ضلع فلٹر' : 'District Filter'}
                       options={[
-                        { value: 'ALL', label: 'All Districts' },
+                        { value: 'ALL', label: isUr ? 'تمام اضلاع' : 'All Districts' },
                         ...(filterProvince !== 'ALL'
                           ? getDistrictsForProvince(filterProvince)
                           : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
@@ -677,19 +690,21 @@ export const ReportsView: React.FC = () => {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                    <th className="py-2.5 px-3">District</th>
-                    <th className="py-2.5 px-3">State / Province</th>
-                    <th className="py-2.5 px-3">Officer in Charge</th>
-                    <th className="py-2.5 px-3 text-right">Active Count</th>
-                    <th className="py-2.5 px-3 text-right">Total Contributed (PKR)</th>
-                    <th className="py-2.5 px-3 text-center">Compliance</th>
+                    <th className="py-2.5 px-3">{isUr ? 'ضلع' : 'District'}</th>
+                    <th className="py-2.5 px-3">{isUr ? 'صوبہ / علاقہ' : 'State / Province'}</th>
+                    <th className="py-2.5 px-3">{isUr ? 'نگران افسر' : 'Officer in Charge'}</th>
+                    <th className="py-2.5 px-3 text-right">{isUr ? 'فعال اراکین' : 'Active Count'}</th>
+                    <th className="py-2.5 px-3 text-right">{isUr ? 'کل حصہ (PKR)' : 'Total Contributed (PKR)'}</th>
+                    <th className="py-2.5 px-3 text-center">{isUr ? 'مطابقت' : 'Compliance'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#D4AF37]/15">
                   {liveDistrictRows.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-slate-400">
-                        No district records recorded yet. Verified members and treasury receipts will appear here automatically.
+                        {isUr
+                          ? 'ابھی تک کوئی ضلعی ریکارڈ موجود نہیں۔ تصدیق شدہ اراکین اور رسیدیں یہاں خودکار ظاہر ہوں گی۔'
+                          : 'No district records recorded yet. Verified members and treasury receipts will appear here automatically.'}
                       </td>
                     </tr>
                   ) : (
@@ -700,25 +715,25 @@ export const ReportsView: React.FC = () => {
 
                       return (
                         <tr key={sDist ? `${sProv}-${sDist}` : `rep-${idx}`} className="hover:bg-[#161F33]/70 transition-colors">
-                          <td className="py-2.5 px-3 font-bold text-white print:text-slate-900 flex items-center gap-1.5">
+                          <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
                             <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                             <span>{sDist}</span>
                           </td>
-                          <td className="py-2.5 px-3 font-medium text-slate-300 print:text-slate-700">
+                          <td className="py-2.5 px-3 font-medium text-slate-300">
                             {sProv}
                           </td>
-                          <td className="py-2.5 px-3 text-slate-300 print:text-slate-600">
+                          <td className="py-2.5 px-3 text-slate-300">
                             {stat.officerInCharge}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-200 print:text-slate-800">
+                          <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-200">
                             {stat.activeMembers}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-[#F5D061] print:text-slate-900">
+                          <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-[#F5D061]">
                             {stat.totalCollected.toLocaleString()}
                           </td>
                           <td className="py-2.5 px-3 text-center">
-                            <span className="text-[10px] text-emerald-300 print:text-emerald-700 font-semibold">
-                              100% Audited
+                            <span className="text-[10px] text-emerald-300 font-semibold">
+                              {isUr ? '100% آڈٹ شدہ' : '100% Audited'}
                             </span>
                           </td>
                         </tr>
@@ -740,14 +755,14 @@ export const ReportsView: React.FC = () => {
               className="w-12 h-12 rounded-full object-cover border border-[#D4AF37]/60"
             />
             <div>
-              <p className="font-semibold text-white print:text-slate-900">Central Audit Board</p>
-              <p className="text-[10px] text-slate-400">Electronic Verification Stamp Attached</p>
+              <p className="font-semibold text-white">{isUr ? 'مرکزی آڈٹ بورڈ' : 'Central Audit Board'}</p>
+              <p className="text-[10px] text-slate-400">{isUr ? 'الیکٹرانک تصدیقی مہر منسلک ہے' : 'Electronic Verification Stamp Attached'}</p>
             </div>
           </div>
 
           <div className="text-right text-[10px] text-slate-400">
-            <p>Verified independently by Chartered Financial Accountants.</p>
-            <p className="font-mono text-[#F5D061] print:text-slate-700">Govt Trust Reg # ICT-8841-KC</p>
+            <p>{isUr ? 'چارٹرڈ مالیاتی اکاؤنٹنٹس کی جانب سے آزادانہ تصدیق شدہ۔' : 'Verified independently by Chartered Financial Accountants.'}</p>
+            <p className="font-mono text-[#F5D061]">Govt Trust Reg # ICT-8841-KC</p>
           </div>
         </div>
       </div>

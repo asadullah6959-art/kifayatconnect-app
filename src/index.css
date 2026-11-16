@@ -55,8 +55,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-[dir="rtl"] body,
-[dir="rtl"] .font-urdu-auto {
+[data-lang="ur"] body,
+[data-lang="ur"] .font-urdu-auto {
   font-family: 'Noto Nastaliq Urdu', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 

@@ -27,42 +27,61 @@ interface DocumentUploadModalProps {
   onClose: () => void;
 }
 
-const DOCUMENT_CATEGORIES: { type: SupportingDocumentType; label: string; icon: string; description: string }[] = [
+const DOCUMENT_CATEGORIES: {
+  type: SupportingDocumentType;
+  label: string;
+  labelUr: string;
+  icon: string;
+  description: string;
+  descriptionUr: string;
+}[] = [
   { 
     type: 'IDENTIFICATION_CNIC', 
     label: 'National Identity (CNIC)', 
+    labelUr: 'قومی شناختی کارڈ (CNIC)',
     icon: '🪪', 
-    description: 'NADRA Smart Card or CNIC Front & Back' 
+    description: 'NADRA Smart Card or CNIC Front & Back',
+    descriptionUr: 'نادرا سمارٹ کارڈ یا شناختی کارڈ اگلا اور پچھلا رخ'
   },
   { 
     type: 'EXPENSE_RECEIPT', 
     label: 'Expense / Payment Receipt', 
+    labelUr: 'ادائیگی / خرچ کی رسید',
     icon: '🧾', 
-    description: 'Membership fee or regional expense receipt' 
+    description: 'Membership fee or regional expense receipt',
+    descriptionUr: 'ممبرشپ فیس یا علاقائی اخراجات کی رسید'
   },
   { 
     type: 'DEPOSIT_SLIP', 
     label: 'Bank Deposit Slip', 
+    labelUr: 'بینک ڈپازٹ سلپ',
     icon: '🏦', 
-    description: 'Bank counter deposit or Raast/1Link transfer slip' 
+    description: 'Bank counter deposit or Raast/1Link transfer slip',
+    descriptionUr: 'بینک کاؤنٹر ڈپازٹ یا راست / ون لنک ٹرانسفر سلپ'
   },
   { 
     type: 'UTILITY_BILL', 
     label: 'Residential Utility Bill', 
+    labelUr: 'رہائشی یوٹیلیٹی بل',
     icon: '💡', 
-    description: 'Electricity, Gas, or Water bill for address verification' 
+    description: 'Electricity, Gas, or Water bill for address verification',
+    descriptionUr: 'پتے کی تصدیق کے لیے بجلی، گیس یا پانی کا بل'
   },
   { 
     type: 'INCOME_PROOF', 
     label: 'Income Proof / Affidavit', 
+    labelUr: 'آمدن کا ثبوت / حلف نامہ',
     icon: '📄', 
-    description: 'Salary slip, income affidavit, or pension letter' 
+    description: 'Salary slip, income affidavit, or pension letter',
+    descriptionUr: 'تنخواہ کی سلپ، حلف نامہ یا پنشن لیٹر'
   },
   { 
     type: 'OTHER', 
     label: 'Other Supporting Record', 
+    labelUr: 'دیگر معاون ریکارڈ',
     icon: '📁', 
-    description: 'Legacy card, recommendation letter, or certificate' 
+    description: 'Legacy card, recommendation letter, or certificate',
+    descriptionUr: 'پرانا کارڈ، سفارشی خط یا سرٹیفکیٹ'
   }
 ];
 
@@ -74,8 +93,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
     currentUser, 
     attachDocumentToApplication, 
     removeDocumentFromApplication, 
-    verifyApplicationDocument 
+    verifyApplicationDocument,
+    language 
   } = useApp();
+  const isUr = language === 'ur';
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
@@ -121,12 +142,20 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
     setUploadSuccess(null);
 
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError(`File is too large (${formatFileSize(file.size)}). Maximum permitted size is 5MB.`);
+      setUploadError(
+        isUr
+          ? `فائل بہت بڑی ہے (${formatFileSize(file.size)})۔ زیادہ سے زیادہ اجازت 5MB ہے۔`
+          : `File is too large (${formatFileSize(file.size)}). Maximum permitted size is 5MB.`
+      );
       return;
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
-      setUploadError('Invalid format. Please upload JPG, PNG, WEBP images, or PDF documents.');
+      setUploadError(
+        isUr
+          ? 'غلط فارمیٹ۔ براہ کرم JPG، PNG، WEBP تصاویر یا PDF دستاویزات اپلوڈ کریں۔'
+          : 'Invalid format. Please upload JPG, PNG, WEBP images, or PDF documents.'
+      );
       return;
     }
 
@@ -155,7 +184,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
       setFileDataUrl(event.target?.result as string);
     };
     reader.onerror = () => {
-      setUploadError('Failed to read the selected file. Please try again.');
+      setUploadError(isUr ? 'منتخب کردہ فائل پڑھنے میں ناکامی۔ دوبارہ کوشش کریں۔' : 'Failed to read the selected file. Please try again.');
     };
     reader.readAsDataURL(file);
   };
@@ -181,11 +210,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fileDataUrl) {
-      setUploadError('Please select or drop a document to upload.');
+      setUploadError(isUr ? 'براہ کرم اپلوڈ کرنے کے لیے کوئی دستاویز منتخب کریں۔' : 'Please select or drop a document to upload.');
       return;
     }
     if (!docName.trim()) {
-      setUploadError('Please enter a descriptive document title.');
+      setUploadError(isUr ? 'براہ کرم دستاویز کا واضح عنوان درج کریں۔' : 'Please enter a descriptive document title.');
       return;
     }
 
@@ -203,7 +232,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
       });
 
       if (result.success) {
-        setUploadSuccess('Supporting document attached successfully to application dossier.');
+        setUploadSuccess(
+          isUr
+            ? 'معاون دستاویز کامیابی سے درخواست ڈوزیئر کے ساتھ منسلک ہو گئی۔'
+            : 'Supporting document attached successfully to application dossier.'
+        );
         // Reset form
         setFileDataUrl(null);
         setFileName('');
@@ -213,10 +246,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
         setNotes('');
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
-        setUploadError(result.error || 'Failed to attach document.');
+        setUploadError(result.error || (isUr ? 'دستاویز منسلک کرنے میں ناکامی۔' : 'Failed to attach document.'));
       }
     } catch {
-      setUploadError('Unexpected error during upload. Please verify file integrity.');
+      setUploadError(isUr ? 'اپلوڈ کے دوران غیر متوقع خرابی۔ براہ کرم فائل چیک کریں۔' : 'Unexpected error during upload. Please verify file integrity.');
     } finally {
       setIsSubmitting(false);
     }
@@ -224,13 +257,30 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
   const handleConfirmFlag = (docId: string) => {
     if (!flagReason.trim()) {
-      setFlagError('Please specify why this document is being flagged (e.g. unreadable scan, name mismatch).');
+      setFlagError(
+        isUr
+          ? 'براہ کرم واضح کریں کہ اس دستاویز پر اعتراض کیوں لگایا جا رہا ہے (مثلاً دھندلا اسکین، نام میں فرق)۔'
+          : 'Please specify why this document is being flagged (e.g. unreadable scan, name mismatch).'
+      );
       return;
     }
     setFlagError(null);
     verifyApplicationDocument(application.id, docId, 'FLAGGED', flagReason.trim());
     setFlaggingDocId(null);
     setFlagReason('');
+  };
+
+  const localizeDocStatus = (s?: string) => {
+    if (!isUr) return s || 'PENDING';
+    if (s === 'VERIFIED') return 'تصدیق شدہ';
+    if (s === 'FLAGGED') return 'اعتراض / توجہ طلب';
+    return 'زیرِ جائزہ';
+  };
+
+  const localizeDocType = (type: string) => {
+    const found = DOCUMENT_CATEGORIES.find(c => c.type === type);
+    if (found) return isUr ? found.labelUr : found.label;
+    return type.replace(/_/g, ' ');
   };
 
   const docs = application.supportingDocuments || [];
@@ -254,21 +304,21 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
-                  Dossier & Supporting Documents
+                  {isUr ? 'ڈوزیئر اور معاون دستاویزات' : 'Dossier & Supporting Documents'}
                 </h2>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40">
-                  Secure Storage
+                  {isUr ? 'محفوظ اسٹوریج' : 'Secure Storage'}
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Applicant: <strong className="text-[#F5D061] font-semibold">{application.applicantName}</strong> · CNIC: <span className="font-mono text-slate-200 tabular-nums">{application.cnic}</span> · {application.district}, {application.stateProvince}
+                {isUr ? 'درخواست گزار:' : 'Applicant:'} <strong className="text-[#F5D061] font-semibold">{application.applicantName}</strong> · {isUr ? 'شناختی کارڈ:' : 'CNIC:'} <span className="font-mono text-slate-200 tabular-nums">{application.cnic}</span> · {application.district}, {application.stateProvince}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={isUr ? 'بند کریں' : 'Close modal'}
             className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 transition-colors cursor-pointer kc-pressable"
           >
             <X className="w-5 h-5" />
@@ -281,19 +331,19 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           {/* Summary Metric Ribbon */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 rounded-xl kc-obsidian-card">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Attached</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">{isUr ? 'کل منسلک' : 'Total Attached'}</span>
               <span className="text-xl font-bold text-white mt-0.5 block tabular-nums">{docs.length}</span>
             </div>
             <div className="p-3.5 rounded-xl kc-emerald-panel">
-              <span className="text-[10px] uppercase font-bold text-emerald-300 block">Verified</span>
+              <span className="text-[10px] uppercase font-bold text-emerald-300 block">{isUr ? 'تصدیق شدہ' : 'Verified'}</span>
               <span className="text-xl font-bold text-white mt-0.5 block tabular-nums">{verifiedCount}</span>
             </div>
             <div className="p-3.5 rounded-xl kc-obsidian-card">
-              <span className="text-[10px] uppercase font-bold text-[#F5D061] block">Pending Review</span>
+              <span className="text-[10px] uppercase font-bold text-[#F5D061] block">{isUr ? 'زیرِ جائزہ' : 'Pending Review'}</span>
               <span className="text-xl font-bold text-[#F5D061] mt-0.5 block tabular-nums">{pendingCount}</span>
             </div>
             <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-500/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <span className="text-[10px] uppercase font-bold text-rose-300 block">Flagged / Action Req.</span>
+              <span className="text-[10px] uppercase font-bold text-rose-300 block">{isUr ? 'اعتراض / توجہ طلب' : 'Flagged / Action Req.'}</span>
               <span className="text-xl font-bold text-rose-200 mt-0.5 block tabular-nums">{flaggedCount}</span>
             </div>
           </div>
@@ -304,11 +354,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               <div className="flex items-center gap-2">
                 <UploadCloud className="w-5 h-5 text-[#F5D061]" />
                 <h3 className="text-sm font-bold text-white">
-                  Attach New Supporting Document
+                  {isUr ? 'نئی معاون دستاویز منسلک کریں' : 'Attach New Supporting Document'}
                 </h3>
               </div>
               <span className="text-[11px] text-slate-400 tabular-nums">
-                Max 5MB · Allowed: JPG, PNG, WEBP, PDF
+                {isUr ? 'زیادہ سے زیادہ 5MB · JPG, PNG, WEBP, PDF' : 'Max 5MB · Allowed: JPG, PNG, WEBP, PDF'}
               </span>
             </div>
 
@@ -330,7 +380,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               {/* Category Selector Grid */}
               <div>
                 <label className="text-xs font-semibold text-slate-200 block mb-2">
-                  Document Classification:
+                  {isUr ? 'دستاویز کی قسم:' : 'Document Classification:'}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {DOCUMENT_CATEGORIES.map(cat => (
@@ -346,9 +396,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                     >
                       <span className="text-lg leading-none mt-0.5">{cat.icon}</span>
                       <div className="min-w-0">
-                        <span className="text-xs font-bold block truncate">{cat.label}</span>
+                        <span className="text-xs font-bold block truncate">{isUr ? cat.labelUr : cat.label}</span>
                         <span className="text-[10px] text-slate-400 truncate block">
-                          {cat.description}
+                          {isUr ? cat.descriptionUr : cat.description}
                         </span>
                       </div>
                     </button>
@@ -385,7 +435,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                           className="h-28 max-w-full rounded-lg object-contain shadow-xs border border-[#D4AF37]/35" 
                         />
                         <span className="absolute bottom-1 right-1 bg-[#090D16]/85 text-[#F5D061] text-[9px] px-1.5 py-0.5 rounded border border-[#D4AF37]/30">
-                          Preview
+                          {isUr ? 'پیش نظارہ' : 'Preview'}
                         </span>
                       </div>
                     ) : (
@@ -399,7 +449,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                         {fileName}
                       </p>
                       <p className="text-[11px] text-slate-400 tabular-nums">
-                        {formatFileSize(fileSize)} · Click to change file
+                        {formatFileSize(fileSize)} · {isUr ? 'فائل تبدیل کرنے کے لیے کلک کریں' : 'Click to change file'}
                       </p>
                     </div>
                   </div>
@@ -409,10 +459,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                       <UploadCloud className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-semibold text-slate-200">
-                      Drag & drop document here, or <span className="text-[#F5D061] underline font-bold">browse</span>
+                      {isUr
+                        ? <>دستاویز یہاں کھینچ کر لائیں یا <span className="text-[#F5D061] underline font-bold">منتخب کریں</span></>
+                        : <>Drag & drop document here, or <span className="text-[#F5D061] underline font-bold">browse</span></>}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                      Supports high-resolution scans, photos of receipts or NADRA CNIC cards
+                      {isUr
+                        ? 'اعلیٰ معیار کے اسکین، رسیدوں کی تصاویر یا نادرا شناختی کارڈ کی حمایت کرتا ہے'
+                        : 'Supports high-resolution scans, photos of receipts or NADRA CNIC cards'}
                     </p>
                   </div>
                 )}
@@ -422,25 +476,25 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Document Title *
+                    {isUr ? 'دستاویز کا عنوان *' : 'Document Title *'}
                   </label>
                   <input
                     type="text"
                     value={docName}
                     onChange={(e) => setDocName(e.target.value)}
-                    placeholder="e.g., CNIC Smart Card Front Scan"
+                    placeholder={isUr ? 'مثلاً شناختی کارڈ کا سامنے والا اسکین' : 'e.g., CNIC Smart Card Front Scan'}
                     className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Internal Verification Remarks (Optional)
+                    {isUr ? 'اندرونی تصدیقی ریمارکس (اختیاری)' : 'Internal Verification Remarks (Optional)'}
                   </label>
                   <input
                     type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g., Verified by District Admin physically"
+                    placeholder={isUr ? 'مثلاً ضلعی ایڈمن کی جانب سے جسمانی تصدیق شدہ' : 'e.g., Verified by District Admin physically'}
                     className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                   />
                 </div>
@@ -453,7 +507,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl kc-gold-button font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Attaching Document...' : 'Attach Document to Dossier'}</span>
+                  <span>
+                    {isSubmitting
+                      ? (isUr ? 'دستاویز منسلک ہو رہی ہے...' : 'Attaching Document...')
+                      : (isUr ? 'ڈوزیئر میں دستاویز منسلک کریں' : 'Attach Document to Dossier')}
+                  </span>
                 </button>
               </div>
             </form>
@@ -464,16 +522,20 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-emerald-400" />
-                <span className="tabular-nums">Existing Dossier Records ({docs.length})</span>
+                <span className="tabular-nums">
+                  {isUr ? `موجودہ ڈوزیئر ریکارڈز (${docs.length})` : `Existing Dossier Records (${docs.length})`}
+                </span>
               </h3>
               <span className="text-xs text-slate-400">
-                Authorized officers may verify or flag supporting files
+                {isUr ? 'مجاز افسران معاون فائلوں کی تصدیق یا نشان دہی کر سکتے ہیں' : 'Authorized officers may verify or flag supporting files'}
               </span>
             </div>
 
             {docs.length === 0 ? (
               <div className="p-8 text-center bg-[#090D16] rounded-xl border border-dashed border-[#D4AF37]/30 text-xs text-slate-400">
-                No supporting documents attached yet. Upload receipts or identification scans above.
+                {isUr
+                  ? 'ابھی تک کوئی معاون دستاویز منسلک نہیں۔ اوپر سے رسیدیں یا شناختی اسکین اپلوڈ کریں۔'
+                  : 'No supporting documents attached yet. Upload receipts or identification scans above.'}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -489,7 +551,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                         {/* Top row: Type badge & Verification Status */}
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/25 text-slate-300 uppercase tracking-wider">
-                            {doc.type.replace(/_/g, ' ')}
+                            {localizeDocType(doc.type)}
                           </span>
 
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
@@ -506,7 +568,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             ) : (
                               <Clock className="w-3 h-3" />
                             )}
-                            <span>{doc.verificationStatus || 'PENDING'}</span>
+                            <span>{localizeDocStatus(doc.verificationStatus)}</span>
                           </span>
                         </div>
 
@@ -538,7 +600,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               {formatFileSize(doc.fileSize)} · {new Date(doc.uploadedAt).toLocaleDateString()}
                             </p>
                             <p className="text-[10px] text-slate-400">
-                              Uploaded by: <span className="font-semibold text-slate-200">{doc.uploadedByName}</span>
+                              {isUr ? 'اپلوڈ از:' : 'Uploaded by:'} <span className="font-semibold text-slate-200">{doc.uploadedByName}</span>
                             </p>
                           </div>
                         </div>
@@ -552,7 +614,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
                         {doc.verificationNotes && (
                           <div className="text-[10px] p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/40 text-rose-200">
-                            <strong>Reviewer Note ({doc.verifiedBy}):</strong> {doc.verificationNotes}
+                            <strong>{isUr ? `جائزہ کار کا نوٹ (${doc.verifiedBy}):` : `Reviewer Note (${doc.verifiedBy}):`}</strong> {doc.verificationNotes}
                           </div>
                         )}
                       </div>
@@ -571,7 +633,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-200 bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/25 rounded-lg transition-colors cursor-pointer kc-pressable"
                           >
                             <Eye className="w-3.5 h-3.5 text-[#F5D061]" />
-                            <span>Inspect</span>
+                            <span>{isUr ? 'معائنہ' : 'Inspect'}</span>
                           </button>
 
                           <a
@@ -580,7 +642,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-1.5 text-slate-300 hover:text-[#F5D061] rounded-lg hover:bg-[#161F33] transition-colors"
-                            title="Download document"
+                            title={isUr ? 'دستاویز ڈاؤن لوڈ کریں' : 'Download document'}
                           >
                             <Download className="w-3.5 h-3.5" />
                           </a>
@@ -590,7 +652,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               type="button"
                               onClick={() => setConfirmDeleteDoc(doc)}
                               className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/60 rounded-lg transition-colors cursor-pointer"
-                              title="Delete file"
+                              title={isUr ? 'فائل حذف کریں' : 'Delete file'}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -607,7 +669,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                                 className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-200 bg-[#042920] hover:bg-[#063B2E] border border-emerald-500/45 rounded-lg transition-colors cursor-pointer kc-pressable"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
-                                <span>Verify</span>
+                                <span>{isUr ? 'تصدیق کریں' : 'Verify'}</span>
                               </button>
                             )}
 
@@ -621,7 +683,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                                 className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-300 bg-rose-950/60 hover:bg-rose-900/70 rounded-lg border border-rose-500/40 transition-colors cursor-pointer kc-pressable"
                               >
                                 <AlertTriangle className="w-3 h-3" />
-                                <span>Flag</span>
+                                <span>{isUr ? 'اعتراض' : 'Flag'}</span>
                               </button>
                             )}
                           </div>
@@ -638,14 +700,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
         {/* Modal Footer */}
         <div className="px-6 py-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between text-xs">
           <span className="text-slate-400">
-            All uploaded records are audited with timestamp and user ID.
+            {isUr ? 'تمام اپلوڈ کردہ ریکارڈز وقت اور صارف آئی ڈی کے ساتھ آڈٹ کیے جاتے ہیں۔' : 'All uploaded records are audited with timestamp and user ID.'}
           </span>
           <button
             type="button"
             onClick={onClose}
             className="px-5 py-2 font-semibold text-slate-200 bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 rounded-xl transition-colors cursor-pointer kc-pressable"
           >
-            Close Dossier
+            {isUr ? 'ڈوزیئر بند کریں' : 'Close Dossier'}
           </button>
         </div>
       </div>
@@ -656,10 +718,12 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
-              <span>Flag Supporting Document</span>
+              <span>{isUr ? 'معاون دستاویز پر اعتراض لگائیں' : 'Flag Supporting Document'}</span>
             </h4>
             <p className="text-xs text-slate-300">
-              Provide a clear reason for the applicant or review committee (e.g., blurry image, expired CNIC, incorrect receipt amount).
+              {isUr
+                ? 'درخواست گزار یا جائزہ کمیٹی کے لیے واضح وجہ بیان کریں (مثلاً دھندلی تصویر، زائد المیعاد شناختی کارڈ)۔'
+                : 'Provide a clear reason for the applicant or review committee (e.g., blurry image, expired CNIC, incorrect receipt amount).'}
             </p>
             <textarea
               value={flagReason}
@@ -667,7 +731,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 setFlagReason(e.target.value);
                 if (flagError) setFlagError(null);
               }}
-              placeholder="Enter reason for flagging..."
+              placeholder={isUr ? 'اعتراض کی وجہ درج کریں...' : 'Enter reason for flagging...'}
               rows={3}
               className="w-full text-xs p-2.5 rounded-xl kc-luxury-input"
             />
@@ -683,14 +747,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 }}
                 className="px-3.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/25 rounded-lg cursor-pointer kc-pressable"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmFlag(flaggingDocId)}
                 className="px-4 py-1.5 text-xs font-bold text-rose-100 bg-rose-700 hover:bg-rose-600 border border-rose-500/50 rounded-lg cursor-pointer kc-pressable"
               >
-                Confirm Flag
+                {isUr ? 'اعتراض کی تصدیق کریں' : 'Confirm Flag'}
               </button>
             </div>
           </div>
@@ -703,10 +767,12 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-rose-400" />
-              <span>Remove Supporting File?</span>
+              <span>{isUr ? 'معاون فائل ہٹائیں؟' : 'Remove Supporting File?'}</span>
             </h4>
             <p className="text-xs text-slate-300">
-              Remove <strong className="text-white">"{confirmDeleteDoc.name}"</strong> from this application dossier? This action is recorded in the audit log.
+              {isUr
+                ? <>اس درخواست کے ڈوزیئر سے <strong className="text-white">"{confirmDeleteDoc.name}"</strong> کو ہٹائیں؟ یہ عمل آڈٹ لاگ میں ریکارڈ کیا جائے گا۔</>
+                : <>Remove <strong className="text-white">"{confirmDeleteDoc.name}"</strong> from this application dossier? This action is recorded in the audit log.</>}
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <button
@@ -714,7 +780,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 onClick={() => setConfirmDeleteDoc(null)}
                 className="px-3.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#090D16] border border-[#D4AF37]/25 rounded-lg cursor-pointer kc-pressable"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -724,7 +790,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 }}
                 className="px-4 py-1.5 text-xs font-bold text-rose-100 bg-rose-700 hover:bg-rose-600 border border-rose-500/50 rounded-lg cursor-pointer kc-pressable"
               >
-                Remove File
+                {isUr ? 'فائل ہٹائیں' : 'Remove File'}
               </button>
             </div>
           </div>
@@ -741,7 +807,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 {viewingDoc.name}
               </h4>
               <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/10 text-slate-300">
-                {viewingDoc.type}
+                {localizeDocType(viewingDoc.type)}
               </span>
             </div>
 
@@ -749,27 +815,27 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               <button
                 type="button"
                 onClick={() => setZoomLevel(prev => Math.min(prev + 0.25, 3))}
-                aria-label="Zoom in"
+                aria-label={isUr ? 'بڑا کریں' : 'Zoom in'}
                 className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-white"
-                title="Zoom in"
+                title={isUr ? 'بڑا کریں' : 'Zoom in'}
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setZoomLevel(prev => Math.max(prev - 0.25, 0.5))}
-                aria-label="Zoom out"
+                aria-label={isUr ? 'چھوٹا کریں' : 'Zoom out'}
                 className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-white"
-                title="Zoom out"
+                title={isUr ? 'چھوٹا کریں' : 'Zoom out'}
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setRotation(prev => (prev + 90) % 360)}
-                aria-label="Rotate"
+                aria-label={isUr ? 'گھمائیں' : 'Rotate'}
                 className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-white"
-                title="Rotate 90 degrees"
+                title={isUr ? '90 ڈگری گھمائیں' : 'Rotate 90 degrees'}
               >
                 <RotateCw className="w-4 h-4" />
               </button>
@@ -780,7 +846,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-white ml-2"
-                title="Download file"
+                title={isUr ? 'فائل ڈاؤن لوڈ کریں' : 'Download file'}
               >
                 <Download className="w-4 h-4" />
               </a>
@@ -788,7 +854,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
               <button
                 type="button"
                 onClick={() => setViewingDoc(null)}
-                aria-label="Close viewer"
+                aria-label={isUr ? 'ناظر بند کریں' : 'Close viewer'}
                 className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white ml-3"
               >
                 <X className="w-5 h-5" />

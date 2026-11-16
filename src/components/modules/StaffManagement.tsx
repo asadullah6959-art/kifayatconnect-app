@@ -98,9 +98,11 @@ export const StaffManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const isUr = language === 'ur';
+
   const openEditModal = (staff: User) => {
     if (isFounderUser(staff) && !currentIsFounder) {
-      showToast('err', 'Founder Protection: The Main Super Admin account cannot be modified.');
+      showToast('err', isUr ? 'بانی کا تحفظ: مرکزی سپر ایڈمن اکاؤنٹ میں تبدیلی نہیں کی جا سکتی۔' : 'Founder Protection: The Main Super Admin account cannot be modified.');
       return;
     }
     const fallback = mapLegacyRegionToHierarchy(staff.region);
@@ -149,30 +151,40 @@ export const StaffManagement: React.FC = () => {
     });
 
     if (!res.success) {
-      setFormError(res.error || 'Unable to save staff appointment.');
+      setFormError(res.error || (isUr ? 'عملے کی تقرری محفوظ نہیں ہو سکی۔' : 'Unable to save staff appointment.'));
       return;
     }
 
     setIsModalOpen(false);
-    showToast('ok', editingStaff ? 'Staff role updated and logged.' : 'Official appointed and logged.');
+    showToast(
+      'ok',
+      editingStaff
+        ? (isUr ? 'عملے کا عہدہ اپ ڈیٹ اور لاگ میں محفوظ ہو گیا۔' : 'Staff role updated and logged.')
+        : (isUr ? 'عہدیدار مقرر کر دیا گیا اور لاگ میں محفوظ ہو گیا۔' : 'Official appointed and logged.')
+    );
   };
 
   const handlePromote = (staff: User) => {
     const res = promoteToSuperAdmin(staff.id);
-    if (!res.success) showToast('err', res.error || 'Could not promote to Super Admin.');
-    else showToast('ok', `${staff.name} promoted to Additional Super Admin.`);
+    if (!res.success) showToast('err', res.error || (isUr ? 'سپر ایڈمن پر ترقی نہیں دی جا سکی۔' : 'Could not promote to Super Admin.'));
+    else showToast('ok', isUr ? `${staff.name} کو اضافی سپر ایڈمن بنا دیا گیا۔` : `${staff.name} promoted to Additional Super Admin.`);
   };
 
   const handleDemote = (staff: User) => {
     const res = demoteSuperAdmin(staff.id);
-    if (!res.success) showToast('err', res.error || 'Could not demote Super Admin.');
-    else showToast('ok', `${staff.name} reassigned to District Admin.`);
+    if (!res.success) showToast('err', res.error || (isUr ? 'سپر ایڈمن سے عہدہ کم نہیں کیا جا سکا۔' : 'Could not demote Super Admin.'));
+    else showToast('ok', isUr ? `${staff.name} کو دوبارہ ضلعی ایڈمن بنا دیا گیا۔` : `${staff.name} reassigned to District Admin.`);
   };
 
   const handleToggleSuspend = (staff: User) => {
     const res = toggleUserSuspension(staff.id, !staff.isSuspended);
-    if (!res.success) showToast('err', res.error || 'Unable to update suspension status.');
-    else showToast('ok', `${staff.name} ${staff.isSuspended ? 'reactivated' : 'suspended'}.`);
+    if (!res.success) showToast('err', res.error || (isUr ? 'معطلی کی حیثیت تبدیل نہیں ہو سکی۔' : 'Unable to update suspension status.'));
+    else showToast(
+      'ok',
+      isUr
+        ? `${staff.name} کا اکاؤنٹ ${staff.isSuspended ? 'بحال' : 'معطل'} کر دیا گیا۔`
+        : `${staff.name} ${staff.isSuspended ? 'reactivated' : 'suspended'}.`
+    );
   };
 
   return (
@@ -269,16 +281,16 @@ export const StaffManagement: React.FC = () => {
                       </h3>
                       {staffIsFounder && (
                         <span
-                          title="Main Super Admin (Founder) — Protected"
+                          title={isUr ? 'مرکزی سپر ایڈمن (بانی) — محفوظ شدہ' : 'Main Super Admin (Founder) — Protected'}
                           className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/45 shrink-0"
                         >
                           <Crown className="w-2.5 h-2.5" />
-                          Founder
+                          {isUr ? 'بانی' : 'Founder'}
                         </span>
                       )}
                       {staff.isSuspended && (
                         <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-950/70 text-rose-300 border border-rose-500/45 shrink-0">
-                          Suspended
+                          {isUr ? 'معطل' : 'Suspended'}
                         </span>
                       )}
                     </div>
@@ -300,7 +312,7 @@ export const StaffManagement: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
                     <span>
-                      Jurisdiction:{' '}
+                      {isUr ? 'دائرہ اختیار:' : 'Jurisdiction:'}{' '}
                       <strong className="text-white">
                         {staff.district
                           ? `${staff.district}, ${staff.stateProvince || 'Pakistan'}`
@@ -310,14 +322,14 @@ export const StaffManagement: React.FC = () => {
                   </div>
                   {(staff.tehsil || staff.unionCouncil) && (
                     <div className="text-[11px] text-slate-400 pl-5">
-                      Tehsil: {staff.tehsil || 'All'} · UC: {staff.unionCouncil || 'All'}
+                      {isUr ? 'تحصیل:' : 'Tehsil:'} {staff.tehsil || (isUr ? 'تمام' : 'All')} · {isUr ? 'یوسی:' : 'UC:'} {staff.unionCouncil || (isUr ? 'تمام' : 'All')}
                     </div>
                   )}
                   <div className="text-[11px] text-slate-400">
-                    CNIC: <span className="font-mono text-slate-200">{staff.cnic}</span>
+                    {isUr ? 'شناختی کارڈ:' : 'CNIC:'} <span className="font-mono text-slate-200">{staff.cnic}</span>
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    Phone: <span className="font-mono text-slate-200">{staff.phone}</span>
+                    {isUr ? 'فون:' : 'Phone:'} <span className="font-mono text-slate-200">{staff.phone}</span>
                   </div>
                 </div>
 
@@ -336,11 +348,11 @@ export const StaffManagement: React.FC = () => {
                 {lockedByFounder ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#F5D061]">
                     <Lock className="w-3 h-3" />
-                    Founder Protected
+                    {isUr ? 'بانی محفوظ' : 'Founder Protected'}
                   </span>
                 ) : staff.id === currentUser.id ? (
                   <span className="text-[10px] font-semibold text-emerald-400 italic">
-                    Current Session
+                    {isUr ? 'موجودہ سیشن' : 'Current Session'}
                   </span>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
@@ -349,17 +361,17 @@ export const StaffManagement: React.FC = () => {
                       className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-[#F5D061] hover:text-white cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
-                      <span>Edit</span>
+                      <span>{isUr ? 'ترمیم' : 'Edit'}</span>
                     </button>
 
                     {currentIsFounder && staff.role !== 'SUPER_ADMIN' && (
                       <button
                         onClick={() => handlePromote(staff)}
                         className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 cursor-pointer"
-                        title="Promote to Additional Super Admin"
+                        title={isUr ? 'اضافی سپر ایڈمن پر ترقی دیں' : 'Promote to Additional Super Admin'}
                       >
                         <ArrowUpCircle className="w-3 h-3" />
-                        <span>Promote SA</span>
+                        <span>{isUr ? 'سپر ایڈمن بنائیں' : 'Promote SA'}</span>
                       </button>
                     )}
 
@@ -367,10 +379,10 @@ export const StaffManagement: React.FC = () => {
                       <button
                         onClick={() => handleDemote(staff)}
                         className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 cursor-pointer"
-                        title="Demote Additional Super Admin to District Admin"
+                        title={isUr ? 'اضافی سپر ایڈمن کو ضلعی ایڈمن بنائیں' : 'Demote Additional Super Admin to District Admin'}
                       >
                         <ArrowDownCircle className="w-3 h-3" />
-                        <span>Demote</span>
+                        <span>{isUr ? 'عہدہ کم کریں' : 'Demote'}</span>
                       </button>
                     )}
 
@@ -378,13 +390,22 @@ export const StaffManagement: React.FC = () => {
                       <button
                         onClick={() => {
                           const res = assignAuditOfficer(staff.id, !staff.isAuditOfficer);
-                          if (!res.success) showToast('err', res.error || 'Could not update Audit Officer role.');
-                          else showToast('ok', `${staff.name} ${staff.isAuditOfficer ? 'removed from' : 'assigned as'} Audit Officer.`);
+                          if (!res.success) showToast('err', res.error || (isUr ? 'آڈٹ آفیسر کا عہدہ تبدیل نہیں ہو سکا۔' : 'Could not update Audit Officer role.'));
+                          else showToast(
+                            'ok',
+                            isUr
+                              ? `${staff.name} کو آڈٹ آفیسر ${staff.isAuditOfficer ? 'سے ہٹا دیا گیا' : 'مقرر کر دیا گیا'}۔`
+                              : `${staff.name} ${staff.isAuditOfficer ? 'removed from' : 'assigned as'} Audit Officer.`
+                          );
                         }}
                         className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 cursor-pointer"
                       >
                         <ShieldCheck className="w-3 h-3" />
-                        <span>{staff.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                        <span>
+                          {staff.isAuditOfficer
+                            ? (isUr ? 'آڈٹ ختم کریں' : 'Revoke Audit')
+                            : (isUr ? 'آڈٹ آفیسر بنائیں' : 'Make Audit Officer')}
+                        </span>
                       </button>
                     )}
 
@@ -400,12 +421,12 @@ export const StaffManagement: React.FC = () => {
                         {staff.isSuspended ? (
                           <>
                             <UserCheck className="w-3 h-3" />
-                            <span>Activate</span>
+                            <span>{isUr ? 'بحال کریں' : 'Activate'}</span>
                           </>
                         ) : (
                           <>
                             <Ban className="w-3 h-3" />
-                            <span>Suspend</span>
+                            <span>{isUr ? 'معطل کریں' : 'Suspend'}</span>
                           </>
                         )}
                       </button>
@@ -424,7 +445,9 @@ export const StaffManagement: React.FC = () => {
           <div className="kc-luxury-modal relative w-full max-w-lg rounded-2xl my-auto max-h-[92dvh] flex flex-col overflow-hidden text-white">
             <div className="px-6 py-4 border-b border-[#D4AF37]/25 bg-[#090D16] shrink-0">
               <h3 className="text-base font-bold text-[#F5D061]">
-                {editingStaff ? `Modify Official: ${editingStaff.name}` : 'Appoint New Official'}
+                {editingStaff
+                  ? (isUr ? `عہدیدار میں ترمیم: ${editingStaff.name}` : `Modify Official: ${editingStaff.name}`)
+                  : (isUr ? 'نیا عہدیدار مقرر کریں' : 'Appoint New Official')}
               </h3>
             </div>
 
@@ -439,21 +462,21 @@ export const StaffManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Official Full Name
+                    {isUr ? 'عہدیدار کا مکمل نام' : 'Official Full Name'}
                   </label>
                   <input
                     type="text"
                     required
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Full Legal Name"
+                    placeholder={isUr ? 'مکمل قانونی نام' : 'Full Legal Name'}
                     className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Official Email
+                    {isUr ? 'سرکاری ای میل' : 'Official Email'}
                   </label>
                   <input
                     type="email"
@@ -469,7 +492,7 @@ export const StaffManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    CNIC Identity Number
+                    {isUr ? 'شناختی کارڈ نمبر' : 'CNIC Identity Number'}
                   </label>
                   <input
                     type="text"
@@ -483,7 +506,7 @@ export const StaffManagement: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Official Phone Contact
+                    {isUr ? 'سرکاری فون رابطہ' : 'Official Phone Contact'}
                   </label>
                   <input
                     type="text"
@@ -498,17 +521,32 @@ export const StaffManagement: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Assigned Role (4-Role Hierarchy)
+                    {isUr ? 'تفویض کردہ عہدہ (4-سطحی نظام)' : 'Assigned Role (4-Role Hierarchy)'}
                   </label>
                   <LuxurySelect
-                    label="Assigned Role"
+                    label={isUr ? 'تفویض کردہ عہدہ' : 'Assigned Role'}
                     value={formRole}
                     onChange={(val) => setFormRole(val as UserRole)}
                     options={[
-                      { value: 'ADMIN', label: 'Admin — District Operations & Verifications (Max 10/District)' },
-                      { value: 'CO_ADMIN', label: 'Co-Admin — Provincial Coordination (Max 3/Province)' },
+                      {
+                        value: 'ADMIN',
+                        label: isUr
+                          ? 'ایڈمن — ضلعی امور و تصدیقات (زیادہ سے زیادہ 10/ضلع)'
+                          : 'Admin — District Operations & Verifications (Max 10/District)'
+                      },
+                      {
+                        value: 'CO_ADMIN',
+                        label: isUr
+                          ? 'کو ایڈمن — صوبائی کوآرڈینیشن (زیادہ سے زیادہ 3/صوبہ)'
+                          : 'Co-Admin — Provincial Coordination (Max 3/Province)'
+                      },
                       ...(currentIsFounder
-                        ? [{ value: 'SUPER_ADMIN', label: 'Super Admin — Central Governance (Founder Appointment)' }]
+                        ? [{
+                            value: 'SUPER_ADMIN',
+                            label: isUr
+                              ? 'سپر ایڈمن — مرکزی گورننس (بانی کی تقرری)'
+                              : 'Super Admin — Central Governance (Founder Appointment)'
+                          }]
                         : [])
                     ]}
                     compact
@@ -516,7 +554,7 @@ export const StaffManagement: React.FC = () => {
                 </div>
 
                 <SearchableLocationSelect
-                  label="Assigned Jurisdiction (District / City across Pakistan)"
+                  label={isUr ? 'تفویض کردہ دائرہ اختیار (پاکستان کا ضلع / شہر)' : 'Assigned Jurisdiction (District / City across Pakistan)'}
                   required
                   value={{
                     stateProvince: formStateProvince,
@@ -534,13 +572,14 @@ export const StaffManagement: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block mb-1">
-                    Union Council (UC) <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                    {isUr ? 'یونین کونسل (UC)' : 'Union Council (UC)'}{' '}
+                    <span className="text-[10px] text-slate-400 font-normal">{isUr ? '(اختیاری)' : '(Optional)'}</span>
                   </label>
                   <input
                     type="text"
                     value={formUnionCouncil}
                     onChange={(e) => setFormUnionCouncil(e.target.value)}
-                    placeholder="e.g. UC-112 or All"
+                    placeholder={isUr ? 'مثال: UC-112 یا تمام' : 'e.g. UC-112 or All'}
                     className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
@@ -548,13 +587,13 @@ export const StaffManagement: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-200 block mb-1">
-                  Appointment Notes / Administrative Terms
+                  {isUr ? 'تقرری کے نوٹس / انتظامی شرائط' : 'Appointment Notes / Administrative Terms'}
                 </label>
                 <input
                   type="text"
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="e.g. Authorized to oversee district verifications"
+                  placeholder={isUr ? 'مثال: ضلعی تصدیقات کی نگرانی کا مجاز' : 'e.g. Authorized to oversee district verifications'}
                   className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                 />
               </div>
@@ -568,7 +607,7 @@ export const StaffManagement: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="kc-pressable px-3.5 py-2 text-xs text-slate-300 hover:text-white font-medium cursor-pointer"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="submit"
@@ -576,7 +615,11 @@ export const StaffManagement: React.FC = () => {
                 className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{editingStaff ? 'Save Role Changes' : 'Approve Credentials'}</span>
+                <span>
+                  {editingStaff
+                    ? (isUr ? 'تبدیلیاں محفوظ کریں' : 'Save Role Changes')
+                    : (isUr ? 'تقرری کی منظوری دیں' : 'Approve Credentials')}
+                </span>
               </button>
             </div>
           </div>

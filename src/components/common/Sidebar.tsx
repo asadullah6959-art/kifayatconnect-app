@@ -137,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       label: `${translate(language, 'navMasterControl')} 👑`,
       icon: Crown,
       visible: currentUser.role === 'SUPER_ADMIN',
-      badge: 'VIP',
+      badge: language === 'ur' ? 'وی آئی پی' : 'VIP',
       badgeColor: 'bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/40'
     },
     {

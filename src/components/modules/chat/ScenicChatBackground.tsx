@@ -4,7 +4,9 @@ import { CommunityScenicThemeId } from '../../../types';
 export interface ScenicThemeOption {
   id: CommunityScenicThemeId;
   label: string;
+  labelUr: string;
   subtitle: string;
+  subtitleUr: string;
   previewGradient: string;
   emoji: string;
 }
@@ -13,42 +15,54 @@ export const SCENIC_THEME_PRESETS: ScenicThemeOption[] = [
   {
     id: 'OBSIDIAN_GOLD',
     label: 'Royal Black & Gold',
+    labelUr: 'شاہی سیاہ اور سنہرا',
     subtitle: 'Signature luxury obsidian & gold glow',
+    subtitleUr: 'خصوصی لگژری سیاہ اور سنہری چمک',
     previewGradient: 'from-[#0A0D12] via-[#172033] to-[#291F09]',
     emoji: '👑'
   },
   {
     id: 'JUNGLE',
     label: 'Live Lush Jungle',
+    labelUr: 'سرسبز و شاداب جنگل',
     subtitle: 'Swaying tropical canopy & golden fireflies',
+    subtitleUr: 'لہلہاتے پتے اور چمکتے سنہرے جگنو',
     previewGradient: 'from-[#063B29] via-[#0B5D41] to-[#0E3F2E]',
     emoji: '🌿'
   },
   {
     id: 'SUNSET_DESERT',
     label: 'Golden Sunset Desert',
+    labelUr: 'سنہرا غروبِ آفتاب صحرا',
     subtitle: 'Warm amber sunset & rolling dunes',
+    subtitleUr: 'خوبصورت غروبِ آفتاب اور سنہرے ٹیلے',
     previewGradient: 'from-[#2A1120] via-[#7C2D12] to-[#261409]',
     emoji: '🌅'
   },
   {
     id: 'STARRY_OASIS',
     label: 'Starry Night Oasis',
+    labelUr: 'ستاروں بھری رات اور نخلستان',
     subtitle: 'Twinkling night sky, crescent moon & oasis',
+    subtitleUr: 'چمکتا آسمان، ہلال اور پرامن نخلستان',
     previewGradient: 'from-[#061026] via-[#112A54] to-[#08332E]',
     emoji: '🌌'
   },
   {
     id: 'NORTHERN_VALLEY',
     label: 'Northern Valley',
+    labelUr: 'شمالی برف پوش وادی',
     subtitle: 'Snow-capped Hunza peaks & alpine mist',
+    subtitleUr: 'ہنزہ کی برف پوش چوٹیاں اور خوبصورت دھند',
     previewGradient: 'from-[#0A2233] via-[#144058] to-[#0B2936]',
     emoji: '🏔️'
   },
   {
     id: 'MADINAH_NOOR',
     label: 'Madinah Noor',
+    labelUr: 'نورِ مدینہ منورہ',
     subtitle: 'Radiant emerald dome & golden minarets',
+    subtitleUr: 'گنبدِ خضرا کی نورانی جھلک اور سنہرے مینار',
     previewGradient: 'from-[#04291E] via-[#074A36] to-[#1D1707]',
     emoji: '🕌'
   }

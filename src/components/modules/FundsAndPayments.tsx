@@ -30,11 +30,11 @@ import { compressImageFile } from '../../utils/imageCompression';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 
-const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; hint: string }> = [
-  { id: 'EasyPaisa', label: 'EasyPaisa', hint: 'Mobile Wallet / Till' },
-  { id: 'JazzCash', label: 'JazzCash', hint: 'Mobile Account' },
-  { id: 'Bank Transfer', label: 'Bank Transfer', hint: 'IBFT / Raast / Bank' },
-  { id: 'Cash', label: 'Cash', hint: 'District Office / Receipt' }
+const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; labelUr: string; hint: string; hintUr: string }> = [
+  { id: 'EasyPaisa', label: 'EasyPaisa', labelUr: 'ایزی پیسہ', hint: 'Mobile Wallet / Till', hintUr: 'موبائل والٹ / ٹل' },
+  { id: 'JazzCash', label: 'JazzCash', labelUr: 'جاز کیش', hint: 'Mobile Account', hintUr: 'موبائل اکاؤنٹ' },
+  { id: 'Bank Transfer', label: 'Bank Transfer', labelUr: 'بینک ٹرانسفر', hint: 'IBFT / Raast / Bank', hintUr: 'آئی بی ایف ٹی / راست / بینک' },
+  { id: 'Cash', label: 'Cash', labelUr: 'نقد رقم', hint: 'District Office / Receipt', hintUr: 'ضلعی دفتر / رسید' }
 ];
 
 export const FundsAndPayments: React.FC = () => {
@@ -44,8 +44,10 @@ export const FundsAndPayments: React.FC = () => {
     verifyPayment,
     submitPayment,
     setSelectedReceipt,
-    openCompleteProfileModal
+    openCompleteProfileModal,
+    language
   } = useApp();
+  const isUr = language === 'ur';
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
@@ -136,7 +138,7 @@ export const FundsAndPayments: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setUploadError('Image exceeds 10MB limit. Please choose a smaller photo.');
+      setUploadError(isUr ? 'تصویر 10MB کی حد سے زیادہ ہے۔ براہ کرم چھوٹی تصویر منتخب کریں۔' : 'Image exceeds 10MB limit. Please choose a smaller photo.');
       return;
     }
     setUploadError(null);
@@ -146,7 +148,7 @@ export const FundsAndPayments: React.FC = () => {
       setReceiptImageUrl(compressed.dataUrl);
       setReceiptImageName(file.name);
     } catch (err: any) {
-      setUploadError(err?.message || 'Unable to process selected receipt photo.');
+      setUploadError(err?.message || (isUr ? 'منتخب کردہ رسید کی تصویر پر کارروائی نہیں ہو سکی۔' : 'Unable to process selected receipt photo.'));
     } finally {
       setIsCompressing(false);
     }
@@ -201,9 +203,24 @@ export const FundsAndPayments: React.FC = () => {
 
   const handleConfirmReject = () => {
     if (!rejectTxId) return;
-    verifyPayment(rejectTxId, false, rejectReason.trim() || 'Receipt could not be verified.');
+    verifyPayment(rejectTxId, false, rejectReason.trim() || (isUr ? 'رسید کی تصدیق نہیں ہو سکی۔' : 'Receipt could not be verified.'));
     setRejectTxId(null);
     setRejectReason('');
+  };
+
+  const localizeFundCategory = (cat: string) => {
+    if (!isUr) return cat;
+    if (cat === 'Monthly Contribution') return 'ماہانہ چندہ / حصہ';
+    if (cat === 'Annual Welfare Fund') return 'سالانہ فلاحی فنڈ';
+    if (cat === 'Emergency Relief') return 'ہنگامی امداد';
+    if (cat === 'Zakat & Sadqah') return 'زکوٰۃ و صدقات';
+    return cat;
+  };
+
+  const localizeMethod = (m: string) => {
+    if (!isUr) return m;
+    const found = PAYMENT_METHODS.find(pm => pm.id === m);
+    return found ? found.labelUr : m;
   };
 
   const renderStatusPill = (status: PaymentTransaction['status']) => {
@@ -211,7 +228,7 @@ export const FundsAndPayments: React.FC = () => {
       return (
         <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#042920] text-emerald-300 border border-emerald-500/45">
           <CheckCircle2 className="w-3 h-3" />
-          Approved
+          {isUr ? 'منظور شدہ' : 'Approved'}
         </span>
       );
     }
@@ -219,14 +236,14 @@ export const FundsAndPayments: React.FC = () => {
       return (
         <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/45">
           <Clock className="w-3 h-3" />
-          Pending
+          {isUr ? 'زیرِ التواء' : 'Pending'}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-rose-950/75 text-rose-300 border border-rose-500/45">
         <XCircle className="w-3 h-3" />
-        Rejected
+        {isUr ? 'مسترد' : 'Rejected'}
       </span>
     );
   };
@@ -237,7 +254,9 @@ export const FundsAndPayments: React.FC = () => {
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
           <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold">Financial ledger CSV downloaded!</span>
+            <span className="font-semibold">
+              {isUr ? 'مالیاتی لیجر CSV ڈاؤن لوڈ ہو گیا!' : 'Financial ledger CSV downloaded!'}
+            </span>
           </div>
         </div>
       )}
@@ -248,28 +267,30 @@ export const FundsAndPayments: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
               {isAuditOfficer && !isSuperAdmin
-                ? 'Audit Officer Verification Ledger (Read-Only)'
+                ? (isUr ? 'آڈٹ آفیسر تصدیقی لیجر (صرف پڑھنے کے لیے)' : 'Audit Officer Verification Ledger (Read-Only)')
                 : isMember
-                ? 'Personal Ledger'
+                ? (isUr ? 'ذاتی مالیاتی کھاتہ' : 'Personal Ledger')
                 : isDistrictAdmin
-                ? `${currentUser.assignedDistrict || currentUser.district} Funds`
+                ? (isUr ? `${currentUser.assignedDistrict || currentUser.district} فنڈز` : `${currentUser.assignedDistrict || currentUser.district} Funds`)
                 : isCoAdmin
-                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Funds`
-                : 'Central Treasury Ledger'}
+                ? (isUr ? `${currentUser.assignedStateProvince || currentUser.stateProvince} فنڈز` : `${currentUser.assignedStateProvince || currentUser.stateProvince} Funds`)
+                : (isUr ? 'مرکزی خزانہ لیجر' : 'Central Treasury Ledger')}
             </span>
             <span className="text-[#D4AF37]/50">·</span>
-            <span className="text-xs text-slate-400">Audited Welfare Contributions</span>
+            <span className="text-xs text-slate-400">
+              {isUr ? 'آڈٹ شدہ فلاحی عطیات و چندہ' : 'Audited Welfare Contributions'}
+            </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2">
             <Coins className="w-6 h-6 text-[#F5D061] shrink-0" />
-            <span>Funds & Contributions</span>
+            <span>{isUr ? 'فنڈز اور ادائیگیاں' : 'Funds & Contributions'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             {canVerify
-              ? 'Review uploaded payment receipts, approve contributions, and issue certified vouchers.'
+              ? (isUr ? 'اپلوڈ کردہ رسیدوں کا جائزہ لیں، ادائیگیاں منظور کریں اور تصدیق شدہ واؤچر جاری کریں۔' : 'Review uploaded payment receipts, approve contributions, and issue certified vouchers.')
               : isAuditOfficer
-              ? 'Read-only inspection of all member contributions and uploaded payment receipt proofs across Pakistan.'
-              : 'Submit contributions in 3 simple steps with receipt upload and instant status tracking.'}
+              ? (isUr ? 'پاکستان بھر کے اراکین کے عطیات اور رسیدوں کے ثبوت کا آڈٹ معائنہ۔' : 'Read-only inspection of all member contributions and uploaded payment receipt proofs across Pakistan.')
+              : (isUr ? '3 آسان مراحل میں رسید اپلوڈ اور فوری اسٹیٹس ٹریکنگ کے ساتھ ادائیگی جمع کرائیں۔' : 'Submit contributions in 3 simple steps with receipt upload and instant status tracking.')}
           </p>
         </div>
 
@@ -279,7 +300,7 @@ export const FundsAndPayments: React.FC = () => {
             className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <FileDown className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export CSV</span>
+            <span>{isUr ? 'CSV برآمد کریں' : 'Export CSV'}</span>
           </button>
 
           <button
@@ -287,7 +308,7 @@ export const FundsAndPayments: React.FC = () => {
             className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-[#F5D061]" />
-            <span>Print</span>
+            <span>{isUr ? 'پرنٹ' : 'Print'}</span>
           </button>
 
           <button
@@ -301,52 +322,54 @@ export const FundsAndPayments: React.FC = () => {
             className="kc-pressable kc-gold-button flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Submit Payment</span>
+            <span>{isUr ? 'ادائیگی جمع کرائیں' : 'Submit Payment'}</span>
           </button>
         </div>
       </div>
 
       {requiresProfileCompletion && (
-        <ProfileCompletionGate compact featureName="Contribution Payments" />
+        <ProfileCompletionGate compact featureName={isUr ? 'فلاحی فنڈ ادائیگیاں' : 'Contribution Payments'} />
       )}
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="kc-obsidian-card p-4 rounded-2xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-            Total Approved Funds
+            {isUr ? 'کل منظور شدہ فنڈز' : 'Total Approved Funds'}
           </span>
           <div className="mt-2 flex items-baseline justify-between gap-2">
             <span className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums">
               PKR {totalVerifiedSum.toLocaleString()}
             </span>
-            <span className="text-[11px] text-emerald-400 font-bold">Cleared</span>
+            <span className="text-[11px] text-emerald-400 font-bold">{isUr ? 'تصدیق شدہ' : 'Cleared'}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1 tabular-nums">
-            {verifiedPayments.length} approved transactions
+            {isUr ? `${verifiedPayments.length} منظور شدہ لین دین` : `${verifiedPayments.length} approved transactions`}
           </p>
         </div>
 
         <div className="kc-obsidian-card p-4 rounded-2xl !border-[#F5D061]/55">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#F5D061] block">
-            Pending Verification
+            {isUr ? 'تصدیق کے منتظر' : 'Pending Verification'}
           </span>
           <div className="mt-2 flex items-baseline justify-between gap-2">
             <span className="text-xl sm:text-2xl font-extrabold text-[#F5D061] font-mono tabular-nums">
               PKR {pendingSum.toLocaleString()}
             </span>
             <span className="text-[11px] text-[#F5D061] font-bold font-mono tabular-nums">
-              {pendingPayments.length} Queue
+              {isUr ? `${pendingPayments.length} قطار میں` : `${pendingPayments.length} Queue`}
             </span>
           </div>
           <p className="text-[11px] text-slate-300 mt-1">
-            {canVerify ? 'Awaiting officer verification' : 'Awaiting treasury approval'}
+            {canVerify
+              ? (isUr ? 'آفیسر کی تصدیق کے منتظر' : 'Awaiting officer verification')
+              : (isUr ? 'خزانہ کی منظوری کے منتظر' : 'Awaiting treasury approval')}
           </p>
         </div>
 
         <div className="kc-emerald-panel p-4 rounded-2xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 block">
-            Digital Ledger Integrity
+            {isUr ? 'ڈیجیٹل لیجر شفافیت' : 'Digital Ledger Integrity'}
           </span>
           <div className="mt-2 flex items-baseline justify-between gap-2">
             <span className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums">
@@ -354,11 +377,11 @@ export const FundsAndPayments: React.FC = () => {
             </span>
             <span className="text-[11px] text-[#F5D061] font-bold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Audited
+              {isUr ? 'آڈٹ شدہ' : 'Audited'}
             </span>
           </div>
           <p className="text-[11px] text-emerald-100/80 mt-1">
-            Every approved payment issues an E-Receipt
+            {isUr ? 'ہر منظور شدہ ادائیگی پر ای رسید جاری ہوتی ہے' : 'Every approved payment issues an E-Receipt'}
           </p>
         </div>
       </div>
@@ -368,10 +391,10 @@ export const FundsAndPayments: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/20 no-print">
           <div>
             <h3 className="text-sm font-bold text-[#F5D061]">
-              Ledger Transactions
+              {isUr ? 'لیجر لین دین' : 'Ledger Transactions'}
             </h3>
             <p className="text-xs text-slate-400">
-              Receipt photos, reference numbers, and real-time approval status
+              {isUr ? 'رسیدوں کی تصاویر، حوالہ نمبر اور فوری منظوری کا اسٹیٹس' : 'Receipt photos, reference numbers, and real-time approval status'}
             </p>
           </div>
 
@@ -380,7 +403,7 @@ export const FundsAndPayments: React.FC = () => {
               <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search ref, member, district..."
+                placeholder={isUr ? 'حوالہ، ممبر، ضلع تلاش کریں...' : 'Search ref, member, district...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="kc-luxury-input pl-8 pr-3 py-1.5 text-xs rounded-xl w-full sm:w-52"
@@ -392,13 +415,13 @@ export const FundsAndPayments: React.FC = () => {
                 compact
                 value={filterFund}
                 onChange={setFilterFund}
-                label="Fund Category"
+                label={isUr ? 'فنڈ کی قسم' : 'Fund Category'}
                 options={[
-                  { value: 'ALL', label: 'All Categories' },
-                  { value: 'Monthly Contribution', label: 'Monthly Contribution' },
-                  { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
-                  { value: 'Emergency Relief', label: 'Emergency Relief' },
-                  { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                  { value: 'ALL', label: isUr ? 'تمام اقسام' : 'All Categories' },
+                  { value: 'Monthly Contribution', label: isUr ? 'ماہانہ چندہ / حصہ' : 'Monthly Contribution' },
+                  { value: 'Annual Welfare Fund', label: isUr ? 'سالانہ فلاحی فنڈ' : 'Annual Welfare Fund' },
+                  { value: 'Emergency Relief', label: isUr ? 'ہنگامی امداد' : 'Emergency Relief' },
+                  { value: 'Zakat & Sadqah', label: isUr ? 'زکوٰۃ و صدقات' : 'Zakat & Sadqah' }
                 ]}
               />
             </div>
@@ -408,12 +431,12 @@ export const FundsAndPayments: React.FC = () => {
                 compact
                 value={filterStatus}
                 onChange={setFilterStatus}
-                label="Status"
+                label={isUr ? 'حیثیت' : 'Status'}
                 options={[
-                  { value: 'ALL', label: 'All Statuses' },
-                  { value: 'VERIFIED', label: 'Approved' },
-                  { value: 'PENDING_VERIFICATION', label: 'Pending' },
-                  { value: 'REJECTED', label: 'Rejected' }
+                  { value: 'ALL', label: isUr ? 'تمام حیثیتیں' : 'All Statuses' },
+                  { value: 'VERIFIED', label: isUr ? 'منظور شدہ' : 'Approved' },
+                  { value: 'PENDING_VERIFICATION', label: isUr ? 'زیرِ التواء' : 'Pending' },
+                  { value: 'REJECTED', label: isUr ? 'مسترد' : 'Rejected' }
                 ]}
               />
             </div>
@@ -428,9 +451,9 @@ export const FundsAndPayments: React.FC = () => {
                       setFilterProvince(val);
                       setFilterDistrict('ALL');
                     }}
-                    label="Province"
+                    label={isUr ? 'صوبہ' : 'Province'}
                     options={[
-                      { value: 'ALL', label: 'All Provinces' },
+                      { value: 'ALL', label: isUr ? 'تمام صوبے' : 'All Provinces' },
                       ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
                     ]}
                   />
@@ -442,9 +465,9 @@ export const FundsAndPayments: React.FC = () => {
                     searchable
                     value={filterDistrict}
                     onChange={setFilterDistrict}
-                    label="District"
+                    label={isUr ? 'ضلع' : 'District'}
                     options={[
-                      { value: 'ALL', label: 'All Districts' },
+                      { value: 'ALL', label: isUr ? 'تمام اضلاع' : 'All Districts' },
                       ...(filterProvince !== 'ALL'
                         ? getDistrictsForProvince(filterProvince)
                         : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
@@ -461,7 +484,9 @@ export const FundsAndPayments: React.FC = () => {
         <div className="md:hidden space-y-3">
           {filteredTransactions.length === 0 ? (
             <div className="py-10 text-center text-xs text-slate-400">
-              No transactions recorded yet. Tap "Submit Payment" to submit a contribution.
+              {isUr
+                ? 'ابھی تک کوئی لین دین ریکارڈ نہیں ہوا۔ حصہ جمع کروانے کے لیے "ادائیگی جمع کروائیں" پر ٹیپ کریں۔'
+                : 'No transactions recorded yet. Tap "Submit Payment" to submit a contribution.'}
             </div>
           ) : (
             filteredTransactions.map(tx => {
@@ -488,8 +513,8 @@ export const FundsAndPayments: React.FC = () => {
 
                   <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#D4AF37]/15">
                     <div>
-                      <span className="text-slate-300 block">{tx.paymentMethod}</span>
-                      <span className="text-[10px] font-mono text-slate-400">Ref: {tx.referenceNumber}</span>
+                      <span className="text-slate-300 block">{localizeMethod(tx.paymentMethod)}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{isUr ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}</span>
                     </div>
                     <div className="text-right">
                       <span className="font-mono tabular-nums font-extrabold text-sm text-white">
@@ -507,10 +532,10 @@ export const FundsAndPayments: React.FC = () => {
                         className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F5D061] hover:underline cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>View Receipt Photo</span>
+                        <span>{isUr ? 'رسید کی تصویر دیکھیں' : 'View Receipt Photo'}</span>
                       </button>
                     ) : (
-                      <span className="text-[10px] text-slate-400">No photo attached</span>
+                      <span className="text-[10px] text-slate-400">{isUr ? 'کوئی تصویر منسلک نہیں' : 'No photo attached'}</span>
                     )}
 
                     <div className="flex items-center gap-1.5">
@@ -520,7 +545,7 @@ export const FundsAndPayments: React.FC = () => {
                           className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-md font-semibold cursor-pointer"
                         >
                           <Printer className="w-3 h-3 text-emerald-400" />
-                          <span>E-Receipt</span>
+                          <span>{isUr ? 'ای رسید' : 'E-Receipt'}</span>
                         </button>
                       )}
                       {canVerify && tx.status === 'PENDING_VERIFICATION' && (
@@ -530,14 +555,14 @@ export const FundsAndPayments: React.FC = () => {
                             className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded-md font-bold cursor-pointer"
                           >
                             <CheckCircle2 className="w-3 h-3 text-emerald-300" />
-                            <span>Approve</span>
+                            <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                           </button>
                           <button
                             onClick={() => setRejectTxId(tx.id)}
                             className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded-md font-semibold cursor-pointer"
                           >
                             <XCircle className="w-3 h-3" />
-                            <span>Reject</span>
+                            <span>{isUr ? 'مسترد' : 'Reject'}</span>
                           </button>
                         </>
                       )}
@@ -554,21 +579,21 @@ export const FundsAndPayments: React.FC = () => {
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                <th className="py-2.5 px-3">Receipt No.</th>
-                <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Member & Location</th>
-                <th className="py-2.5 px-3">Fund Category</th>
-                <th className="py-2.5 px-3">Method & Proof</th>
-                <th className="py-2.5 px-3 text-right">Amount (PKR)</th>
-                <th className="py-2.5 px-3 text-center">Status</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
+                <th className="py-2.5 px-3">{isUr ? 'رسید نمبر' : 'Receipt No.'}</th>
+                <th className="py-2.5 px-3">{isUr ? 'تاریخ' : 'Date'}</th>
+                <th className="py-2.5 px-3">{isUr ? 'ممبر اور مقام' : 'Member & Location'}</th>
+                <th className="py-2.5 px-3">{isUr ? 'فنڈ کی قسم' : 'Fund Category'}</th>
+                <th className="py-2.5 px-3">{isUr ? 'طریقہ اور ثبوت' : 'Method & Proof'}</th>
+                <th className="py-2.5 px-3 text-right">{isUr ? 'رقم (PKR)' : 'Amount (PKR)'}</th>
+                <th className="py-2.5 px-3 text-center">{isUr ? 'حیثیت' : 'Status'}</th>
+                <th className="py-2.5 px-3 text-right">{isUr ? 'عمل' : 'Action'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D4AF37]/15">
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-slate-400">
-                    No transactions recorded yet. Submit a payment to get started.
+                    {isUr ? 'ابھی تک کوئی لین دین ریکارڈ نہیں ہوا۔ شروع کرنے کے لیے ادائیگی جمع کروائیں۔' : 'No transactions recorded yet. Submit a payment to get started.'}
                   </td>
                 </tr>
               ) : (
@@ -593,7 +618,7 @@ export const FundsAndPayments: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-emerald-400 font-medium">
-                        {tx.fundCategory}
+                        {localizeFundCategory(tx.fundCategory)}
                       </td>
                       <td className="py-2.5 px-3 text-slate-200">
                         <div className="flex items-center gap-2">
@@ -602,14 +627,14 @@ export const FundsAndPayments: React.FC = () => {
                               type="button"
                               onClick={() => setPreviewTx(tx)}
                               className="shrink-0 w-8 h-8 rounded border border-[#D4AF37]/50 overflow-hidden hover:opacity-80 cursor-pointer"
-                              title="View uploaded receipt photo"
+                              title={isUr ? 'اپ لوڈ کردہ رسید کی تصویر دیکھیں' : 'View uploaded receipt photo'}
                             >
                               <img src={tx.receiptImageUrl} alt="Receipt" className="w-full h-full object-cover" />
                             </button>
                           )}
                           <div>
-                            <div className="font-medium text-white">{tx.paymentMethod}</div>
-                            <div className="text-[10px] font-mono text-slate-400">Ref: {tx.referenceNumber}</div>
+                            <div className="font-medium text-white">{localizeMethod(tx.paymentMethod)}</div>
+                            <div className="text-[10px] font-mono text-slate-400">{isUr ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}</div>
                           </div>
                         </div>
                       </td>
@@ -627,7 +652,7 @@ export const FundsAndPayments: React.FC = () => {
                               className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/40 text-slate-100 rounded font-medium transition-colors cursor-pointer"
                             >
                               <Printer className="w-3 h-3 text-emerald-400" />
-                              <span>Receipt</span>
+                              <span>{isUr ? 'رسید' : 'Receipt'}</span>
                             </button>
                           ) : canVerify && tx.status === 'PENDING_VERIFICATION' ? (
                             <>
@@ -636,7 +661,7 @@ export const FundsAndPayments: React.FC = () => {
                                 className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded font-bold transition-colors cursor-pointer"
                               >
                                 <CheckCircle2 className="w-3 h-3 text-emerald-300" />
-                                <span>Approve</span>
+                                <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                               </button>
                               <button
                                 onClick={() => setRejectTxId(tx.id)}
@@ -647,7 +672,7 @@ export const FundsAndPayments: React.FC = () => {
                             </>
                           ) : (
                             <span className="text-[10px] text-slate-400">
-                              {tx.status === 'REJECTED' ? tx.rejectionReason || 'Declined' : 'In Verification'}
+                              {tx.status === 'REJECTED' ? tx.rejectionReason || (isUr ? 'مسترد شدہ' : 'Declined') : (isUr ? 'تصدیق جاری ہے' : 'In Verification')}
                             </span>
                           )}
                         </div>
@@ -671,10 +696,10 @@ export const FundsAndPayments: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
-                  Step {step} of 3
+                  {isUr ? `مرحلہ ${step} از 3` : `Step ${step} of 3`}
                 </span>
                 <h3 className="text-base font-bold text-white">
-                  Submit Welfare Contribution
+                  {isUr ? 'فلاحی حصہ جمع کروائیں' : 'Submit Welfare Contribution'}
                 </h3>
               </div>
               <button
@@ -689,9 +714,9 @@ export const FundsAndPayments: React.FC = () => {
             {/* Step Indicator */}
             <div className="grid grid-cols-3 gap-2 my-4">
               {[
-                { num: 1, label: 'Amount' },
-                { num: 2, label: 'Method' },
-                { num: 3, label: 'Receipt' }
+                { num: 1, label: isUr ? 'رقم' : 'Amount' },
+                { num: 2, label: isUr ? 'طریقہ' : 'Method' },
+                { num: 3, label: isUr ? 'رسید' : 'Receipt' }
               ].map(item => (
                 <div
                   key={item.num}
@@ -713,24 +738,24 @@ export const FundsAndPayments: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      Fund Purpose / Category
+                      {isUr ? 'فنڈ کا مقصد / قسم' : 'Fund Purpose / Category'}
                     </label>
                     <LuxurySelect
                       value={payFund}
                       onChange={(val) => setPayFund(val as FundCategory)}
-                      label="Fund Purpose / Category"
+                      label={isUr ? 'فنڈ کا مقصد / قسم' : 'Fund Purpose / Category'}
                       options={[
-                        { value: 'Monthly Contribution', label: 'Monthly Contribution' },
-                        { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
-                        { value: 'Emergency Relief', label: 'Emergency Relief' },
-                        { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                        { value: 'Monthly Contribution', label: localizeFundCategory('Monthly Contribution') },
+                        { value: 'Annual Welfare Fund', label: localizeFundCategory('Annual Welfare Fund') },
+                        { value: 'Emergency Relief', label: localizeFundCategory('Emergency Relief') },
+                        { value: 'Zakat & Sadqah', label: localizeFundCategory('Zakat & Sadqah') }
                       ]}
                     />
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      Contribution Amount (PKR)
+                      {isUr ? 'جمع شدہ رقم (PKR)' : 'Contribution Amount (PKR)'}
                     </label>
                     <input
                       type="number"
@@ -738,7 +763,7 @@ export const FundsAndPayments: React.FC = () => {
                       min={1}
                       step="any"
                       inputMode="numeric"
-                      placeholder="Enter deposited amount in PKR"
+                      placeholder={isUr ? 'روپے میں جمع کردہ رقم درج کریں' : 'Enter deposited amount in PKR'}
                       value={payAmount}
                       onChange={(e) => setPayAmount(e.target.value)}
                       className="kc-luxury-input w-full text-sm font-mono tabular-nums font-bold px-3.5 py-2.5 rounded-xl"
@@ -752,7 +777,7 @@ export const FundsAndPayments: React.FC = () => {
                       onClick={() => setStep(2)}
                       className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 disabled:opacity-45 font-extrabold text-xs rounded-xl cursor-pointer"
                     >
-                      <span>Next: Payment Method</span>
+                      <span>{isUr ? 'اگلا مرحلہ: ادائیگی کا طریقہ' : 'Next: Payment Method'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -763,7 +788,7 @@ export const FundsAndPayments: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-2">
-                      Select Payment Method
+                      {isUr ? 'ادائیگی کا طریقہ منتخب کریں' : 'Select Payment Method'}
                     </label>
                     <div className="grid grid-cols-2 gap-2.5">
                       {PAYMENT_METHODS.map(m => (
@@ -777,8 +802,8 @@ export const FundsAndPayments: React.FC = () => {
                               : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/55'
                           }`}
                         >
-                          <div className="text-xs font-bold">{m.label}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">{m.hint}</div>
+                          <div className="text-xs font-bold">{isUr ? m.labelUr : m.label}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{isUr ? m.hintUr : m.hint}</div>
                         </button>
                       ))}
                     </div>
@@ -786,11 +811,11 @@ export const FundsAndPayments: React.FC = () => {
 
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-1">
-                      Transaction ID / Reference Number
+                      {isUr ? 'ٹرانزیکشن آئی ڈی / حوالہ نمبر' : 'Transaction ID / Reference Number'}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. TID-84920192 (auto-generated for Cash if blank)"
+                      placeholder={isUr ? 'مثال: TID-84920192 (نقد کے لیے خالی چھوڑ دیں)' : 'e.g. TID-84920192 (auto-generated for Cash if blank)'}
                       value={payRef}
                       onChange={(e) => setPayRef(e.target.value)}
                       className="kc-luxury-input w-full text-xs font-mono px-3 py-2.5 rounded-xl"
@@ -799,11 +824,11 @@ export const FundsAndPayments: React.FC = () => {
 
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-1">
-                      Optional Note
+                      {isUr ? 'اختیاری نوٹ' : 'Optional Note'}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. April welfare contribution"
+                      placeholder={isUr ? 'مثال: اپریل کا فلاحی حصہ' : 'e.g. April welfare contribution'}
                       value={payNotes}
                       onChange={(e) => setPayNotes(e.target.value)}
                       className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
@@ -817,14 +842,14 @@ export const FundsAndPayments: React.FC = () => {
                       className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Back</span>
+                      <span>{isUr ? 'واپس' : 'Back'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setStep(3)}
                       className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 font-extrabold text-xs rounded-xl cursor-pointer"
                     >
-                      <span>Next: Upload Receipt</span>
+                      <span>{isUr ? 'اگلا مرحلہ: رسید اپ لوڈ کریں' : 'Next: Upload Receipt'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -835,28 +860,32 @@ export const FundsAndPayments: React.FC = () => {
                 <div className="space-y-4">
                   <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-slate-400 block">{payFund} · {payMethod}</span>
+                      <span className="text-slate-400 block">{localizeFundCategory(payFund)} · {localizeMethod(payMethod)}</span>
                       <span className="font-mono tabular-nums font-bold text-[#F5D061]">
                         PKR {Math.round(numericPayAmount || 0).toLocaleString()}
                       </span>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/35 font-bold">
-                      Pending Approval
+                      {isUr ? 'منظوری زیرِ التواء' : 'Pending Approval'}
                     </span>
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      Upload Payment Screenshot / Receipt Photo (Gallery or Camera)
+                      {isUr ? 'ادائیگی کا اسکرین شاٹ / رسید کی تصویر اپ لوڈ کریں (گیلری یا کیمرہ)' : 'Upload Payment Screenshot / Receipt Photo (Gallery or Camera)'}
                     </label>
 
                     <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D4AF37]/45 hover:border-[#F5D061] bg-[#090D16] cursor-pointer transition-colors">
                       <Upload className="w-6 h-6 text-[#F5D061] mb-1.5" />
                       <span className="text-xs font-bold text-white">
-                        {isCompressing ? 'Optimizing image...' : receiptImageUrl ? 'Change Receipt Photo' : 'Tap to Select or Capture Receipt'}
+                        {isCompressing
+                          ? (isUr ? 'تصویر بہتر بنائی جا رہی ہے...' : 'Optimizing image...')
+                          : receiptImageUrl
+                          ? (isUr ? 'رسید کی تصویر تبدیل کریں' : 'Change Receipt Photo')
+                          : (isUr ? 'رسید منتخب کرنے یا تصویر لینے کے لیے ٹیپ کریں' : 'Tap to Select or Capture Receipt')}
                       </span>
                       <span className="text-[10px] text-slate-400 mt-0.5">
-                        Supports up to 10MB · Auto-compressed for mobile
+                        {isUr ? '10MB تک سپورٹ · موبائل کے لیے خودکار کمپریشن' : 'Supports up to 10MB · Auto-compressed for mobile'}
                       </span>
                       <input
                         type="file"
@@ -883,7 +912,7 @@ export const FundsAndPayments: React.FC = () => {
                               {receiptImageName || 'receipt.jpg'}
                             </span>
                             <span className="text-[10px] text-emerald-300 font-semibold">
-                              Compressed & Ready
+                              {isUr ? 'کمپریس شدہ اور تیار ہے' : 'Compressed & Ready'}
                             </span>
                           </div>
                         </div>
@@ -908,7 +937,7 @@ export const FundsAndPayments: React.FC = () => {
                       className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Back</span>
+                      <span>{isUr ? 'واپس' : 'Back'}</span>
                     </button>
                     <button
                       type="submit"
@@ -916,7 +945,7 @@ export const FundsAndPayments: React.FC = () => {
                       className="kc-pressable flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 disabled:opacity-50 text-[#F5D061] border border-[#D4AF37]/50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Submit for Approval</span>
+                      <span>{isUr ? 'منظوری کے لیے جمع کروائیں' : 'Submit for Approval'}</span>
                     </button>
                   </div>
                 </div>
@@ -934,10 +963,10 @@ export const FundsAndPayments: React.FC = () => {
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
                   <ImageIcon className="w-4 h-4 text-[#F5D061]" />
-                  <span>{previewTx.receiptNumber} Proof</span>
+                  <span>{previewTx.receiptNumber} {isUr ? 'ثبوت' : 'Proof'}</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 tabular-nums">
-                  {previewTx.userName} · PKR {previewTx.amount.toLocaleString()} ({previewTx.paymentMethod})
+                  {previewTx.userName} · PKR {previewTx.amount.toLocaleString()} ({localizeMethod(previewTx.paymentMethod)})
                 </p>
               </div>
               <button
@@ -962,15 +991,19 @@ export const FundsAndPayments: React.FC = () => {
       {rejectTxId && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
           <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 my-auto">
-            <h4 className="text-sm font-bold text-white">Reject Payment Proof</h4>
+            <h4 className="text-sm font-bold text-white">
+              {isUr ? 'ادائیگی کا ثبوت مسترد کریں' : 'Reject Payment Proof'}
+            </h4>
             <p className="text-xs text-slate-400">
-              Provide a brief reason so the member can resubmit a valid receipt.
+              {isUr
+                ? 'مختصر وجہ بیان کریں تاکہ ممبر درست رسید دوبارہ جمع کروا سکے۔'
+                : 'Provide a brief reason so the member can resubmit a valid receipt.'}
             </p>
             <input
               type="text"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g. Transaction ID mismatch or unclear receipt"
+              placeholder={isUr ? 'مثال: ٹرانزیکشن آئی ڈی میں فرق یا غیر واضح رسید' : 'e.g. Transaction ID mismatch or unclear receipt'}
               className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
             />
             <div className="flex justify-end gap-2 pt-2">
@@ -982,14 +1015,14 @@ export const FundsAndPayments: React.FC = () => {
                 }}
                 className="kc-pressable px-3 py-1.5 text-xs text-slate-300 hover:text-white font-semibold cursor-pointer"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmReject}
                 className="kc-pressable px-4 py-1.5 bg-rose-900 hover:bg-rose-800 border border-rose-500/50 text-white text-xs font-bold rounded-lg cursor-pointer"
               >
-                Confirm Rejection
+                {isUr ? 'مسترد کرنے کی تصدیق' : 'Confirm Rejection'}
               </button>
             </div>
           </div>

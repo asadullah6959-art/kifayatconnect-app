@@ -5,6 +5,8 @@ import { X, Printer, ShieldCheck, QrCode, RefreshCw, Download, CheckCircle2 } fr
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
+import { TabbarBadge } from '../common/TabbarBadge';
+import { resolveUserTabbar } from '../../data/tabbars';
 import { translate } from '../../data/translations';
 
 interface DigitalCardModalProps {
@@ -127,23 +129,30 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       ctx.fillText(initials, 102, 286);
 
       // User Details
+      const resolvedTabbar = resolveUserTabbar(user);
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 40px sans-serif';
-      ctx.fillText(user.name, 274, 212);
+      ctx.fillText(user.name, 274, 206);
 
       ctx.fillStyle = '#F5D061';
       ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(`★ PREMIUM MEMBER  ·  ${user.role.replace('_', ' ')}`, 274, 252);
+      ctx.fillText(`★ PREMIUM MEMBER  ·  ${user.role.replace('_', ' ')}`, 274, 242);
+
+      if (resolvedTabbar) {
+        ctx.fillStyle = '#FCE38A';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(`${resolvedTabbar.clan.emblem} ${resolvedTabbar.urduName} • ${resolvedTabbar.englishName}`, 274, 274);
+      }
 
       ctx.fillStyle = '#CBD5E1';
       ctx.font = '22px monospace';
-      ctx.fillText(`CNIC: ${user.cnic || 'VERIFIED'}`, 274, 302);
+      ctx.fillText(`CNIC: ${user.cnic || 'VERIFIED'}`, 274, resolvedTabbar ? 312 : 302);
       ctx.fillStyle = '#6EE7B7';
       ctx.font = 'bold 22px sans-serif';
-      ctx.fillText(`${dist}, ${prov}`, 274, 342);
+      ctx.fillText(`${dist}, ${prov}`, 274, resolvedTabbar ? 348 : 342);
       ctx.fillStyle = '#94A3B8';
       ctx.font = '18px monospace';
-      ctx.fillText(`ISSUED: ${user.joinDate}  ·  VALID THRU: ${user.validUntil || '2028-12-31'}`, 274, 380);
+      ctx.fillText(`ISSUED: ${user.joinDate}  ·  VALID THRU: ${user.validUntil || '2028-12-31'}`, 274, 384);
 
       // Bottom Strip + Golden QR Matrix
       ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
@@ -278,12 +287,15 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                   <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight truncate">
                     {user.name}
                   </h3>
-                  <RoleBadge
-                    role={user.role}
-                    isFounder={user.isFounder}
-                    isAuditOfficer={Boolean(user.isAuditOfficer)}
-                    compact
-                  />
+                  <div className="flex items-center flex-wrap gap-1">
+                    <RoleBadge
+                      role={user.role}
+                      isFounder={user.isFounder}
+                      isAuditOfficer={Boolean(user.isAuditOfficer)}
+                      compact
+                    />
+                    <TabbarBadge user={user} language={language} compact />
+                  </div>
                   <div className="text-[10px] text-slate-300 space-y-0.5 pt-0.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-400">CNIC:</span>
@@ -368,7 +380,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               </div>
 
               <div className="text-[8px] text-slate-400 border-t border-[#D4AF37]/25 pt-1.5 leading-tight flex items-center justify-between gap-2">
-                <span>Property of Kifayat Connect Community Governance Trust.</span>
+                <span>
+                  {language === 'ur'
+                    ? 'کفایت کنیکٹ کمیونٹی گورننس ٹرسٹ کی امانت۔'
+                    : 'Property of Kifayat Connect Community Governance Trust.'}
+                </span>
                 <span className="font-mono text-[#F5D061]">{memberIdStr}</span>
               </div>
             </div>
@@ -387,7 +403,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             className="flex items-center gap-1.5 px-3 py-2 text-slate-200 bg-[#0A0D12] hover:bg-slate-800 border border-slate-700 rounded-xl font-semibold cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5 text-[#F5D061]" />
-            <span>Flip</span>
+            <span>{language === 'ur' ? 'کارڈ پلٹیں' : 'Flip'}</span>
           </button>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -408,7 +424,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button rounded-xl font-extrabold cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>{downloadingPng ? 'Saving...' : translate(language, 'vipDownloadBtn')}</span>
+                <span>
+                  {downloadingPng
+                    ? (language === 'ur' ? 'محفوظ ہو رہا ہے...' : 'Saving...')
+                    : translate(language, 'vipDownloadBtn')}
+                </span>
               </button>
             )}
 
@@ -436,12 +456,12 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-              <div><span className="text-slate-400">Name:</span> <strong className="text-white">{user.name}</strong></div>
-              <div><span className="text-slate-400">ID:</span> <strong className="font-mono text-[#F5D061]">{memberIdStr}</strong></div>
-              <div><span className="text-slate-400">Role:</span> <strong className="text-white">{user.role}</strong></div>
-              <div><span className="text-slate-400">District:</span> <strong className="text-emerald-300">{dist}</strong></div>
+              <div><span className="text-slate-400">{language === 'ur' ? 'نام:' : 'Name:'}</span> <strong className="text-white">{user.name}</strong></div>
+              <div><span className="text-slate-400">{language === 'ur' ? 'آئی ڈی:' : 'ID:'}</span> <strong className="font-mono text-[#F5D061]">{memberIdStr}</strong></div>
+              <div><span className="text-slate-400">{language === 'ur' ? 'عہدہ:' : 'Role:'}</span> <strong className="text-white">{user.role}</strong></div>
+              <div><span className="text-slate-400">{language === 'ur' ? 'ضلع:' : 'District:'}</span> <strong className="text-emerald-300">{dist}</strong></div>
             </div>
-            <p className="text-[10px] font-mono text-slate-400 truncate">Seal: {verifyHash}</p>
+            <p className="text-[10px] font-mono text-slate-400 truncate">{language === 'ur' ? 'مہر:' : 'Seal:'} {verifyHash}</p>
           </div>
         )}
       </div>

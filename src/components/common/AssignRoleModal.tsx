@@ -13,7 +13,9 @@ interface AssignRoleModalProps {
 interface RolePresetOption {
   id: string;
   label: string;
+  labelUr: string;
   subtitle: string;
+  subtitleUr: string;
   role: UserRole;
   isAuditOfficer: boolean;
   accent: string;
@@ -23,7 +25,9 @@ const ROLE_OPTIONS: RolePresetOption[] = [
   {
     id: 'SUPER_ADMIN',
     label: 'Super Admin',
+    labelUr: 'سپر ایڈمن',
     subtitle: 'Full national leadership & master control access',
+    subtitleUr: 'مکمل مرکزی قیادت اور ماسٹر کنٹرول رسائی',
     role: 'SUPER_ADMIN',
     isAuditOfficer: false,
     accent: 'border-[#F5D061]/60 bg-[#231D0B]/70 text-[#F5D061]'
@@ -31,7 +35,9 @@ const ROLE_OPTIONS: RolePresetOption[] = [
   {
     id: 'ADMIN',
     label: 'Admin',
+    labelUr: 'ایڈمن (ضلع)',
     subtitle: 'District administration, approvals & treasury verification',
+    subtitleUr: 'ضلعی انتظام، منظوریاں اور مالی تصدیق',
     role: 'ADMIN',
     isAuditOfficer: false,
     accent: 'border-blue-500/45 bg-blue-950/40 text-blue-200'
@@ -39,7 +45,9 @@ const ROLE_OPTIONS: RolePresetOption[] = [
   {
     id: 'CO_ADMIN',
     label: 'Co-Admin',
+    labelUr: 'کو ایڈمن (صوبائی)',
     subtitle: 'Provincial coordination, grievances & announcements',
+    subtitleUr: 'صوبائی رابطہ کاری، شکایات اور اعلانات',
     role: 'CO_ADMIN',
     isAuditOfficer: false,
     accent: 'border-emerald-500/45 bg-emerald-950/40 text-emerald-200'
@@ -47,7 +55,9 @@ const ROLE_OPTIONS: RolePresetOption[] = [
   {
     id: 'AUDIT_OFFICER',
     label: 'Audit Officer',
+    labelUr: 'آڈٹ آفیسر',
     subtitle: 'Read-only financial receipts, reports & audit logs verification',
+    subtitleUr: 'مالی رسیدوں، رپورٹس اور آڈٹ لاگز کا معائنہ',
     role: 'MEMBER',
     isAuditOfficer: true,
     accent: 'border-cyan-400/50 bg-cyan-950/40 text-cyan-200'
@@ -55,7 +65,9 @@ const ROLE_OPTIONS: RolePresetOption[] = [
   {
     id: 'MEMBER',
     label: 'Member',
+    labelUr: 'ممبر',
     subtitle: 'Standard verified community member',
+    subtitleUr: 'تصدیق شدہ کمیونٹی ممبر',
     role: 'MEMBER',
     isAuditOfficer: false,
     accent: 'border-slate-700 bg-[#0A0D12] text-slate-200'
@@ -67,7 +79,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
   onClose,
   onAssigned
 }) => {
-  const { currentUser, assignMemberRole } = useApp();
+  const { currentUser, assignMemberRole, language } = useApp();
   const [error, setError] = useState<string | null>(null);
 
   if (!targetUser || !currentUser || !isFounderUser(currentUser)) return null;
@@ -81,11 +93,15 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
       isAuditOfficer: opt.isAuditOfficer
     });
     if (!res.success) {
-      setError(res.error || 'Unable to assign role.');
+      setError(res.error || (language === 'ur' ? 'عہدہ تفویض نہیں کیا جا سکا۔' : 'Unable to assign role.'));
       return;
     }
     if (onAssigned) {
-      onAssigned(`${targetUser.name} is now assigned as ${opt.label}.`);
+      onAssigned(
+        language === 'ur'
+          ? `${targetUser.name} کو اب ${opt.labelUr} مقرر کر دیا گیا ہے۔`
+          : `${targetUser.name} is now assigned as ${opt.label}.`
+      );
     }
     onClose();
   };
@@ -104,7 +120,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
           <div className="min-w-0">
             <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-1.5">
               <Crown className="w-4 h-4 shrink-0" />
-              <span>Assign Role Directly</span>
+              <span>{language === 'ur' ? 'براہ راست عہدہ تفویض کریں' : 'Assign Role Directly'}</span>
             </h3>
             <p className="text-[11px] text-slate-400 truncate mt-0.5">
               {targetUser.name} · {targetUser.email}
@@ -120,7 +136,9 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
         </div>
 
         <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 flex items-center justify-between gap-2">
-          <span className="text-[11px] text-slate-400">Current Role:</span>
+          <span className="text-[11px] text-slate-400">
+            {language === 'ur' ? 'موجودہ عہدہ:' : 'Current Role:'}
+          </span>
           <RoleBadge
             role={targetUser.role}
             isFounder={targetIsFounder}
@@ -153,14 +171,16 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    <span className="font-extrabold text-xs">{opt.label}</span>
+                    <span className="font-extrabold text-xs">{language === 'ur' ? opt.labelUr : opt.label}</span>
                   </div>
-                  <p className="text-[10px] opacity-80 mt-0.5 leading-snug">{opt.subtitle}</p>
+                  <p className="text-[10px] opacity-80 mt-0.5 leading-snug">
+                    {language === 'ur' ? opt.subtitleUr : opt.subtitle}
+                  </p>
                 </div>
                 {isCurrent && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5D061] text-[#090D16] text-[10px] font-extrabold shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
-                    <span>Active</span>
+                    <span>{language === 'ur' ? 'فعال' : 'Active'}</span>
                   </span>
                 )}
               </button>

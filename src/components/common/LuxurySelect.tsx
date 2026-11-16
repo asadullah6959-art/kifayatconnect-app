@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 
 export interface LuxurySelectOption {
   value: string;
@@ -27,16 +28,20 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
   value,
   onChange,
   options,
-  placeholder = 'Select an option...',
+  placeholder,
   label,
   searchable,
-  searchPlaceholder = 'Search options...',
+  searchPlaceholder,
   compact = false,
   disabled = false,
   className = '',
   buttonClassName = '',
   ariaLabel
 }) => {
+  const { language } = useApp();
+  const isUr = language === 'ur';
+  const resolvedPlaceholder = placeholder ?? (isUr ? 'آپشن منتخب کریں...' : 'Select an option...');
+  const resolvedSearchPlaceholder = searchPlaceholder ?? (isUr ? 'تلاش کریں...' : 'Search options...');
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -91,7 +96,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
       <button
         type="button"
         disabled={disabled}
-        aria-label={ariaLabel || label || placeholder}
+        aria-label={ariaLabel || label || resolvedPlaceholder}
         onClick={() => {
           if (!disabled) setIsOpen(true);
         }}
@@ -104,7 +109,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
         } ${buttonClassName}`}
       >
         <span className={`truncate font-semibold ${selectedOption ? 'text-slate-100' : 'text-slate-400'}`}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? selectedOption.label : resolvedPlaceholder}
         </span>
         <ChevronDown className="w-4 h-4 text-[#D4AF37] shrink-0" />
       </button>
@@ -124,16 +129,18 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
             <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-wider text-[#F5D061] truncate">
-                  {label || placeholder}
+                  {label || resolvedPlaceholder}
                 </p>
                 <p className="text-[10px] text-slate-400 font-mono tabular-nums">
-                  {normalizedOptions.length} option{normalizedOptions.length === 1 ? '' : 's'}
+                  {isUr
+                    ? `${normalizedOptions.length} دستیاب آپشنز`
+                    : `${normalizedOptions.length} option${normalizedOptions.length === 1 ? '' : 's'}`}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleClose}
-                aria-label="Close selector"
+                aria-label={isUr ? 'بند کریں' : 'Close selector'}
                 className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -149,7 +156,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder={searchPlaceholder}
+                    placeholder={resolvedSearchPlaceholder}
                     className="w-full pl-8 pr-7 py-1.5 kc-luxury-input rounded-lg text-xs"
                   />
                   {query && (
@@ -169,7 +176,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
             <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/10 p-1.5" style={{ WebkitOverflowScrolling: 'touch' }}>
               {filteredOptions.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-400">
-                  No matching options found.
+                  {isUr ? 'کوئی متعلقہ آپشن نہیں ملا۔' : 'No matching options found.'}
                 </div>
               ) : (
                 filteredOptions.map(opt => {

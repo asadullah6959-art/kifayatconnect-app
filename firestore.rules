@@ -13,6 +13,10 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isValidUserDocId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && !id.matches('.*\\.\\..*') && id.matches('^[a-zA-Z0-9_.@\\-]+$');
+    }
+
     function incoming() {
       return request.resource.data;
     }
@@ -49,13 +53,14 @@ service cloud.firestore {
     }
 
     function targetIsFounderDoc() {
-      return existing().email == 'asadullah6959@gmail.com' || existing().isFounder == true;
+      return ('email' in existing() && existing().email == 'asadullah6959@gmail.com') ||
+        ('isFounder' in existing() && existing().isFounder == true);
     }
 
     // --- VALIDATION HELPERS ---
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'name', 'email', 'role', 'membershipStatus', 'isStaff']) &&
-        data.id is string && isValidId(data.id) &&
+        data.id is string && isValidUserDocId(data.id) &&
         data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
         data.role in ['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
@@ -65,6 +70,9 @@ service cloud.firestore {
         (!('isMutedInChat' in data) || data.isMutedInChat is bool) &&
         (!('profileCompleted' in data) || data.profileCompleted is bool) &&
         (!('isOnline' in data) || data.isOnline is bool) &&
+        (!('hasPassword' in data) || data.hasPassword is bool) &&
+        (!('passwordHash' in data) || (data.passwordHash is string && data.passwordHash.size() <= 160)) &&
+        (!('otpVerifiedOnce' in data) || data.otpVerifiedOnce is bool) &&
         (!('status' in data) || data.status is string) &&
         (!('lastLoginAt' in data) || data.lastLoginAt is string);
     }
@@ -99,24 +107,24 @@ service cloud.firestore {
     }
 
     // --- COLLECTION RULES ---
-    // Note: Supports both Google-verified Web sessions and EmailJS OTP / Android APK sessions
+    // Note: Supports both Google-verified Web sessions and EmailJS OTP / Password / Android APK sessions
     // with schema validation and strict Founder protection guarantees.
 
-    // 1. Users Collection (Full Real-Time Directory + Online Status + Founder Lock)
+    // 1. Users Collection (Full Real-Time Directory + Online Status + Founder Zero-Deletion Lock)
     match /users/{userId} {
       allow get, list: if true;
 
-      allow create: if isValidId(userId) && isValidUser(incoming()) && (
+      allow create: if isValidUserDocId(userId) && isValidUser(incoming()) && (
         isFounder() ||
-        (incoming().email != 'asadullah6959@gmail.com' && incoming().isFounder != true && incoming().role == 'MEMBER' && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
-        (userId == 'usr_super_admin' && incoming().email == 'asadullah6959@gmail.com' && incoming().role == 'SUPER_ADMIN' && incoming().isFounder == true)
+        (incoming().email != 'asadullah6959@gmail.com' && (!('isFounder' in incoming()) || incoming().isFounder != true) && incoming().role == 'MEMBER' && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
+        ((userId == 'usr_super_admin' || userId == 'asadullah6959@gmail.com') && incoming().email == 'asadullah6959@gmail.com' && incoming().role == 'SUPER_ADMIN' && incoming().isFounder == true)
       );
 
-      allow update: if isValidId(userId) && isValidUser(incoming()) && (
+      allow update: if isValidUserDocId(userId) && isValidUser(incoming()) && (
         isFounder() ||
         (
           !targetIsFounderDoc() &&
-          incoming().isFounder == existing().isFounder &&
+          ((!('isFounder' in existing()) && (!('isFounder' in incoming()) || incoming().isFounder != true)) || ('isFounder' in existing() && incoming().isFounder == existing().isFounder)) &&
           incoming().email == existing().email &&
           incoming().role == existing().role &&
           (!('isAuditOfficer' in existing()) || incoming().isAuditOfficer == existing().isAuditOfficer)
@@ -130,7 +138,8 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if isSignedIn() && !targetIsFounderDoc() && (isFounder() || isSuperAdmin());
+      // Strict Zero-Deletion Lock: ONLY the Main Super Admin (Founder) can permanently delete non-Founder user records.
+      allow delete: if isSignedIn() && !targetIsFounderDoc() && isFounder();
     }
 
     // 2. Membership Applications

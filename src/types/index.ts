@@ -88,6 +88,8 @@ export interface User {
   founderBubbleColor?: string;
   permissions?: RolePermissions;
   hasPassword?: boolean;
+  passwordHash?: string;
+  otpVerifiedOnce?: boolean;
   country: string;
   stateProvince: string;
   district: string;
@@ -103,7 +105,11 @@ export interface User {
   status?: string;
   profileCompleted?: boolean;
   isOnline?: boolean;
+  lastActiveAt?: number;
   lastSeen?: string;
+  tabbarId?: string;
+  tabbarUrdu?: string;
+  tabbarEnglish?: string;
   province?: string;
   lastLoginAt?: string;
   createdAt?: string;
@@ -173,6 +179,9 @@ export interface MembershipApplication {
   cityTown: string;
   unionCouncil: string;
   address: string;
+  tabbarId?: string;
+  tabbarUrdu?: string;
+  tabbarEnglish?: string;
   submittedAt: string;
   status: MembershipStatus;
   isOldMemberVerification: boolean;
@@ -414,6 +423,9 @@ export interface ChatMessage {
   senderIsFounder?: boolean;
   senderIsAuditOfficer?: boolean;
   senderBubbleColor?: string;
+  senderTabbarId?: string;
+  senderTabbarUrdu?: string;
+  senderTabbarEnglish?: string;
   recipientId: string;
   recipientName: string;
   participants?: string[];
@@ -435,6 +447,7 @@ export interface ChatMessage {
   pinnedBy?: string;
   isDeleted?: boolean;
   deletedBy?: string;
+  hiddenForUsers?: string[];
 }
 
 export interface ChatConversation {

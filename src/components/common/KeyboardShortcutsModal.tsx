@@ -14,40 +14,40 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
 
   const sections = [
     {
-      title: 'Global & Search',
+      title: language === 'ur' ? 'عالمی اور تلاش' : 'Global & Search',
       icon: Command,
       shortcuts: [
-        { keys: ['Ctrl', 'K'], label: 'Open Global Search & Command Palette' },
-        { keys: ['/'], label: 'Quick Focus Search Bar' },
-        { keys: ['?'], label: 'Open Keyboard Shortcuts Guide' },
-        { keys: ['Esc'], label: 'Close Active Modal / Clear Search' },
-        { keys: ['Alt', 'L'], label: 'Toggle Language (English / اردو)' },
+        { keys: ['Ctrl', 'K'], label: language === 'ur' ? 'گلوبل سرچ کھولیں' : 'Open Global Search & Command Palette' },
+        { keys: ['/'], label: language === 'ur' ? 'تلاش بار پر جائیں' : 'Quick Focus Search Bar' },
+        { keys: ['?'], label: language === 'ur' ? 'شارٹ کٹ گائیڈ کھولیں' : 'Open Keyboard Shortcuts Guide' },
+        { keys: ['Esc'], label: language === 'ur' ? 'موڈل بند کریں / تلاش صاف کریں' : 'Close Active Modal / Clear Search' },
+        { keys: ['Alt', 'L'], label: language === 'ur' ? 'زبان تبدیل کریں (اردو / English)' : 'Toggle Language (English / اردو)' },
       ]
     },
     {
-      title: 'Module Navigation',
+      title: language === 'ur' ? 'ماڈیول نیویگیشن' : 'Module Navigation',
       icon: Navigation,
       shortcuts: [
-        { keys: ['Alt', '1'], label: 'Overview Dashboard' },
-        { keys: ['Alt', '2'], label: 'Member Directory (Staff & Admin)' },
-        { keys: ['Alt', '3'], label: 'Approvals & Verification (Stage 1 & 2)' },
-        { keys: ['Alt', '4'], label: 'Funds & Contribution Ledger' },
-        { keys: ['Alt', '5'], label: 'Payment Verification Queue' },
-        { keys: ['Alt', '6'], label: 'Grievance & Complaints Desk' },
-        { keys: ['Alt', '7'], label: 'Announcements & Bulletins' },
-        { keys: ['Alt', '8'], label: 'Staff Roles & RBAC (Super Admin)' },
-        { keys: ['Alt', '9'], label: 'Audited Financial Statements & Reports' },
-        { keys: ['Alt', '0'], label: 'Immutable Audit Trail' },
+        { keys: ['Alt', '1'], label: language === 'ur' ? 'مرکزی ڈیش بورڈ' : 'Overview Dashboard' },
+        { keys: ['Alt', '2'], label: language === 'ur' ? 'ممبران ڈائریکٹری' : 'Member Directory (Staff & Admin)' },
+        { keys: ['Alt', '3'], label: language === 'ur' ? 'منظوری اور تصدیق' : 'Approvals & Verification (Stage 1 & 2)' },
+        { keys: ['Alt', '4'], label: language === 'ur' ? 'فنڈز اور ادائیگیاں' : 'Funds & Contribution Ledger' },
+        { keys: ['Alt', '5'], label: language === 'ur' ? 'ادائیگی تصدیق قطار' : 'Payment Verification Queue' },
+        { keys: ['Alt', '6'], label: language === 'ur' ? 'شکایات ڈیسک' : 'Grievance & Complaints Desk' },
+        { keys: ['Alt', '7'], label: language === 'ur' ? 'اعلانات اور بلیٹن' : 'Announcements & Bulletins' },
+        { keys: ['Alt', '8'], label: language === 'ur' ? 'کردار اور عملہ' : 'Staff Roles & RBAC (Super Admin)' },
+        { keys: ['Alt', '9'], label: language === 'ur' ? 'مالی رپورٹس' : 'Audited Financial Statements & Reports' },
+        { keys: ['Alt', '0'], label: language === 'ur' ? 'آڈٹ لاگز' : 'Immutable Audit Trail' },
       ]
     },
     {
-      title: 'Quick Actions',
+      title: language === 'ur' ? 'فوری اقدامات' : 'Quick Actions',
       icon: Zap,
       shortcuts: [
-        { keys: ['Alt', 'N'], label: 'Open New Member Onboarding Form' },
-        { keys: ['Alt', 'I'], label: 'Open Global Notifications Slide-Over' },
-        { keys: ['Alt', 'P'], label: 'Submit New Contribution / Payment' },
-        { keys: ['Alt', 'C'], label: 'View Digital Membership Card' },
+        { keys: ['Alt', 'N'], label: language === 'ur' ? 'نیا ممبر اندراج فارم' : 'Open New Member Onboarding Form' },
+        { keys: ['Alt', 'I'], label: language === 'ur' ? 'اطلاعات پینل کھولیں' : 'Open Global Notifications Slide-Over' },
+        { keys: ['Alt', 'P'], label: language === 'ur' ? 'نئی ادائیگی جمع کروائیں' : 'Submit New Contribution / Payment' },
+        { keys: ['Alt', 'C'], label: language === 'ur' ? 'وی آئی پی ڈیجیٹل آئی ڈی کارڈ' : 'View Digital Membership Card' },
       ]
     }
   ];
@@ -65,7 +65,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 {language === 'ur' ? 'کی بورڈ شارٹ کٹس گائیڈ' : 'Global Keyboard Shortcuts Guide'}
               </h3>
               <p className="text-[11px] text-slate-400">
-                Operational workflow shortcuts for administrative officers and members
+                {language === 'ur' ? 'عہدیداران اور ممبران کے لیے تیز رفتار ورک فلو شارٹ کٹس' : 'Operational workflow shortcuts for administrative officers and members'}
               </p>
             </div>
           </div>
@@ -117,8 +117,12 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
         </div>
 
         <div className="mt-4 pt-3 border-t border-[#D4AF37]/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
-          <span>Active Role: <strong className="text-[#F5D061]">{currentUser.role}</strong> ({currentUser.district || 'Pakistan'})</span>
-          <span className="font-mono text-[10px]">Press <kbd className="px-1 py-0.5 bg-[#141B2D] border border-[#D4AF37]/35 rounded text-[#F5D061]">Esc</kbd> to close</span>
+          <span>
+            {language === 'ur' ? 'فعال عہدہ:' : 'Active Role:'} <strong className="text-[#F5D061]">{currentUser.role}</strong> ({currentUser.district || (language === 'ur' ? 'پاکستان' : 'Pakistan')})
+          </span>
+          <span className="font-mono text-[10px]">
+            {language === 'ur' ? 'بند کرنے کے لیے Esc دبائیں' : <>Press <kbd className="px-1 py-0.5 bg-[#141B2D] border border-[#D4AF37]/35 rounded text-[#F5D061]">Esc</kbd> to close</>}
+          </span>
         </div>
       </div>
     </div>

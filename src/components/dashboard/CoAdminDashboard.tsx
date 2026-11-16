@@ -105,20 +105,28 @@ export const CoAdminDashboard: React.FC = () => {
               {language === 'ur' ? 'صوبائی کو ایڈمن پینل' : 'State / Provincial Co-Administration'}
             </span>
             <span className="text-slate-500">·</span>
-            <span className="text-xs text-slate-400 font-medium">{assignedState} Province</span>
+            <span className="text-xs text-slate-400 font-medium">
+              {language === 'ur' ? `${assignedState} صوبہ` : `${assignedState} Province`}
+            </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-1 flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-[#F5D061] shrink-0" />
             <span>{assignedState} – {translate(language, 'roleCoAdmin')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Co-Admin: <strong className="text-white">{currentUser.name}</strong> · Provincial coordination across districts in {assignedState}.
+            {language === 'ur'
+              ? <>کو ایڈمن: <strong className="text-white">{currentUser.name}</strong> · {assignedState} کے اضلاع میں صوبائی رابطہ کاری۔</>
+              : <>Co-Admin: <strong className="text-white">{currentUser.name}</strong> · Provincial coordination across districts in {assignedState}.</>}
           </p>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-2 kc-emerald-panel rounded-xl text-[11px] text-[#F5D061]">
           <ShieldCheck className="w-4 h-4 shrink-0" />
-          <span className="tabular-nums">Quota: Max {appSettings.maxCoAdminsPerState} State Co-Admins for {assignedState}.</span>
+          <span className="tabular-nums">
+            {language === 'ur'
+              ? `کوٹہ: ${assignedState} میں زیادہ سے زیادہ ${appSettings.maxCoAdminsPerState} صوبائی کو ایڈمن۔`
+              : `Quota: Max ${appSettings.maxCoAdminsPerState} State Co-Admins for ${assignedState}.`}
+          </span>
         </div>
       </div>
 
@@ -154,52 +162,74 @@ export const CoAdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Provincial Members</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {language === 'ur' ? 'صوبائی ممبران' : 'Provincial Members'}
+              </span>
               <Users className="w-4 h-4 text-[#F5D061]" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{stateMembers.length}</span>
               <span className="text-xs text-emerald-400 font-semibold">{assignedState}</span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400 tabular-nums">Across {districtList.length} districts</div>
+            <div className="mt-2 text-[11px] text-slate-400 tabular-nums">
+              {language === 'ur' ? `${districtList.length} اضلاع میں` : `Across ${districtList.length} districts`}
+            </div>
           </div>
 
           <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">District Admins</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {language === 'ur' ? 'ضلعی ایڈمنز' : 'District Admins'}
+              </span>
               <MapPin className="w-4 h-4 text-blue-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{stateAdmins.length}</span>
-              <span className="text-xs text-[#F5D061] font-semibold tabular-nums">{appSettings.maxAdminsPerDistrict}/dist limit</span>
+              <span className="text-xs text-[#F5D061] font-semibold tabular-nums">
+                {language === 'ur' ? `حد ${appSettings.maxAdminsPerDistrict}/ضلع` : `${appSettings.maxAdminsPerDistrict}/dist limit`}
+              </span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">Field administrators</div>
+            <div className="mt-2 text-[11px] text-slate-400">
+              {language === 'ur' ? 'فیلڈ عہدیداران' : 'Field administrators'}
+            </div>
           </div>
 
           <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Applications</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {language === 'ur' ? 'درخواستیں' : 'Applications'}
+              </span>
               <CheckSquare className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{stateApplications.length}</span>
-              <span className="text-xs text-emerald-400 font-semibold">Pipeline</span>
+              <span className="text-xs text-emerald-400 font-semibold">
+                {language === 'ur' ? 'منظوری قطار' : 'Pipeline'}
+              </span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">Onboarding in {assignedState}</div>
+            <div className="mt-2 text-[11px] text-slate-400">
+              {language === 'ur' ? `${assignedState} میں رجسٹریشن` : `Onboarding in ${assignedState}`}
+            </div>
           </div>
 
           <div className="p-4 kc-obsidian-card rounded-2xl">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Open Complaints</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {language === 'ur' ? 'جاری شکایات' : 'Open Complaints'}
+              </span>
               <MessageSquareWarning className="w-4 h-4 text-rose-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
                 {stateComplaints.filter(c => c.status === 'OPEN').length}
               </span>
-              <span className="text-xs text-rose-400 font-semibold">Active</span>
+              <span className="text-xs text-rose-400 font-semibold">
+                {translate(language, 'activeLabel')}
+              </span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">Provincial grievances</div>
+            <div className="mt-2 text-[11px] text-slate-400">
+              {language === 'ur' ? 'صوبائی شکایات' : 'Provincial grievances'}
+            </div>
           </div>
         </div>
       )}
@@ -211,19 +241,23 @@ export const CoAdminDashboard: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#F5D061]" />
-                <span>District Admins in {assignedState}</span>
+                <span>{language === 'ur' ? `${assignedState} کے ضلعی ایڈمنز` : `District Admins in ${assignedState}`}</span>
               </h3>
-              <p className="text-xs text-slate-400">Appointed field officers across districts</p>
+              <p className="text-xs text-slate-400">
+                {language === 'ur' ? 'اضلاع میں تعینات فیلڈ افسران' : 'Appointed field officers across districts'}
+              </p>
             </div>
             <span className="text-xs font-mono tabular-nums font-bold text-[#F5D061] bg-[#090D16] border border-[#D4AF37]/30 px-2.5 py-0.5 rounded-full">
-              {stateAdmins.length} Admins
+              {stateAdmins.length} {language === 'ur' ? 'ایڈمنز' : 'Admins'}
             </span>
           </div>
 
           <div className="mt-3 divide-y divide-[#D4AF37]/10 max-h-80 overflow-y-auto">
             {stateAdmins.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-400">
-                No District Admins currently assigned in {assignedState}.
+                {language === 'ur'
+                  ? `${assignedState} میں ابھی کوئی ضلعی ایڈمن مقرر نہیں ہے۔`
+                  : `No District Admins currently assigned in ${assignedState}.`}
               </div>
             ) : (
               stateAdmins.map(admin => (
@@ -262,7 +296,7 @@ export const CoAdminDashboard: React.FC = () => {
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#042920] text-[#F5D061] hover:bg-[#063B2E] rounded-lg border border-[#D4AF37]/40 kc-pressable cursor-pointer"
                     >
                       <MessageSquare className="w-3 h-3" />
-                      <span>Chat</span>
+                      <span>{translate(language, 'mobileNavChat')}</span>
                     </button>
                   </div>
                 </div>
@@ -276,10 +310,12 @@ export const CoAdminDashboard: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-[#F5D061]" />
-                <span>Provincial Community Dispatcher</span>
+                <span>{language === 'ur' ? 'صوبائی کمیونٹی اعلانات پینل' : 'Provincial Community Dispatcher'}</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Broadcast updates to all members or specific districts in {assignedState}
+                {language === 'ur'
+                  ? `${assignedState} کے تمام یا مخصوص اضلاع میں پیغامات شائع کریں`
+                  : `Broadcast updates to all members or specific districts in ${assignedState}`}
               </p>
             </div>
 
@@ -289,7 +325,7 @@ export const CoAdminDashboard: React.FC = () => {
                 onClick={() => setIsCreatingAnnouncement(true)}
                 className="px-3.5 py-1.5 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
               >
-                Post State Notice
+                {language === 'ur' ? 'صوبائی اعلان شائع کریں' : 'Post State Notice'}
               </button>
             )}
           </div>
@@ -301,17 +337,17 @@ export const CoAdminDashboard: React.FC = () => {
                 searchable
                 value={selectedDistrictFilter}
                 onChange={setSelectedDistrictFilter}
-                label={`Target District (${assignedState})`}
+                label={language === 'ur' ? `مطلوبہ ضلع (${assignedState})` : `Target District (${assignedState})`}
                 options={[
-                  { value: 'ALL', label: `All Districts in ${assignedState}` },
-                  ...districtList.map(dist => ({ value: dist, label: `${dist} District` }))
+                  { value: 'ALL', label: language === 'ur' ? `${assignedState} کے تمام اضلاع` : `All Districts in ${assignedState}` },
+                  ...districtList.map(dist => ({ value: dist, label: language === 'ur' ? `ضلع ${dist}` : `${dist} District` }))
                 ]}
               />
 
               <input
                 type="text"
                 required
-                placeholder="e.g. Provincial Coordination Meeting Schedule..."
+                placeholder={language === 'ur' ? 'مثلاً: صوبائی رابطہ اجلاس کا شیڈول...' : 'e.g. Provincial Coordination Meeting Schedule...'}
                 value={announcementTitle}
                 onChange={(e) => setAnnouncementTitle(e.target.value)}
                 className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
@@ -320,7 +356,7 @@ export const CoAdminDashboard: React.FC = () => {
               <textarea
                 required
                 rows={3}
-                placeholder="Notice details for provincial and district members..."
+                placeholder={language === 'ur' ? 'صوبائی اور ضلعی ممبران کے لیے تفصیلات...' : 'Notice details for provincial and district members...'}
                 value={announcementContent}
                 onChange={(e) => setAnnouncementContent(e.target.value)}
                 className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input resize-none"
@@ -328,23 +364,27 @@ export const CoAdminDashboard: React.FC = () => {
 
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button type="button" onClick={() => setIsCreatingAnnouncement(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
-                  Cancel
+                  {translate(language, 'cancel')}
                 </button>
                 <button type="submit" className="flex items-center gap-1.5 px-4 py-1.5 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer">
                   <Send className="w-3.5 h-3.5" />
-                  <span>Broadcast Notice</span>
+                  <span>{language === 'ur' ? 'اعلان نشر کریں' : 'Broadcast Notice'}</span>
                 </button>
               </div>
             </form>
           ) : (
             <div className="mt-4 p-4 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 text-xs text-slate-300 space-y-2">
               <p>
-                As State Co-Admin, you coordinate provincial operations across <strong className="text-white">{assignedState}</strong>.
+                {language === 'ur'
+                  ? <>صوبائی کو ایڈمن کے طور پر آپ <strong className="text-white">{assignedState}</strong> میں تمام سرگرمیوں کی نگرانی کرتے ہیں۔</>
+                  : <>As State Co-Admin, you coordinate provincial operations across <strong className="text-white">{assignedState}</strong>.</>}
               </p>
               <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                <li className="tabular-nums">Monitor member growth across {districtList.length} districts.</li>
-                <li>Coordinate with appointed District Admins to resolve grievances.</li>
-                <li>Publish provincial community notices directly to member inboxes.</li>
+                <li className="tabular-nums">
+                  {language === 'ur' ? `${districtList.length} اضلاع میں ممبران کی شمولیت کی نگرانی کریں۔` : `Monitor member growth across ${districtList.length} districts.`}
+                </li>
+                <li>{language === 'ur' ? 'شکایات کے حل کے لیے ضلعی ایڈمنز سے رابطہ رکھیں۔' : 'Coordinate with appointed District Admins to resolve grievances.'}</li>
+                <li>{language === 'ur' ? 'صوبائی کمیونٹی اعلانات براہ راست ممبران تک پہنچائیں۔' : 'Publish provincial community notices directly to member inboxes.'}</li>
               </ul>
             </div>
           )}

@@ -69,7 +69,7 @@ export const ProfileCompletionGate: React.FC<ProfileCompletionGateProps> = ({
         </div>
         <div className="min-w-0 space-y-1">
           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-extrabold uppercase tracking-wider">
-            Profile Pending
+            {language === 'ur' ? 'پروفائل نامکمل' : 'Profile Pending'}
           </span>
           <h3 className="text-sm sm:text-base font-extrabold text-white">{title}</h3>
           <p className="text-xs text-slate-200 leading-relaxed max-w-2xl">{description}</p>

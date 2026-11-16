@@ -16,6 +16,7 @@ import { LuxurySelect } from '../common/LuxurySelect';
 
 export const AuditLogsView: React.FC = () => {
   const { currentUser, auditLogs, language } = useApp();
+  const isUr = language === 'ur';
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isAuditOfficer = Boolean(currentUser?.isAuditOfficer);
@@ -83,6 +84,16 @@ export const AuditLogsView: React.FC = () => {
     }
   };
 
+  const localizeCategory = (cat: string) => {
+    if (!isUr) return cat;
+    if (cat === 'ROLE_MANAGEMENT') return 'کرداروں کا نظم';
+    if (cat === 'FINANCIAL') return 'مالی تصدیقات';
+    if (cat === 'MEMBERSHIP') return 'رکنیت کی منظوریاں';
+    if (cat === 'REGIONAL') return 'ضلعی / صوبائی فیصلے';
+    if (cat === 'SECURITY') return 'سیکیورٹی سرگرمیاں';
+    return cat;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -90,29 +101,33 @@ export const AuditLogsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
-              Compliance & Accountability
+              {isUr ? 'نگرانی اور جوابدہی' : 'Compliance & Accountability'}
             </span>
             <span className="text-[#D4AF37]/50">·</span>
             <span className="text-xs text-slate-300">
               {isSuperAdmin
-                ? 'Master Organization Audit Trail'
+                ? (isUr ? 'مرکزی تنظیمی آڈٹ ریکارڈ' : 'Master Organization Audit Trail')
                 : isAuditOfficer
-                ? 'Audit Officer Verification Trail (Read-Only)'
+                ? (isUr ? 'آڈٹ آفیسر تصدیقی ریکارڈ (صرف مطالعہ)' : 'Audit Officer Verification Trail (Read-Only)')
                 : isDistrictAdmin
-                ? `${currentUser.assignedDistrict || currentUser.district} Activity Audit Trail`
+                ? (isUr ? `${currentUser.assignedDistrict || currentUser.district} ضلعی سرگرمی ریکارڈ` : `${currentUser.assignedDistrict || currentUser.district} District Audit Trail`)
                 : isCoAdmin
-                ? `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`
-                : 'My Personal Account Activity Trail'}
+                ? (isUr ? `${currentUser.assignedStateProvince || currentUser.stateProvince} صوبائی سرگرمی ریکارڈ` : `${currentUser.assignedStateProvince || currentUser.stateProvince} Activity Audit Trail`)
+                : (isUr ? 'میرا ذاتی اکاؤنٹ سرگرمی ریکارڈ' : 'My Personal Account Activity Trail')}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
             <Clock className="w-6 h-6 text-[#F5D061]" />
-            <span>Immutable Governance Audit Log</span>
+            <span>{isUr ? 'ناقابلِ تبدیلی گورننس آڈٹ لاگ' : 'Immutable Governance Audit Log'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             {canSeeAllLogs
-              ? 'Complete historical ledger of approvals, payment certifications, role changes, and administrative actions.'
-              : 'Strictly filtered to records necessary for your operational role.'}
+              ? (isUr
+                  ? 'منظوریوں، ادائیگی کی تصدیقات، عہدوں میں تبدیلی اور انتظامی اقدامات کا مکمل تاریخی ریکارڈ۔'
+                  : 'Complete historical ledger of approvals, payment certifications, role changes, and administrative actions.')
+              : (isUr
+                  ? 'صرف آپ کے دائرہ اختیار سے متعلق ریکارڈز دکھائے جا رہے ہیں۔'
+                  : 'Strictly filtered to records necessary for your operational role.')}
           </p>
         </div>
 
@@ -122,7 +137,7 @@ export const AuditLogsView: React.FC = () => {
             <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search audit trail..."
+              placeholder={isUr ? 'آڈٹ ریکارڈ تلاش کریں...' : 'Search audit trail...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="kc-luxury-input pl-8 pr-3 py-2 text-xs rounded-xl w-full sm:w-64"
@@ -135,14 +150,14 @@ export const AuditLogsView: React.FC = () => {
                 compact
                 value={categoryFilter}
                 onChange={setCategoryFilter}
-                label="Audit Category"
+                label={isUr ? 'آڈٹ زمرہ' : 'Audit Category'}
                 options={[
-                  { value: 'ALL', label: 'All Categories' },
-                  { value: 'ROLE_MANAGEMENT', label: 'Role Management' },
-                  { value: 'FINANCIAL', label: 'Financial Verifications' },
-                  { value: 'MEMBERSHIP', label: 'Membership Approvals' },
-                  { value: 'REGIONAL', label: 'District / State Decisions' },
-                  { value: 'SECURITY', label: 'Security Events' }
+                  { value: 'ALL', label: isUr ? 'تمام زمرے' : 'All Categories' },
+                  { value: 'ROLE_MANAGEMENT', label: isUr ? 'کرداروں کا نظم' : 'Role Management' },
+                  { value: 'FINANCIAL', label: isUr ? 'مالی تصدیقات' : 'Financial Verifications' },
+                  { value: 'MEMBERSHIP', label: isUr ? 'رکنیت کی منظوریاں' : 'Membership Approvals' },
+                  { value: 'REGIONAL', label: isUr ? 'ضلعی / صوبائی فیصلے' : 'District / State Decisions' },
+                  { value: 'SECURITY', label: isUr ? 'سیکیورٹی سرگرمیاں' : 'Security Events' }
                 ]}
               />
             </div>
@@ -156,19 +171,19 @@ export const AuditLogsView: React.FC = () => {
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Actor & Role</th>
-                <th className="py-3 px-4">Action Event</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Target Entity</th>
-                <th className="py-3 px-4">Detailed Statement</th>
+                <th className="py-3 px-4">{isUr ? 'وقت' : 'Timestamp'}</th>
+                <th className="py-3 px-4">{isUr ? 'عامل اور عہدہ' : 'Actor & Role'}</th>
+                <th className="py-3 px-4">{isUr ? 'کارروائی' : 'Action Event'}</th>
+                <th className="py-3 px-4">{isUr ? 'زمرہ' : 'Category'}</th>
+                <th className="py-3 px-4">{isUr ? 'متعلقہ فرد / ہدف' : 'Target Entity'}</th>
+                <th className="py-3 px-4">{isUr ? 'تفصیلی بیان' : 'Detailed Statement'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D4AF37]/15">
               {filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    No audit records found matching your filter criteria.
+                    {isUr ? 'آپ کے فلٹر کے مطابق کوئی آڈٹ ریکارڈ نہیں ملا۔' : 'No audit records found matching your filter criteria.'}
                   </td>
                 </tr>
               ) : (
@@ -193,7 +208,7 @@ export const AuditLogsView: React.FC = () => {
 
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${getCategoryBadge(log.category)}`}>
-                        {log.category}
+                        {localizeCategory(log.category)}
                       </span>
                     </td>
 

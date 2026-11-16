@@ -19,8 +19,7 @@ import {
   getPendingEmailOTP,
   getPendingPasswordReset,
   isNativeMobileRuntime,
-  requestPasswordReset,
-  verifyPasswordReset
+  requestPasswordReset
 } from '../../services/firebase';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { translate } from '../../data/translations';
@@ -35,6 +34,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   const { 
     loginWithGoogleAuth,
     loginWithPassword,
+    setupPasswordForExistingAccount,
+    completePasswordResetAndSignIn,
     requestOTP,
     verifyOTP,
     isOnline,
@@ -56,6 +57,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   const [showPwd, setShowPwd] = useState(false);
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdError, setPwdError] = useState('');
+  const [needsDirectPwdSetup, setNeedsDirectPwdSetup] = useState(false);
+  const [confirmSetupPwd, setConfirmSetupPwd] = useState('');
 
   // Google login
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -147,11 +150,37 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
     setPwdError('');
     setPwdLoading(true);
     try {
+      if (needsDirectPwdSetup) {
+        if (pwdValue.trim().length < 6) {
+          setPwdError(language === 'ur' ? 'پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔' : 'Password must be at least 6 characters.');
+          return;
+        }
+        if (pwdValue.trim() !== confirmSetupPwd.trim()) {
+          setPwdError(language === 'ur' ? 'پاس ورڈ اور تصدیق یکساں نہیں ہیں۔' : 'Passwords do not match.');
+          return;
+        }
+        const setupRes = await setupPasswordForExistingAccount(pwdEmail, pwdValue);
+        if (setupRes.success) {
+          setNeedsDirectPwdSetup(false);
+          setConfirmSetupPwd('');
+          onClose();
+        } else {
+          setPwdError(setupRes.message);
+        }
+        return;
+      }
+
       const res = await loginWithPassword(pwdEmail, pwdValue);
       if (res.success) {
+        setNeedsDirectPwdSetup(false);
         onClose();
       } else {
-        setPwdError(res.message);
+        if (res.needsPasswordSetup && res.existingAccountFound) {
+          setNeedsDirectPwdSetup(true);
+          setPwdError('');
+        } else {
+          setPwdError(res.message);
+        }
       }
     } finally {
       setPwdLoading(false);
@@ -279,17 +308,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
 
     setResetLoading(true);
     try {
-      const res = await verifyPasswordReset(resetEmail.trim(), cleanCode, newPassword.trim());
+      const res = await completePasswordResetAndSignIn(resetEmail.trim(), cleanCode, newPassword.trim());
       if (res.success) {
         setResetSuccess(res.message);
-        setPwdEmail(resetEmail.trim());
-        setTimeout(() => {
-          setIsForgotPasswordMode(false);
-          setResetSent(false);
-          setResetCode('');
-          setNewPassword('');
-          setActiveAuthMethod('PASSWORD');
-        }, 1100);
+        setIsForgotPasswordMode(false);
+        setResetSent(false);
+        setResetCode('');
+        setNewPassword('');
+        onClose();
       } else {
         setResetError(res.message);
       }
@@ -360,7 +386,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Google</span>
+                <span>{language === 'ur' ? 'گوگل' : 'Google'}</span>
               </button>
             )}
           </div>
@@ -505,6 +531,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
           <>
             {activeAuthMethod === 'PASSWORD' && allowPasswordLogin && (
               <form onSubmit={handlePasswordSignIn} className="mt-4 space-y-3">
+                {needsDirectPwdSetup && (
+                  <div className="p-3 rounded-xl bg-[#043927]/50 border border-emerald-500/45 text-emerald-200 text-xs space-y-1">
+                    <div className="font-bold text-[#F5D061] flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{translate(language, 'existingAccountSetPwdTitle')}</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-100/90 leading-relaxed">
+                      {translate(language, 'existingAccountSetPwdDesc')}
+                    </p>
+                  </div>
+                )}
+
                 {pwdError && (
                   <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -521,7 +559,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     required
                     placeholder="name@gmail.com"
                     value={pwdEmail}
-                    onChange={(e) => setPwdEmail(e.target.value)}
+                    onChange={(e) => {
+                      setPwdEmail(e.target.value);
+                      if (needsDirectPwdSetup) setNeedsDirectPwdSetup(false);
+                    }}
                     className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
                   />
                 </div>
@@ -529,18 +570,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-slate-300">
-                      {translate(language, 'passwordLabel')}
+                      {needsDirectPwdSetup ? translate(language, 'newPasswordLabel') : translate(language, 'passwordLabel')}
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setResetEmail(pwdEmail);
-                        setIsForgotPasswordMode(true);
-                      }}
-                      className="text-[11px] text-[#F5D061] hover:underline font-medium cursor-pointer"
-                    >
-                      {translate(language, 'forgotPasswordLink')}
-                    </button>
+                    {!needsDirectPwdSetup && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetEmail(pwdEmail);
+                          setIsForgotPasswordMode(true);
+                        }}
+                        className="text-[11px] text-[#F5D061] hover:underline font-medium cursor-pointer"
+                      >
+                        {translate(language, 'forgotPasswordLink')}
+                      </button>
+                    )}
                   </div>
                   <div className="relative">
                     <input
@@ -560,14 +603,49 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                   </div>
                 </div>
 
+                {needsDirectPwdSetup && (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-300 block mb-1">
+                      {translate(language, 'confirmPasswordLabel')}
+                    </label>
+                    <input
+                      type={showPwd ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      placeholder="••••••••"
+                      value={confirmSetupPwd}
+                      onChange={(e) => setConfirmSetupPwd(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                    />
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={pwdLoading}
                   className="w-full py-2.5 px-4 kc-gold-button font-bold text-xs rounded-xl cursor-pointer flex items-center justify-center gap-2"
                 >
                   {pwdLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{translate(language, 'signInWithPasswordBtn')}</span>
+                  <span>
+                    {needsDirectPwdSetup
+                      ? translate(language, 'setPasswordAndSignInBtn')
+                      : translate(language, 'signInWithPasswordBtn')}
+                  </span>
                 </button>
+
+                {needsDirectPwdSetup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNeedsDirectPwdSetup(false);
+                      setConfirmSetupPwd('');
+                      setPwdError('');
+                    }}
+                    className="w-full text-[11px] text-slate-400 hover:text-white text-center cursor-pointer"
+                  >
+                    {translate(language, 'cancel')}
+                  </button>
+                )}
               </form>
             )}
 
@@ -610,7 +688,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     {isGoogleLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-[#F5D061]" />
-                        <span>Connecting...</span>
+                        <span>{language === 'ur' ? 'رابطہ ہو رہا ہے...' : 'Connecting...'}</span>
                       </>
                     ) : (
                       <>

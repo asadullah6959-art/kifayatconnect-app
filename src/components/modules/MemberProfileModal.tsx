@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import { User } from '../../types';
 import {
@@ -15,11 +15,14 @@ import {
   Clock,
   Crown,
   Lock,
-  Building2
+  Building2,
+  Trash2
 } from 'lucide-react';
 import { RoleBadge } from '../common/RoleBadge';
+import { TabbarBadge } from '../common/TabbarBadge';
 import { AssignRoleModal } from '../common/AssignRoleModal';
-import { resolveUserApprovalStatus } from '../../services/firebase';
+import { resolveUserApprovalStatus, isUserActuallyOnline } from '../../services/firebase';
+import { translate } from '../../data/translations';
 
 interface MemberProfileModalProps {
   user: User | null;
@@ -33,17 +36,31 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
     openPersonalMessage,
     language,
     setSelectedCardUser,
-    approveMemberAccount
+    approveMemberAccount,
+    deleteUserPermanently
   } = useApp();
 
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [presenceNowMs, setPresenceNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!user) return;
+    setPresenceNowMs(Date.now());
+    const id = window.setInterval(() => {
+      setPresenceNowMs(Date.now());
+    }, 10000);
+    return () => window.clearInterval(id);
+  }, [user]);
 
   if (!user || !currentUser) return null;
 
   const liveUser = users.find(u => u.id === user.id) || user;
   const isSelf = currentUser.id === liveUser.id;
-  const isUserOnline = isSelf || (liveUser.isOnline !== undefined ? Boolean(liveUser.isOnline) : liveUser.status === 'online');
+  const isUserOnline = isUserActuallyOnline(liveUser, presenceNowMs);
   const currentIsFounder = isFounderUser(currentUser);
   const targetIsFounder = isFounderUser(liveUser);
   const canApproveMembers = Boolean(
@@ -129,18 +146,20 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                         : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/25'
                     }`}
                   >
-                    {isUserOnline ? '🟢 Online' : '⚫ Offline'}
+                    {isUserOnline
+                      ? `🟢 ${translate(language, 'online')}`
+                      : `⚫ ${translate(language, 'offline')}`}
                   </span>
                   {approvalState === 'pending' && !targetIsFounder && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-[#D4AF37]/50 text-[#F5D061] text-[10px] font-bold uppercase">
                       <Clock className="w-2.5 h-2.5" />
-                      <span>Pending</span>
+                      <span>{translate(language, 'pendingLabel')}</span>
                     </span>
                   )}
                   {approvalState === 'rejected' && !targetIsFounder && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/45 text-rose-300 text-[10px] font-bold uppercase">
                       <XCircle className="w-2.5 h-2.5" />
-                      <span>Rejected</span>
+                      <span>{translate(language, 'rejectedLabel')}</span>
                     </span>
                   )}
                   <span className="text-[11px] font-mono font-semibold text-[#F5D061] tabular-nums">
@@ -174,14 +193,21 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                 )}
               </h2>
 
+              <div className="mt-1.5 flex items-center flex-wrap gap-1.5">
+                <TabbarBadge user={liveUser} language={language} />
+              </div>
+
               {liveUser.assignedOfficeTitle ? (
                 <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#F5D061] text-xs font-medium">
                   <Award className="w-4 h-4 text-[#F5D061]" />
                   <span>{liveUser.assignedOfficeTitle}</span>
                 </div>
               ) : (
-                <p className="text-xs text-slate-300 mt-0.5">
-                  {liveUser.bio || (liveUser.role === 'MEMBER' ? 'Verified Community Member' : 'Organizational Officer')}
+                <p className="text-xs text-slate-300 mt-1">
+                  {liveUser.bio ||
+                    (liveUser.role === 'MEMBER'
+                      ? (language === 'ur' ? 'تصدیق شدہ کمیونٹی ممبر' : 'Verified Community Member')
+                      : (language === 'ur' ? 'تنظیمی عہدیدار' : 'Organizational Officer'))}
                 </p>
               )}
             </div>
@@ -200,9 +226,11 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                 <div className="flex items-center gap-2 text-slate-300 pt-1.5 border-t border-[#D4AF37]/20">
                   <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    Jurisdiction:{' '}
+                    {language === 'ur' ? 'دائرہ کار: ' : 'Jurisdiction: '}
                     <strong className="text-[#F5D061]">
-                      {liveUser.assignedDistrict ? `${liveUser.assignedDistrict} District` : `${liveUser.assignedStateProvince} Province`}
+                      {liveUser.assignedDistrict
+                        ? (language === 'ur' ? `ضلع ${liveUser.assignedDistrict}` : `${liveUser.assignedDistrict} District`)
+                        : (language === 'ur' ? `صوبہ ${liveUser.assignedStateProvince}` : `${liveUser.assignedStateProvince} Province`)}
                     </strong>
                   </span>
                 </div>
@@ -210,7 +238,10 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
 
               <div className="flex items-center gap-2 text-slate-400">
                 <Calendar className="w-4 h-4 text-[#D4AF37]/80 shrink-0" />
-                <span className="tabular-nums">Joined: {liveUser.joinDate || liveUser.createdAt || 'Registered Member'}</span>
+                <span className="tabular-nums">
+                  {language === 'ur' ? 'شمولیت:' : 'Joined:'}{' '}
+                  {liveUser.joinDate || liveUser.createdAt || (language === 'ur' ? 'رجسٹرڈ ممبر' : 'Registered Member')}
+                </span>
               </div>
             </div>
 
@@ -228,7 +259,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   )}
                 </div>
                 {!showContact && (
-                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">Protected</span>
+                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">
+                    {language === 'ur' ? 'محفوظ' : 'Protected'}
+                  </span>
                 )}
               </div>
 
@@ -236,7 +269,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                 <div className="flex items-center gap-2 text-slate-200 min-w-0">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
                   {showContact ? (
-                    <span className="font-mono tabular-nums text-slate-100">{liveUser.phone || 'Not provided'}</span>
+                    <span className="font-mono tabular-nums text-slate-100">
+                      {liveUser.phone || (language === 'ur' ? 'درج نہیں' : 'Not provided')}
+                    </span>
                   ) : (
                     <span className="text-slate-400 flex items-center gap-1.5 font-mono">
                       <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> +92 3** *******
@@ -244,7 +279,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   )}
                 </div>
                 {!showContact && (
-                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">Protected</span>
+                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">
+                    {language === 'ur' ? 'محفوظ' : 'Protected'}
+                  </span>
                 )}
               </div>
             </div>
@@ -285,6 +322,69 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                     <span>{language === 'ur' ? 'عہدہ تفویض کریں' : 'Assign Role'}</span>
                   </button>
                 )}
+
+                {currentIsFounder && !targetIsFounder && !isSelf && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError(null);
+                      setConfirmDeleteOpen(true);
+                    }}
+                    className="kc-pressable py-2 px-3 rounded-xl bg-rose-950/85 hover:bg-rose-900 border border-rose-500/45 text-rose-200 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    <span>{translate(language, 'deleteMemberPermBtn')}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {confirmDeleteOpen && currentIsFounder && !targetIsFounder && !isSelf && (
+              <div className="mt-3 p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/50 space-y-2.5 text-xs">
+                <p className="font-extrabold text-rose-200 flex items-center gap-1.5">
+                  <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{translate(language, 'deleteMemberConfirmTitle')}</span>
+                </p>
+                <p className="text-[11px] text-rose-100/90 leading-relaxed">
+                  {translate(language, 'deleteMemberConfirmDesc')} ({liveUser.name} — {liveUser.email})
+                </p>
+                {deleteError && (
+                  <p className="text-[11px] text-amber-300 font-semibold">{deleteError}</p>
+                )}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={deleteBusy}
+                    onClick={async () => {
+                      setDeleteBusy(true);
+                      setDeleteError(null);
+                      try {
+                        const res = await deleteUserPermanently(liveUser.id);
+                        if (res.success) {
+                          setConfirmDeleteOpen(false);
+                          onClose();
+                        } else {
+                          setDeleteError(res.error || res.message);
+                        }
+                      } finally {
+                        setDeleteBusy(false);
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-extrabold cursor-pointer disabled:opacity-50"
+                  >
+                    {deleteBusy
+                      ? (language === 'ur' ? 'حذف ہو رہا ہے...' : 'Deleting...')
+                      : translate(language, 'confirmPermanentDeleteBtn')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteBusy}
+                    onClick={() => setConfirmDeleteOpen(false)}
+                    className="px-3 py-2 rounded-lg bg-[#090D16] border border-slate-700 text-slate-300 font-semibold cursor-pointer"
+                  >
+                    {translate(language, 'cancel')}
+                  </button>
+                </div>
               </div>
             )}
 

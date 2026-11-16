@@ -85,6 +85,16 @@ const MainLayout: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  const prevSignedInRef = React.useRef<boolean>(Boolean(currentUser));
+  React.useEffect(() => {
+    const isNowSignedIn = Boolean(currentUser);
+    if (!prevSignedInRef.current && isNowSignedIn) {
+      setIsRegisterModalOpen(false);
+      setIsLoginModalOpen(false);
+    }
+    prevSignedInRef.current = isNowSignedIn;
+  }, [currentUser]);
+
   const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
   }, []);
@@ -205,8 +215,6 @@ const MainLayout: React.FC = () => {
     { id: 'profile', label: translate(language, 'mobileNavProfile'), icon: UserIcon }
   ];
 
-  const isRtl = language === 'ur';
-
   const liveApprovalAlert =
     currentUser.role === 'SUPER_ADMIN'
       ? userNotifications.find(n => n.type === 'approval_request' && !n.read) || null
@@ -242,9 +250,7 @@ const MainLayout: React.FC = () => {
       <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
         {/* Desktop Docked Sidebar */}
         <aside
-          className={`hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 ${
-            isRtl ? 'border-l border-[#D4AF37]/20' : 'border-r border-[#D4AF37]/20'
-          }`}
+          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-[#D4AF37]/20"
           style={{ backgroundColor: 'var(--kc-surface, #111622)' }}
         >
           <Sidebar />
@@ -261,18 +267,14 @@ const MainLayout: React.FC = () => {
           />
 
           <aside
-            className={`fixed inset-y-0 ${
-              isRtl ? 'right-0 border-l' : 'left-0 border-r'
-            } z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
+            className={`fixed inset-y-0 left-0 border-r z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
               isMobileSidebarOpen
                 ? 'translate-x-0 pointer-events-auto'
-                : isRtl
-                ? 'translate-x-full pointer-events-none'
                 : '-translate-x-full pointer-events-none'
             }`}
             role="dialog"
             aria-modal="true"
-            aria-label="Mobile Navigation Menu"
+            aria-label={language === 'ur' ? 'موبائل نیویگیشن مینو' : 'Mobile Navigation Menu'}
           >
             <Sidebar
               onClose={() => setIsMobileSidebarOpen(false)}
@@ -308,13 +310,13 @@ const MainLayout: React.FC = () => {
                     }}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg kc-gold-button font-extrabold text-[11px] cursor-pointer"
                   >
-                    <span>Review &amp; Approve</span>
+                    <span>{translate(language, 'reviewApproveBtn')}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => markNotificationAsRead(liveApprovalAlert.id)}
-                    aria-label="Dismiss approval alert"
+                    aria-label={language === 'ur' ? 'منظوری الرٹ بند کریں' : 'Dismiss approval alert'}
                     className="p-1.5 rounded-lg bg-[#090D16]/80 hover:bg-[#161F33] border border-[#D4AF37]/25 text-slate-300 cursor-pointer kc-pressable"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -323,7 +325,7 @@ const MainLayout: React.FC = () => {
               </div>
             )}
 
-            <ErrorBoundary key={activeTab} title="View Recovery Shield">
+            <ErrorBoundary key={activeTab} title={translate(language, 'viewRecoveryShield')}>
               {renderContent()}
             </ErrorBoundary>
           </div>
@@ -412,7 +414,7 @@ const MainLayout: React.FC = () => {
                 </span>
               )}
             </span>
-            <span className="whitespace-nowrap">Live Chat</span>
+            <span className="whitespace-nowrap">{translate(language, 'liveChatBtn')}</span>
           </button>
           <button
             type="button"
@@ -420,8 +422,8 @@ const MainLayout: React.FC = () => {
               e.stopPropagation();
               hideLiveChat();
             }}
-            aria-label="Hide Live Chat bubble"
-            title="Hide Live Chat bubble"
+            aria-label={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
+            title={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
             className="px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/30 cursor-pointer kc-pressable"
           >
             <X className="w-3.5 h-3.5" />

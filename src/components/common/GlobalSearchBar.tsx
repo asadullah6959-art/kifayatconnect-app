@@ -25,7 +25,8 @@ export const GlobalSearchBar: React.FC = () => {
     complaints, 
     setActiveTab, 
     setSelectedReceipt, 
-    setSelectedCardUser 
+    setSelectedCardUser,
+    language
   } = useApp();
 
   const [query, setQuery] = useState('');
@@ -157,27 +158,27 @@ export const GlobalSearchBar: React.FC = () => {
     // All roles can access relevant reports
     reportsCatalog.push({
       id: 'rep_q4_stmt',
-      title: 'Q4 2026 Audited Welfare Statement',
-      type: 'Financial Statement',
+      title: language === 'ur' ? 'سہ ماہی 2026 آڈٹ شدہ ویلفیئر گوشوارہ' : 'Q4 2026 Audited Welfare Statement',
+      type: language === 'ur' ? 'مالی گوشوارہ' : 'Financial Statement',
       description: isMember 
-        ? 'Personal contribution balance & tax receipt breakdown' 
-        : 'Reconciled collections across central treasury ledgers',
+        ? (language === 'ur' ? 'ذاتی تعاون کا بیلنس اور ٹیکس رسید کی تفصیل' : 'Personal contribution balance & tax receipt breakdown')
+        : (language === 'ur' ? 'مرکزی خزانے کے کھاتوں کی تصدیق شدہ وصولیاں' : 'Reconciled collections across central treasury ledgers'),
       targetTab: 'reports'
     });
 
     if (isSuperAdmin) {
       reportsCatalog.push({
         id: 'rep_treasury_ledger',
-        title: 'Central Treasury Ledger & Receipt Vouchers',
-        type: 'Audit Ledger',
-        description: 'Complete verified bank deposits and digital voucher history',
+        title: language === 'ur' ? 'مرکزی خزانہ لیجر اور رسید واؤچرز' : 'Central Treasury Ledger & Receipt Vouchers',
+        type: language === 'ur' ? 'آڈٹ لیجر' : 'Audit Ledger',
+        description: language === 'ur' ? 'تصدیق شدہ بینک ڈپازٹس اور ڈیجیٹل واؤچر ریکارڈ' : 'Complete verified bank deposits and digital voucher history',
         targetTab: 'funds'
       });
       reportsCatalog.push({
         id: 'rep_annual_fund',
-        title: 'Annual Welfare & Healthcare Fund Summary',
-        type: 'Fund Report',
-        description: 'Dispensary and education scholarship allocation matrix',
+        title: language === 'ur' ? 'سالانہ ویلفیئر اور صحت فنڈ خلاصہ' : 'Annual Welfare & Healthcare Fund Summary',
+        type: language === 'ur' ? 'فنڈ رپورٹ' : 'Fund Report',
+        description: language === 'ur' ? 'ڈسپنسری اور تعلیمی وظائف کی تقسیم کا ریکارڈ' : 'Dispensary and education scholarship allocation matrix',
         targetTab: 'reports'
       });
     }
@@ -185,9 +186,11 @@ export const GlobalSearchBar: React.FC = () => {
     if (isSuperAdmin || isDistrictAdmin || isCoAdmin) {
       reportsCatalog.push({
         id: 'rep_regional_quota',
-        title: `${isDistrictAdmin ? (currentUser.assignedDistrict || 'District') : isCoAdmin ? (currentUser.assignedStateProvince || 'State') : 'Administrative'} Quota & Verification Report`,
-        type: 'Governance Report',
-        description: `Active member onboarding and compliance statistics`,
+        title: language === 'ur'
+          ? `${isDistrictAdmin ? (currentUser.assignedDistrict || 'ضلع') : isCoAdmin ? (currentUser.assignedStateProvince || 'صوبہ') : 'انتظامی'} کوٹہ اور تصدیقی رپورٹ`
+          : `${isDistrictAdmin ? (currentUser.assignedDistrict || 'District') : isCoAdmin ? (currentUser.assignedStateProvince || 'State') : 'Administrative'} Quota & Verification Report`,
+        type: language === 'ur' ? 'گورننس رپورٹ' : 'Governance Report',
+        description: language === 'ur' ? 'فعال ممبران اور منظوریوں کے اعداد و شمار' : 'Active member onboarding and compliance statistics',
         targetTab: 'reports'
       });
     }
@@ -273,13 +276,19 @@ export const GlobalSearchBar: React.FC = () => {
 
   // Role scope explanation badge for transparency
   const getScopeDescription = () => {
-    if (isSuperAdmin) return 'Super Admin Scope: Organization-Wide Search';
-    if (isDistrictAdmin) return `District Scope: Strictly ${currentUser.assignedDistrict || currentUser.district || 'Assigned District'} Records`;
-    if (isCoAdmin) return `State Scope: Strictly ${currentUser.assignedStateProvince || currentUser.stateProvince || 'Assigned State'} Records`;
-    return 'Member Scope: Personal Receipts & Welfare Reports';
+    if (isSuperAdmin) return language === 'ur' ? 'سپر ایڈمن دائرہ کار: مکمل تنظیم میں تلاش' : 'Super Admin Scope: Organization-Wide Search';
+    if (isDistrictAdmin) return language === 'ur' ? `ضلعی دائرہ کار: صرف ${currentUser.assignedDistrict || currentUser.district || 'متعلقہ ضلع'}` : `District Scope: Strictly ${currentUser.assignedDistrict || currentUser.district || 'Assigned District'} Records`;
+    if (isCoAdmin) return language === 'ur' ? `صوبائی دائرہ کار: صرف ${currentUser.assignedStateProvince || currentUser.stateProvince || 'متعلقہ صوبہ'}` : `State Scope: Strictly ${currentUser.assignedStateProvince || currentUser.stateProvince || 'Assigned State'} Records`;
+    return language === 'ur' ? 'ممبر دائرہ کار: ذاتی رسیدیں اور رپورٹس' : 'Member Scope: Personal Receipts & Welfare Reports';
   };
 
   const getPlaceholder = () => {
+    if (language === 'ur') {
+      if (isSuperAdmin) return 'ممبران، رسیدیں، رپورٹس تلاش کریں...';
+      if (isDistrictAdmin) return `${currentUser.assignedDistrict || currentUser.district || 'ضلع'} ریکارڈ تلاش کریں...`;
+      if (isCoAdmin) return `${currentUser.assignedStateProvince || currentUser.stateProvince || 'صوبہ'} ریکارڈ تلاش کریں...`;
+      return 'اپنی رسیدیں اور رپورٹس تلاش کریں...';
+    }
     if (isSuperAdmin) return 'Search members, receipts, reports (⌘K)...';
     if (isDistrictAdmin) return `Search ${(currentUser.assignedDistrict || currentUser.district || 'District')} records (⌘K)...`;
     if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records (⌘K)...`;
@@ -337,7 +346,7 @@ export const GlobalSearchBar: React.FC = () => {
             </span>
             {query.trim() && (
               <span className="text-[10px] text-[#F5D061] font-mono tabular-nums shrink-0">
-                {totalResultsCount} results
+                {language === 'ur' ? `${totalResultsCount} نتائج` : `${totalResultsCount} results`}
               </span>
             )}
           </div>
@@ -347,7 +356,7 @@ export const GlobalSearchBar: React.FC = () => {
             {!query.trim() ? (
               <div className="p-2 space-y-3">
                 <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider block">
-                  Quick Access Reports & Ledgers
+                  {language === 'ur' ? 'فوری رپورٹس اور کھاتے' : 'Quick Access Reports & Ledgers'}
                 </span>
                 <div className="space-y-1">
                   {reportResults.map(rep => (
@@ -373,21 +382,21 @@ export const GlobalSearchBar: React.FC = () => {
                 </div>
 
                 <div className="pt-2 border-t border-[#D4AF37]/20 text-[10px] text-slate-400 flex items-center justify-between">
-                  <span>Type to search members, receipt vouchers, or reference IDs</span>
-                  <span className="font-mono text-[#F5D061]">ESC to close</span>
+                  <span>{language === 'ur' ? 'ممبران، رسیدیں یا ریفرنس آئی ڈی تلاش کرنے کے لیے لکھیں' : 'Type to search members, receipt vouchers, or reference IDs'}</span>
+                  <span className="font-mono text-[#F5D061]">{language === 'ur' ? 'بند کرنے کے لیے ESC' : 'ESC to close'}</span>
                 </div>
               </div>
             ) : totalResultsCount === 0 ? (
               <div className="py-8 text-center text-xs text-slate-400 space-y-1">
-                <p>No matching records found for "{query}".</p>
+                <p>{language === 'ur' ? `"${query}" کے لیے کوئی ریکارڈ نہیں ملا۔` : `No matching records found for "${query}".`}</p>
                 {isMember && (
                   <p className="text-[11px] text-slate-500">
-                    Note: Members can only search their personal receipts and public reports.
+                    {language === 'ur' ? 'نوٹ: ممبران صرف اپنی ذاتی رسیدیں اور عوامی رپورٹس تلاش کر سکتے ہیں۔' : 'Note: Members can only search their personal receipts and public reports.'}
                   </p>
                 )}
                 {isDistrictAdmin && (
                   <p className="text-[11px] text-slate-500">
-                    Note: District Admin search is strictly scoped to {currentUser.assignedDistrict || currentUser.district}.
+                    {language === 'ur' ? `نوٹ: ضلعی ایڈمن کی تلاش ${currentUser.assignedDistrict || currentUser.district} تک محدود ہے۔` : `Note: District Admin search is strictly scoped to ${currentUser.assignedDistrict || currentUser.district}.`}
                   </p>
                 )}
               </div>
@@ -397,7 +406,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {memberResults.length > 0 && (
                   <div className="pt-1">
                     <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
-                      Members ({memberResults.length})
+                      {language === 'ur' ? `ممبران (${memberResults.length})` : `Members (${memberResults.length})`}
                     </span>
                     <div className="space-y-0.5">
                       {memberResults.map(member => (
@@ -424,7 +433,9 @@ export const GlobalSearchBar: React.FC = () => {
                             <span className="font-mono tabular-nums text-[10px] font-bold text-[#F5D061]">
                               PKR {member.totalContributed.toLocaleString()}
                             </span>
-                            <span className="block text-[9px] text-emerald-400">View ID Card →</span>
+                            <span className="block text-[9px] text-emerald-400">
+                              {language === 'ur' ? 'آئی ڈی کارڈ دیکھیں →' : 'View ID Card →'}
+                            </span>
                           </div>
                         </button>
                       ))}
@@ -436,7 +447,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {transactionResults.length > 0 && (
                   <div className="pt-2">
                     <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
-                      Transactions & Receipts ({transactionResults.length})
+                      {language === 'ur' ? `ادائیگیاں اور رسیدیں (${transactionResults.length})` : `Transactions & Receipts (${transactionResults.length})`}
                     </span>
                     <div className="space-y-0.5">
                       {transactionResults.map(tx => (
@@ -461,7 +472,7 @@ export const GlobalSearchBar: React.FC = () => {
                                 </span>
                               </div>
                               <p className="text-[10px] text-slate-400 truncate">
-                                {tx.userName} · {tx.fundCategory} · Ref: {tx.referenceNumber}
+                                {tx.userName} · {tx.fundCategory} · {language === 'ur' ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}
                               </p>
                             </div>
                           </div>
@@ -471,7 +482,9 @@ export const GlobalSearchBar: React.FC = () => {
                               PKR {tx.amount.toLocaleString()}
                             </span>
                             <span className="block text-[9px] text-emerald-400">
-                              {tx.status === 'VERIFIED' ? 'Open E-Receipt →' : 'View in Queue →'}
+                              {tx.status === 'VERIFIED'
+                                ? (language === 'ur' ? 'ای-رسید کھولیں →' : 'Open E-Receipt →')
+                                : (language === 'ur' ? 'قطار دیکھیں →' : 'View in Queue →')}
                             </span>
                           </div>
                         </button>
@@ -484,7 +497,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {reportResults.length > 0 && (
                   <div className="pt-2">
                     <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
-                      Reports & Ledgers ({reportResults.length})
+                      {language === 'ur' ? `رپورٹس اور کھاتے (${reportResults.length})` : `Reports & Ledgers (${reportResults.length})`}
                     </span>
                     <div className="space-y-0.5">
                       {reportResults.map(rep => (
@@ -504,7 +517,9 @@ export const GlobalSearchBar: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">Open →</span>
+                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">
+                            {language === 'ur' ? 'کھولیں →' : 'Open →'}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -515,7 +530,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {applicationResults.length > 0 && (
                   <div className="pt-2">
                     <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
-                      Membership Approvals ({applicationResults.length})
+                      {language === 'ur' ? `ممبرشپ منظوریاں (${applicationResults.length})` : `Membership Approvals (${applicationResults.length})`}
                     </span>
                     <div className="space-y-0.5">
                       {applicationResults.map(app => (
@@ -535,7 +550,9 @@ export const GlobalSearchBar: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">Review →</span>
+                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">
+                            {language === 'ur' ? 'جائزہ لیں →' : 'Review →'}
+                          </span>
                         </button>
                       ))}
                     </div>

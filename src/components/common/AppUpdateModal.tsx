@@ -47,7 +47,9 @@ export const AppUpdateModal: React.FC = () => {
 
   const description = hasAdminUpdate && latestPublishedUpdate
     ? latestPublishedUpdate.description
-    : 'A newer verified release of Kifayat Connect is available with improved stability and performance.';
+    : (language === 'ur'
+        ? 'کفایت کنیکٹ کا نیا مستند ورژن بہتر رفتار اور سیکیورٹی کے ساتھ دستیاب ہے۔'
+        : 'A newer verified release of Kifayat Connect is available with improved stability and performance.');
 
   const notes = hasAdminUpdate && latestPublishedUpdate?.releaseNotes?.length
     ? latestPublishedUpdate.releaseNotes
@@ -55,7 +57,7 @@ export const AppUpdateModal: React.FC = () => {
 
   const releaseDate = hasAdminUpdate && latestPublishedUpdate
     ? latestPublishedUpdate.releaseDate
-    : (githubRelease?.publishedAt ? new Date(githubRelease.publishedAt).toLocaleDateString() : 'Latest');
+    : (githubRelease?.publishedAt ? new Date(githubRelease.publishedAt).toLocaleDateString() : (language === 'ur' ? 'تازہ ترین' : 'Latest'));
 
   const handlePwaUpdate = () => {
     if ('serviceWorker' in navigator) {
@@ -101,7 +103,7 @@ export const AppUpdateModal: React.FC = () => {
                 </span>
                 {isMandatory && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40">
-                    Required Update
+                    {language === 'ur' ? 'لازمی اپڈیٹ' : 'Required Update'}
                   </span>
                 )}
               </div>
@@ -112,7 +114,7 @@ export const AppUpdateModal: React.FC = () => {
           </div>
 
           <p className="text-xs text-slate-400 font-mono tabular-nums">
-            Released: {releaseDate}
+            {language === 'ur' ? `جاری کردہ: ${releaseDate}` : `Released: ${releaseDate}`}
           </p>
         </div>
 
@@ -124,7 +126,7 @@ export const AppUpdateModal: React.FC = () => {
           {notes.length > 0 && (
             <div className="bg-[#090D16] p-4 rounded-xl border border-[#D4AF37]/25 space-y-2">
               <span className="text-xs font-bold text-[#F5D061] block uppercase tracking-wider">
-                What&apos;s New:
+                {language === 'ur' ? 'نئی تبدیلیاں:' : "What's New:"}
               </span>
               <ul className="space-y-1.5">
                 {notes.map((note, index) => (

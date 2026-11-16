@@ -89,21 +89,33 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
             <div className="flex items-center gap-2 mb-3">
               <Smartphone className="w-5 h-5 text-[#F5D061]" />
-              <h4 className="font-extrabold text-sm text-white">Install Kifayat Connect</h4>
+              <h4 className="font-extrabold text-sm text-white">
+                {language === 'ur' ? 'کفایت کنیکٹ انسٹال کریں' : 'Install Kifayat Connect'}
+              </h4>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Install Kifayat Connect on your home screen for quick offline access and fast native performance:
+              {language === 'ur'
+                ? 'تیز رفتار رسائی اور آف لائن استعمال کے لیے کفایت کنیکٹ کو اپنی ہوم اسکرین پر شامل کریں:'
+                : 'Install Kifayat Connect on your home screen for quick offline access and fast native performance:'}
             </p>
 
             <div className="space-y-2.5 text-xs text-slate-200 bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/30">
               <div className="flex items-center gap-2.5">
                 <Share className="w-4 h-4 text-[#F5D061] shrink-0" />
-                <span>1. Tap the <strong>Share</strong> button in browser toolbar</span>
+                <span>
+                  {language === 'ur'
+                    ? '1. براؤزر ٹول بار میں Share بٹن پر کلک کریں'
+                    : <>1. Tap the <strong>Share</strong> button in browser toolbar</>}
+                </span>
               </div>
               <div className="flex items-center gap-2.5">
                 <PlusSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>2. Select <strong>Add to Home Screen</strong></span>
+                <span>
+                  {language === 'ur'
+                    ? '2. Add to Home Screen منتخب کریں'
+                    : <>2. Select <strong>Add to Home Screen</strong></>}
+                </span>
               </div>
             </div>
 
@@ -112,7 +124,7 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
                 onClick={() => setShowIosModal(false)}
                 className="px-4 py-2 rounded-xl kc-gold-button font-extrabold text-xs cursor-pointer"
               >
-                Got it
+                {language === 'ur' ? 'سمجھ گیا' : 'Got it'}
               </button>
             </div>
           </div>

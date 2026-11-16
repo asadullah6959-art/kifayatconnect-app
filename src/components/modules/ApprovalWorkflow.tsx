@@ -26,6 +26,7 @@ import {
 } from '../../data/locationData';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { LuxurySelect } from '../common/LuxurySelect';
+import { TabbarBadge } from '../common/TabbarBadge';
 
 export const ApprovalWorkflow: React.FC = () => {
   const { 
@@ -36,6 +37,7 @@ export const ApprovalWorkflow: React.FC = () => {
     rejectApplication,
     language 
   } = useApp();
+  const isUr = language === 'ur';
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
@@ -197,6 +199,16 @@ export const ApprovalWorkflow: React.FC = () => {
     }
   };
 
+  const localizeAppStatus = (status: string) => {
+    if (!isUr) return status;
+    if (status === 'PENDING_REGIONAL_REVIEW' || status === 'PENDING_DISTRICT_REVIEW') return 'ضلعی جائزے کے منتظر';
+    if (status === 'RECOMMENDED_BY_REGION' || status === 'RECOMMENDED_BY_DISTRICT') return 'ضلع کی جانب سے تجویز کردہ';
+    if (status === 'ACTIVE') return 'منظور شدہ و فعال';
+    if (status === 'REJECTED') return 'مسترد شدہ';
+    if (status === 'SUSPENDED') return 'معطل';
+    return status;
+  };
+
   return (
     <div className="space-y-6">
       {/* Module Header */}
@@ -204,17 +216,21 @@ export const ApprovalWorkflow: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-[#F5D061] uppercase tracking-wider">
-              Governance & Verification Pipeline
+              {isUr ? 'گورننس اور تصدیقی پائپ لائن' : 'Governance & Verification Pipeline'}
             </span>
             <span className="text-slate-500">·</span>
-            <span className="text-xs text-slate-400">Separation of Powers Workflow</span>
+            <span className="text-xs text-slate-400">
+              {isUr ? 'اختیارات کی تقسیم کا ورک فلو' : 'Separation of Powers Workflow'}
+            </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
             <CheckSquare className="w-6 h-6 text-[#F5D061]" />
-            <span>Membership Multi-Tier Approval Center</span>
+            <span>{isUr ? 'ممبرشپ کثیر الجہتی منظوری مرکز' : 'Membership Multi-Tier Approval Center'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Stage 1: District Admin verification & recommendation → Stage 2: Super Admin final approval & ID issuance.
+            {isUr
+              ? 'مرحلہ 1: ضلعی ایڈمن کی تصدیق و سفارش ← مرحلہ 2: سپر ایڈمن کی حتمی منظوری اور آئی ڈی کارڈ کا اجراء۔'
+              : 'Stage 1: District Admin verification & recommendation → Stage 2: Super Admin final approval & ID issuance.'}
           </p>
         </div>
 
@@ -222,22 +238,22 @@ export const ApprovalWorkflow: React.FC = () => {
         <div className="hidden lg:flex items-center gap-2 bg-[#111726] p-2.5 rounded-xl border border-[#D4AF37]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
           <div className="flex items-center gap-1.5 font-medium text-slate-200">
             <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">1</span>
-            <span>Registration</span>
+            <span>{isUr ? 'رجسٹریشن' : 'Registration'}</span>
           </div>
           <span className="text-[#D4AF37]/60">→</span>
           <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-[#F5D061] font-bold' : 'text-slate-300'}`}>
             <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">2</span>
-            <span>District Verify</span>
+            <span>{isUr ? 'ضلعی تصدیق' : 'District Verify'}</span>
           </div>
           <span className="text-[#D4AF37]/60">→</span>
           <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-emerald-300 font-bold' : 'text-slate-300'}`}>
             <span className="w-5 h-5 rounded-full bg-[#042920] border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
-            <span>Super Admin Sign</span>
+            <span>{isUr ? 'سپر ایڈمن دستخط' : 'Super Admin Sign'}</span>
           </div>
           <span className="text-[#D4AF37]/60">→</span>
           <div className="flex items-center gap-1.5 text-slate-300">
             <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-slate-200 flex items-center justify-center text-[10px] font-bold tabular-nums">4</span>
-            <span>ID Card Issued</span>
+            <span>{isUr ? 'آئی ڈی کارڈ جاری' : 'ID Card Issued'}</span>
           </div>
         </div>
       </div>
@@ -253,7 +269,9 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
-            Stage 1: Pending Review ({applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'PENDING_REGIONAL_REVIEW' || (a.status as any) === 'PENDING_DISTRICT_REVIEW')).length})
+            {isUr
+              ? `مرحلہ 1: زیرِ التواء جائزہ (${applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'PENDING_REGIONAL_REVIEW' || (a.status as any) === 'PENDING_DISTRICT_REVIEW')).length})`
+              : `Stage 1: Pending Review (${applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'PENDING_REGIONAL_REVIEW' || (a.status as any) === 'PENDING_DISTRICT_REVIEW')).length})`}
           </button>
 
           <button
@@ -264,7 +282,9 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
-            Stage 2: Recommended ({applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'RECOMMENDED_BY_REGION' || (a.status as any) === 'RECOMMENDED_BY_DISTRICT')).length})
+            {isUr
+              ? `مرحلہ 2: تجویز کردہ (${applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'RECOMMENDED_BY_REGION' || (a.status as any) === 'RECOMMENDED_BY_DISTRICT')).length})`
+              : `Stage 2: Recommended (${applications.filter(a => (isDistrictAdmin ? a.district === (currentUser.assignedDistrict || currentUser.district) : true) && ((a.status as any) === 'RECOMMENDED_BY_REGION' || (a.status as any) === 'RECOMMENDED_BY_DISTRICT')).length})`}
           </button>
 
           <button
@@ -275,7 +295,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
-            Approved & Active
+            {isUr ? 'منظور شدہ و فعال' : 'Approved & Active'}
           </button>
 
           <button
@@ -286,7 +306,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
           >
-            Rejected
+            {isUr ? 'مسترد شدہ' : 'Rejected'}
           </button>
         </div>
 
@@ -300,9 +320,9 @@ export const ApprovalWorkflow: React.FC = () => {
                 setFilterProvince(val);
                 setFilterDistrict('ALL');
               }}
-              label="Province Filter"
+              label={isUr ? 'صوبہ فلٹر' : 'Province Filter'}
               options={[
-                { value: 'ALL', label: 'All Provinces' },
+                { value: 'ALL', label: isUr ? 'تمام صوبے' : 'All Provinces' },
                 ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
               ]}
             />
@@ -314,9 +334,9 @@ export const ApprovalWorkflow: React.FC = () => {
               searchable
               value={filterDistrict}
               onChange={setFilterDistrict}
-              label="District Filter"
+              label={isUr ? 'ضلع فلٹر' : 'District Filter'}
               options={[
-                { value: 'ALL', label: 'All Districts' },
+                { value: 'ALL', label: isUr ? 'تمام اضلاع' : 'All Districts' },
                 ...(filterProvince !== 'ALL'
                   ? getDistrictsForProvince(filterProvince)
                   : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
@@ -340,21 +360,25 @@ export const ApprovalWorkflow: React.FC = () => {
                 className="w-4 h-4 rounded border-[#D4AF37]/50 bg-[#090D16] accent-[#D4AF37] cursor-pointer"
               />
               <span className="tabular-nums">
-                Select All Eligible ({actionableVisibleApps.length})
+                {isUr
+                  ? `تمام اہل درخواستیں منتخب کریں (${actionableVisibleApps.length})`
+                  : `Select All Eligible (${actionableVisibleApps.length})`}
               </span>
             </label>
 
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-semibold text-[#F5D061] tabular-nums">
-                  {selectedIds.length} of {actionableVisibleApps.length} selected
+                  {isUr
+                    ? `${actionableVisibleApps.length} میں سے ${selectedIds.length} منتخب`
+                    : `${selectedIds.length} of ${actionableVisibleApps.length} selected`}
                 </span>
                 <button
                   type="button"
                   onClick={clearSelection}
                   className="text-[11px] text-slate-300 hover:text-white underline underline-offset-2 ml-1 cursor-pointer"
                 >
-                  Deselect all
+                  {isUr ? 'انتخاب ختم کریں' : 'Deselect all'}
                 </button>
               </div>
             )}
@@ -363,7 +387,9 @@ export const ApprovalWorkflow: React.FC = () => {
 
         {visibleApplications.length === 0 ? (
           <div className="p-12 text-center kc-obsidian-card rounded-2xl text-xs text-slate-300">
-            No applications match this workflow stage and location filter.
+            {isUr
+              ? 'اس مرحلے اور مقام کے فلٹر کے مطابق کوئی درخواست موجود نہیں ہے۔'
+              : 'No applications match this workflow stage and location filter.'}
           </div>
         ) : (
           visibleApplications.map(app => {
@@ -404,13 +430,20 @@ export const ApprovalWorkflow: React.FC = () => {
                         <h3 className="font-bold text-base text-white">
                           {app.applicantName}
                         </h3>
+                        <TabbarBadge
+                          tabbarId={app.tabbarId}
+                          tabbarEnglish={app.tabbarEnglish}
+                          tabbarUrdu={app.tabbarUrdu}
+                          compact
+                          language={language}
+                        />
                         <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-medium bg-[#042920] border border-[#D4AF37]/35 text-emerald-200 text-xs">
                           <MapPin className="w-3 h-3 text-[#F5D061] shrink-0" />
                           <span>{dist}, {prov}</span>
                         </div>
                         {app.isOldMemberVerification && (
                           <span className="text-[10px] font-semibold text-[#F5D061] bg-[#090D16] px-2 py-0.5 rounded-lg border border-[#D4AF37]/35">
-                            Legacy ID: {app.oldMembershipNo}
+                            {isUr ? 'پرانا ممبر نمبر:' : 'Legacy ID:'} {app.oldMembershipNo}
                           </span>
                         )}
                       </div>
@@ -425,49 +458,49 @@ export const ApprovalWorkflow: React.FC = () => {
                             ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
                             : 'bg-[#090D16] text-sky-300 border border-sky-500/40'
                         }`}>
-                          {app.status}
+                          {localizeAppStatus(app.status)}
                         </span>
                       </div>
                     </div>
 
                     {/* Administrative Location Hierarchy Breadcrumb */}
                     <div className="px-3 py-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/20 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
-                      <span className="text-[10px] uppercase font-bold text-[#D4AF37]">Jurisdiction:</span>
+                      <span className="text-[10px] uppercase font-bold text-[#D4AF37]">{isUr ? 'دائرہ کار:' : 'Jurisdiction:'}</span>
                       <span className="font-semibold text-white">{app.country || 'Pakistan'}</span>
                       <span className="text-slate-500">→</span>
                       <span className="font-semibold text-white">{prov}</span>
                       <span className="text-slate-500">→</span>
                       <span className="font-semibold text-emerald-300">{dist}</span>
                       <span className="text-slate-500">→</span>
-                      <span className="text-slate-200">Tehsil: {teh || 'General'}</span>
+                      <span className="text-slate-200">{isUr ? 'تحصیل:' : 'Tehsil:'} {teh || (isUr ? 'جنرل' : 'General')}</span>
                       <span className="text-slate-500">→</span>
-                      <span className="text-slate-200">City: {city || dist}</span>
+                      <span className="text-slate-200">{isUr ? 'شہر:' : 'City:'} {city || dist}</span>
                       <span className="text-slate-500">→</span>
-                      <span className="font-mono text-slate-200">UC: {uc || 'N/A'}</span>
+                      <span className="font-mono text-slate-200">{isUr ? 'یو سی:' : 'UC:'} {uc || 'N/A'}</span>
                     </div>
 
                     {/* Applicant Credentials Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/20">
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">National ID (CNIC)</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">{isUr ? 'قومی شناختی کارڈ (CNIC)' : 'National ID (CNIC)'}</span>
                         <span className="font-mono text-white font-semibold tabular-nums">{app.cnic}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Phone Number</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">{isUr ? 'فون نمبر' : 'Phone Number'}</span>
                         <span className="text-slate-200 font-mono tabular-nums">{app.phone}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Email</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">{isUr ? 'ای میل' : 'Email'}</span>
                         <span className="text-slate-200 truncate block">{app.email}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Submitted Date</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">{isUr ? 'جمع کرانے کی تاریخ' : 'Submitted Date'}</span>
                         <span className="font-mono text-slate-200 tabular-nums">{new Date(app.submittedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
                     <p className="text-xs text-slate-300">
-                      <span className="text-slate-400">Residential Address: </span>
+                      <span className="text-slate-400">{isUr ? 'رہائشی پتہ: ' : 'Residential Address: '}</span>
                       {app.address}
                     </p>
 
@@ -476,7 +509,9 @@ export const ApprovalWorkflow: React.FC = () => {
                       {(app.districtRemarks || app.regionalRemarks) && (
                         <div className="p-2.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/30">
                           <span className="font-semibold text-[#F5D061]">
-                            District Recommendation ({app.districtAdminName || app.regionalOfficerName || 'District Admin'}):
+                            {isUr
+                              ? `ضلعی سفارش (${app.districtAdminName || app.regionalOfficerName || 'ضلعی ایڈمن'}):`
+                              : `District Recommendation (${app.districtAdminName || app.regionalOfficerName || 'District Admin'}):`}
                           </span>
                           <p className="italic text-slate-200 mt-0.5">
                             "{app.districtRemarks || app.regionalRemarks}"
@@ -487,10 +522,10 @@ export const ApprovalWorkflow: React.FC = () => {
                       {app.superAdminRemarks && (
                         <div className="p-2.5 rounded-xl bg-[#042920]/80 border border-emerald-500/35">
                           <span className="font-semibold text-emerald-300">
-                            Super Admin Final Sign-Off:
+                            {isUr ? 'سپر ایڈمن حتمی منظوری:' : 'Super Admin Final Sign-Off:'}
                           </span>
                           <p className="text-slate-200 mt-0.5">
-                            {app.superAdminRemarks} · Issued Membership ID: <span className="font-mono font-bold text-[#F5D061] tabular-nums">{app.generatedMembershipId}</span>
+                            {app.superAdminRemarks} · {isUr ? 'جاری کردہ ممبرشپ آئی ڈی:' : 'Issued Membership ID:'} <span className="font-mono font-bold text-[#F5D061] tabular-nums">{app.generatedMembershipId}</span>
                           </p>
                         </div>
                       )}
@@ -501,7 +536,7 @@ export const ApprovalWorkflow: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
                           <Paperclip className="w-3 h-3 text-[#F5D061]" />
-                          <span>Supporting Files:</span>
+                          <span>{isUr ? 'معاون دستاویزات:' : 'Supporting Files:'}</span>
                         </span>
 
                         {(app.supportingDocuments && app.supportingDocuments.length > 0) ? (
@@ -518,7 +553,7 @@ export const ApprovalWorkflow: React.FC = () => {
                                     ? 'bg-rose-950/70 text-rose-200 border-rose-500/40'
                                     : 'bg-[#090D16] text-[#F5D061] border-[#D4AF37]/35'
                                 }`}
-                                title={`${doc.name} (${doc.type}) - Click to inspect`}
+                                title={isUr ? `${doc.name} - معائنے کے لیے کلک کریں` : `${doc.name} (${doc.type}) - Click to inspect`}
                               >
                                 <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : doc.type === 'EXPENSE_RECEIPT' || doc.type === 'DEPOSIT_SLIP' ? '🧾' : '📄'}</span>
                                 <span className="max-w-[120px] truncate">{doc.name}</span>
@@ -528,7 +563,7 @@ export const ApprovalWorkflow: React.FC = () => {
                           </div>
                         ) : (
                           <span className="text-[11px] text-slate-400 italic">
-                            No documents attached yet
+                            {isUr ? 'ابھی تک کوئی دستاویز منسلک نہیں' : 'No documents attached yet'}
                           </span>
                         )}
                       </div>
@@ -541,8 +576,8 @@ export const ApprovalWorkflow: React.FC = () => {
                         <Paperclip className="w-3.5 h-3.5 text-[#F5D061]" />
                         <span>
                           {app.supportingDocuments && app.supportingDocuments.length > 0 
-                            ? `Manage Dossier (${app.supportingDocuments.length})` 
-                            : '+ Attach Supporting Files'}
+                            ? (isUr ? `ڈوزیئر منظم کریں (${app.supportingDocuments.length})` : `Manage Dossier (${app.supportingDocuments.length})`)
+                            : (isUr ? '+ معاون دستاویزات منسلک کریں' : '+ Attach Supporting Files')}
                         </span>
                       </button>
                     </div>
@@ -555,12 +590,12 @@ export const ApprovalWorkflow: React.FC = () => {
                           onClick={() => {
                             setReviewingApp(app);
                             setRecommendationChoice('APPROVE');
-                            setRegionalNotes('Residential address confirmed. Applicant background clean.');
+                            setRegionalNotes(isUr ? 'رہائشی پتہ اور کوائف کی تصدیق ہو گئی۔' : 'Residential address confirmed. Applicant background clean.');
                           }}
                           className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
                         >
                           <CheckSquare className="w-3.5 h-3.5" />
-                          <span>Submit District Recommendation</span>
+                          <span>{isUr ? 'ضلعی سفارش جمع کرائیں' : 'Submit District Recommendation'}</span>
                         </button>
                       )}
 
@@ -568,20 +603,20 @@ export const ApprovalWorkflow: React.FC = () => {
                       {isSuperAdmin && ((app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT') && (
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => rejectApplication(app.id, 'Does not satisfy central bylaws criteria.')}
+                            onClick={() => rejectApplication(app.id, isUr ? 'مرکزی قواعد و ضوابط پر پورا نہیں اترتی۔' : 'Does not satisfy central bylaws criteria.')}
                             className="px-3.5 py-2 text-xs font-semibold text-rose-300 bg-rose-950/60 hover:bg-rose-900/70 rounded-xl border border-rose-500/40 cursor-pointer kc-pressable"
                           >
-                            Reject Application
+                            {isUr ? 'درخواست مسترد کریں' : 'Reject Application'}
                           </button>
                           <button
                             onClick={() => {
                               setFinalApprovingApp(app);
-                              setAdminNotes('Final approval granted under Kifayat Connect bylaws.');
+                              setAdminNotes(isUr ? 'کفایت کنیکٹ کے قواعد کے تحت حتمی منظوری دے دی گئی۔' : 'Final approval granted under Kifayat Connect bylaws.');
                             }}
                             className="flex items-center gap-1.5 px-4 py-2 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
-                            <span>Grant Final Approval & Issue ID</span>
+                            <span>{isUr ? 'حتمی منظوری اور آئی ڈی جاری کریں' : 'Grant Final Approval & Issue ID'}</span>
                           </button>
                         </div>
                       )}
@@ -603,13 +638,13 @@ export const ApprovalWorkflow: React.FC = () => {
           >
             <div>
               <span className="text-xs text-[#F5D061] uppercase font-bold tracking-wide">
-                Stage 1 Review: {reviewingApp.district || currentUser.district || 'District Jurisdiction'} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
+                {isUr ? 'مرحلہ 1 جائزہ:' : 'Stage 1 Review:'} {reviewingApp.district || currentUser.district || (isUr ? 'ضلع دائرہ اختیار' : 'District Jurisdiction')} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
               </span>
               <h3 className="text-base font-bold text-white mt-0.5">
-                Recommend {reviewingApp.applicantName}
+                {isUr ? `سفارش: ${reviewingApp.applicantName}` : `Recommend ${reviewingApp.applicantName}`}
               </h3>
               <p className="text-xs text-slate-300">
-                District: <strong className="text-white">{reviewingApp.district || 'General'}</strong> · Tehsil: <strong className="text-white">{reviewingApp.tehsil || 'Central'}</strong> · UC: <strong className="text-white">{reviewingApp.unionCouncil || 'UC-01'}</strong>
+                {isUr ? 'ضلع:' : 'District:'} <strong className="text-white">{reviewingApp.district || (isUr ? 'جنرل' : 'General')}</strong> · {isUr ? 'تحصیل:' : 'Tehsil:'} <strong className="text-white">{reviewingApp.tehsil || (isUr ? 'مرکزی' : 'Central')}</strong> · {isUr ? 'یو سی:' : 'UC:'} <strong className="text-white">{reviewingApp.unionCouncil || 'UC-01'}</strong>
               </p>
             </div>
 
@@ -618,19 +653,21 @@ export const ApprovalWorkflow: React.FC = () => {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-200 flex items-center gap-1.5">
                   <Paperclip className="w-3.5 h-3.5 text-[#F5D061]" />
-                  <span>Supporting Documents:</span>
+                  <span>{isUr ? 'معاون دستاویزات:' : 'Supporting Documents:'}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveDocAppId(reviewingApp.id)}
                   className="text-[#F5D061] font-bold hover:underline text-[11px] cursor-pointer"
                 >
-                  Manage Dossier ({reviewingApp.supportingDocuments?.length || 0})
+                  {isUr ? `ڈوزیئر دیکھیں (${reviewingApp.supportingDocuments?.length || 0})` : `Manage Dossier (${reviewingApp.supportingDocuments?.length || 0})`}
                 </button>
               </div>
 
               {(!reviewingApp.supportingDocuments || reviewingApp.supportingDocuments.length === 0) ? (
-                <p className="text-[11px] text-slate-400 italic">No supporting documents uploaded yet.</p>
+                <p className="text-[11px] text-slate-400 italic">
+                  {isUr ? 'ابھی تک کوئی معاون دستاویز اپلوڈ نہیں ہوئی۔' : 'No supporting documents uploaded yet.'}
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {reviewingApp.supportingDocuments.map(doc => (
@@ -650,7 +687,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-200 block">
-                Recommendation:
+                {isUr ? 'سفارش:' : 'Recommendation:'}
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -663,7 +700,7 @@ export const ApprovalWorkflow: React.FC = () => {
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Recommend Approval</span>
+                  <span>{isUr ? 'منظوری کی سفارش' : 'Recommend Approval'}</span>
                 </button>
 
                 <button
@@ -676,21 +713,21 @@ export const ApprovalWorkflow: React.FC = () => {
                   }`}
                 >
                   <XCircle className="w-4 h-4" />
-                  <span>Recommend Reject</span>
+                  <span>{isUr ? 'مسترد کرنے کی سفارش' : 'Recommend Reject'}</span>
                 </button>
               </div>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-200 block mb-1">
-                Field Verification Remarks
+                {isUr ? 'فیلڈ تصدیق کے ریمارکس' : 'Field Verification Remarks'}
               </label>
               <textarea
                 rows={3}
                 required
                 value={regionalNotes}
                 onChange={(e) => setRegionalNotes(e.target.value)}
-                placeholder="State how credentials and residential address were verified..."
+                placeholder={isUr ? 'تحریر کریں کہ کوائف اور رہائشی پتے کی تصدیق کیسے کی گئی...' : 'State how credentials and residential address were verified...'}
                 className="w-full text-xs p-2.5 rounded-xl kc-luxury-input resize-none"
               />
             </div>
@@ -701,14 +738,14 @@ export const ApprovalWorkflow: React.FC = () => {
                 onClick={() => setReviewingApp(null)}
                 className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 cursor-pointer kc-pressable"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleRegionalSubmit}
                 className="px-4 py-2 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
               >
-                Submit to Super Admin
+                {isUr ? 'سپر ایڈمن کو ارسال کریں' : 'Submit to Super Admin'}
               </button>
             </div>
           </div>
@@ -724,25 +761,27 @@ export const ApprovalWorkflow: React.FC = () => {
           >
             <div>
               <span className="text-xs text-emerald-300 uppercase font-bold tracking-wide">
-                Final Authorization Authority
+                {isUr ? 'حتمی منظوری کا اختیار' : 'Final Authorization Authority'}
               </span>
               <h3 className="text-base font-bold text-white mt-0.5">
-                Issue Official Membership Card
+                {isUr ? 'آفیشل ممبرشپ کارڈ جاری کریں' : 'Issue Official Membership Card'}
               </h3>
               <p className="text-xs text-slate-300">
-                Grant final approval for {finalApprovingApp.applicantName} ({finalApprovingApp.district || finalApprovingApp.region}, {finalApprovingApp.stateProvince || 'Pakistan'}). A digital membership card with unique ID will be instantly generated.
+                {isUr
+                  ? `${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}) کی حتمی منظوری دیں۔ منفرد آئی ڈی کے ساتھ ڈیجیٹل ممبرشپ کارڈ فوری طور پر تیار ہو جائے گا۔`
+                  : `Grant final approval for ${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}, ${finalApprovingApp.stateProvince || 'Pakistan'}). A digital membership card with unique ID will be instantly generated.`}
               </p>
             </div>
 
             <div className="p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 text-xs">
               <span className="font-semibold text-[#F5D061]">
-                District Recommendation On File:
+                {isUr ? 'ریکارڈ پر ضلعی سفارش:' : 'District Recommendation On File:'}
               </span>
               <p className="italic text-slate-200 mt-0.5">
-                "{finalApprovingApp.districtRemarks || finalApprovingApp.regionalRemarks || 'Field review submitted.'}"
+                "{finalApprovingApp.districtRemarks || finalApprovingApp.regionalRemarks || (isUr ? 'فیلڈ جائزہ جمع کرایا گیا۔' : 'Field review submitted.')}"
               </p>
               <span className="block text-[10px] text-slate-400 not-italic mt-1">
-                Verified by: {finalApprovingApp.districtAdminName || finalApprovingApp.regionalOfficerName || 'District Admin'}
+                {isUr ? 'تصدیق کنندہ:' : 'Verified by:'} {finalApprovingApp.districtAdminName || finalApprovingApp.regionalOfficerName || (isUr ? 'ضلعی ایڈمن' : 'District Admin')}
               </span>
             </div>
 
@@ -751,19 +790,21 @@ export const ApprovalWorkflow: React.FC = () => {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-200 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#F5D061]" />
-                  <span>Dossier Verification Audit:</span>
+                  <span>{isUr ? 'ڈوزیئر تصدیقی آڈٹ:' : 'Dossier Verification Audit:'}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveDocAppId(finalApprovingApp.id)}
                   className="text-[#F5D061] font-bold hover:underline text-[11px] cursor-pointer"
                 >
-                  Inspect All ({finalApprovingApp.supportingDocuments?.length || 0})
+                  {isUr ? `سب دیکھیں (${finalApprovingApp.supportingDocuments?.length || 0})` : `Inspect All (${finalApprovingApp.supportingDocuments?.length || 0})`}
                 </button>
               </div>
 
               {(!finalApprovingApp.supportingDocuments || finalApprovingApp.supportingDocuments.length === 0) ? (
-                <p className="text-[11px] text-slate-400 italic">No supporting documents uploaded yet.</p>
+                <p className="text-[11px] text-slate-400 italic">
+                  {isUr ? 'ابھی تک کوئی معاون دستاویز اپلوڈ نہیں ہوئی۔' : 'No supporting documents uploaded yet.'}
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {finalApprovingApp.supportingDocuments.map(doc => (
@@ -785,13 +826,13 @@ export const ApprovalWorkflow: React.FC = () => {
 
             <div>
               <label className="text-xs font-semibold text-slate-200 block mb-1">
-                Super Admin Remarks / Minute Entry
+                {isUr ? 'سپر ایڈمن ریمارکس' : 'Super Admin Remarks / Minute Entry'}
               </label>
               <input
                 type="text"
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Final approval recorded under bylaws..."
+                placeholder={isUr ? 'قواعد کے تحت حتمی منظوری درج کی گئی...' : 'Final approval recorded under bylaws...'}
                 className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
               />
             </div>
@@ -802,14 +843,14 @@ export const ApprovalWorkflow: React.FC = () => {
                 onClick={() => setFinalApprovingApp(null)}
                 className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 cursor-pointer kc-pressable"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleSuperAdminFinalSubmit}
                 className="px-4 py-2 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
               >
-                Confirm Final Approval
+                {isUr ? 'حتمی منظوری کی تصدیق کریں' : 'Confirm Final Approval'}
               </button>
             </div>
           </div>
@@ -828,10 +869,12 @@ export const ApprovalWorkflow: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-semibold text-white tabular-nums">
-                {selectedIds.length} {selectedIds.length === 1 ? 'application' : 'applications'} selected
+                {isUr
+                  ? `${selectedIds.length} درخواستیں منتخب`
+                  : `${selectedIds.length} ${selectedIds.length === 1 ? 'application' : 'applications'} selected`}
               </p>
               <p className="text-[11px] text-slate-300">
-                Ready for bulk processing
+                {isUr ? 'اجتماعی کارروائی کے لیے تیار' : 'Ready for bulk processing'}
               </p>
             </div>
           </div>
@@ -841,37 +884,41 @@ export const ApprovalWorkflow: React.FC = () => {
               onClick={clearSelection}
               className="px-3 py-1.5 text-xs text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
             >
-              Clear
+              {isUr ? 'صاف کریں' : 'Clear'}
             </button>
 
             <button
               onClick={() => {
                 setBulkRemarks(
                   isDistrictAdmin 
-                    ? 'Bulk rejection: Did not satisfy district field verification criteria.'
-                    : 'Bulk rejection: Central bylaws non-compliance.'
+                    ? (isUr ? 'اجتماعی مستردگی: ضلعی فیلڈ تصدیق کے معیار پر پورا نہیں اتری۔' : 'Bulk rejection: Did not satisfy district field verification criteria.')
+                    : (isUr ? 'اجتماعی مستردگی: مرکزی قواعد کے مطابق نہیں۔' : 'Bulk rejection: Central bylaws non-compliance.')
                 );
                 setBulkAction('REJECT');
               }}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-500/50 text-rose-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer kc-pressable"
             >
               <XCircle className="w-3.5 h-3.5" />
-              <span>Bulk Reject</span>
+              <span>{isUr ? 'سب مسترد کریں' : 'Bulk Reject'}</span>
             </button>
 
             <button
               onClick={() => {
                 setBulkRemarks(
                   isDistrictAdmin 
-                    ? 'Bulk district recommendation: Address and credentials verified.'
-                    : 'Bulk final approval granted under Kifayat Connect bylaws.'
+                    ? (isUr ? 'اجتماعی ضلعی سفارش: پتہ اور کوائف کی تصدیق ہو گئی۔' : 'Bulk district recommendation: Address and credentials verified.')
+                    : (isUr ? 'کفایت کنیکٹ کے قواعد کے تحت اجتماعی حتمی منظوری دے دی گئی۔' : 'Bulk final approval granted under Kifayat Connect bylaws.')
                 );
                 setBulkAction('APPROVE');
               }}
               className="flex items-center gap-1.5 px-4 py-1.5 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Bulk {isDistrictAdmin ? 'Recommend' : 'Approve'}</span>
+              <span>
+                {isUr
+                  ? (isDistrictAdmin ? 'اجتماعی سفارش' : 'سب منظور کریں')
+                  : `Bulk ${isDistrictAdmin ? 'Recommend' : 'Approve'}`}
+              </span>
             </button>
           </div>
         </aside>
@@ -886,17 +933,23 @@ export const ApprovalWorkflow: React.FC = () => {
           >
             <div>
               <span className={`text-xs uppercase font-bold tracking-wide tabular-nums ${bulkAction === 'APPROVE' ? 'text-emerald-300' : 'text-rose-300'}`}>
-                Bulk Confirmation · {selectedIds.length} Applications
+                {isUr ? `اجتماعی تصدیق · ${selectedIds.length} درخواستیں` : `Bulk Confirmation · ${selectedIds.length} Applications`}
               </span>
               <h3 className="text-base font-bold text-white mt-1">
                 {bulkAction === 'APPROVE' 
-                  ? (isDistrictAdmin ? 'Bulk District Recommendation' : 'Bulk Final Approval & Card Generation')
-                  : 'Bulk Rejection of Applications'}
+                  ? (isDistrictAdmin
+                      ? (isUr ? 'اجتماعی ضلعی سفارش' : 'Bulk District Recommendation')
+                      : (isUr ? 'اجتماعی حتمی منظوری اور کارڈ کا اجراء' : 'Bulk Final Approval & Card Generation'))
+                  : (isUr ? 'درخواستوں کی اجتماعی مستردگی' : 'Bulk Rejection of Applications')}
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
                 {bulkAction === 'APPROVE'
-                  ? `Are you sure you want to approve ${selectedIds.length} selected membership applications in a single action?`
-                  : `Are you sure you want to reject ${selectedIds.length} selected applications? This action will update applicant statuses.`}
+                  ? (isUr
+                      ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} ممبرشپ درخواستوں کو ایک ساتھ منظور کرنا چاہتے ہیں؟`
+                      : `Are you sure you want to approve ${selectedIds.length} selected membership applications in a single action?`)
+                  : (isUr
+                      ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} درخواستوں کو مسترد کرنا چاہتے ہیں؟`
+                      : `Are you sure you want to reject ${selectedIds.length} selected applications? This action will update applicant statuses.`)}
               </p>
             </div>
 
@@ -911,13 +964,15 @@ export const ApprovalWorkflow: React.FC = () => {
 
             <div>
               <label className="text-xs font-semibold text-slate-200 block mb-1">
-                {bulkAction === 'APPROVE' ? 'Verification / Approval Remarks' : 'Reason for Rejection'}
+                {bulkAction === 'APPROVE'
+                  ? (isUr ? 'تصدیقی / منظوری کے ریمارکس' : 'Verification / Approval Remarks')
+                  : (isUr ? 'مسترد کرنے کی وجہ' : 'Reason for Rejection')}
               </label>
               <textarea
                 rows={3}
                 value={bulkRemarks}
                 onChange={(e) => setBulkRemarks(e.target.value)}
-                placeholder="Enter official remarks to be recorded in audit log..."
+                placeholder={isUr ? 'آڈٹ لاگ میں ریکارڈ کرنے کے لیے سرکاری ریمارکس درج کریں...' : 'Enter official remarks to be recorded in audit log...'}
                 className="w-full text-xs p-2.5 rounded-xl kc-luxury-input resize-none"
               />
             </div>
@@ -929,7 +984,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 onClick={() => setBulkAction(null)}
                 className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 disabled:opacity-50 cursor-pointer kc-pressable"
               >
-                Cancel
+                {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -942,11 +997,15 @@ export const ApprovalWorkflow: React.FC = () => {
                 }`}
               >
                 {isProcessingBulk ? (
-                  <span>Processing...</span>
+                  <span>{isUr ? 'پراسیس ہو رہا ہے...' : 'Processing...'}</span>
                 ) : (
                   <>
                     {bulkAction === 'APPROVE' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                    <span>Confirm {bulkAction === 'APPROVE' ? 'Approval' : 'Rejection'}</span>
+                    <span>
+                      {bulkAction === 'APPROVE'
+                        ? (isUr ? 'منظوری کی تصدیق کریں' : 'Confirm Approval')
+                        : (isUr ? 'مسترد کرنے کی تصدیق کریں' : 'Confirm Rejection')}
+                    </span>
                   </>
                 )}
               </button>

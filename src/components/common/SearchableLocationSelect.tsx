@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, ChevronDown, MapPin, Check, X } from 'lucide-react';
 import { searchPakistanCities, ALL_PAKISTAN_CITY_ENTRIES, PROVINCE_OPTIONS } from '../../data/locationData';
 import { LuxurySelect } from './LuxurySelect';
+import { useApp } from '../../context/AppContext';
 
 export interface SelectedLocationValue {
   stateProvince: string;
@@ -22,11 +23,15 @@ interface SearchableLocationSelectProps {
 export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> = ({
   value,
   onChange,
-  label = 'District / City across Pakistan',
+  label,
   required = false,
-  placeholder = 'Search any city, tehsil, or district...',
+  placeholder,
   compact = false
 }) => {
+  const { language } = useApp();
+  const isUr = language === 'ur';
+  const resolvedLabel = label !== undefined ? label : (isUr ? 'پاکستان بھر میں ضلع / شہر' : 'District / City across Pakistan');
+  const resolvedPlaceholder = placeholder ?? (isUr ? 'کوئی بھی شہر، تحصیل یا ضلع تلاش کریں...' : 'Search any city, tehsil, or district...');
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [customMode, setCustomMode] = useState(false);
@@ -75,9 +80,9 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
 
   return (
     <div className="relative w-full">
-      {label && (
+      {resolvedLabel && (
         <label className="block text-[11px] font-bold text-[#F5D061] mb-1 uppercase tracking-wider">
-          {label} {required && <span className="text-rose-400">*</span>}
+          {resolvedLabel} {required && <span className="text-rose-400">*</span>}
         </label>
       )}
 
@@ -91,7 +96,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
         <div className="flex items-center gap-2 min-w-0">
           <MapPin className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
           <span className={`truncate ${displayLabel ? 'font-semibold text-white' : 'text-slate-400'}`}>
-            {displayLabel || placeholder}
+            {displayLabel || resolvedPlaceholder}
           </span>
         </div>
         <ChevronDown className="w-4 h-4 text-[#D4AF37] shrink-0" />
@@ -112,14 +117,16 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
             <div className="px-4 py-3 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-wider text-[#F5D061] truncate">
-                  {label || 'Select Location'}
+                  {resolvedLabel || (isUr ? 'مقام منتخب کریں' : 'Select Location')}
                 </p>
-                <p className="text-[10px] text-slate-400">172 Pakistan Districts · Towns & Villages</p>
+                <p className="text-[10px] text-slate-400">
+                  {isUr ? 'پاکستان کے 172 اضلاع · شہر اور دیہات' : '172 Pakistan Districts · Towns & Villages'}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={handleClose}
-                aria-label="Close location selector"
+                aria-label={isUr ? 'بند کریں' : 'Close location selector'}
                 className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -136,7 +143,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   setQuery(e.target.value);
                   setCustomMode(false);
                 }}
-                placeholder="Type city, town, tehsil, or district..."
+                placeholder={isUr ? 'شہر، قصبہ، تحصیل یا ضلع لکھیں...' : 'Type city, town, tehsil, or district...'}
                 className="w-full kc-luxury-input rounded-lg px-2.5 py-1.5 text-xs"
               />
               {query && (
@@ -155,7 +162,9 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                 <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/10 p-1" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {matches.length === 0 ? (
                     <div className="p-4 text-center text-xs text-slate-400">
-                      No matching Pakistan city/district found for "{query}".
+                      {isUr
+                        ? `"${query}" کے مطابق پاکستان کا کوئی شہر یا ضلع نہیں ملا۔`
+                        : `No matching Pakistan city/district found for "${query}".`}
                     </div>
                   ) : (
                     matches.map((entry, idx) => {
@@ -186,7 +195,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                               {entry.city}
                             </span>
                             <span className="text-[10px] text-slate-400 block truncate">
-                              Dist. {entry.district} · {entry.province}
+                              {isUr ? 'ضلع' : 'Dist.'} {entry.district} · {entry.province}
                             </span>
                           </div>
                           {isSelected && <Check className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />}
@@ -206,7 +215,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                     className="w-full py-2 px-3 rounded-xl bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/35 text-[#F5D061] text-xs font-bold flex items-center justify-center gap-1.5 kc-pressable cursor-pointer"
                   >
                     <MapPin className="w-3.5 h-3.5" />
-                    <span>Other / Village / Custom Town</span>
+                    <span>{isUr ? 'دیگر / گاؤں / کسٹم قصبہ' : 'Other / Village / Custom Town'}</span>
                   </button>
                 </div>
               </>
@@ -214,18 +223,18 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
               <div className="p-3.5 space-y-3 bg-[#0E1422] flex-1 overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#F5D061]">
-                    Enter Custom City / Village
+                    {isUr ? 'اپنا شہر / گاؤں درج کریں' : 'Enter Custom City / Village'}
                   </span>
                   <button
                     type="button"
                     onClick={() => setCustomMode(false)}
                     className="text-[11px] text-slate-300 hover:text-[#F5D061] underline font-semibold cursor-pointer"
                   >
-                    Back to list
+                    {isUr ? 'فہرست پر واپس' : 'Back to list'}
                   </button>
                 </div>
                 <LuxurySelect
-                  label="Province / Territory"
+                  label={isUr ? 'صوبہ / خطہ' : 'Province / Territory'}
                   value={customProvince}
                   onChange={setCustomProvince}
                   options={PROVINCE_OPTIONS}
@@ -235,7 +244,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   type="text"
                   value={customCityText}
                   onChange={(e) => setCustomCityText(e.target.value)}
-                  placeholder="Type your exact city, tehsil, or village..."
+                  placeholder={isUr ? 'اپنا درست شہر، تحصیل یا گاؤں لکھیں...' : 'Type your exact city, tehsil, or village...'}
                   className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
                 />
                 <button
@@ -244,7 +253,7 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                   disabled={!customCityText.trim()}
                   className="w-full py-2 rounded-xl kc-gold-button disabled:opacity-50 font-black text-xs cursor-pointer"
                 >
-                  Apply Custom Location
+                  {isUr ? 'کسٹم مقام لاگو کریں' : 'Apply Custom Location'}
                 </button>
               </div>
             )}

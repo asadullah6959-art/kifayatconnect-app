@@ -219,7 +219,7 @@ export const MemberDashboard: React.FC = () => {
       </div>
 
       {requiresProfileCompletion && (
-        <ProfileCompletionGate featureName="payments, Live Chat & complaints" />
+        <ProfileCompletionGate featureName={language === 'ur' ? 'ادائیگی، لائیو چیٹ اور شکایات' : 'payments, Live Chat & complaints'} />
       )}
 
       {/* Apollo Telenor-style Quick Action Cards */}
@@ -331,7 +331,7 @@ export const MemberDashboard: React.FC = () => {
 
             <span className="text-[10px] font-mono font-bold text-emerald-300 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
-              <span>ACTIVE</span>
+              <span>{translate(language, 'activeLabel')}</span>
             </span>
           </div>
 
@@ -358,10 +358,12 @@ export const MemberDashboard: React.FC = () => {
 
           <div className="pt-2 border-t border-[#D4AF37]/25 flex items-center justify-between text-[10px] text-slate-400">
             <div>
-              <span>VALID THRU: </span>
+              <span>{language === 'ur' ? 'میعاد:' : 'VALID THRU:'} </span>
               <span className="font-mono text-[#F5D061] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
             </div>
-            <span className="text-[#F5D061] font-semibold">Tap for VIP Card & QR →</span>
+            <span className="text-[#F5D061] font-semibold">
+              {language === 'ur' ? 'وی آئی پی کارڈ اور QR دیکھیں →' : 'Tap for VIP Card & QR →'}
+            </span>
           </div>
         </div>
 
@@ -370,56 +372,66 @@ export const MemberDashboard: React.FC = () => {
             <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Total Contributed</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    {language === 'ur' ? 'کل جمع شدہ فنڈ' : 'Total Contributed'}
+                  </span>
                   <Coins className="w-4 h-4 text-[#F5D061]" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
                     PKR {totalVerifiedContributed.toLocaleString()}
                   </span>
-                  <span className="text-xs text-emerald-400 font-semibold">Verified</span>
+                  <span className="text-xs text-emerald-400 font-semibold">{translate(language, 'verifiedLabel')}</span>
                 </div>
               </div>
               <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
-                <span className="tabular-nums">{ownPayments.filter(p => p.status === 'VERIFIED').length} Cleared Transactions</span>
-                <span className="text-emerald-400 font-semibold">Audited</span>
+                <span className="tabular-nums">
+                  {language === 'ur'
+                    ? `${ownPayments.filter(p => p.status === 'VERIFIED').length} تصدیق شدہ ادائیگیاں`
+                    : `${ownPayments.filter(p => p.status === 'VERIFIED').length} Cleared Transactions`}
+                </span>
+                <span className="text-emerald-400 font-semibold">{language === 'ur' ? 'آڈٹ شدہ' : 'Audited'}</span>
               </div>
             </div>
 
             <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Monthly Pledge</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    {language === 'ur' ? 'ماہانہ تعاون' : 'Monthly Pledge'}
+                  </span>
                   <Receipt className="w-4 h-4 text-blue-400" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
                     PKR {currentUser.monthlyPledge.toLocaleString()}
                   </span>
-                  <span className="text-xs text-blue-400 font-semibold">Recurring</span>
+                  <span className="text-xs text-blue-400 font-semibold">{language === 'ur' ? 'ماہانہ' : 'Recurring'}</span>
                 </div>
               </div>
               <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
-                <span>Cycle ({currentMonthLabel})</span>
-                <span className="text-blue-400 font-semibold">Active</span>
+                <span>{language === 'ur' ? `دورانیہ (${currentMonthLabel})` : `Cycle (${currentMonthLabel})`}</span>
+                <span className="text-blue-400 font-semibold">{translate(language, 'activeLabel')}</span>
               </div>
             </div>
 
             <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Annual Welfare Pledge</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    {language === 'ur' ? 'سالانہ ویلفیئر عہد' : 'Annual Welfare Pledge'}
+                  </span>
                   <Coins className="w-4 h-4 text-purple-400" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
                     PKR {currentUser.annualPledge.toLocaleString()}
                   </span>
-                  <span className="text-xs text-purple-400 font-semibold">Annual</span>
+                  <span className="text-xs text-purple-400 font-semibold">{language === 'ur' ? 'سالانہ' : 'Annual'}</span>
                 </div>
               </div>
               <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
-                <span>Education & Healthcare</span>
+                <span>{language === 'ur' ? 'تعلیم اور صحت' : 'Education & Healthcare'}</span>
                 <span className="text-purple-400 font-semibold">{currentMonthShort}</span>
               </div>
             </div>
@@ -427,20 +439,24 @@ export const MemberDashboard: React.FC = () => {
             <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Verification Status</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    {language === 'ur' ? 'تصدیق کی حیثیت' : 'Verification Status'}
+                  </span>
                   <Clock className="w-4 h-4 text-[#F5D061]" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
-                    {pendingPayments.length} Pending
+                    {pendingPayments.length} {translate(language, 'pendingLabel')}
                   </span>
-                  <span className="text-xs text-[#F5D061] font-semibold">In Review</span>
+                  <span className="text-xs text-[#F5D061] font-semibold">
+                    {language === 'ur' ? 'زیر جائزہ' : 'In Review'}
+                  </span>
                 </div>
               </div>
               <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2">
                 {pendingPayments.length > 0
-                  ? 'Admin / Leadership is cross-verifying transaction slip.'
-                  : 'All submitted payments have been verified!'}
+                  ? (language === 'ur' ? 'ایڈمن / قیادت آپ کی رسید کی تصدیق کر رہی ہے۔' : 'Admin / Leadership is cross-verifying transaction slip.')
+                  : (language === 'ur' ? 'آپ کی تمام ادائیگیاں تصدیق ہو چکی ہیں!' : 'All submitted payments have been verified!')}
               </div>
             </div>
           </div>
@@ -451,8 +467,12 @@ export const MemberDashboard: React.FC = () => {
       <div className="kc-obsidian-card rounded-2xl p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#D4AF37]/20">
           <div>
-            <h3 className="text-sm font-bold text-white">My Payment Records & Certified Receipts</h3>
-            <p className="text-xs text-slate-400">Only your private transactions are shown under Kifayat Connect privacy rules</p>
+            <h3 className="text-sm font-bold text-white">
+              {language === 'ur' ? 'میری ادائیگیوں کا ریکارڈ اور مصدقہ رسیدیں' : 'My Payment Records & Certified Receipts'}
+            </h3>
+            <p className="text-xs text-slate-400">
+              {language === 'ur' ? 'کفایت کنیکٹ پرائیویسی قوانین کے تحت صرف آپ کی ذاتی ادائیگیاں دکھائی جاتی ہیں' : 'Only your private transactions are shown under Kifayat Connect privacy rules'}
+            </p>
           </div>
 
           {allowPayments && (
@@ -462,7 +482,7 @@ export const MemberDashboard: React.FC = () => {
               className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer self-start sm:self-auto"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Make New Payment</span>
+              <span>{language === 'ur' ? 'نئی ادائیگی کریں' : 'Make New Payment'}</span>
             </button>
           )}
         </div>
@@ -471,14 +491,14 @@ export const MemberDashboard: React.FC = () => {
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
-                <th className="py-2.5 px-3">Receipt No.</th>
-                <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Category</th>
-                <th className="py-2.5 px-3">Method</th>
-                <th className="py-2.5 px-3">Reference</th>
-                <th className="py-2.5 px-3 text-right">Amount (PKR)</th>
-                <th className="py-2.5 px-3 text-center">Status</th>
-                <th className="py-2.5 px-3 text-right">Voucher</th>
+                <th className="py-2.5 px-3">{language === 'ur' ? 'رسید نمبر' : 'Receipt No.'}</th>
+                <th className="py-2.5 px-3">{translate(language, 'dateLabel')}</th>
+                <th className="py-2.5 px-3">{language === 'ur' ? 'مد' : 'Category'}</th>
+                <th className="py-2.5 px-3">{language === 'ur' ? 'طریقہ' : 'Method'}</th>
+                <th className="py-2.5 px-3">{language === 'ur' ? 'حوالہ' : 'Reference'}</th>
+                <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'رقم (PKR)' : 'Amount (PKR)'}</th>
+                <th className="py-2.5 px-3 text-center">{translate(language, 'statusLabel')}</th>
+                <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'واؤچر' : 'Voucher'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D4AF37]/10">
@@ -499,7 +519,13 @@ export const MemberDashboard: React.FC = () => {
                         : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
                     }`}>
                       {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      <span>{tx.status === 'VERIFIED' ? 'Approved' : tx.status === 'REJECTED' ? 'Rejected' : 'Pending'}</span>
+                      <span>
+                        {tx.status === 'VERIFIED'
+                          ? (language === 'ur' ? 'منظور شدہ' : 'Approved')
+                          : tx.status === 'REJECTED'
+                          ? translate(language, 'rejectedLabel')
+                          : translate(language, 'pendingLabel')}
+                      </span>
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-right">
@@ -510,10 +536,14 @@ export const MemberDashboard: React.FC = () => {
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#090D16] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-lg font-medium kc-pressable cursor-pointer"
                       >
                         <Printer className="w-3 h-3" />
-                        <span>Receipt</span>
+                        <span>{language === 'ur' ? 'رسید' : 'Receipt'}</span>
                       </button>
                     ) : (
-                      <span className="text-[10px] text-slate-500">{tx.status === 'REJECTED' ? 'Declined' : 'Processing'}</span>
+                      <span className="text-[10px] text-slate-500">
+                        {tx.status === 'REJECTED'
+                          ? (language === 'ur' ? 'نامنظور' : 'Declined')
+                          : (language === 'ur' ? 'کارروائی جاری' : 'Processing')}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -521,7 +551,9 @@ export const MemberDashboard: React.FC = () => {
               {ownPayments.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
-                    No contributions submitted yet. Click &quot;Make New Payment&quot; to submit your first contribution.
+                    {language === 'ur'
+                      ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ پہلی ادائیگی کے لیے "نئی ادائیگی کریں" پر کلک کریں۔'
+                      : 'No contributions submitted yet. Click "Make New Payment" to submit your first contribution.'}
                   </td>
                 </tr>
               )}
@@ -535,19 +567,25 @@ export const MemberDashboard: React.FC = () => {
         <div className="kc-obsidian-card rounded-2xl p-5">
           <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
             <div>
-              <h3 className="text-sm font-bold text-white">Support Tickets & Grievances</h3>
-              <p className="text-xs text-slate-400">Routed to your District Admin ({memberDistrict})</p>
+              <h3 className="text-sm font-bold text-white">
+                {language === 'ur' ? 'سپورٹ ٹکٹس اور شکایات' : 'Support Tickets & Grievances'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {language === 'ur' ? `آپ کے ضلعی ایڈمن (${memberDistrict}) کو بھیجی جاتی ہیں` : `Routed to your District Admin (${memberDistrict})`}
+              </p>
             </div>
             {allowComplaints && (
               <button type="button" onClick={() => setIsComplaintModalOpen(true)} className="text-xs text-[#F5D061] hover:underline font-bold cursor-pointer">
-                + File Ticket
+                {language === 'ur' ? '+ شکایت درج کریں' : '+ File Ticket'}
               </button>
             )}
           </div>
 
           <div className="mt-3 space-y-3">
             {ownComplaints.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">You have not filed any grievances.</div>
+              <div className="py-6 text-center text-xs text-slate-400">
+                {language === 'ur' ? 'آپ نے ابھی کوئی شکایت درج نہیں کروائی۔' : 'You have not filed any grievances.'}
+              </div>
             ) : (
               ownComplaints.map(cmp => (
                 <div key={cmp.id} className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] text-xs">
@@ -559,13 +597,15 @@ export const MemberDashboard: React.FC = () => {
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                       cmp.status === 'RESOLVED' ? 'bg-[#042920] text-emerald-300 border border-emerald-500/35' : 'bg-amber-950/60 text-[#F5D061] border border-[#D4AF37]/35'
                     }`}>
-                      {cmp.status}
+                      {cmp.status === 'RESOLVED' ? translate(language, 'resolvedLabel') : translate(language, 'openLabel')}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.responseNote && (
                     <div className="mt-2 text-[11px] text-emerald-100 kc-emerald-panel p-2.5 rounded-lg">
-                      <span className="font-bold text-[#F5D061]">Response ({cmp.assignedOfficerName}):</span> {cmp.responseNote}
+                      <span className="font-bold text-[#F5D061]">
+                        {language === 'ur' ? `جواب (${cmp.assignedOfficerName}):` : `Response (${cmp.assignedOfficerName}):`}
+                      </span> {cmp.responseNote}
                     </div>
                   )}
                 </div>
@@ -578,15 +618,21 @@ export const MemberDashboard: React.FC = () => {
           <div className="kc-obsidian-card rounded-2xl p-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
               <div>
-                <h3 className="text-sm font-bold text-white">Announcements & Official Notices</h3>
-                <p className="text-xs text-slate-400">Latest Official App 👑 & {memberDistrict} notices</p>
+                <h3 className="text-sm font-bold text-white">
+                  {language === 'ur' ? 'اعلانات اور آفیشل نوٹس' : 'Announcements & Official Notices'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {language === 'ur' ? `تازہ ترین آفیشل ایپ 👑 اور ${memberDistrict} کے اعلانات` : `Latest Official App 👑 & ${memberDistrict} notices`}
+                </p>
               </div>
               <Megaphone className="w-4 h-4 text-[#F5D061]" />
             </div>
 
             <div className="mt-3 space-y-3">
               {relevantAnnouncements.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">No announcements published yet.</div>
+                <div className="py-6 text-center text-xs text-slate-400">
+                  {translate(language, 'noAnnouncements')}
+                </div>
               ) : (
                 relevantAnnouncements.slice(0, 5).map(ann => (
                   <div
@@ -600,12 +646,14 @@ export const MemberDashboard: React.FC = () => {
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-bold text-white">{ann.title}</h4>
                       <span className="text-[9px] font-bold text-[#F5D061] shrink-0">
-                        {ann.announcementType === 'OFFICIAL_APP' ? '👑 OFFICIAL' : '📢 COMMUNITY'}
+                        {ann.announcementType === 'OFFICIAL_APP'
+                          ? (language === 'ur' ? '👑 آفیشل' : '👑 OFFICIAL')
+                          : (language === 'ur' ? '📢 کمیونٹی' : '📢 COMMUNITY')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">{ann.content}</p>
                     <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-[#D4AF37]/15 pt-1.5">
-                      <span>From: {ann.publishedBy}</span>
+                      <span>{language === 'ur' ? `از: ${ann.publishedBy}` : `From: ${ann.publishedBy}`}</span>
                       <span className="font-mono tabular-nums">{new Date(ann.publishedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -624,38 +672,46 @@ export const MemberDashboard: React.FC = () => {
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
-              Submit Payment / Welfare Contribution
+              {language === 'ur' ? 'ادائیگی / ویلفیئر تعاون جمع کروائیں' : 'Submit Payment / Welfare Contribution'}
             </h3>
 
             {paymentSubmittedSuccess ? (
               <div className="py-8 text-center space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h4 className="font-bold text-sm text-white">Payment Submitted Successfully!</h4>
+                <h4 className="font-bold text-sm text-white">
+                  {language === 'ur' ? 'ادائیگی کامیابی سے جمع ہو گئی!' : 'Payment Submitted Successfully!'}
+                </h4>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Your transaction is pending verification by your Admin. Once approved, your certified receipt is automatically issued.
+                  {language === 'ur'
+                    ? 'آپ کی ادائیگی ایڈمن کی تصدیق کے لیے زیر التواء ہے۔ منظوری کے بعد آپ کی مصدقہ رسید خودکار جاری ہو جائے گی۔'
+                    : 'Your transaction is pending verification by your Admin. Once approved, your certified receipt is automatically issued.'}
                 </p>
               </div>
             ) : (
               <form onSubmit={handlePaymentSubmit} className="mt-4 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Select Welfare Fund Category</label>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'ویلفیئر فنڈ کی مد منتخب کریں' : 'Select Welfare Fund Category'}
+                  </label>
                   <LuxurySelect
                     compact
                     value={payFund}
                     onChange={(val) => setPayFund(val as FundCategory)}
-                    label="Welfare Fund Category"
+                    label={language === 'ur' ? 'ویلفیئر فنڈ مد' : 'Welfare Fund Category'}
                     options={[
-                      { value: 'Monthly Contribution', label: 'Monthly Contribution' },
-                      { value: 'Annual Welfare Fund', label: 'Annual Welfare Fund' },
-                      { value: 'Emergency Relief', label: 'Emergency Relief' },
-                      { value: 'Zakat & Sadqah', label: 'Zakat & Sadqah' }
+                      { value: 'Monthly Contribution', label: language === 'ur' ? 'ماہانہ چندہ / تعاون' : 'Monthly Contribution' },
+                      { value: 'Annual Welfare Fund', label: language === 'ur' ? 'سالانہ ویلفیئر فنڈ' : 'Annual Welfare Fund' },
+                      { value: 'Emergency Relief', label: language === 'ur' ? 'ہنگامی امداد فنڈ' : 'Emergency Relief' },
+                      { value: 'Zakat & Sadqah', label: language === 'ur' ? 'زکوٰۃ و صدقات' : 'Zakat & Sadqah' }
                     ]}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-300 block mb-1">Amount (PKR)</label>
+                    <label className="text-xs font-semibold text-slate-300 block mb-1">
+                      {language === 'ur' ? 'رقم (PKR)' : 'Amount (PKR)'}
+                    </label>
                     <input
                       type="number"
                       required
@@ -667,17 +723,19 @@ export const MemberDashboard: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-300 block mb-1">Payment Method</label>
+                    <label className="text-xs font-semibold text-slate-300 block mb-1">
+                      {language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
+                    </label>
                     <LuxurySelect
                       compact
                       value={payMethod}
                       onChange={(val) => setPayMethod(val as PaymentMethod)}
-                      label="Payment Method"
+                      label={language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
                       options={[
-                        { value: 'EasyPaisa', label: 'EasyPaisa' },
-                        { value: 'JazzCash', label: 'JazzCash' },
-                        { value: 'Bank Transfer', label: 'Bank Transfer' },
-                        { value: 'Cash', label: 'Cash' }
+                        { value: 'EasyPaisa', label: language === 'ur' ? 'ایزی پیسہ (EasyPaisa)' : 'EasyPaisa' },
+                        { value: 'JazzCash', label: language === 'ur' ? 'جاز کیش (JazzCash)' : 'JazzCash' },
+                        { value: 'Bank Transfer', label: language === 'ur' ? 'بینک ٹرانسفر' : 'Bank Transfer' },
+                        { value: 'Cash', label: language === 'ur' ? 'نقد (Cash)' : 'Cash' }
                       ]}
                     />
                   </div>
@@ -685,7 +743,10 @@ export const MemberDashboard: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Transaction Reference ID / Slip No. <span className="text-slate-500 font-normal">(Optional if photo uploaded)</span>
+                    {language === 'ur' ? 'ٹرانزیکشن ریفرنس / سلپ نمبر' : 'Transaction Reference ID / Slip No.'}{' '}
+                    <span className="text-slate-500 font-normal">
+                      {language === 'ur' ? '(اگر تصویر اپلوڈ کی ہو تو اختیاری)' : '(Optional if photo uploaded)'}
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -698,16 +759,16 @@ export const MemberDashboard: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Upload Payment Screenshot / Receipt Photo (Compressed)
+                    {language === 'ur' ? 'ادائیگی اسکرین شاٹ / رسید تصویر اپلوڈ کریں' : 'Upload Payment Screenshot / Receipt Photo (Compressed)'}
                   </label>
                   <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#D4AF37]/45 bg-[#090D16] cursor-pointer hover:border-[#F5D061] text-xs font-semibold text-slate-200 kc-pressable">
                     <Upload className="w-4 h-4 text-[#F5D061]" />
                     <span>
                       {isCompressing
-                        ? 'Compressing receipt...'
+                        ? (language === 'ur' ? 'رسید کمپریس ہو رہی ہے...' : 'Compressing receipt...')
                         : receiptImageName
-                        ? `Attached: ${receiptImageName}`
-                        : 'Tap to attach receipt photo (JPG/PNG)'}
+                        ? `${language === 'ur' ? 'منسلک:' : 'Attached:'} ${receiptImageName}`
+                        : (language === 'ur' ? 'رسید کی تصویر منتخب کریں (JPG/PNG)' : 'Tap to attach receipt photo (JPG/PNG)')}
                     </span>
                     <input type="file" accept="image/*" onChange={handleReceiptFileChange} className="hidden" />
                   </label>
@@ -715,10 +776,12 @@ export const MemberDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Optional Note</label>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'اضافی نوٹ (اختیاری)' : 'Optional Note'}
+                  </label>
                   <input
                     type="text"
-                    placeholder={`e.g. ${currentMonthLabel} contribution`}
+                    placeholder={language === 'ur' ? `مثلاً: ${currentMonthLabel} کا ماہانہ تعاون` : `e.g. ${currentMonthLabel} contribution`}
                     value={payNote}
                     onChange={(e) => setPayNote(e.target.value)}
                     className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
@@ -727,11 +790,11 @@ export const MemberDashboard: React.FC = () => {
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                   <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
-                    Cancel
+                    {translate(language, 'cancel')}
                   </button>
                   <button type="submit" className="flex items-center gap-1.5 px-4 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer">
                     <Send className="w-3.5 h-3.5" />
-                    <span>Submit Contribution</span>
+                    <span>{translate(language, 'actionPayFunds')}</span>
                   </button>
                 </div>
               </form>
@@ -748,42 +811,48 @@ export const MemberDashboard: React.FC = () => {
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
-              File Support Ticket or Grievance
+              {language === 'ur' ? 'سپورٹ ٹکٹ یا شکایت درج کریں' : 'File Support Ticket or Grievance'}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Routed directly to your District Admin in {memberDistrict}, {memberProvince}.
+              {language === 'ur'
+                ? `براہ راست آپ کے ضلعی ایڈمن (${memberDistrict}, ${memberProvince}) کو بھیجی جائے گی۔`
+                : `Routed directly to your District Admin in ${memberDistrict}, ${memberProvince}.`}
             </p>
 
             <form onSubmit={handleComplaintSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Category</label>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'زمرہ' : 'Category'}
+                  </label>
                   <LuxurySelect
                     compact
                     value={cmpCategory}
                     onChange={(val) => setCmpCategory(val as ComplaintCategory)}
-                    label="Category"
+                    label={language === 'ur' ? 'زمرہ' : 'Category'}
                     options={[
-                      { value: 'Membership Card', label: 'Membership Card Delivery / Issue' },
-                      { value: 'Receipt Inquiry', label: 'Receipt Tax / Record Correction' },
-                      { value: 'Fund Allocation', label: 'Fund Allocation Transparency' },
-                      { value: 'Welfare Support', label: 'Welfare Support Nomination' },
-                      { value: 'District Activity', label: 'District Activity Question' },
-                      { value: 'General', label: 'General Inquiries' }
+                      { value: 'Membership Card', label: language === 'ur' ? 'ممبرشپ کارڈ مسئلہ / ترسیل' : 'Membership Card Delivery / Issue' },
+                      { value: 'Receipt Inquiry', label: language === 'ur' ? 'رسید یا ریکارڈ کی درستگی' : 'Receipt Tax / Record Correction' },
+                      { value: 'Fund Allocation', label: language === 'ur' ? 'فنڈز کی تقسیم و شفافیت' : 'Fund Allocation Transparency' },
+                      { value: 'Welfare Support', label: language === 'ur' ? 'ویلفیئر امداد نامزدگی' : 'Welfare Support Nomination' },
+                      { value: 'District Activity', label: language === 'ur' ? 'ضلعی سرگرمی کا سوال' : 'District Activity Question' },
+                      { value: 'General', label: language === 'ur' ? 'عمومی سوالات' : 'General Inquiries' }
                     ]}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Urgency Priority</label>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    {language === 'ur' ? 'ترجیح' : 'Urgency Priority'}
+                  </label>
                   <LuxurySelect
                     compact
                     value={cmpPriority}
                     onChange={(val) => setCmpPriority(val as 'LOW' | 'MEDIUM' | 'HIGH')}
-                    label="Urgency Priority"
+                    label={language === 'ur' ? 'ترجیح' : 'Urgency Priority'}
                     options={[
-                      { value: 'LOW', label: 'Low' },
-                      { value: 'MEDIUM', label: 'Medium' },
-                      { value: 'HIGH', label: 'High (Urgent Attention)' }
+                      { value: 'LOW', label: language === 'ur' ? 'کم (معمول)' : 'Low' },
+                      { value: 'MEDIUM', label: language === 'ur' ? 'درمیانی' : 'Medium' },
+                      { value: 'HIGH', label: language === 'ur' ? 'زیادہ (فوری توجہ)' : 'High (Urgent Attention)' }
                     ]}
                   />
                 </div>
@@ -792,7 +861,7 @@ export const MemberDashboard: React.FC = () => {
               <input
                 type="text"
                 required
-                placeholder="Subject line..."
+                placeholder={language === 'ur' ? 'موضوع...' : 'Subject line...'}
                 value={cmpSubject}
                 onChange={(e) => setCmpSubject(e.target.value)}
                 className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
@@ -801,7 +870,7 @@ export const MemberDashboard: React.FC = () => {
               <textarea
                 required
                 rows={4}
-                placeholder="Provide full details..."
+                placeholder={language === 'ur' ? 'مکمل تفصیلات لکھیں...' : 'Provide full details...'}
                 value={cmpDescription}
                 onChange={(e) => setCmpDescription(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl kc-luxury-input resize-none"
@@ -809,11 +878,11 @@ export const MemberDashboard: React.FC = () => {
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                 <button type="button" onClick={() => setIsComplaintModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
-                  Cancel
+                  {translate(language, 'cancel')}
                 </button>
                 <button type="submit" className="flex items-center gap-1.5 px-4 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer">
                   <Send className="w-3.5 h-3.5" />
-                  <span>Submit Ticket</span>
+                  <span>{language === 'ur' ? 'شکایت جمع کروائیں' : 'Submit Ticket'}</span>
                 </button>
               </div>
             </form>

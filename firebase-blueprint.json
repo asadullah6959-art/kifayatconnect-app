@@ -35,10 +35,17 @@
         "createdAt": { "type": "string", "maxLength": 40 },
         "lastLoginAt": { "type": "string", "maxLength": 50 },
         "isOnline": { "type": "boolean" },
+        "lastActiveAt": { "type": "number" },
         "lastSeen": { "type": "string", "maxLength": 60 },
+        "tabbarId": { "type": "string", "maxLength": 64 },
+        "tabbarUrdu": { "type": "string", "maxLength": 120 },
+        "tabbarEnglish": { "type": "string", "maxLength": 120 },
         "province": { "type": "string", "maxLength": 100 },
         "status": { "type": "string", "maxLength": 40 },
         "profileCompleted": { "type": "boolean" },
+        "hasPassword": { "type": "boolean" },
+        "passwordHash": { "type": "string", "maxLength": 160 },
+        "otpVerifiedOnce": { "type": "boolean" },
         "isStaff": { "type": "boolean" },
         "notes": { "type": "string", "maxLength": 500 }
       },
@@ -61,7 +68,10 @@
         "submittedAt": { "type": "string", "maxLength": 40 },
         "status": { "type": "string", "enum": ["PENDING_DISTRICT_REVIEW", "RECOMMENDED_BY_DISTRICT", "PENDING_REGIONAL_REVIEW", "RECOMMENDED_BY_REGION", "ACTIVE", "REJECTED"] },
         "isOldMemberVerification": { "type": "boolean" },
-        "oldMembershipNo": { "type": "string", "maxLength": 50 }
+        "oldMembershipNo": { "type": "string", "maxLength": 50 },
+        "tabbarId": { "type": "string", "maxLength": 64 },
+        "tabbarUrdu": { "type": "string", "maxLength": 120 },
+        "tabbarEnglish": { "type": "string", "maxLength": 120 }
       },
       "required": ["id", "applicantName", "email", "phone", "cnic", "address", "submittedAt", "status", "isOldMemberVerification"]
     },
@@ -156,7 +166,8 @@
         "participants": { "type": "array" },
         "text": { "type": "string", "maxLength": 2000 },
         "timestamp": { "type": "string", "maxLength": 40 },
-        "createdAt": { "type": "string", "maxLength": 40 }
+        "createdAt": { "type": "string", "maxLength": 40 },
+        "hiddenForUsers": { "type": "array" }
       },
       "required": ["id", "senderId", "recipientId", "text", "timestamp"]
     },
@@ -174,13 +185,17 @@
         "senderIsFounder": { "type": "boolean" },
         "senderIsAuditOfficer": { "type": "boolean" },
         "senderBubbleColor": { "type": "string", "maxLength": 40 },
+        "senderTabbarId": { "type": "string", "maxLength": 64 },
+        "senderTabbarUrdu": { "type": "string", "maxLength": 120 },
+        "senderTabbarEnglish": { "type": "string", "maxLength": 120 },
         "text": { "type": "string", "maxLength": 4000 },
         "timestamp": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
         "islamicGifId": { "type": "string", "maxLength": 64 },
         "isHighlighted": { "type": "boolean" },
         "isPinned": { "type": "boolean" },
-        "isDeleted": { "type": "boolean" }
+        "isDeleted": { "type": "boolean" },
+        "hiddenForUsers": { "type": "array" }
       },
       "required": ["id", "chatId", "senderId", "senderName", "senderRole", "text", "timestamp"]
     },

@@ -28,7 +28,8 @@ import {
   KeyRound,
   UserCheck,
   UserX,
-  FileClock
+  FileClock,
+  Trash2
 } from 'lucide-react';
 import { PROVINCE_OPTIONS, getAllDistricts, addCustomDistrict } from '../../data/locationData';
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
@@ -124,6 +125,7 @@ export const ManageAppModule: React.FC = () => {
     updateUserPermissions,
     broadcastAdminAlert,
     approveMemberAccount,
+    deleteUserPermanently,
     githubRelease,
     refreshGitHubRelease,
     requestOTP,
@@ -208,6 +210,8 @@ export const ManageAppModule: React.FC = () => {
   const [memberSearch, setMemberSearch] = useState('');
   const [memberApprovalFilter, setMemberApprovalFilter] = useState<'ALL' | 'PENDING'>('ALL');
   const [editingPermUserId, setEditingPermUserId] = useState<string | null>(null);
+  const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // 7. Broadcast Alert
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -257,15 +261,21 @@ export const ManageAppModule: React.FC = () => {
   const [newCityName, setNewCityName] = useState('');
   const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
 
+  const isUr = language === 'ur';
+
   if (!currentUser) return null;
 
   if (!isSuperAdmin) {
     return (
       <div className="p-8 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
         <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-2" />
-        <h2 className="text-base font-bold text-white">Restricted Master Control</h2>
+        <h2 className="text-base font-bold text-white">
+          {isUr ? 'محدود ماسٹر کنٹرول' : 'Restricted Master Control'}
+        </h2>
         <p className="text-xs text-slate-400 mt-1">
-          The Master Control Panel (👑) is strictly reserved for verified Super Admins.
+          {isUr
+            ? 'ماسٹر کنٹرول پینل (👑) صرف تصدیق شدہ سپر ایڈمنز کے لیے مخصوص ہے۔'
+            : 'The Master Control Panel (👑) is strictly reserved for verified Super Admins.'}
         </p>
       </div>
     );
@@ -282,11 +292,11 @@ export const ManageAppModule: React.FC = () => {
     setPinError(null);
     const clean = pinInput.replace(/\D/g, '');
     if (clean.length < 4 || clean.length > 6) {
-      setPinError('Master Control PIN must be 4 to 6 digits.');
+      setPinError(isUr ? 'ماسٹر کنٹرول پن 4 سے 6 ہندسوں کا ہونا ضروری ہے۔' : 'Master Control PIN must be 4 to 6 digits.');
       return;
     }
     if (clean !== pinConfirmInput.replace(/\D/g, '')) {
-      setPinError('PIN and confirmation do not match.');
+      setPinError(isUr ? 'پن اور تصدیقی پن آپس میں نہیں ملتے۔' : 'PIN and confirmation do not match.');
       return;
     }
     setPinBusy(true);
@@ -307,7 +317,7 @@ export const ManageAppModule: React.FC = () => {
     setPinError(null);
     const clean = pinInput.replace(/\D/g, '');
     if (clean.length < 4) {
-      setPinError('Enter your 4–6 digit Master Control PIN.');
+      setPinError(isUr ? 'اپنا 4 تا 6 ہندسوں کا ماسٹر کنٹرول پن درج کریں۔' : 'Enter your 4–6 digit Master Control PIN.');
       return;
     }
     setPinBusy(true);
@@ -318,7 +328,7 @@ export const ManageAppModule: React.FC = () => {
         setIsUnlocked(true);
         setPinInput('');
       } else {
-        setPinError('Incorrect Master Control PIN.');
+        setPinError(isUr ? 'ماسٹر کنٹرول پن غلط ہے۔' : 'Incorrect Master Control PIN.');
       }
     } finally {
       setPinBusy(false);
@@ -346,7 +356,7 @@ export const ManageAppModule: React.FC = () => {
     setPinError(null);
     const cleanPin = newResetPin.replace(/\D/g, '');
     if (cleanPin.length < 4 || cleanPin.length > 6) {
-      setPinError('New PIN must be 4 to 6 digits.');
+      setPinError(isUr ? 'نیا پن 4 تا 6 ہندسوں کا ہونا ضروری ہے۔' : 'New PIN must be 4 to 6 digits.');
       return;
     }
     setPinBusy(true);
@@ -363,7 +373,7 @@ export const ManageAppModule: React.FC = () => {
       setPinMode('ENTER');
       setResetOtpInput('');
       setNewResetPin('');
-      showNotice('success', 'Master Control PIN reset via Email OTP.');
+      showNotice('success', isUr ? 'ای میل او ٹی پی کے ذریعے ماسٹر پن تبدیل کر دیا گیا۔' : 'Master Control PIN reset via Email OTP.');
     } finally {
       setPinBusy(false);
     }
@@ -394,7 +404,9 @@ export const ManageAppModule: React.FC = () => {
           <p className="text-xs text-slate-400">
             {hasConfiguredPin
               ? translate(language, 'masterPinEnterPrompt')
-              : 'Create a 4–6 digit security PIN to protect live platform controls.'}
+              : (isUr
+                  ? 'لائیو پلیٹ فارم کنٹرولز کی حفاظت کے لیے 4 تا 6 ہندسوں کا حفاظتی پن بنائیں۔'
+                  : 'Create a 4–6 digit security PIN to protect live platform controls.')}
           </p>
         </div>
 
@@ -413,7 +425,7 @@ export const ManageAppModule: React.FC = () => {
           <form onSubmit={handleSetupPin} className="space-y-3 text-xs">
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                New Master PIN (4–6 Digits) *
+                {isUr ? 'نیا ماسٹر پن (4 تا 6 ہندسے) *' : 'New Master PIN (4–6 Digits) *'}
               </label>
               <input
                 type="password"
@@ -428,7 +440,7 @@ export const ManageAppModule: React.FC = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                Confirm Master PIN *
+                {isUr ? 'ماسٹر پن کی تصدیق کریں *' : 'Confirm Master PIN *'}
               </label>
               <input
                 type="password"
@@ -454,7 +466,7 @@ export const ManageAppModule: React.FC = () => {
           <form onSubmit={handleUnlockWithPin} className="space-y-3 text-xs">
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                Master Control PIN
+                {isUr ? 'ماسٹر کنٹرول پن' : 'Master Control PIN'}
               </label>
               <input
                 type="password"
@@ -516,7 +528,7 @@ export const ManageAppModule: React.FC = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                New 4–6 Digit PIN
+                {isUr ? 'نیا 4 تا 6 ہندسوں کا پن' : 'New 4–6 Digit PIN'}
               </label>
               <input
                 type="password"
@@ -542,7 +554,7 @@ export const ManageAppModule: React.FC = () => {
                 disabled={pinBusy}
                 className="flex-1 py-2 rounded-xl font-extrabold kc-gold-button"
               >
-                Verify OTP & Save PIN
+                {isUr ? 'او ٹی پی تصدیق اور پن محفوظ کریں' : 'Verify OTP & Save PIN'}
               </button>
             </div>
           </form>
@@ -562,7 +574,7 @@ export const ManageAppModule: React.FC = () => {
       contactHelpline: contactHelpline.trim(),
       profileVisibility
     });
-    showNotice('success', 'System & maintenance settings saved live.');
+    showNotice('success', isUr ? 'سسٹم اور دیکھ بھال کی ترتیبات لائیو محفوظ ہو گئیں۔' : 'System & maintenance settings saved live.');
   };
 
   const handleSaveBranding = (e: React.FormEvent) => {
@@ -575,18 +587,18 @@ export const ManageAppModule: React.FC = () => {
       primaryColor,
       accentGoldColor
     });
-    showNotice('success', 'Brand identity and colors updated live.');
+    showNotice('success', isUr ? 'برانڈ کی شناخت اور رنگ لائیو اپ ڈیٹ ہو گئے۔' : 'Brand identity and colors updated live.');
   };
 
   const handleSelectTheme = (preset: ThemePresetId) => {
     updateAppSettings({ themePreset: preset });
-    showNotice('success', `Theme preset switched to ${preset.replace('_', ' ')}.`);
+    showNotice('success', isUr ? `تھیم ${preset.replace('_', ' ')} پر تبدیل کر دی گئی۔` : `Theme preset switched to ${preset.replace('_', ' ')}.`);
   };
 
   const handleSaveCopyOverrides = (e: React.FormEvent) => {
     e.preventDefault();
     updateAppSettings({ textOverrides: copyOverrides });
-    showNotice('success', 'Bilingual EN/UR text overrides applied live.');
+    showNotice('success', isUr ? 'دو لسانی اردو/انگریزی متن لائیو لاگو کر دیا گیا۔' : 'Bilingual EN/UR text overrides applied live.');
   };
 
   const handleSaveQuotas = (e: React.FormEvent) => {
@@ -595,7 +607,7 @@ export const ManageAppModule: React.FC = () => {
       maxAdminsPerDistrict: Math.max(1, Number(maxAdminsPerDistrict) || 10),
       maxCoAdminsPerState: Math.max(1, Number(maxCoAdminsPerState) || 3)
     });
-    showNotice('success', 'District/State admin quotas updated.');
+    showNotice('success', isUr ? 'ضلعی اور صوبائی ایڈمن کوٹہ اپ ڈیٹ ہو گیا۔' : 'District/State admin quotas updated.');
   };
 
   const handleCreateStaff = (e: React.FormEvent) => {
@@ -615,14 +627,14 @@ export const ManageAppModule: React.FC = () => {
     });
 
     if (!res.success) {
-      setStaffQuotaError(res.error || 'Failed to appoint staff.');
+      setStaffQuotaError(res.error || (isUr ? 'عملہ مقرر کرنے میں ناکامی۔' : 'Failed to appoint staff.'));
     } else {
       setStaffModalOpen(false);
       setStaffName('');
       setStaffEmail('');
       setStaffPhone('');
       setStaffCnic('');
-      showNotice('success', `Appointed new ${staffRole} successfully.`);
+      showNotice('success', isUr ? `نیا ${staffRole} کامیابی سے مقرر کر دیا گیا۔` : `Appointed new ${staffRole} successfully.`);
     }
   };
 
@@ -631,18 +643,18 @@ export const ManageAppModule: React.FC = () => {
     const res = promoteToSuperAdmin(superAdminCandidateId);
     if (res.success) {
       setSuperAdminCandidateId('');
-      showNotice('success', 'Member promoted to Additional Super Admin 👑.');
+      showNotice('success', isUr ? 'ممبر کو اضافی سپر ایڈمن 👑 بنا دیا گیا۔' : 'Member promoted to Additional Super Admin 👑.');
     } else {
-      showNotice('error', res.error || 'Unable to promote member.');
+      showNotice('error', res.error || (isUr ? 'ممبر کو ترقی نہیں دی جا سکی۔' : 'Unable to promote member.'));
     }
   };
 
   const handleDemoteSuperAdmin = (uid: string) => {
     const res = demoteSuperAdmin(uid);
     if (res.success) {
-      showNotice('success', 'Additional Super Admin demoted to Admin.');
+      showNotice('success', isUr ? 'اضافی سپر ایڈمن کو ضلعی ایڈمن بنا دیا گیا۔' : 'Additional Super Admin demoted to Admin.');
     } else {
-      showNotice('error', res.error || 'Action blocked by Founder Protection.');
+      showNotice('error', res.error || (isUr ? 'بانی کے تحفظ کے تحت یہ عمل ممنوع ہے۔' : 'Action blocked by Founder Protection.'));
     }
   };
 
@@ -652,24 +664,24 @@ export const ManageAppModule: React.FC = () => {
     broadcastAdminAlert(broadcastTitle.trim(), broadcastBody.trim(), broadcastTarget);
     setBroadcastTitle('');
     setBroadcastBody('');
-    showNotice('success', `Live notification dispatched to ${broadcastTarget}.`);
+    showNotice('success', isUr ? `${broadcastTarget} کو لائیو اطلاع بھیج دی گئی۔` : `Live notification dispatched to ${broadcastTarget}.`);
   };
 
   const handleSaveVisibility = () => {
     updateAppSettings({ dashboardVisibility: dashVis });
-    showNotice('success', 'Dashboard visibility toggles updated live.');
+    showNotice('success', isUr ? 'ڈیش بورڈ دکھانے کے اصول لائیو اپ ڈیٹ ہو گئے۔' : 'Dashboard visibility toggles updated live.');
   };
 
   const handleSaveFeatures = () => {
     updateAppSettings({ featureToggles });
-    showNotice('success', 'Feature availability toggles updated live.');
+    showNotice('success', isUr ? 'فیچر دستیابی کے بٹن لائیو اپ ڈیٹ ہو گئے۔' : 'Feature availability toggles updated live.');
   };
 
   const handleCheckGitHub = async () => {
     setCheckingGitHub(true);
     try {
       await refreshGitHubRelease(true);
-      showNotice('success', 'Checked GitHub Releases for latest APK.');
+      showNotice('success', isUr ? 'تازہ ترین APK کے لیے GitHub Releases چیک کر لیا گیا۔' : 'Checked GitHub Releases for latest APK.');
     } finally {
       setCheckingGitHub(false);
     }
@@ -690,29 +702,29 @@ export const ManageAppModule: React.FC = () => {
       isMandatory,
       isPublished: true
     });
-    showNotice('success', `Manual APK update v${version.trim()} published!`);
+    showNotice('success', isUr ? `دستی APK اپ ڈیٹ v${version.trim()} شائع کر دیا گیا!` : `Manual APK update v${version.trim()} published!`);
   };
 
   const handleAddLocation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDistrictName.trim()) return;
     addCustomDistrict(locProvince, newDistrictName.trim(), newCityName.trim() || undefined);
-    showNotice('success', `Registered ${newDistrictName.trim()} under ${locProvince}.`);
+    showNotice('success', isUr ? `${newDistrictName.trim()} کو ${locProvince} میں شامل کر دیا گیا۔` : `Registered ${newDistrictName.trim()} under ${locProvince}.`);
     setNewDistrictName('');
     setNewCityName('');
   };
 
   const tabs: Array<{ id: MasterTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-    { id: 'GENERAL', label: '1. System & Maintenance', icon: Settings },
-    { id: 'BRANDING', label: '2. Brand & Logo', icon: Crown },
-    { id: 'THEMES', label: '3. Themes (4)', icon: Palette },
-    { id: 'COPY', label: '4. EN/UR Copy', icon: Type },
-    { id: 'ROLES', label: '5. Roles & Super Admins', icon: ShieldCheck },
-    { id: 'MEMBERS', label: '6. Members & Perms', icon: Users },
-    { id: 'BROADCAST', label: '7. Live Broadcast', icon: Megaphone },
-    { id: 'VISIBILITY', label: '8. Dashboard Layout', icon: Eye },
-    { id: 'FEATURES', label: '9. Feature Toggles', icon: ToggleLeft },
-    { id: 'APK_LOCATIONS', label: '10. APK, Locations & Logs', icon: Smartphone }
+    { id: 'GENERAL', label: isUr ? '1. سسٹم و مرمت' : '1. System & Maintenance', icon: Settings },
+    { id: 'BRANDING', label: isUr ? '2. برانڈ و لوگو' : '2. Brand & Logo', icon: Crown },
+    { id: 'THEMES', label: isUr ? '3. تھیمز (4)' : '3. Themes (4)', icon: Palette },
+    { id: 'COPY', label: isUr ? '4. اردو/انگریزی متن' : '4. EN/UR Copy', icon: Type },
+    { id: 'ROLES', label: isUr ? '5. عہدے و سپر ایڈمن' : '5. Roles & Super Admins', icon: ShieldCheck },
+    { id: 'MEMBERS', label: isUr ? '6. اراکین و اجازتیں' : '6. Members & Perms', icon: Users },
+    { id: 'BROADCAST', label: isUr ? '7. لائیو نشر' : '7. Live Broadcast', icon: Megaphone },
+    { id: 'VISIBILITY', label: isUr ? '8. ڈیش بورڈ لے آؤٹ' : '8. Dashboard Layout', icon: Eye },
+    { id: 'FEATURES', label: isUr ? '9. فیچر کنٹرول' : '9. Feature Toggles', icon: ToggleLeft },
+    { id: 'APK_LOCATIONS', label: isUr ? '10. APK، مقامات و لاگز' : '10. APK, Locations & Logs', icon: Smartphone }
   ];
 
   const pendingApprovalsCount = useMemo(
@@ -742,13 +754,13 @@ export const ManageAppModule: React.FC = () => {
   }, [users, memberSearch, memberApprovalFilter]);
 
   const permLabels: Array<{ key: keyof RolePermissions; label: string }> = [
-    { key: 'canManageUsers', label: 'Manage Users' },
-    { key: 'canApproveMembers', label: 'Approve Members' },
-    { key: 'canVerifyPayments', label: 'Verify Payments' },
-    { key: 'canPostCommunityAnnouncements', label: 'Post Community Elaan' },
-    { key: 'canPostOfficialAnnouncements', label: 'Post Official App Elaan' },
-    { key: 'canManageComplaints', label: 'Manage Complaints' },
-    { key: 'canViewReports', label: 'View Audit & Reports' }
+    { key: 'canManageUsers', label: isUr ? 'صارفین کا انتظام' : 'Manage Users' },
+    { key: 'canApproveMembers', label: isUr ? 'اراکین کی منظوری' : 'Approve Members' },
+    { key: 'canVerifyPayments', label: isUr ? 'ادائیگیوں کی تصدیق' : 'Verify Payments' },
+    { key: 'canPostCommunityAnnouncements', label: isUr ? 'کمیونٹی اعلانات پوسٹ کرنا' : 'Post Community Elaan' },
+    { key: 'canPostOfficialAnnouncements', label: isUr ? 'آفیشل اعلانات پوسٹ کرنا' : 'Post Official App Elaan' },
+    { key: 'canManageComplaints', label: isUr ? 'شکایات کا انتظام' : 'Manage Complaints' },
+    { key: 'canViewReports', label: isUr ? 'آڈٹ اور رپورٹس دیکھنا' : 'View Audit & Reports' }
   ];
 
   return (
@@ -758,13 +770,15 @@ export const ManageAppModule: React.FC = () => {
         <div>
           <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider flex items-center gap-1.5">
             <Crown className="w-3.5 h-3.5" />
-            <span>Founder & Executive Governance</span>
+            <span>{isUr ? 'بانی اور ایگزیکٹو گورننس' : 'Founder & Executive Governance'}</span>
           </span>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
             <span>{translate(language, 'masterControlTitle')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            PIN-locked master console controlling branding, themes, roles, visibility, broadcasts, and APK updates.
+            {isUr
+              ? 'پن سے محفوظ ماسٹر کنسول: برانڈنگ، تھیمز، عہدے، ترتیب، نشریات اور APK اپ ڈیٹس کا مکمل اختیار۔'
+              : 'PIN-locked master console controlling branding, themes, roles, visibility, broadcasts, and APK updates.'}
           </p>
         </div>
 
@@ -782,12 +796,12 @@ export const ManageAppModule: React.FC = () => {
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            <span>Pending Approvals ({pendingApprovalsCount})</span>
+            <span>{isUr ? `زیرِ التواء منظوریاں (${pendingApprovalsCount})` : `Pending Approvals (${pendingApprovalsCount})`}</span>
           </button>
           {currentIsFounder && (
             <span className="text-[11px] px-3 py-1.5 bg-[#043927]/70 border border-[#D4AF37]/50 text-[#F5D061] rounded-lg font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
-              <span>Founder Root Active</span>
+              <span>{isUr ? 'بانی روٹ فعال ہے' : 'Founder Root Active'}</span>
             </span>
           )}
           <button
@@ -796,7 +810,7 @@ export const ManageAppModule: React.FC = () => {
             className="text-xs px-3 py-1.5 bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-slate-200 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer"
           >
             <Lock className="w-3.5 h-3.5 text-[#F5D061]" />
-            <span>Lock Panel</span>
+            <span>{isUr ? 'پینل مقفل کریں' : 'Lock Panel'}</span>
           </button>
         </div>
       </div>
@@ -846,16 +860,22 @@ export const ManageAppModule: React.FC = () => {
         <form onSubmit={handleSaveGeneral} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
-              <h3 className="text-base font-bold text-white">System Governance & Maintenance Mode</h3>
-              <p className="text-slate-400">Pause non-Super-Admin access during critical maintenance or adjust core operations.</p>
+              <h3 className="text-base font-bold text-white">
+                {isUr ? 'سسٹم گورننس اور مینٹیننس موڈ' : 'System Governance & Maintenance Mode'}
+              </h3>
+              <p className="text-slate-400">
+                {isUr ? 'اہم اپ ڈیٹ کے دوران عام رسائی روکیں یا بنیادی ترتیبات تبدیل کریں۔' : 'Pause non-Super-Admin access during critical maintenance or adjust core operations.'}
+              </p>
             </div>
           </div>
 
           <div className="p-4 rounded-xl border border-rose-500/35 bg-rose-950/20 flex items-center justify-between gap-3">
             <div>
-              <span className="font-bold text-rose-300 text-sm block">Maintenance Mode</span>
+              <span className="font-bold text-rose-300 text-sm block">{isUr ? 'مینٹیننس موڈ' : 'Maintenance Mode'}</span>
               <span className="text-[11px] text-slate-300">
-                When enabled, only Super Admins can access the workspace; all other users see the custom maintenance notice.
+                {isUr
+                  ? 'فعال ہونے پر صرف سپر ایڈمن رسائی حاصل کر سکیں گے؛ باقی صارفین کو مرمت کا پیغام نظر آئے گا۔'
+                  : 'When enabled, only Super Admins can access the workspace; all other users see the custom maintenance notice.'}
               </span>
             </div>
             <input
@@ -869,8 +889,8 @@ export const ManageAppModule: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="p-3.5 rounded-xl border border-slate-800 bg-[#0A0D12] flex items-center justify-between cursor-pointer">
               <div>
-                <span className="font-semibold text-white block">Public Registration</span>
-                <span className="text-[11px] text-slate-400">Allow new community signups via OTP + Password.</span>
+                <span className="font-semibold text-white block">{isUr ? 'عوام کے لیے رجسٹریشن' : 'Public Registration'}</span>
+                <span className="text-[11px] text-slate-400">{isUr ? 'نئے اراکین کو او ٹی پی کے ذریعے اکاؤنٹ بنانے کی اجازت دیں۔' : 'Allow new community signups via OTP + Password.'}</span>
               </div>
               <input
                 type="checkbox"
@@ -882,8 +902,8 @@ export const ManageAppModule: React.FC = () => {
 
             <label className="p-3.5 rounded-xl border border-slate-800 bg-[#0A0D12] flex items-center justify-between cursor-pointer">
               <div>
-                <span className="font-semibold text-white block">Encrypted Direct Messaging</span>
-                <span className="text-[11px] text-slate-400">Enable 1-on-1 member and leadership chat.</span>
+                <span className="font-semibold text-white block">{isUr ? 'انکرپٹڈ براہِ راست پیغام رسانی' : 'Encrypted Direct Messaging'}</span>
+                <span className="text-[11px] text-slate-400">{isUr ? 'اراکین اور قیادت کے درمیان لائیو چیٹ فعال کریں۔' : 'Enable 1-on-1 member and leadership chat.'}</span>
               </div>
               <input
                 type="checkbox"
@@ -896,7 +916,7 @@ export const ManageAppModule: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Official Email</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'آفیشل ای میل' : 'Official Email'}</label>
               <input
                 type="email"
                 value={contactEmail}
@@ -905,7 +925,7 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Helpline Number</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ہیلپ لائن نمبر' : 'Helpline Number'}</label>
               <input
                 type="text"
                 value={contactHelpline}
@@ -914,16 +934,16 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Directory Visibility</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ڈائریکٹری دکھائی دینے کی حد' : 'Directory Visibility'}</label>
               <LuxurySelect
                 compact
                 value={profileVisibility}
                 onChange={(val) => setProfileVisibility(val as any)}
-                label="Directory Visibility"
+                label={isUr ? 'ڈائریکٹری دکھائی دینے کی حد' : 'Directory Visibility'}
                 options={[
-                  { value: 'MEMBERS_ONLY', label: 'Members Only' },
-                  { value: 'PUBLIC', label: 'Public' },
-                  { value: 'PRIVATE', label: 'Staff Only' }
+                  { value: 'MEMBERS_ONLY', label: isUr ? 'صرف اراکین' : 'Members Only' },
+                  { value: 'PUBLIC', label: isUr ? 'عوام' : 'Public' },
+                  { value: 'PRIVATE', label: isUr ? 'صرف عملہ' : 'Staff Only' }
                 ]}
               />
             </div>
@@ -945,14 +965,18 @@ export const ManageAppModule: React.FC = () => {
               <BrandEmblem3D size="lg" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">3D Royal Emblem & Bilingual Brand Identity</h3>
-              <p className="text-slate-400">Configure English & Urdu app titles, taglines, and primary gold/emerald colors.</p>
+              <h3 className="text-base font-bold text-white">
+                {isUr ? '3D شاہی علامت اور دو لسانی برانڈ شناخت' : '3D Royal Emblem & Bilingual Brand Identity'}
+              </h3>
+              <p className="text-slate-400">
+                {isUr ? 'انگریزی و اردو عنوانات، نعرے اور بنیادی گولڈ/زمرد رنگ ترتیب دیں۔' : 'Configure English & Urdu app titles, taglines, and primary gold/emerald colors.'}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">App Title (English)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ایپ کا عنوان (انگریزی)' : 'App Title (English)'}</label>
               <input
                 type="text"
                 value={appName}
@@ -961,17 +985,16 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">App Title (Urdu / اردو)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ایپ کا عنوان (اردو)' : 'App Title (Urdu / اردو)'}</label>
               <input
                 type="text"
-                dir="rtl"
                 value={appNameUr}
                 onChange={(e) => setAppNameUr(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Tagline (English)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'نعرہ (انگریزی)' : 'Tagline (English)'}</label>
               <input
                 type="text"
                 value={tagline}
@@ -980,17 +1003,16 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Tagline (Urdu / اردو)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'نعرہ (اردو)' : 'Tagline (Urdu / اردو)'}</label>
               <input
                 type="text"
-                dir="rtl"
                 value={taglineUr}
                 onChange={(e) => setTaglineUr(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Primary Emerald Hex</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'بنیادی زمرد رنگ (Hex)' : 'Primary Emerald Hex'}</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-9 rounded bg-transparent border-0" />
                 <input
@@ -1002,7 +1024,7 @@ export const ManageAppModule: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Royal Gold Accent Hex</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'شاہی گولڈ رنگ (Hex)' : 'Royal Gold Accent Hex'}</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={accentGoldColor} onChange={(e) => setAccentGoldColor(e.target.value)} className="w-10 h-9 rounded bg-transparent border-0" />
                 <input
@@ -1017,7 +1039,7 @@ export const ManageAppModule: React.FC = () => {
 
           <div className="flex justify-end pt-3 border-t border-slate-800">
             <button type="submit" className="px-5 py-2.5 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-              Save Brand Identity
+              {isUr ? 'برانڈ شناخت محفوظ کریں' : 'Save Brand Identity'}
             </button>
           </div>
         </form>
@@ -1027,8 +1049,8 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'THEMES' && (
         <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div>
-            <h3 className="text-base font-bold text-white">Luxury Live Theme Presets (4)</h3>
-            <p className="text-slate-400">Apply a palette across the entire application immediately without reload.</p>
+            <h3 className="text-base font-bold text-white">{isUr ? 'شاہی لائیو تھیم پری سیٹس (4)' : 'Luxury Live Theme Presets (4)'}</h3>
+            <p className="text-slate-400">{isUr ? 'ری لوڈ کیے بغیر فوری طور پر پوری ایپ کا رنگ تبدیل کریں۔' : 'Apply a palette across the entire application immediately without reload.'}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1047,12 +1069,12 @@ export const ManageAppModule: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <span className="font-bold text-sm text-white block">{preset.name}</span>
-                      <span className="text-[11px] text-slate-400">{preset.nameUr}</span>
+                      <span className="font-bold text-sm text-white block">{isUr ? preset.nameUr : preset.name}</span>
+                      <span className="text-[11px] text-slate-400">{isUr ? preset.name : preset.nameUr}</span>
                     </div>
                     {isSelected && (
                       <span className="px-2 py-0.5 rounded-md bg-[#F5D061] text-[#0A0D12] text-[10px] font-extrabold">
-                        ACTIVE
+                        {isUr ? 'فعال' : 'ACTIVE'}
                       </span>
                     )}
                   </div>
@@ -1073,13 +1095,17 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'COPY' && (
         <form onSubmit={handleSaveCopyOverrides} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div>
-            <h3 className="text-base font-bold text-white">Live English & Urdu Text Overrides</h3>
-            <p className="text-slate-400">Customize key headlines, maintenance notices, and VIP ID card footer copy live.</p>
+            <h3 className="text-base font-bold text-white">
+              {isUr ? 'لائیو انگریزی و اردو متن کی ترتیبات' : 'Live English & Urdu Text Overrides'}
+            </h3>
+            <p className="text-slate-400">
+              {isUr ? 'اہم سرخیاں، مرمت کا پیغام اور وی آئی پی کارڈ کا نچلا متن لائیو تبدیل کریں۔' : 'Customize key headlines, maintenance notices, and VIP ID card footer copy live.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Welcome Headline (EN)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'خوش آمدید سرخی (انگریزی)' : 'Welcome Headline (EN)'}</label>
               <input
                 type="text"
                 value={copyOverrides.welcomeHeadlineEn}
@@ -1088,17 +1114,16 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Welcome Headline (UR)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'خوش آمدید سرخی (اردو)' : 'Welcome Headline (UR)'}</label>
               <input
                 type="text"
-                dir="rtl"
                 value={copyOverrides.welcomeHeadlineUr}
                 onChange={(e) => setCopyOverrides(p => ({ ...p, welcomeHeadlineUr: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Maintenance Message (EN)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'مینٹیننس پیغام (انگریزی)' : 'Maintenance Message (EN)'}</label>
               <textarea
                 rows={2}
                 value={copyOverrides.maintenanceMessageEn}
@@ -1107,17 +1132,16 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Maintenance Message (UR)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'مینٹیننس پیغام (اردو)' : 'Maintenance Message (UR)'}</label>
               <textarea
                 rows={2}
-                dir="rtl"
                 value={copyOverrides.maintenanceMessageUr}
                 onChange={(e) => setCopyOverrides(p => ({ ...p, maintenanceMessageUr: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white resize-none"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">VIP ID Card Footer (EN)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'وی آئی پی آئی ڈی کارڈ فوٹر (انگریزی)' : 'VIP ID Card Footer (EN)'}</label>
               <input
                 type="text"
                 value={copyOverrides.idCardFooterEn}
@@ -1126,10 +1150,9 @@ export const ManageAppModule: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">VIP ID Card Footer (UR)</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'وی آئی پی آئی ڈی کارڈ فوٹر (اردو)' : 'VIP ID Card Footer (UR)'}</label>
               <input
                 type="text"
-                dir="rtl"
                 value={copyOverrides.idCardFooterUr}
                 onChange={(e) => setCopyOverrides(p => ({ ...p, idCardFooterUr: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
@@ -1139,7 +1162,7 @@ export const ManageAppModule: React.FC = () => {
 
           <div className="flex justify-end pt-3 border-t border-slate-800">
             <button type="submit" className="px-5 py-2.5 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-              Apply Text Overrides
+              {isUr ? 'متن کی تبدیلیاں لاگو کریں' : 'Apply Text Overrides'}
             </button>
           </div>
         </form>
@@ -1154,10 +1177,12 @@ export const ManageAppModule: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Crown className="w-5 h-5 text-[#F5D061]" />
-                  <span>Multi-Super Admin Governance & Founder Protection</span>
+                  <span>{isUr ? 'ملٹی سپر ایڈمن گورننس اور بانی کا تحفظ' : 'Multi-Super Admin Governance & Founder Protection'}</span>
                 </h3>
                 <p className="text-slate-400 mt-0.5">
-                  Strict 4-Role Hierarchy: Super Admin · Admin · Co-Admin · Member. The Founder account cannot be edited, demoted, or suspended by any Additional Super Admin.
+                  {isUr
+                    ? 'سخت 4-سطحی نظام: سپر ایڈمن · ایڈمن · کو ایڈمن · ممبر۔ کوئی اضافی سپر ایڈمن بانی کے اکاؤنٹ میں ترمیم، تنزلی یا معطلی نہیں کر سکتا۔'
+                    : 'Strict 4-Role Hierarchy: Super Admin · Admin · Co-Admin · Member. The Founder account cannot be edited, demoted, or suspended by any Additional Super Admin.'}
                 </p>
               </div>
               <span className="px-2.5 py-1 rounded-lg bg-[#043927]/70 border border-[#D4AF37]/40 text-[#F5D061] font-bold self-start">
@@ -1173,8 +1198,8 @@ export const ManageAppModule: React.FC = () => {
                     searchable
                     value={superAdminCandidateId}
                     onChange={setSuperAdminCandidateId}
-                    placeholder="Select member or admin to promote to Additional Super Admin..."
-                    label="Promote Member to Super Admin"
+                    placeholder={isUr ? 'اضافی سپر ایڈمن پر ترقی دینے کے لیے ممبر یا ایڈمن منتخب کریں...' : 'Select member or admin to promote to Additional Super Admin...'}
+                    label={isUr ? 'ممبر کو سپر ایڈمن بنائیں' : 'Promote Member to Super Admin'}
                     options={promotableUsers.map(u => ({
                       value: u.id,
                       label: u.name,
@@ -1188,7 +1213,7 @@ export const ManageAppModule: React.FC = () => {
                   onClick={handlePromoteSuperAdmin}
                   className="px-4 py-2 rounded-xl font-extrabold kc-gold-button disabled:opacity-40 cursor-pointer shrink-0"
                 >
-                  Promote to Super Admin 👑
+                  {isUr ? 'سپر ایڈمن پر ترقی دیں 👑' : 'Promote to Super Admin 👑'}
                 </button>
               </div>
             )}
@@ -1212,7 +1237,7 @@ export const ManageAppModule: React.FC = () => {
                     {saIsFounder ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold shrink-0">
                         <Lock className="w-3 h-3" />
-                        <span>Founder Immutable</span>
+                        <span>{isUr ? 'بانی ناقابلِ تبدیلی' : 'Founder Immutable'}</span>
                       </span>
                     ) : currentIsFounder ? (
                       <button
@@ -1220,10 +1245,10 @@ export const ManageAppModule: React.FC = () => {
                         onClick={() => handleDemoteSuperAdmin(sa.id)}
                         className="px-3 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-semibold shrink-0 cursor-pointer"
                       >
-                        Demote to Admin
+                        {isUr ? 'ایڈمن بنائیں' : 'Demote to Admin'}
                       </button>
                     ) : (
-                      <span className="text-[11px] text-slate-500">Additional Super Admin</span>
+                      <span className="text-[11px] text-slate-500">{isUr ? 'اضافی سپر ایڈمن' : 'Additional Super Admin'}</span>
                     )}
                   </div>
                 );
@@ -1235,8 +1260,8 @@ export const ManageAppModule: React.FC = () => {
           <form onSubmit={handleSaveQuotas} className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-bold text-sm text-white">Constitutional Role Quotas</h3>
-                <p className="text-slate-400">Configure District Admin and State Co-Admin limits.</p>
+                <h3 className="font-bold text-sm text-white">{isUr ? 'آئینی عہدوں کا کوٹہ' : 'Constitutional Role Quotas'}</h3>
+                <p className="text-slate-400">{isUr ? 'ضلعی ایڈمن اور صوبائی کو ایڈمن کی زیادہ سے زیادہ حد مقرر کریں۔' : 'Configure District Admin and State Co-Admin limits.'}</p>
               </div>
               <button
                 type="button"
@@ -1244,13 +1269,13 @@ export const ManageAppModule: React.FC = () => {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-extrabold kc-gold-button self-start cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Appoint Admin / Co-Admin</span>
+                <span>{isUr ? 'ایڈمن / کو ایڈمن مقرر کریں' : 'Appoint Admin / Co-Admin'}</span>
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Max Admins per District</label>
+                <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'فی ضلع زیادہ سے زیادہ ایڈمن' : 'Max Admins per District'}</label>
                 <input
                   type="number"
                   min={1}
@@ -1261,7 +1286,7 @@ export const ManageAppModule: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Max Co-Admins per State/Province</label>
+                <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'فی صوبہ زیادہ سے زیادہ کو ایڈمن' : 'Max Co-Admins per State/Province'}</label>
                 <input
                   type="number"
                   min={1}
@@ -1275,7 +1300,7 @@ export const ManageAppModule: React.FC = () => {
 
             <div className="flex justify-end">
               <button type="submit" className="px-4 py-2 rounded-xl bg-[#043927] hover:bg-emerald-900 border border-[#D4AF37]/40 text-[#F5D061] font-bold cursor-pointer">
-                Save Role Quotas
+                {isUr ? 'کوٹہ محفوظ کریں' : 'Save Role Quotas'}
               </button>
             </div>
           </form>
@@ -1285,13 +1310,15 @@ export const ManageAppModule: React.FC = () => {
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-400" />
-                  <span>Admins ({users.filter(u => u.role === 'ADMIN').length})</span>
+                  <span>{isUr ? `ایڈمنز (${users.filter(u => u.role === 'ADMIN').length})` : `Admins (${users.filter(u => u.role === 'ADMIN').length})`}</span>
                 </h4>
-                <span className="text-[10px] text-slate-400 font-mono">Max {appSettings.maxAdminsPerDistrict} / District</span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {isUr ? `زیادہ سے زیادہ ${appSettings.maxAdminsPerDistrict} / ضلع` : `Max ${appSettings.maxAdminsPerDistrict} / District`}
+                </span>
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {users.filter(u => u.role === 'ADMIN').length === 0 ? (
-                  <p className="text-slate-500 py-4 text-center">No Admins appointed yet.</p>
+                  <p className="text-slate-500 py-4 text-center">{isUr ? 'ابھی کوئی ایڈمن مقرر نہیں۔' : 'No Admins appointed yet.'}</p>
                 ) : (
                   users.filter(u => u.role === 'ADMIN').map(admin => (
                     <div key={admin.id} className="p-3 rounded-xl border border-slate-800 bg-[#0A0D12] flex items-center justify-between gap-2">
@@ -1310,13 +1337,15 @@ export const ManageAppModule: React.FC = () => {
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-emerald-400" />
-                  <span>Co-Admins ({users.filter(u => u.role === 'CO_ADMIN').length})</span>
+                  <span>{isUr ? `کو ایڈمنز (${users.filter(u => u.role === 'CO_ADMIN').length})` : `Co-Admins (${users.filter(u => u.role === 'CO_ADMIN').length})`}</span>
                 </h4>
-                <span className="text-[10px] text-slate-400 font-mono">Max {appSettings.maxCoAdminsPerState} / State</span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {isUr ? `زیادہ سے زیادہ ${appSettings.maxCoAdminsPerState} / صوبہ` : `Max ${appSettings.maxCoAdminsPerState} / State`}
+                </span>
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {users.filter(u => u.role === 'CO_ADMIN').length === 0 ? (
-                  <p className="text-slate-500 py-4 text-center">No Co-Admins appointed yet.</p>
+                  <p className="text-slate-500 py-4 text-center">{isUr ? 'ابھی کوئی کو ایڈمن مقرر نہیں۔' : 'No Co-Admins appointed yet.'}</p>
                 ) : (
                   users.filter(u => u.role === 'CO_ADMIN').map(ca => (
                     <div key={ca.id} className="p-3 rounded-xl border border-slate-800 bg-[#0A0D12] flex items-center justify-between gap-2">
@@ -1339,14 +1368,18 @@ export const ManageAppModule: React.FC = () => {
         <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-white">Member Approval, Suspension &amp; Permission Matrix</h3>
-              <p className="text-slate-400">One-tap instant member approval, suspend/reactivate accounts, or grant granular permissions (Founder Protected).</p>
+              <h3 className="text-base font-bold text-white">
+                {isUr ? 'رکنیت کی منظوری، معطلی اور اختیارات کا جدول' : 'Member Approval, Suspension & Permission Matrix'}
+              </h3>
+              <p className="text-slate-400">
+                {isUr ? 'ایک کلک میں فوری منظوری، اکاؤنٹ معطلی/بحالی یا خصوصی اختیارات دیں (بانی محفوظ ہے)۔' : 'One-tap instant member approval, suspend/reactivate accounts, or grant granular permissions (Founder Protected).'}
+              </p>
             </div>
             <input
               type="text"
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
-              placeholder="Search name, email, ID, district..."
+              placeholder={isUr ? 'نام، ای میل، آئی ڈی یا ضلع تلاش کریں...' : 'Search name, email, ID, district...'}
               className="px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white w-full sm:w-64"
             />
           </div>
@@ -1363,7 +1396,7 @@ export const ManageAppModule: React.FC = () => {
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>All Members ({users.length})</span>
+              <span>{isUr ? `تمام اراکین (${users.length})` : `All Members (${users.length})`}</span>
             </button>
             <button
               type="button"
@@ -1375,7 +1408,7 @@ export const ManageAppModule: React.FC = () => {
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Pending Approvals</span>
+              <span>{isUr ? 'زیرِ التواء منظوریاں' : 'Pending Approvals'}</span>
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   memberApprovalFilter === 'PENDING'
@@ -1394,8 +1427,8 @@ export const ManageAppModule: React.FC = () => {
             {filteredMembers.length === 0 ? (
               <div className="p-8 text-center rounded-xl bg-[#0A0D12] border border-slate-800 text-slate-400">
                 {memberApprovalFilter === 'PENDING'
-                  ? 'No members currently awaiting approval.'
-                  : 'No members match your search.'}
+                  ? (isUr ? 'فی الحال منظوری کا منتظر کوئی ممبر نہیں ہے۔' : 'No members currently awaiting approval.')
+                  : (isUr ? 'آپ کی تلاش کے مطابق کوئی ممبر نہیں ملا۔' : 'No members match your search.')}
               </div>
             ) : (
               filteredMembers.map(u => {
@@ -1413,24 +1446,28 @@ export const ManageAppModule: React.FC = () => {
                           {approvalState === 'pending' && !targetIsFounder && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[10px] font-extrabold">
                               <Clock className="w-3 h-3" />
-                              <span>{u.profileCompleted === false ? 'PROFILE PENDING' : 'PENDING APPROVAL'}</span>
+                              <span>
+                                {u.profileCompleted === false
+                                  ? (isUr ? 'پروفائل نامکمل' : 'PROFILE PENDING')
+                                  : (isUr ? 'منظوری زیرِ التواء' : 'PENDING APPROVAL')}
+                              </span>
                             </span>
                           )}
                           {approvalState === 'approved' && !targetIsFounder && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold">
                               <CheckCircle2 className="w-3 h-3" />
-                              <span>APPROVED</span>
+                              <span>{isUr ? 'منظور شدہ' : 'APPROVED'}</span>
                             </span>
                           )}
                           {approvalState === 'rejected' && !targetIsFounder && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/80 border border-rose-500/40 text-rose-300 text-[10px] font-extrabold">
                               <XCircle className="w-3 h-3" />
-                              <span>REJECTED</span>
+                              <span>{isUr ? 'مسترد' : 'REJECTED'}</span>
                             </span>
                           )}
                           {u.isSuspended && (
                             <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
-                              SUSPENDED
+                              {isUr ? 'معطل' : 'SUSPENDED'}
                             </span>
                           )}
                         </div>
@@ -1456,7 +1493,7 @@ export const ManageAppModule: React.FC = () => {
                               className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 cursor-pointer"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Approve</span>
+                              <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                             </button>
                           )}
                           {approvalState !== 'approved' && approvalState !== 'rejected' && (
@@ -1469,7 +1506,7 @@ export const ManageAppModule: React.FC = () => {
                               className="px-2.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-bold flex items-center gap-1 cursor-pointer"
                             >
                               <XCircle className="w-3.5 h-3.5" />
-                              <span>Reject</span>
+                              <span>{isUr ? 'مسترد' : 'Reject'}</span>
                             </button>
                           )}
                           {currentIsFounder && (
@@ -1479,7 +1516,7 @@ export const ManageAppModule: React.FC = () => {
                               className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold flex items-center gap-1 cursor-pointer"
                             >
                               <Crown className="w-3.5 h-3.5" />
-                              <span>Assign Role</span>
+                              <span>{isUr ? 'عہدہ تفویض کریں' : 'Assign Role'}</span>
                             </button>
                           )}
                           {currentIsFounder && (
@@ -1489,9 +1526,14 @@ export const ManageAppModule: React.FC = () => {
                                 const nextVal = !u.isAuditOfficer;
                                 const res = assignAuditOfficer(u.id, nextVal);
                                 if (res.success) {
-                                  showNotice('success', `${u.name} ${nextVal ? 'assigned as Audit Officer 🛡️' : 'removed from Audit Officer role'}.`);
+                                  showNotice(
+                                    'success',
+                                    isUr
+                                      ? `${u.name} کو آڈٹ آفیسر ${nextVal ? 'مقرر کر دیا گیا 🛡️' : 'سے ہٹا دیا گیا'}۔`
+                                      : `${u.name} ${nextVal ? 'assigned as Audit Officer 🛡️' : 'removed from Audit Officer role'}.`
+                                  );
                                 } else {
-                                  showNotice('error', res.error || 'Only Founder can manage Audit Officers.');
+                                  showNotice('error', res.error || (isUr ? 'صرف بانی آڈٹ آفیسر کا نظم کر سکتے ہیں۔' : 'Only Founder can manage Audit Officers.'));
                                 }
                               }}
                               className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer border ${
@@ -1501,7 +1543,11 @@ export const ManageAppModule: React.FC = () => {
                               }`}
                             >
                               <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>{u.isAuditOfficer ? 'Revoke Audit' : 'Make Audit Officer'}</span>
+                              <span>
+                                {u.isAuditOfficer
+                                  ? (isUr ? 'آڈٹ ختم کریں' : 'Revoke Audit')
+                                  : (isUr ? 'آڈٹ آفیسر بنائیں' : 'Make Audit Officer')}
+                              </span>
                             </button>
                           )}
                           <button
@@ -1509,16 +1555,23 @@ export const ManageAppModule: React.FC = () => {
                             onClick={() => setEditingPermUserId(isEditing ? null : u.id)}
                             className="px-2.5 py-1.5 rounded-lg bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-[#F5D061] font-semibold cursor-pointer"
                           >
-                            {isEditing ? 'Hide Permissions' : 'Permissions'}
+                            {isEditing
+                              ? (isUr ? 'اجازتیں چھپائیں' : 'Hide Permissions')
+                              : (isUr ? 'اجازتیں' : 'Permissions')}
                           </button>
                           <button
                             type="button"
                             onClick={() => {
                               const res = toggleUserSuspension(u.id, !u.isSuspended);
                               if (res.success) {
-                                showNotice('success', `${u.name} ${u.isSuspended ? 'reactivated' : 'suspended'}.`);
+                                showNotice(
+                                  'success',
+                                  isUr
+                                    ? `${u.name} کا اکاؤنٹ ${u.isSuspended ? 'بحال' : 'معطل'} کر دیا گیا۔`
+                                    : `${u.name} ${u.isSuspended ? 'reactivated' : 'suspended'}.`
+                                );
                               } else {
-                                showNotice('error', res.error || 'Action denied.');
+                                showNotice('error', res.error || (isUr ? 'کارروائی مسترد کر دی گئی۔' : 'Action denied.'));
                               }
                             }}
                             className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer ${
@@ -1528,11 +1581,62 @@ export const ManageAppModule: React.FC = () => {
                             }`}
                           >
                             {u.isSuspended ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5" />}
-                            <span>{u.isSuspended ? 'Activate' : 'Suspend'}</span>
+                            <span>{u.isSuspended ? (isUr ? 'بحال کریں' : 'Activate') : (isUr ? 'معطل کریں' : 'Suspend')}</span>
                           </button>
+                          {currentIsFounder && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteUserId(confirmDeleteUserId === u.id ? null : u.id)}
+                              className="px-2.5 py-1.5 rounded-lg bg-rose-950/90 hover:bg-rose-900 border border-rose-500/50 text-rose-200 font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                              <span>{translate(language, 'deleteMemberPermBtn')}</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
+
+                    {confirmDeleteUserId === u.id && currentIsFounder && !targetIsFounder && (
+                      <div className="p-3 rounded-xl bg-rose-950/55 border border-rose-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="text-[11px] text-rose-100">
+                          <strong className="text-rose-200 block">{translate(language, 'deleteMemberConfirmTitle')}</strong>
+                          <span>{translate(language, 'deleteMemberConfirmDesc')} ({u.name} · {u.email})</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={deletingUserId === u.id}
+                            onClick={async () => {
+                              setDeletingUserId(u.id);
+                              try {
+                                const res = await deleteUserPermanently(u.id);
+                                if (res.success) {
+                                  setConfirmDeleteUserId(null);
+                                  showNotice('success', res.message);
+                                } else {
+                                  showNotice('error', res.error || res.message);
+                                }
+                              } finally {
+                                setDeletingUserId(null);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-extrabold cursor-pointer disabled:opacity-50"
+                          >
+                            {deletingUserId === u.id
+                              ? (isUr ? 'حذف ہو رہا ہے...' : 'Deleting...')
+                              : translate(language, 'confirmPermanentDeleteBtn')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteUserId(null)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#111622] border border-slate-700 text-slate-300 font-semibold cursor-pointer"
+                          >
+                            {translate(language, 'cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {isEditing && !targetIsFounder && (
                       <div className="pt-2.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -1569,53 +1673,55 @@ export const ManageAppModule: React.FC = () => {
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Megaphone className="w-5 h-5 text-[#F5D061]" />
-              <span>Live System Notification Broadcast</span>
+              <span>{isUr ? 'لائیو سسٹم نوٹیفکیشن براڈکاسٹ' : 'Live System Notification Broadcast'}</span>
             </h3>
-            <p className="text-slate-400">Push an instant high-priority alert to all members or leadership staff.</p>
+            <p className="text-slate-400">
+              {isUr ? 'تمام اراکین یا قیادت کو فوری اہم اطلاع بھیجیں۔' : 'Push an instant high-priority alert to all members or leadership staff.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Alert Title *</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'اطلاع کا عنوان *' : 'Alert Title *'}</label>
               <input
                 type="text"
                 required
                 value={broadcastTitle}
                 onChange={(e) => setBroadcastTitle(e.target.value)}
-                placeholder="e.g. Urgent Executive Council Assembly"
+                placeholder={isUr ? 'مثال: ہنگامی ایگزیکٹو کونسل اجلاس' : 'e.g. Urgent Executive Council Assembly'}
                 className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Audience</label>
+              <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ناظرین' : 'Audience'}</label>
               <LuxurySelect
                 compact
                 value={broadcastTarget}
                 onChange={(val) => setBroadcastTarget(val as 'ALL' | 'STAFF')}
-                label="Broadcast Audience"
+                label={isUr ? 'براڈکاسٹ ناظرین' : 'Broadcast Audience'}
                 options={[
-                  { value: 'ALL', label: 'All Users (Members + Staff)' },
-                  { value: 'STAFF', label: 'Leadership Only (Super Admin, Admin, Co-Admin)' }
+                  { value: 'ALL', label: isUr ? 'تمام صارفین (اراکین + عملہ)' : 'All Users (Members + Staff)' },
+                  { value: 'STAFF', label: isUr ? 'صرف قیادت (سپر ایڈمن، ایڈمن، کو ایڈمن)' : 'Leadership Only (Super Admin, Admin, Co-Admin)' }
                 ]}
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Notification Message *</label>
+            <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'اطلاع کا پیغام *' : 'Notification Message *'}</label>
             <textarea
               rows={3}
               required
               value={broadcastBody}
               onChange={(e) => setBroadcastBody(e.target.value)}
-              placeholder="Write alert notification body..."
+              placeholder={isUr ? 'اطلاع کا متن لکھیں...' : 'Write alert notification body...'}
               className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white resize-none"
             />
           </div>
 
           <div className="flex justify-end">
             <button type="submit" className="px-5 py-2.5 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-              Dispatch Live Alert
+              {isUr ? 'لائیو اطلاع بھیجیں' : 'Dispatch Live Alert'}
             </button>
           </div>
         </form>
@@ -1625,18 +1731,18 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'VISIBILITY' && (
         <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div>
-            <h3 className="text-base font-bold text-white">Dashboard Section Visibility Controls</h3>
-            <p className="text-slate-400">Show or hide dashboard widgets across Member and Officer dashboards live.</p>
+            <h3 className="text-base font-bold text-white">{isUr ? 'ڈیش بورڈ کے حصوں کی نمائش کا کنٹرول' : 'Dashboard Section Visibility Controls'}</h3>
+            <p className="text-slate-400">{isUr ? 'ممبر اور افسر ڈیش بورڈز پر مختلف حصے لائیو دکھائیں یا چھپائیں۔' : 'Show or hide dashboard widgets across Member and Officer dashboards live.'}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { key: 'showKpiGrid', label: 'KPI Statistics Grid' },
-              { key: 'showQuickActions', label: 'Apollo-Style Quick Action Cards' },
-              { key: 'showApkSyncBanner', label: 'GitHub Releases APK Banner' },
-              { key: 'showDistrictMatrix', label: 'District Contributions Matrix' },
-              { key: 'showOfficeBearersWidget', label: 'Office Bearers Summary' },
-              { key: 'showAnnouncementsFeed', label: 'Live Announcements Feed' }
+              { key: 'showKpiGrid', label: isUr ? 'اہم اعدادوشمار گرڈ (KPI)' : 'KPI Statistics Grid' },
+              { key: 'showQuickActions', label: isUr ? 'فوری ایکشن کارڈز' : 'Apollo-Style Quick Action Cards' },
+              { key: 'showApkSyncBanner', label: isUr ? 'GitHub ریلیزز APK بینر' : 'GitHub Releases APK Banner' },
+              { key: 'showDistrictMatrix', label: isUr ? 'ضلعی وصولیوں کا جدول' : 'District Contributions Matrix' },
+              { key: 'showOfficeBearersWidget', label: isUr ? 'عہدیداران کا خلاصہ' : 'Office Bearers Summary' },
+              { key: 'showAnnouncementsFeed', label: isUr ? 'لائیو اعلانات کی فہرست' : 'Live Announcements Feed' }
             ].map(item => (
               <label key={item.key} className="p-3.5 rounded-xl bg-[#0A0D12] border border-slate-800 flex items-center justify-between cursor-pointer">
                 <span className="font-semibold text-slate-200">{item.label}</span>
@@ -1658,7 +1764,7 @@ export const ManageAppModule: React.FC = () => {
               onClick={handleSaveVisibility}
               className="px-5 py-2.5 rounded-xl font-extrabold kc-gold-button cursor-pointer"
             >
-              Save Visibility Rules
+              {isUr ? 'نمائش کے اصول محفوظ کریں' : 'Save Visibility Rules'}
             </button>
           </div>
         </div>
@@ -1668,17 +1774,17 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'FEATURES' && (
         <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
           <div>
-            <h3 className="text-base font-bold text-white">Global Feature Toggles</h3>
-            <p className="text-slate-400">Enable or disable core modules in real time.</p>
+            <h3 className="text-base font-bold text-white">{isUr ? 'عالمی فیچر کنٹرولز' : 'Global Feature Toggles'}</h3>
+            <p className="text-slate-400">{isUr ? 'ایپ کے بنیادی ماڈیولز کو حقیقی وقت میں فعال یا معطل کریں۔' : 'Enable or disable core modules in real time.'}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { key: 'allowPasswordLogin', label: 'Allow Gmail + Password Login' },
-              { key: 'allowCommunityAnnouncements', label: 'Allow Admin/Co-Admin Community Announcements' },
-              { key: 'allowDigitalIdDownload', label: 'Allow VIP Digital ID PNG Download' },
-              { key: 'allowMemberPayments', label: 'Allow Member Payment Submissions' },
-              { key: 'allowComplaintsDesk', label: 'Allow Complaints Desk Submissions' }
+              { key: 'allowPasswordLogin', label: isUr ? 'جی میل + پاس ورڈ لاگ ان کی اجازت' : 'Allow Gmail + Password Login' },
+              { key: 'allowCommunityAnnouncements', label: isUr ? 'ایڈمن/کو ایڈمن کمیونٹی اعلانات کی اجازت' : 'Allow Admin/Co-Admin Community Announcements' },
+              { key: 'allowDigitalIdDownload', label: isUr ? 'وی آئی پی ڈیجیٹل آئی ڈی PNG ڈاؤن لوڈ کی اجازت' : 'Allow VIP Digital ID PNG Download' },
+              { key: 'allowMemberPayments', label: isUr ? 'ممبر ادائیگیاں جمع کروانے کی اجازت' : 'Allow Member Payment Submissions' },
+              { key: 'allowComplaintsDesk', label: isUr ? 'شکایات ڈیسک جمع کروانے کی اجازت' : 'Allow Complaints Desk Submissions' }
             ].map(item => (
               <label key={item.key} className="p-3.5 rounded-xl bg-[#0A0D12] border border-slate-800 flex items-center justify-between cursor-pointer">
                 <span className="font-semibold text-slate-200">{item.label}</span>
@@ -1700,7 +1806,7 @@ export const ManageAppModule: React.FC = () => {
               onClick={handleSaveFeatures}
               className="px-5 py-2.5 rounded-xl font-extrabold kc-gold-button cursor-pointer"
             >
-              Save Feature Toggles
+              {isUr ? 'فیچر کنٹرول محفوظ کریں' : 'Save Feature Toggles'}
             </button>
           </div>
         </div>
@@ -1714,7 +1820,7 @@ export const ManageAppModule: React.FC = () => {
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
-                  GitHub Releases Auto-Sync
+                  {isUr ? 'GitHub ریلیزز آٹو سنک' : 'GitHub Releases Auto-Sync'}
                 </span>
                 <a
                   href="https://github.com/asadullah6959-art/kifayatconnect-app"
@@ -1728,14 +1834,15 @@ export const ManageAppModule: React.FC = () => {
               </div>
               <h3 className="text-sm sm:text-base font-bold">
                 {githubRelease?.apkUrl
-                  ? `Latest Release: ${githubRelease.tagName}`
-                  : githubRelease?.releaseTitle || 'Latest Version Installed'}
+                  ? (isUr ? `تازہ ترین ریلیز: ${githubRelease.tagName}` : `Latest Release: ${githubRelease.tagName}`)
+                  : githubRelease?.releaseTitle || (isUr ? 'تازہ ترین ورژن انسٹال ہے' : 'Latest Version Installed')}
               </h3>
               <p className="text-xs text-slate-300">
-                Installed Build: <strong className="font-mono text-[#F5D061]">v{githubRelease?.installedVersion || '1.0.0'}</strong>
+                {isUr ? 'انسٹال شدہ بلڈ:' : 'Installed Build:'}{' '}
+                <strong className="font-mono text-[#F5D061]">v{githubRelease?.installedVersion || '1.0.0'}</strong>
                 {githubRelease?.apkUrl
-                  ? ` · Verified Android APK (${githubRelease.tagName}) ready from GitHub Releases.`
-                  : ' · Latest Version Installed. APK download activates automatically once a GitHub Release is published.'}
+                  ? (isUr ? ` · GitHub ریلیزز سے مصدقہ Android APK (${githubRelease.tagName}) تیار ہے۔` : ` · Verified Android APK (${githubRelease.tagName}) ready from GitHub Releases.`)
+                  : (isUr ? ' · تازہ ترین ورژن انسٹال ہے۔ GitHub ریلیز شائع ہوتے ہی APK ڈاؤن لوڈ خودکار فعال ہو جائے گا۔' : ' · Latest Version Installed. APK download activates automatically once a GitHub Release is published.')}
               </p>
             </div>
 
@@ -1748,7 +1855,7 @@ export const ManageAppModule: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl kc-gold-button font-extrabold text-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download APK ({githubRelease.tagName})</span>
+                  <span>{isUr ? `APK ڈاؤن لوڈ (${githubRelease.tagName})` : `Download APK (${githubRelease.tagName})`}</span>
                 </a>
               )}
               <button
@@ -1758,7 +1865,7 @@ export const ManageAppModule: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A0D12] hover:bg-slate-800 text-white border border-[#D4AF37]/30 font-semibold text-xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#F5D061] ${checkingGitHub ? 'animate-spin' : ''}`} />
-                <span>{checkingGitHub ? 'Checking...' : 'Check Releases'}</span>
+                <span>{checkingGitHub ? (isUr ? 'جانچ جاری ہے...' : 'Checking...') : (isUr ? 'ریلیزز چیک کریں' : 'Check Releases')}</span>
               </button>
             </div>
           </div>
@@ -1767,7 +1874,7 @@ export const ManageAppModule: React.FC = () => {
           <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
               <Upload className="w-4 h-4 text-[#F5D061]" />
-              <span>Manual APK Release Override</span>
+              <span>{isUr ? 'دستی APK ریلیز اپ لوڈ' : 'Manual APK Release Override'}</span>
             </h3>
 
             <form onSubmit={handleCreateUpdate} className="space-y-3">
@@ -1785,7 +1892,7 @@ export const ManageAppModule: React.FC = () => {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Release Title"
+                  placeholder={isUr ? 'ریلیز کا عنوان' : 'Release Title'}
                   className="md:col-span-2 px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
                 />
               </div>
@@ -1830,10 +1937,10 @@ export const ManageAppModule: React.FC = () => {
                     onChange={(e) => setIsMandatory(e.target.checked)}
                     className="accent-amber-500"
                   />
-                  <span>Mandatory Update</span>
+                  <span>{isUr ? 'لازمی اپ ڈیٹ' : 'Mandatory Update'}</span>
                 </label>
                 <button type="submit" className="px-4 py-2 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-                  Publish Manual Override
+                  {isUr ? 'دستی اپ ڈیٹ شائع کریں' : 'Publish Manual Override'}
                 </button>
               </div>
             </form>
@@ -1853,7 +1960,7 @@ export const ManageAppModule: React.FC = () => {
                         upd.isPublished ? 'bg-slate-800 text-slate-300' : 'bg-emerald-700 text-white'
                       }`}
                     >
-                      {upd.isPublished ? 'Unpublish' : 'Activate'}
+                      {upd.isPublished ? (isUr ? 'غیر فعال کریں' : 'Unpublish') : (isUr ? 'فعال کریں' : 'Activate')}
                     </button>
                   </div>
                 ))}
@@ -1865,14 +1972,18 @@ export const ManageAppModule: React.FC = () => {
           <form onSubmit={handleAddLocation} className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#F5D061]" />
-              <span>Pakistan Districts & Cities Master ({getAllDistricts().length} Registered)</span>
+              <span>
+                {isUr
+                  ? `پاکستان کے اضلاع و شہروں کا ماسٹر (${getAllDistricts().length} رجسٹرڈ)`
+                  : `Pakistan Districts & Cities Master (${getAllDistricts().length} Registered)`}
+              </span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <LuxurySelect
                 compact
                 value={locProvince}
                 onChange={setLocProvince}
-                label="Select Province / Territory"
+                label={isUr ? 'صوبہ / علاقہ منتخب کریں' : 'Select Province / Territory'}
                 options={PROVINCE_OPTIONS}
               />
               <input
@@ -1880,20 +1991,20 @@ export const ManageAppModule: React.FC = () => {
                 required
                 value={newDistrictName}
                 onChange={(e) => setNewDistrictName(e.target.value)}
-                placeholder="New District Name *"
+                placeholder={isUr ? 'نیا ضلع کا نام *' : 'New District Name *'}
                 className="px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
               <input
                 type="text"
                 value={newCityName}
                 onChange={(e) => setNewCityName(e.target.value)}
-                placeholder="City / Tehsil"
+                placeholder={isUr ? 'شہر / تحصیل' : 'City / Tehsil'}
                 className="px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
               />
             </div>
             <div className="flex justify-end">
               <button type="submit" className="px-4 py-2 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-                Add District
+                {isUr ? 'ضلع شامل کریں' : 'Add District'}
               </button>
             </div>
           </form>
@@ -1902,7 +2013,7 @@ export const ManageAppModule: React.FC = () => {
           <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
               <FileClock className="w-4 h-4 text-[#F5D061]" />
-              <span>Recent Security & Role Audit Logs ({auditLogs.length})</span>
+              <span>{isUr ? `حالیہ سیکیورٹی و کردار آڈٹ لاگز (${auditLogs.length})` : `Recent Security & Role Audit Logs (${auditLogs.length})`}</span>
             </h3>
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {auditLogs.slice(0, 12).map(log => (
@@ -1930,13 +2041,15 @@ export const ManageAppModule: React.FC = () => {
           >
             <div>
               <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider">
-                Super Admin Appointment
+                {isUr ? 'سپر ایڈمن تقرری' : 'Super Admin Appointment'}
               </span>
               <h3 className="text-base font-bold text-white mt-0.5">
-                Appoint Admin / Co-Admin
+                {isUr ? 'ایڈمن / کو ایڈمن مقرر کریں' : 'Appoint Admin / Co-Admin'}
               </h3>
               <p className="text-xs text-slate-400">
-                Max {appSettings.maxAdminsPerDistrict} Admins/District and max {appSettings.maxCoAdminsPerState} Co-Admins/State.
+                {isUr
+                  ? `زیادہ سے زیادہ ${appSettings.maxAdminsPerDistrict} ایڈمن فی ضلع اور ${appSettings.maxCoAdminsPerState} کو ایڈمن فی صوبہ۔`
+                  : `Max ${appSettings.maxAdminsPerDistrict} Admins/District and max ${appSettings.maxCoAdminsPerState} Co-Admins/State.`}
               </p>
             </div>
 
@@ -1948,34 +2061,34 @@ export const ManageAppModule: React.FC = () => {
 
             <form onSubmit={handleCreateStaff} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Role *</label>
+                <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'عہدہ *' : 'Role *'}</label>
                 <LuxurySelect
                   compact
                   value={staffRole}
                   onChange={(val) => setStaffRole(val as 'ADMIN' | 'CO_ADMIN')}
-                  label="Select Staff Role"
+                  label={isUr ? 'عملے کا عہدہ منتخب کریں' : 'Select Staff Role'}
                   options={[
-                    { value: 'ADMIN', label: `Admin (Max ${appSettings.maxAdminsPerDistrict} per District)` },
-                    { value: 'CO_ADMIN', label: `Co-Admin (Max ${appSettings.maxCoAdminsPerState} per State)` }
+                    { value: 'ADMIN', label: isUr ? `ایڈمن (فی ضلع زیادہ سے زیادہ ${appSettings.maxAdminsPerDistrict})` : `Admin (Max ${appSettings.maxAdminsPerDistrict} per District)` },
+                    { value: 'CO_ADMIN', label: isUr ? `کو ایڈمن (فی صوبہ زیادہ سے زیادہ ${appSettings.maxCoAdminsPerState})` : `Co-Admin (Max ${appSettings.maxCoAdminsPerState} per State)` }
                   ]}
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Full Legal Name *</label>
+                <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'مکمل قانونی نام *' : 'Full Legal Name *'}</label>
                 <input
                   type="text"
                   required
                   value={staffName}
                   onChange={(e) => setStaffName(e.target.value)}
-                  placeholder="Enter full legal name"
+                  placeholder={isUr ? 'مکمل قانونی نام درج کریں' : 'Enter full legal name'}
                   className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-[#0A0D12] text-white"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Email *</label>
+                  <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'ای میل *' : 'Email *'}</label>
                   <input
                     type="email"
                     required
@@ -1986,7 +2099,7 @@ export const ManageAppModule: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Phone *</label>
+                  <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'فون *' : 'Phone *'}</label>
                   <input
                     type="tel"
                     required
@@ -1999,7 +2112,7 @@ export const ManageAppModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">CNIC Number *</label>
+                <label className="block font-semibold text-slate-300 mb-1">{isUr ? 'شناختی کارڈ نمبر *' : 'CNIC Number *'}</label>
                 <input
                   type="text"
                   required
@@ -2013,7 +2126,7 @@ export const ManageAppModule: React.FC = () => {
               <SearchableLocationSelect
                 value={staffLocation}
                 onChange={setStaffLocation}
-                label="Assigned District / City across Pakistan"
+                label={isUr ? 'تفویض کردہ ضلع / شہر (پاکستان)' : 'Assigned District / City across Pakistan'}
                 required
               />
 
@@ -2026,7 +2139,7 @@ export const ManageAppModule: React.FC = () => {
                   {translate(language, 'cancel')}
                 </button>
                 <button type="submit" className="px-4 py-2 rounded-xl font-extrabold kc-gold-button cursor-pointer">
-                  Confirm Appointment
+                  {isUr ? 'تقرری کی تصدیق کریں' : 'Confirm Appointment'}
                 </button>
               </div>
             </form>

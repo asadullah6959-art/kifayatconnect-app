@@ -180,13 +180,15 @@ export const AnnouncementsManager: React.FC = () => {
     setActiveChannel(finalType);
   };
 
+  const isUr = language === 'ur';
+
   return (
     <div className="space-y-5 max-w-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div className="min-w-0">
           <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
-            Elaanat & Dual Broadcast Channels
+            {isUr ? 'اعلانات اور دوہرا نشریاتی نظام' : 'Elaanat & Dual Broadcast Channels'}
           </span>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
             <Megaphone className="w-6 h-6 text-[#F5D061] shrink-0" />
@@ -194,8 +196,8 @@ export const AnnouncementsManager: React.FC = () => {
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             {canPublishAny
-              ? 'Published announcements auto-sync to member notification feeds and direct chat inboxes.'
-              : 'Official Super Admin notices and district community circulars.'}
+              ? (isUr ? 'شائع شدہ اعلانات خودکار طور پر اراکین کی اطلاعات اور چیٹ ان باکس میں پہنچ جاتے ہیں۔' : 'Published announcements auto-sync to member notification feeds and direct chat inboxes.')
+              : (isUr ? 'سپرایڈمن کے سرکاری اعلانات اور ضلعی کمیونٹی سرکلرز۔' : 'Official Super Admin notices and district community circulars.')}
           </p>
         </div>
 
@@ -260,7 +262,9 @@ export const AnnouncementsManager: React.FC = () => {
         <div className="p-3.5 rounded-2xl kc-emerald-panel flex items-center gap-2.5 text-xs text-emerald-100">
           <MailCheck className="w-4 h-4 text-[#F5D061] shrink-0" />
           <span>
-            Auto-Broadcast Active: Official App announcements (👑) require Super Admin authority; Community notices reach targeted province/district inboxes.
+            {isUr
+              ? 'خودکار نشریات فعال ہیں: آفیشل ایپ اعلانات (👑) کے لیے سپر ایڈمن کی اجازت درکار ہے؛ کمیونٹی اطلاعات متعلقہ صوبے/ضلع کے ان باکس تک پہنچتی ہیں۔'
+              : 'Auto-Broadcast Active: Official App announcements (👑) require Super Admin authority; Community notices reach targeted province/district inboxes.'}
           </span>
         </div>
       )}
@@ -297,7 +301,9 @@ export const AnnouncementsManager: React.FC = () => {
                           : 'bg-[#042920] border-emerald-500/40 text-emerald-300'
                       }`}
                     >
-                      {isOfficial ? '👑 OFFICIAL APP' : '📢 COMMUNITY'}
+                      {isOfficial
+                        ? (isUr ? '👑 آفیشل ایپ' : '👑 OFFICIAL APP')
+                        : (isUr ? '📢 کمیونٹی' : '📢 COMMUNITY')}
                     </span>
 
                     {ann.isPinned && (
@@ -324,7 +330,7 @@ export const AnnouncementsManager: React.FC = () => {
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#090D16] border border-[#D4AF37]/25 px-2.5 py-0.5 rounded-lg text-emerald-300">
                       <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                       {ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS' || !ann.targetScope
-                        ? 'All Pakistan'
+                        ? (isUr ? 'پورا پاکستان' : 'All Pakistan')
                         : ann.targetScope === 'PROVINCE'
                         ? `${ann.targetStateProvince}`
                         : `${ann.targetDistrict || ann.targetRegion}`}
@@ -352,7 +358,7 @@ export const AnnouncementsManager: React.FC = () => {
                 <div className="pt-2.5 border-t border-[#D4AF37]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span>
-                      By <strong className="text-white">{ann.publishedBy}</strong>
+                      {isUr ? 'از:' : 'By'} <strong className="text-white">{ann.publishedBy}</strong>
                     </span>
                     <RoleBadge role={ann.publisherRole} compact />
                   </div>
@@ -399,7 +405,9 @@ export const AnnouncementsManager: React.FC = () => {
             <form onSubmit={handlePublishSubmit} className="space-y-4">
               {/* Channel Selector */}
               <div>
-                <label className="font-semibold text-slate-300 block mb-1.5">Announcement Channel</label>
+                <label className="font-semibold text-slate-300 block mb-1.5">
+                  {isUr ? 'اعلان کا چینل' : 'Announcement Channel'}
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -411,8 +419,10 @@ export const AnnouncementsManager: React.FC = () => {
                         : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
                     }`}
                   >
-                    👑 Official App
-                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">Super Admin Global</span>
+                    {isUr ? '👑 آفیشل ایپ' : '👑 Official App'}
+                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">
+                      {isUr ? 'سپر ایڈمن عالمی پیغام' : 'Super Admin Global'}
+                    </span>
                   </button>
 
                   <button
@@ -425,18 +435,22 @@ export const AnnouncementsManager: React.FC = () => {
                         : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
                     }`}
                   >
-                    📢 Community
-                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">Leadership Circular</span>
+                    {isUr ? '📢 کمیونٹی' : '📢 Community'}
+                    <span className="block text-[10px] font-normal text-slate-300 mt-0.5">
+                      {isUr ? 'قیادتی سرکلر' : 'Leadership Circular'}
+                    </span>
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-300 block mb-1">Headline *</label>
+                <label className="font-semibold text-slate-300 block mb-1">
+                  {isUr ? 'عنوان *' : 'Headline *'}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Monthly Welfare Assembly Notice"
+                  placeholder={isUr ? 'مثلاً ماہانہ فلاحی اجلاس کا اعلان' : 'e.g. Monthly Welfare Assembly Notice'}
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
                   className="w-full px-3 py-2 kc-luxury-input rounded-xl text-xs"
@@ -445,7 +459,9 @@ export const AnnouncementsManager: React.FC = () => {
 
               {annType === 'COMMUNITY' && (
                 <div>
-                  <label className="font-semibold text-slate-300 block mb-1">Target Audience</label>
+                  <label className="font-semibold text-slate-300 block mb-1">
+                    {isUr ? 'ہدف سامعین' : 'Target Audience'}
+                  </label>
                   {isDistrictAdmin ? (
                     <div className="p-2.5 bg-[#090D16] border border-[#D4AF37]/25 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
@@ -457,11 +473,11 @@ export const AnnouncementsManager: React.FC = () => {
                         compact
                         value={annScope}
                         onChange={(val) => setAnnScope(val as 'ALL' | 'PROVINCE' | 'DISTRICT')}
-                        label="Target Audience Scope"
+                        label={isUr ? 'ہدف کا دائرہ کار' : 'Target Audience Scope'}
                         options={[
-                          { value: 'ALL', label: 'National Broadcast (All Members)' },
-                          { value: 'PROVINCE', label: 'Province-Level Broadcast' },
-                          { value: 'DISTRICT', label: 'District-Specific Broadcast' }
+                          { value: 'ALL', label: isUr ? 'قومی نشریات (تمام اراکین)' : 'National Broadcast (All Members)' },
+                          { value: 'PROVINCE', label: isUr ? 'صوبائی سطح کی نشریات' : 'Province-Level Broadcast' },
+                          { value: 'DISTRICT', label: isUr ? 'ضلع کی سطح کی نشریات' : 'District-Specific Broadcast' }
                         ]}
                       />
 
@@ -475,7 +491,7 @@ export const AnnouncementsManager: React.FC = () => {
                               const dists = getDistrictsForProvince(newP);
                               if (dists.length > 0) setAnnDistrict(dists[0]);
                             }}
-                            label="Target Province"
+                            label={isUr ? 'مطلوبہ صوبہ' : 'Target Province'}
                             options={PROVINCE_OPTIONS}
                           />
 
@@ -485,7 +501,7 @@ export const AnnouncementsManager: React.FC = () => {
                               searchable
                               value={annDistrict}
                               onChange={setAnnDistrict}
-                              label="Target District"
+                              label={isUr ? 'مطلوبہ ضلع' : 'Target District'}
                               options={getDistrictsForProvince(annProvince)}
                             />
                           )}
@@ -497,11 +513,13 @@ export const AnnouncementsManager: React.FC = () => {
               )}
 
               <div>
-                <label className="font-semibold text-slate-300 block mb-1">Message Content *</label>
+                <label className="font-semibold text-slate-300 block mb-1">
+                  {isUr ? 'پیغام کی تفصیل *' : 'Message Content *'}
+                </label>
                 <textarea
                   required
                   rows={4}
-                  placeholder="Write the full announcement message..."
+                  placeholder={isUr ? 'مکمل اعلان یہاں تحریر کریں...' : 'Write the full announcement message...'}
                   value={annContent}
                   onChange={(e) => setAnnContent(e.target.value)}
                   className="w-full p-2.5 kc-luxury-input rounded-xl text-xs resize-none"
@@ -556,7 +574,7 @@ export const AnnouncementsManager: React.FC = () => {
                     className="flex items-center gap-1.5 px-4 py-2 kc-gold-button font-extrabold rounded-xl cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Broadcast Now</span>
+                    <span>{isUr ? 'ابھی شائع کریں' : 'Broadcast Now'}</span>
                   </button>
                 </div>
               </div>

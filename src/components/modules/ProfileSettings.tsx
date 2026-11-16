@@ -12,8 +12,16 @@ import {
 } from 'lucide-react';
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
 import { RoleBadge } from '../common/RoleBadge';
+import { TabbarBadge } from '../common/TabbarBadge';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { compressAvatarFile } from '../../utils/imageCompression';
 import { translate } from '../../data/translations';
+import {
+  TABBAR_CLANS,
+  CUSTOM_TABBAR_ID,
+  getTabbarById,
+  transliterateTabbarToUrdu
+} from '../../data/tabbars';
 
 export const ProfileSettings: React.FC = () => {
   const {
@@ -35,6 +43,26 @@ export const ProfileSettings: React.FC = () => {
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
   const [unionCouncil, setUnionCouncil] = useState(currentUser?.unionCouncil || '');
+  const [tabbarSelection, setTabbarSelection] = useState<string>(() => {
+    if (!currentUser) return '';
+    if (currentUser.tabbarId) {
+      return getTabbarById(currentUser.tabbarId)?.id || CUSTOM_TABBAR_ID;
+    }
+    if (currentUser.tabbarEnglish || currentUser.tabbarUrdu) {
+      return getTabbarById(currentUser.tabbarEnglish)?.id || CUSTOM_TABBAR_ID;
+    }
+    return '';
+  });
+  const [customTabbarEnglish, setCustomTabbarEnglish] = useState(() =>
+    currentUser?.tabbarId === CUSTOM_TABBAR_ID || !getTabbarById(currentUser?.tabbarId)
+      ? currentUser?.tabbarEnglish || ''
+      : ''
+  );
+  const [customTabbarUrdu, setCustomTabbarUrdu] = useState(() =>
+    currentUser?.tabbarId === CUSTOM_TABBAR_ID || !getTabbarById(currentUser?.tabbarId)
+      ? currentUser?.tabbarUrdu || ''
+      : ''
+  );
   const [location, setLocation] = useState<SelectedLocationValue>({
     stateProvince: currentUser?.stateProvince || 'Punjab',
     district: currentUser?.district || 'Lahore',
@@ -72,6 +100,26 @@ export const ProfileSettings: React.FC = () => {
     e.preventDefault();
     const cleanCnic = (currentUser.cnic || cnic).trim();
     const isCompleted = Boolean(name.trim() && (cleanCnic || address.trim()));
+
+    const selectedClan = getTabbarById(tabbarSelection);
+    let finalTabbarId = currentUser.tabbarId;
+    let finalTabbarEnglish = currentUser.tabbarEnglish;
+    let finalTabbarUrdu = currentUser.tabbarUrdu;
+
+    if (selectedClan) {
+      finalTabbarId = selectedClan.id;
+      finalTabbarEnglish = selectedClan.englishName;
+      finalTabbarUrdu = selectedClan.urduName;
+    } else if (tabbarSelection === CUSTOM_TABBAR_ID) {
+      const eng = customTabbarEnglish.trim();
+      const ur = customTabbarUrdu.trim() || transliterateTabbarToUrdu(eng);
+      if (eng || ur) {
+        finalTabbarId = CUSTOM_TABBAR_ID;
+        finalTabbarEnglish = eng || ur;
+        finalTabbarUrdu = ur || eng;
+      }
+    }
+
     updateUserProfile({
       name: name.trim(),
       email: email.trim(),
@@ -80,6 +128,9 @@ export const ProfileSettings: React.FC = () => {
       address: address.trim(),
       bio: bio.trim(),
       avatarUrl: avatarUrl || undefined,
+      tabbarId: finalTabbarId,
+      tabbarEnglish: finalTabbarEnglish,
+      tabbarUrdu: finalTabbarUrdu,
       country: 'Pakistan',
       stateProvince: location.stateProvince,
       district: location.district,
@@ -203,7 +254,11 @@ export const ProfileSettings: React.FC = () => {
 
         <div className="kc-emerald-panel flex items-start gap-2 p-3 rounded-xl text-[11px] text-emerald-200 max-w-xs">
           <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-          <span>CNIC and Membership ID are audit-protected and verified by leadership.</span>
+          <span>
+            {language === 'ur'
+              ? 'شناختی کارڈ اور ممبرشپ آئی ڈی آڈٹ کے تحت محفوظ اور قیادت سے تصدیق شدہ ہیں۔'
+              : 'CNIC and Membership ID are audit-protected and verified by leadership.'}
+          </span>
         </div>
       </div>
 
@@ -232,7 +287,9 @@ export const ProfileSettings: React.FC = () => {
 
           <div>
             <label className="font-semibold text-slate-200 block mb-1">
-              {currentUser.cnic ? 'National ID (CNIC) - [LOCKED]' : 'National ID (CNIC)'}
+              {currentUser.cnic
+                ? (language === 'ur' ? 'قومی شناختی کارڈ (CNIC) - [مقفل]' : 'National ID (CNIC) - [LOCKED]')
+                : (language === 'ur' ? 'قومی شناختی کارڈ (CNIC)' : 'National ID (CNIC)')}
             </label>
             <input
               type="text"
@@ -279,28 +336,101 @@ export const ProfileSettings: React.FC = () => {
 
         <div>
           <label className="font-semibold text-slate-200 block mb-1">
-            Short Bio / Community Role
+            {language === 'ur' ? 'مختصر تعارف / کمیونٹی کردار' : 'Short Bio / Community Role'}
           </label>
           <input
             type="text"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="e.g. Community volunteer in Lahore"
+            placeholder={language === 'ur' ? 'مثال: لاہور میں کمیونٹی رضاکار' : 'e.g. Community volunteer in Lahore'}
             className="kc-luxury-input w-full px-3 py-2.5 rounded-xl text-xs"
           />
+        </div>
+
+        {/* Tabbar / Branch / Clan Selection */}
+        <div className="p-3.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <label className="font-bold text-[#F5D061] text-xs">
+              {t('tabbarLabel')}
+            </label>
+            <TabbarBadge
+              tabbarId={tabbarSelection || currentUser.tabbarId}
+              tabbarEnglish={
+                tabbarSelection === CUSTOM_TABBAR_ID
+                  ? customTabbarEnglish.trim()
+                  : currentUser.tabbarEnglish
+              }
+              tabbarUrdu={
+                tabbarSelection === CUSTOM_TABBAR_ID
+                  ? (customTabbarUrdu.trim() || transliterateTabbarToUrdu(customTabbarEnglish))
+                  : currentUser.tabbarUrdu
+              }
+              language={language}
+              compact
+            />
+          </div>
+
+          <LuxurySelect
+            label={t('tabbarShortLabel')}
+            value={tabbarSelection}
+            onChange={setTabbarSelection}
+            options={[
+              { value: '', label: t('tabbarSelectPlaceholder') },
+              ...TABBAR_CLANS.map((clan) => ({
+                value: clan.id,
+                label: `${clan.emblem} ${clan.urduName} — ${clan.englishName}`
+              })),
+              { value: CUSTOM_TABBAR_ID, label: `🏛️ ${t('tabbarOtherOption')}` }
+            ]}
+            searchable
+            compact
+          />
+
+          {tabbarSelection === CUSTOM_TABBAR_ID && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                  {t('tabbarCustomEnglishLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={customTabbarEnglish}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomTabbarEnglish(val);
+                    setCustomTabbarUrdu(transliterateTabbarToUrdu(val));
+                  }}
+                  placeholder="e.g. Yousafzai / Khan Khel"
+                  className="kc-luxury-input w-full px-3 py-2 rounded-xl text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                  {t('tabbarCustomUrduLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={customTabbarUrdu}
+                  onChange={(e) => setCustomTabbarUrdu(e.target.value)}
+                  placeholder="مثال: یوسفزئی"
+                  className="kc-luxury-input w-full px-3 py-2 rounded-xl text-xs text-[#F5D061] font-urdu-auto"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SearchableLocationSelect
             value={location}
             onChange={setLocation}
-            label="City / Tehsil / District (All Pakistan)"
+            label={language === 'ur' ? 'شہر / تحصیل / ضلع (پورا پاکستان)' : 'City / Tehsil / District (All Pakistan)'}
             required
           />
 
           <div>
             <label className="block text-[11px] font-bold text-[#F5D061] mb-1 uppercase tracking-wider">
-              Union Council / Sector
+              {language === 'ur' ? 'یونین کونسل / سیکٹر' : 'Union Council / Sector'}
             </label>
             <input
               type="text"
@@ -314,7 +444,7 @@ export const ProfileSettings: React.FC = () => {
 
         <div>
           <label className="font-semibold text-slate-200 block mb-1">
-            Street Address / House No.
+            {language === 'ur' ? 'گلی / مکان نمبر / پتہ' : 'Street Address / House No.'}
           </label>
           <textarea
             rows={2}
@@ -327,7 +457,7 @@ export const ProfileSettings: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#D4AF37]/20">
           <div>
             <label className="font-semibold text-slate-200 block mb-1">
-              Monthly Welfare Pledge (PKR)
+              {language === 'ur' ? 'ماہانہ فلاحی عہد (PKR)' : 'Monthly Welfare Pledge (PKR)'}
             </label>
             <input
               type="number"
@@ -341,7 +471,7 @@ export const ProfileSettings: React.FC = () => {
 
           <div>
             <label className="font-semibold text-slate-200 block mb-1">
-              Annual Welfare Pledge (PKR)
+              {language === 'ur' ? 'سالانہ فلاحی عہد (PKR)' : 'Annual Welfare Pledge (PKR)'}
             </label>
             <input
               type="number"
@@ -378,7 +508,9 @@ export const ProfileSettings: React.FC = () => {
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[#F5D061]">
-            {currentUser.hasPassword ? 'Password Set' : 'No Password Yet'}
+            {currentUser.hasPassword
+              ? (language === 'ur' ? 'پاس ورڈ مقرر ہے' : 'Password Set')
+              : (language === 'ur' ? 'ابھی پاس ورڈ نہیں' : 'No Password Yet')}
           </span>
         </div>
 
@@ -416,7 +548,7 @@ export const ProfileSettings: React.FC = () => {
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimum 6 characters"
+              placeholder={language === 'ur' ? 'کم از کم 6 حروف' : 'Minimum 6 characters'}
               className="kc-luxury-input w-full px-3 py-2.5 rounded-xl text-xs"
             />
           </div>
@@ -431,7 +563,7 @@ export const ProfileSettings: React.FC = () => {
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter password"
+              placeholder={language === 'ur' ? 'دوبارہ پاس ورڈ درج کریں' : 'Re-enter password'}
               className="kc-luxury-input w-full px-3 py-2.5 rounded-xl text-xs"
             />
           </div>
@@ -444,7 +576,13 @@ export const ProfileSettings: React.FC = () => {
             className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#090D16] hover:bg-[#161F33] text-[#F5D061] border border-[#D4AF37]/45 font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>{isUpdatingPwd ? 'Saving...' : currentUser.hasPassword ? 'Update Password' : 'Create Password'}</span>
+            <span>
+              {isUpdatingPwd
+                ? (language === 'ur' ? 'محفوظ ہو رہا ہے...' : 'Saving...')
+                : currentUser.hasPassword
+                ? (language === 'ur' ? 'پاس ورڈ تبدیل کریں' : 'Update Password')
+                : (language === 'ur' ? 'پاس ورڈ بنائیں' : 'Create Password')}
+            </span>
           </button>
         </div>
       </form>

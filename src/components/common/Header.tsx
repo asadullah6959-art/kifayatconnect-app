@@ -324,11 +324,7 @@ export const Header: React.FC<HeaderProps> = ({
           {showProfileMenu && (
             <div
               role="menu"
-              className={`fixed top-[54px] ${
-                language === 'ur'
-                  ? 'left-[8px] sm:left-0 sm:right-auto'
-                  : 'right-[8px] sm:right-0 sm:left-auto'
-              } sm:absolute sm:top-full sm:mt-2 w-[272px] max-w-[calc(100vw-16px)] kc-luxury-modal rounded-2xl py-2 z-50 text-xs text-slate-200`}
+              className="fixed top-[54px] right-[8px] sm:right-0 sm:left-auto sm:absolute sm:top-full sm:mt-2 w-[272px] max-w-[calc(100vw-16px)] kc-luxury-modal rounded-2xl py-2 z-50 text-xs text-slate-200"
             >
               {/* User Name, Email & 3D Role Badge */}
               <div className="px-3.5 py-2.5 border-b border-[#D4AF37]/20">
@@ -336,7 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className="font-bold text-white truncate">{currentUser.name}</p>
                   {isFirebaseLive && (
                     <span className="text-[9px] bg-emerald-500/15 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
-                      Live
+                      {language === 'ur' ? 'لائیو' : 'Live'}
                     </span>
                   )}
                 </div>

@@ -14,7 +14,9 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   deleteDoc,
+  arrayUnion,
   collection,
   onSnapshot,
   getDocFromServer,
@@ -246,26 +248,74 @@ export function buildSafeEmailUserId(email: string): string {
 export async function findExistingFirestoreUserByEmail(email: string): Promise<User | null> {
   const normEmail = email.trim().toLowerCase();
   if (!normEmail) return null;
+  const candidates: User[] = [];
+  const seenIds = new Set<string>();
+  const addCandidate = (u?: User | null) => {
+    if (!u || !u.id) return;
+    if (!seenIds.has(u.id)) {
+      seenIds.add(u.id);
+      candidates.push(u);
+    }
+  };
+
   try {
+    await tryEnsureSessionBestEffort();
     const q = query(collection(db, 'users'), where('email', '==', normEmail));
     const snap = await getDocs(q);
-    if (!snap.empty) {
-      return snap.docs[0].data() as User;
-    }
-    const candidateId = buildSafeEmailUserId(normEmail);
-    const directSnap = await getDoc(doc(db, 'users', candidateId));
-    if (directSnap.exists()) {
-      return directSnap.data() as User;
-    }
+    snap.forEach(docSnap => {
+      const data = docSnap.data() as Partial<User>;
+      addCandidate({ ...data, id: data.id || docSnap.id } as User);
+    });
+
+    const safeId = buildSafeEmailUserId(normEmail);
+    const idsToCheck = Array.from(
+      new Set([
+        ...(normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase() ? ['usr_super_admin'] : []),
+        safeId,
+        normEmail
+      ])
+    );
+
+    await Promise.all(
+      idsToCheck.map(async cid => {
+        if (seenIds.has(cid)) return;
+        try {
+          const directSnap = await getDoc(doc(db, 'users', cid));
+          if (directSnap.exists()) {
+            const data = directSnap.data() as Partial<User>;
+            addCandidate({ ...data, id: data.id || directSnap.id } as User);
+          }
+        } catch {
+          // Ignore invalid doc id or missing doc
+        }
+      })
+    );
   } catch (err) {
     console.warn('Firestore user email lookup warning:', err);
   }
-  return null;
+
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Prefer the most complete/authoritative cloud record if multiple exist
+  const scoreUser = (u: User): number => {
+    let score = 0;
+    if (u.isFounder || u.id === 'usr_super_admin') score += 50;
+    if (u.profileCompleted) score += 20;
+    if (u.passwordHash) score += 15;
+    if (u.cnic) score += 10;
+    if (u.photoUrl || u.avatarUrl) score += 8;
+    if (u.tabbarId || u.tabbarUrdu || u.tabbarEnglish) score += 6;
+    if (u.phone) score += 4;
+    if (u.approvalStatus === 'approved' || u.status === 'approved') score += 5;
+    return score;
+  };
+  return candidates.sort((a, b) => scoreUser(b) - scoreUser(a))[0];
 }
 
 /**
  * Synchronizes the Firebase authenticated user with their Firestore /users/{uid} document.
- * Preserves existing Email-OTP account record if matched by email so no duplicate users appear.
+ * Preserves existing Email-OTP / Password account record and never overwrites non-empty cloud fields.
  */
 export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise<User> {
   const normEmail = (firebaseUser.email || '').trim().toLowerCase();
@@ -284,7 +334,15 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
       const existingData = docSnap.data() as User;
       const normalizedRole = normalizeLegacyRole(existingData.role, normEmail || existingData.email);
       const shouldBeFounder = isSuperAdminEmail || existingData.isFounder === true;
-      const hasPwd = existingData.hasPassword || hasLocalPasswordCredential(normEmail || existingData.email);
+      const cloudPwdHash = existingData.passwordHash || undefined;
+      if (cloudPwdHash && (normEmail || existingData.email)) {
+        mirrorPasswordHashToLocalStorage(normEmail || existingData.email, cloudPwdHash);
+      }
+      const hasPwd = Boolean(
+        existingData.hasPassword ||
+        cloudPwdHash ||
+        hasLocalPasswordCredential(normEmail || existingData.email)
+      );
       const inferredProfileCompleted = shouldBeFounder
         ? true
         : existingData.profileCompleted !== undefined
@@ -306,6 +364,8 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
         isFounder: shouldBeFounder,
         isStaff: normalizedRole !== 'MEMBER',
         hasPassword: hasPwd,
+        passwordHash: cloudPwdHash,
+        otpVerifiedOnce: Boolean(existingData.otpVerifiedOnce ?? true),
         profileCompleted: inferredProfileCompleted,
         photoUrl: photo,
         avatarUrl: photo,
@@ -315,27 +375,32 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
         status: resolvedApproval,
         lastLoginAt: nowIso
       };
-      await setDoc(
-        userDocRef,
-        {
-          id: targetDocId,
-          email: normEmail || existingData.email,
-          role: normalizedRole,
-          isFounder: shouldBeFounder,
-          isStaff: normalizedRole !== 'MEMBER',
-          hasPassword: hasPwd,
-          profileCompleted: inferredProfileCompleted,
-          photoUrl: photo || '',
-          avatarUrl: photo || '',
-          province: existingData.stateProvince || existingData.province || 'Punjab',
-          isOnline: true,
-          lastSeen: serverTimestamp(),
-          approvalStatus: resolvedApproval,
-          status: resolvedApproval,
-          lastLoginAt: nowIso
-        },
-        { merge: true }
-      ).catch(() => {});
+
+      const mergePayload: Record<string, unknown> = {
+        id: targetDocId,
+        email: normEmail || existingData.email,
+        role: normalizedRole,
+        isFounder: shouldBeFounder,
+        isStaff: normalizedRole !== 'MEMBER',
+        hasPassword: hasPwd,
+        otpVerifiedOnce: Boolean(existingData.otpVerifiedOnce ?? true),
+        profileCompleted: inferredProfileCompleted,
+        province: existingData.stateProvince || existingData.province || 'Punjab',
+        isOnline: true,
+        lastSeen: serverTimestamp(),
+        approvalStatus: resolvedApproval,
+        status: resolvedApproval,
+        lastLoginAt: nowIso
+      };
+      if (photo) {
+        mergePayload.photoUrl = photo;
+        mergePayload.avatarUrl = photo;
+      }
+      if (cloudPwdHash) {
+        mergePayload.passwordHash = cloudPwdHash;
+      }
+
+      await setDoc(userDocRef, mergePayload, { merge: true }).catch(() => {});
       return updated;
     }
 
@@ -483,11 +548,35 @@ async function hashOTP(email: string, code: string): Promise<string> {
 const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7i';
 const EMAILJS_DEFAULT_TEMPLATE_ID = 'template_ibzfyx7';
 const EMAILJS_DEFAULT_PUBLIC_KEY = 'kzxuOJCacRGWQ5nVb';
+let emailjsInitializedKey = '';
 
 function getEmailJSConfig() {
-  const serviceId = (import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim() || EMAILJS_DEFAULT_SERVICE_ID;
-  const templateId = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim() || EMAILJS_DEFAULT_TEMPLATE_ID;
-  const publicKey = (import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim() || EMAILJS_DEFAULT_PUBLIC_KEY;
+  const envService = (import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim();
+  const envTemplate = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim();
+  const envPublicKey = (import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim();
+
+  const serviceId =
+    envService && envService.startsWith('service_') && !envService.includes('YOUR_')
+      ? envService
+      : EMAILJS_DEFAULT_SERVICE_ID;
+  const templateId =
+    envTemplate && envTemplate.startsWith('template_') && !envTemplate.includes('YOUR_')
+      ? envTemplate
+      : EMAILJS_DEFAULT_TEMPLATE_ID;
+  const publicKey =
+    envPublicKey && envPublicKey.length >= 10 && !envPublicKey.includes('YOUR_')
+      ? envPublicKey
+      : EMAILJS_DEFAULT_PUBLIC_KEY;
+
+  if (emailjsInitializedKey !== publicKey) {
+    try {
+      emailjs.init({ publicKey });
+      emailjsInitializedKey = publicKey;
+    } catch {
+      // Fallback handled by options passed directly to send()
+    }
+  }
+
   return { serviceId, templateId, publicKey };
 }
 
@@ -569,7 +658,7 @@ export async function requestEmailOTP(
         app_name: 'Kifayat Connect',
         expiry_minutes: '15'
       },
-      publicKey
+      { publicKey }
     );
 
     return {
@@ -587,7 +676,7 @@ export async function requestEmailOTP(
       'Please check your connection.';
     return {
       success: false,
-      message: `Unable to dispatch verification email: ${detail}`
+      message: `Unable to dispatch verification email (${serviceId}): ${detail}`
     };
   }
 }
@@ -734,7 +823,8 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
     return { success: false, message: 'Please enter a valid registered email address.' };
   }
 
-  const { serviceId, templateId, publicKey } = getEmailJSConfig();
+  const { templateId, publicKey } = getEmailJSConfig();
+  const serviceId = EMAILJS_DEFAULT_SERVICE_ID; // Always use service_dit4b7i for Reset Password OTP
   const now = Date.now();
   const persistedPending = getPendingPasswordReset();
   const existing = resetStore.get(normEmail) || (persistedPending?.email === normEmail ? persistedPending : undefined);
@@ -778,7 +868,7 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
         app_name: 'Kifayat Connect — Password Recovery',
         expiry_minutes: '10'
       },
-      publicKey
+      { publicKey }
     );
 
     const pendingRecord: StoredOTP = {
@@ -804,7 +894,7 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
       'Please check your connection.';
     return {
       success: false,
-      message: `Unable to send recovery email: ${detail}`
+      message: `Unable to send recovery email (${serviceId}): ${detail}`
     };
   }
 }
@@ -863,21 +953,34 @@ export async function verifyPasswordReset(
     return { success: false, message: `Incorrect reset code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately clear single-use reset code and store hashed credential
+  // Verified — immediately clear single-use reset code and store hashed credential locally + in Firestore
   resetStore.delete(normEmail);
   clearPendingPasswordReset();
 
-  await saveLocalPasswordCredential(normEmail, cleanPassword);
+  const newPasswordHash = await saveLocalPasswordCredential(normEmail, cleanPassword);
+  try {
+    await tryEnsureSessionBestEffort();
+    const remoteUser = await findExistingFirestoreUserByEmail(normEmail);
+    if (remoteUser?.id) {
+      await setDoc(
+        doc(db, 'users', remoteUser.id),
+        { passwordHash: newPasswordHash, hasPassword: true, otpVerifiedOnce: true },
+        { merge: true }
+      );
+    }
+  } catch {
+    // Non-blocking cloud sync fallback
+  }
 
   return {
     success: true,
-    message: 'Temporary reset code verified and password updated. You can now sign in with your new password or Email OTP.',
+    message: 'Temporary reset code verified and password updated. Entering your Dashboard...',
     verifiedEmail: normEmail
   };
 }
 
 // ----------------------------------------------------
-// Salted SHA-256 Local Password & Master PIN Credentials Store
+// Salted SHA-256 Cloud + Local Password & Master PIN Credentials Store
 // ----------------------------------------------------
 const CREDENTIALS_STORAGE_KEY = 'kc_user_credentials_v1';
 
@@ -888,6 +991,11 @@ interface StoredCredentialEntry {
 
 export async function hashSecretString(secret: string, salt = 'kifayat_sec_v1'): Promise<string> {
   return hashOTP(salt.trim().toLowerCase(), secret);
+}
+
+export async function computeUserPasswordHash(email: string, password: string): Promise<string> {
+  const norm = email.trim().toLowerCase();
+  return hashOTP(norm, `pwd:${password.trim()}`);
 }
 
 function readCredentialsMap(): Record<string, StoredCredentialEntry> {
@@ -901,6 +1009,19 @@ function readCredentialsMap(): Record<string, StoredCredentialEntry> {
   }
 }
 
+export function mirrorPasswordHashToLocalStorage(email: string, passwordHash: string): void {
+  const norm = email.trim().toLowerCase();
+  if (!norm || !passwordHash) return;
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const map = readCredentialsMap();
+    map[norm] = { passwordHash, updatedAt: Date.now() };
+    localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignore storage write failure
+  }
+}
+
 export function hasLocalPasswordCredential(email: string): boolean {
   const norm = email.trim().toLowerCase();
   if (!norm) return false;
@@ -908,32 +1029,46 @@ export function hasLocalPasswordCredential(email: string): boolean {
   return Boolean(map[norm]?.passwordHash);
 }
 
-export async function saveLocalPasswordCredential(email: string, password: string): Promise<void> {
+export async function saveLocalPasswordCredential(email: string, password: string): Promise<string> {
   const norm = email.trim().toLowerCase();
-  if (!norm || !password) return;
-  const passwordHash = await hashOTP(norm, `pwd:${password.trim()}`);
+  if (!norm || !password) return '';
+  const passwordHash = await computeUserPasswordHash(norm, password);
   try {
-    if (typeof localStorage === 'undefined') return;
-    const map = readCredentialsMap();
-    map[norm] = { passwordHash, updatedAt: Date.now() };
-    localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+    if (typeof localStorage !== 'undefined') {
+      const map = readCredentialsMap();
+      map[norm] = { passwordHash, updatedAt: Date.now() };
+      localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
 
-    // Also mirror into legacy recovery key for seamless cross-flow compatibility
-    const emailHash = await hashOTP(norm, 'identity');
-    localStorage.setItem(
-      `kc_recovery_credential_${emailHash}`,
-      JSON.stringify({ passwordHash, updatedAt: Date.now() })
-    );
+      // Also mirror into legacy recovery key for seamless cross-flow compatibility
+      const emailHash = await hashOTP(norm, 'identity');
+      localStorage.setItem(
+        `kc_recovery_credential_${emailHash}`,
+        JSON.stringify({ passwordHash, updatedAt: Date.now() })
+      );
+    }
   } catch {
     // Non-blocking storage write
   }
+  return passwordHash;
 }
 
-export async function verifyLocalPasswordCredential(email: string, password: string): Promise<boolean> {
+export async function verifyLocalPasswordCredential(
+  email: string,
+  password: string,
+  cloudPasswordHash?: string
+): Promise<boolean> {
   const norm = email.trim().toLowerCase();
   const cleanPwd = password.trim();
   if (!norm || !cleanPwd) return false;
-  const candidateHash = await hashOTP(norm, `pwd:${cleanPwd}`);
+  const candidateHash = await computeUserPasswordHash(norm, cleanPwd);
+
+  // 1. Check authoritative Cloud Firestore hash first (survives app uninstall / new device!)
+  if (cloudPasswordHash && cloudPasswordHash === candidateHash) {
+    mirrorPasswordHashToLocalStorage(norm, cloudPasswordHash);
+    return true;
+  }
+
+  // 2. Fallback to local credentials store
   const map = readCredentialsMap();
   if (map[norm]?.passwordHash && map[norm].passwordHash === candidateHash) {
     return true;
@@ -1006,7 +1141,7 @@ export function normalizeUserForCloud(
 ): Record<string, unknown> {
   const photo = user.photoUrl || user.avatarUrl || user.avatar || '';
   const memId = user.memberId || user.membershipId || '';
-  const onlineFlag = options?.isOnline !== undefined ? options.isOnline : (user.isOnline !== undefined ? user.isOnline : user.status !== 'offline');
+  const onlineFlag = options?.isOnline !== undefined ? options.isOnline : Boolean(user.isOnline);
   const resolvedApproval = resolveUserApprovalStatus(user);
   const nowIso = new Date().toISOString();
   const provinceVal = user.stateProvince || user.province || 'Punjab';
@@ -1023,6 +1158,9 @@ export function normalizeUserForCloud(
     city: user.cityTown,
     uc: user.unionCouncil,
     isOnline: onlineFlag,
+    lastActiveAt: onlineFlag
+      ? (typeof user.lastActiveAt === 'number' && user.lastActiveAt > 0 ? user.lastActiveAt : Date.now())
+      : 0,
     approvalStatus: resolvedApproval,
     status: resolvedApproval,
     profileCompleted: Boolean(user.profileCompleted),
@@ -1031,6 +1169,29 @@ export function normalizeUserForCloud(
     isMutedInChat: Boolean(user.isMutedInChat),
     createdAt: toIsoTimestamp(user.createdAt, user.joinDate || nowIso)
   });
+}
+
+export function isUserActuallyOnline(
+  user?: Partial<User> | null,
+  nowMs = Date.now()
+): boolean {
+  if (!user) return false;
+  const lastActive = Number(user.lastActiveAt);
+  return Boolean(
+    user.isOnline &&
+    user.lastActiveAt &&
+    Number.isFinite(lastActive) &&
+    lastActive > 0 &&
+    nowMs - lastActive < 30000
+  );
+}
+
+export function isUserEffectivelyOnline(
+  user?: Partial<User> | null,
+  _currentUserId?: string | null,
+  nowMs = Date.now()
+): boolean {
+  return isUserActuallyOnline(user, nowMs);
 }
 
 async function tryEnsureSessionBestEffort(): Promise<void> {
@@ -1046,6 +1207,31 @@ export async function saveUserToFirestore(
   await tryEnsureSessionBestEffort();
   const path = `users/${user.id}`;
   const cloudPayload = normalizeUserForCloud(user, { isOnline: options?.isOnline });
+  // Zero-Overwrite Lock: Never wipe existing cloud values (photo, CNIC, phone, tabbar, passwordHash) with blank strings
+  const protectedStringFields = [
+    'photoUrl',
+    'avatarUrl',
+    'avatar',
+    'cnic',
+    'phone',
+    'address',
+    'unionCouncil',
+    'tabbarId',
+    'tabbarUrdu',
+    'tabbarEnglish',
+    'passwordHash',
+    'membershipId',
+    'memberId'
+  ];
+  protectedStringFields.forEach((field) => {
+    const val = cloudPayload[field];
+    if (val === '' || val === null || val === undefined) {
+      delete cloudPayload[field];
+    }
+  });
+  if (cloudPayload.profileCompleted === false) {
+    delete cloudPayload.profileCompleted;
+  }
   if (options?.useServerLastSeen !== false) {
     cloudPayload.lastSeen = serverTimestamp();
   }
@@ -1053,6 +1239,79 @@ export async function saveUserToFirestore(
     await setDoc(doc(db, 'users', user.id), cloudPayload, { merge: true });
   } catch (err) {
     console.warn(`Firestore user write warning (${path}):`, err);
+  }
+}
+
+export async function deleteUserPermanentlyFromFirestore(
+  actorUser: User | null | undefined,
+  targetUser: User
+): Promise<{ success: boolean; error?: string }> {
+  const actorIsFounder = Boolean(
+    actorUser &&
+    actorUser.isFounder &&
+    actorUser.email?.trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase()
+  );
+  if (!actorIsFounder) {
+    return {
+      success: false,
+      error: 'Zero-Deletion Lock: Only the Main Super Admin (Founder) can permanently delete a user record.'
+    };
+  }
+  const targetIsFounder = Boolean(
+    targetUser.isFounder ||
+    targetUser.email?.trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase() ||
+    targetUser.id === 'usr_super_admin'
+  );
+  if (targetIsFounder) {
+    return {
+      success: false,
+      error: 'Founder Protection: The Main Super Admin (Founder) account cannot be deleted.'
+    };
+  }
+
+  await tryEnsureSessionBestEffort();
+  const normEmail = (targetUser.email || '').trim().toLowerCase();
+  const idsToDelete = new Set<string>([targetUser.id]);
+  if (normEmail) {
+    idsToDelete.add(buildSafeEmailUserId(normEmail));
+    idsToDelete.add(normEmail);
+  }
+
+  try {
+    if (normEmail) {
+      const q = query(collection(db, 'users'), where('email', '==', normEmail));
+      const snap = await getDocs(q).catch(() => null);
+      snap?.forEach(d => {
+        const data = d.data() as Partial<User>;
+        if (!data.isFounder && data.email?.toLowerCase() !== ROOT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+          idsToDelete.add(d.id);
+        }
+      });
+    }
+
+    let deletedPrimary = false;
+    for (const docId of idsToDelete) {
+      try {
+        await deleteDoc(doc(db, 'users', docId));
+        if (docId === targetUser.id) deletedPrimary = true;
+      } catch (err) {
+        if (docId === targetUser.id && !deletedPrimary) {
+          throw err;
+        }
+      }
+    }
+    return { success: true };
+  } catch (err) {
+    console.warn(`Firestore permanent delete failed for users/${targetUser.id}:`, err);
+    return {
+      success: false,
+      error:
+        err instanceof Error && err.message.includes('permission')
+          ? 'Firestore security rules require Google-verified Founder session to permanently erase cloud records. Please sign in with Google as Founder or check rules.'
+          : err instanceof Error
+          ? err.message
+          : 'Unable to delete user document from Firestore.'
+    };
   }
 }
 
@@ -1094,20 +1353,37 @@ export async function approveOrRejectUserInFirestore(
   }
 }
 
-export async function markUserOfflineInFirestore(user: User): Promise<void> {
+export async function updateUserPresenceInFirestore(
+  user: User,
+  isOnline: boolean,
+  nowMs = Date.now()
+): Promise<void> {
   await tryEnsureSessionBestEffort();
+  const payload = {
+    isOnline,
+    lastActiveAt: isOnline ? nowMs : 0,
+    lastSeen: serverTimestamp()
+  };
   try {
-    await setDoc(
-      doc(db, 'users', user.id),
-      {
-        isOnline: false,
-        lastSeen: serverTimestamp()
-      },
-      { merge: true }
-    );
-  } catch (err) {
-    console.warn('Firestore mark offline warning:', err);
+    await updateDoc(doc(db, 'users', user.id), payload);
+  } catch {
+    try {
+      await setDoc(
+        doc(db, 'users', user.id),
+        {
+          ...normalizeUserForCloud({ ...user, lastActiveAt: isOnline ? nowMs : 0 }, { isOnline }),
+          ...payload
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Firestore presence write warning:', err);
+    }
   }
+}
+
+export async function markUserOfflineInFirestore(user: User): Promise<void> {
+  await updateUserPresenceInFirestore(user, false, 0);
 }
 
 export async function fetchAllUsersFromFirestore(): Promise<User[]> {
@@ -1116,7 +1392,8 @@ export async function fetchAllUsersFromFirestore(): Promise<User[]> {
     const snap = await getDocs(collection(db, 'users'));
     const list: User[] = [];
     snap.forEach(docSnap => {
-      list.push(docSnap.data() as User);
+      const data = docSnap.data() as Partial<User>;
+      list.push({ ...data, id: data.id || docSnap.id } as User);
     });
     return list;
   } catch (err) {
@@ -1305,6 +1582,30 @@ export async function deleteCommunityMessageFromFirestore(messageId: string): Pr
   ]);
 }
 
+export async function hideCommunityMessageForUserInFirestore(messageId: string, userId: string): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  await Promise.all([
+    updateDoc(doc(db, 'community_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {}),
+    updateDoc(doc(db, 'community_chat_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {})
+  ]);
+}
+
+export async function deleteDirectMessageFromFirestore(messageId: string): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  await Promise.all([
+    deleteDoc(doc(db, 'direct_messages', messageId)).catch(() => {}),
+    deleteDoc(doc(db, 'chat_messages', messageId)).catch(() => {})
+  ]);
+}
+
+export async function hideDirectMessageForUserInFirestore(messageId: string, userId: string): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  await Promise.all([
+    updateDoc(doc(db, 'direct_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {}),
+    updateDoc(doc(db, 'chat_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {})
+  ]);
+}
+
 export async function saveChatConversationToFirestore(chat: ChatConversation): Promise<void> {
   await tryEnsureSessionBestEffort();
   try {
@@ -1341,7 +1642,8 @@ export function subscribeToFirestoreCollection<T>(
     (snapshot) => {
       const items: T[] = [];
       snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as T);
+        const raw = docSnap.data() as Record<string, unknown>;
+        items.push({ id: docSnap.id, ...raw } as T);
       });
       onData(items);
     },

@@ -60,25 +60,34 @@ import {
   saveAuditLogToFirestore,
   saveNotificationToFirestore,
   saveUserToFirestore,
+  deleteUserPermanentlyFromFirestore,
   saveOfficeBearerToFirestore,
   saveOfficeBearerHistoryToFirestore,
   saveAppUpdateToFirestore,
   saveAppSettingsToFirestore,
   saveChatMessageToFirestore,
   saveCommunityMessageToFirestore,
+  deleteCommunityMessageFromFirestore,
+  hideCommunityMessageForUserInFirestore,
+  deleteDirectMessageFromFirestore,
+  hideDirectMessageForUserInFirestore,
   saveChatConversationToFirestore,
   subscribeToFirestoreCollection,
+  updateUserPresenceInFirestore,
   markUserOfflineInFirestore,
   findExistingFirestoreUserByEmail,
   buildSafeEmailUserId,
   toIsoTimestamp,
   requestEmailOTP,
   verifyEmailOTP,
+  verifyPasswordReset,
   getPendingEmailOTP,
   clearPendingEmailOTP,
   saveLocalPasswordCredential,
   verifyLocalPasswordCredential,
   hasLocalPasswordCredential,
+  computeUserPasswordHash,
+  mirrorPasswordHashToLocalStorage,
   approveOrRejectUserInFirestore,
   sendApprovalRequestNotificationToFirestore,
   resolveUserApprovalStatus,
@@ -88,10 +97,12 @@ import {
   FirebaseUser,
   ROOT_SUPER_ADMIN_EMAIL
 } from '../services/firebase';
+import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
 
 const STORAGE_KEYS = {
   USERS: 'kifayat_users_v3',
+  CURRENT_USER: 'kifayat_current_user',
   CURRENT_USER_ID: 'kifayat_current_user_v3',
   APPLICATIONS: 'kifayat_applications_v3',
   PAYMENTS: 'kifayat_payments_v3',
@@ -108,6 +119,10 @@ const STORAGE_KEYS = {
   CHAT_MESSAGES: 'kifayat_chat_messages_v3',
   COMMUNITY_MESSAGES: 'kifayat_community_chat_v1',
   OFFLINE_CHAT_QUEUE: 'kc_offline_chat_queue_v1',
+  DELETED_COMMUNITY_MSG_IDS: 'kc_deleted_cmsg_ids_v1',
+  HIDDEN_COMMUNITY_MSG_IDS_PREFIX: 'kc_hidden_cmsg_ids_',
+  DELETED_DIRECT_MSG_IDS: 'kc_deleted_dmsg_ids_v1',
+  HIDDEN_DIRECT_MSG_IDS_PREFIX: 'kc_hidden_dmsg_ids_',
   LANGUAGE: 'kifayat_lang_v3'
 };
 
@@ -119,6 +134,50 @@ function readStorage<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function persistCurrentUserToStorage(user: User | null): void {
+  try {
+    if (!user) {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+    } catch {
+      // Fallback if oversized base64 photo triggers storage quota limit
+      const compactUser: User = {
+        ...user,
+        photoUrl: user.photoUrl && user.photoUrl.startsWith('data:') && user.photoUrl.length > 48000 ? undefined : user.photoUrl,
+        avatarUrl: user.avatarUrl && user.avatarUrl.startsWith('data:') && user.avatarUrl.length > 48000 ? undefined : user.avatarUrl,
+        avatar: user.avatar && user.avatar.startsWith('data:') && user.avatar.length > 48000 ? undefined : user.avatar
+      };
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(compactUser));
+    }
+  } catch {
+    // Ignore storage unavailable errors
+  }
+}
+
+function readIdSetFromStorage(key: string): Set<string> {
+  const arr = readStorage<string[]>(key, []);
+  return new Set(Array.isArray(arr) ? arr.filter(Boolean) : []);
+}
+
+function addIdsToStorageSet(key: string, ids: string[]): Set<string> {
+  const set = readIdSetFromStorage(key);
+  ids.forEach(id => {
+    if (id) set.add(id);
+  });
+  const trimmed = Array.from(set).slice(-1200);
+  try {
+    localStorage.setItem(key, JSON.stringify(trimmed));
+  } catch {
+    // Ignore quota errors
+  }
+  return new Set(trimmed);
 }
 
 export function isFounderUser(user?: User | null): boolean {
@@ -143,10 +202,15 @@ function normalizeUserRecord(u: User): User {
   const prov = u.stateProvince || u.province || 'Punjab';
 
   const resolvedApproval = resolveUserApprovalStatus({ ...u, isFounder });
+  const normEmail = (u.email || '').trim().toLowerCase();
+  const pwdHash = u.passwordHash || undefined;
+  if (pwdHash && normEmail) {
+    mirrorPasswordHashToLocalStorage(normEmail, pwdHash);
+  }
 
   return {
     ...u,
-    email: (u.email || '').trim().toLowerCase(),
+    email: normEmail,
     role,
     isFounder,
     isAuditOfficer: Boolean(u.isAuditOfficer),
@@ -159,13 +223,16 @@ function normalizeUserRecord(u: User): User {
     membershipId: memId,
     memberId: memId,
     isOnline: onlineFlag,
+    lastActiveAt: typeof u.lastActiveAt === 'number' ? u.lastActiveAt : undefined,
     lastSeen: safeLastSeen,
     lastLoginAt: safeLastLogin || safeLastSeen || undefined,
     approvalStatus: resolvedApproval,
     status: resolvedApproval,
     createdAt: safeCreatedAt,
     isStaff: role !== 'MEMBER',
-    hasPassword: u.hasPassword || hasLocalPasswordCredential(u.email)
+    passwordHash: pwdHash,
+    otpVerifiedOnce: Boolean(u.otpVerifiedOnce ?? (profileCompleted || role !== 'MEMBER')),
+    hasPassword: Boolean(u.hasPassword || pwdHash || hasLocalPasswordCredential(normEmail))
   };
 }
 
@@ -192,16 +259,36 @@ function mergeUsersLists(localList: User[], remoteList: User[], preferRemote = f
       const mergedApproval = keepLocalDecision
         ? existing.approvalStatus
         : rem.approvalStatus || existing.approvalStatus;
+      const mergedPwdHash = rem.passwordHash || existing.passwordHash;
 
       byKey.set(key, normalizeUserRecord({
         ...existing,
         ...rem,
         id: preferRemote ? (rem.id || existing.id) : (existing.id || rem.id),
+        name: rem.name || existing.name,
+        phone: rem.phone || existing.phone,
+        cnic: rem.cnic || existing.cnic,
+        address: rem.address || existing.address,
+        unionCouncil: rem.unionCouncil || existing.unionCouncil,
+        stateProvince: rem.stateProvince || existing.stateProvince,
+        province: rem.province || rem.stateProvince || existing.province || existing.stateProvince,
+        district: rem.district || existing.district,
+        tehsil: rem.tehsil || existing.tehsil,
+        cityTown: rem.cityTown || existing.cityTown,
+        membershipId: rem.membershipId || existing.membershipId,
+        memberId: rem.memberId || existing.memberId,
         avatarUrl: photo,
         photoUrl: photo,
+        passwordHash: mergedPwdHash,
+        hasPassword: Boolean(rem.hasPassword || existing.hasPassword || mergedPwdHash),
+        otpVerifiedOnce: Boolean(rem.otpVerifiedOnce || existing.otpVerifiedOnce),
+        tabbarId: (rem.tabbarId && rem.tabbarId.trim()) ? rem.tabbarId : existing.tabbarId,
+        tabbarUrdu: (rem.tabbarUrdu && rem.tabbarUrdu.trim()) ? rem.tabbarUrdu : existing.tabbarUrdu,
+        tabbarEnglish: (rem.tabbarEnglish && rem.tabbarEnglish.trim()) ? rem.tabbarEnglish : existing.tabbarEnglish,
         isOnline: preferRemote
           ? Boolean(rem.isOnline)
           : Boolean(rem.isOnline ?? existing.isOnline),
+        lastActiveAt: rem.lastActiveAt !== undefined ? rem.lastActiveAt : existing.lastActiveAt,
         lastSeen: rem.lastSeen || existing.lastSeen,
         approvalStatus: mergedApproval,
         status: mergedApproval,
@@ -261,6 +348,7 @@ function mergeAppSettings(raw: Partial<AppSettings> | null | undefined): AppSett
 
 interface AppContextType {
   currentUser: User | null;
+  isAuthenticated: boolean;
   users: User[];
   applications: MembershipApplication[];
   payments: PaymentTransaction[];
@@ -335,6 +423,9 @@ interface AppContextType {
     cityTown?: string;
     unionCouncil?: string;
     address: string;
+    tabbarId?: string;
+    tabbarUrdu?: string;
+    tabbarEnglish?: string;
     isOldMember: boolean;
     oldMembershipNo?: string;
     password?: string;
@@ -377,6 +468,7 @@ interface AppContextType {
   syncAllUsersToCloud: () => Promise<number>;
   approveMemberAccount: (userId: string, approved: boolean, reason?: string) => { success: boolean; message: string; error?: string };
   toggleUserSuspension: (userId: string, suspended: boolean) => { success: boolean; error?: string };
+  deleteUserPermanently: (userId: string) => Promise<{ success: boolean; message: string; error?: string }>;
   updateUserPermissions: (userId: string, permissions: Partial<RolePermissions>) => { success: boolean; error?: string };
   broadcastAdminAlert: (title: string, message: string, target: 'ALL' | 'STAFF') => void;
   updateUserProfile: (profileData: Partial<User>) => void;
@@ -408,6 +500,11 @@ interface AppContextType {
   toggleHighlightCommunityMessage: (messageId: string) => { success: boolean; error?: string };
   togglePinCommunityMessage: (messageId: string) => { success: boolean; error?: string };
   deleteCommunityMessage: (messageId: string) => { success: boolean; error?: string };
+  deleteCommunityMessageForMe: (messageId: string) => { success: boolean; error?: string };
+  deleteCommunityMessageForEveryone: (messageId: string) => { success: boolean; error?: string };
+  clearOldCommunityMessages: (mode: 'OLDER_7_DAYS' | 'OLDER_24_HOURS' | 'ALL') => { success: boolean; count: number; error?: string };
+  deleteDirectMessageForMe: (messageId: string) => { success: boolean; error?: string };
+  deleteDirectMessageForEveryone: (messageId: string) => { success: boolean; error?: string };
   muteChatUser: (userId: string, muted: boolean) => { success: boolean; error?: string };
   updateLiveChatAppearance: (data: {
     liveChatTheme?: CommunityScenicThemeId;
@@ -459,8 +556,10 @@ interface AppContextType {
   isFirebaseLive: boolean;
   isCloudSyncing: boolean;
   loginWithGoogleAuth: () => Promise<User>;
-  loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean }>;
+  loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean; existingAccountFound?: boolean }>;
+  setupPasswordForExistingAccount: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User }>;
   completePasswordAfterOtp: (email: string, password: string) => Promise<{ success: boolean; message: string; user?: User }>;
+  completePasswordResetAndSignIn: (email: string, code: string, newPassword: string) => Promise<{ success: boolean; message: string; user?: User }>;
   setOrChangeUserPassword: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logoutFirebaseAuth: () => Promise<void>;
   requestOTP: (email: string) => Promise<OTPRequestResult>;
@@ -530,11 +629,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [users, setUsers] = useState<User[]>(() => {
-    const raw = readStorage(STORAGE_KEYS.USERS, INITIAL_USERS);
-    return raw.map(normalizeUserRecord);
+  const [initialSession] = useState<{ users: User[]; currentUser: User | null }>(() => {
+    const rawUsers = readStorage(STORAGE_KEYS.USERS, INITIAL_USERS).map(normalizeUserRecord);
+    const savedSessionUser = readStorage<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    const savedId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    let resolvedUser: User | null = savedSessionUser ? normalizeUserRecord(savedSessionUser) : null;
+    if (!resolvedUser && savedId) {
+      const matched = rawUsers.find(u => u.id === savedId);
+      if (matched) resolvedUser = matched;
+    }
+    const mergedUsers = resolvedUser ? mergeUsersLists(rawUsers, [resolvedUser], false) : rawUsers;
+    if (resolvedUser) {
+      const fromList = mergedUsers.find(
+        u => u.id === resolvedUser!.id || (resolvedUser!.email && u.email?.toLowerCase() === resolvedUser!.email.toLowerCase())
+      );
+      if (fromList) resolvedUser = fromList;
+      persistCurrentUserToStorage(resolvedUser);
+    }
+    return { users: mergedUsers, currentUser: resolvedUser };
   });
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID));
+  const [users, setUsers] = useState<User[]>(initialSession.users);
+  const [currentUserState, setCurrentUserState] = useState<User | null>(initialSession.currentUser);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(initialSession.currentUser?.id || null);
   const [applications, setApplications] = useState<MembershipApplication[]>(() => readStorage(STORAGE_KEYS.APPLICATIONS, INITIAL_MEMBERSHIP_APPLICATIONS));
   const [payments, setPayments] = useState<PaymentTransaction[]>(() => readStorage(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS));
   const [complaints, setComplaints] = useState<Complaint[]>(() => readStorage(STORAGE_KEYS.COMPLAINTS, INITIAL_COMPLAINTS));
@@ -547,9 +663,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.ACK_VERSION));
   const [appSettings, setAppSettings] = useState<AppSettings>(() => mergeAppSettings(readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS)));
   const [chats, setChats] = useState<ChatConversation[]>(() => readStorage(STORAGE_KEYS.CHATS, INITIAL_CHATS));
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.CHAT_MESSAGES, INITIAL_CHAT_MESSAGES));
-  const [communityMessages, setCommunityMessages] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.COMMUNITY_MESSAGES, []));
-  const [offlineChatQueue, setOfflineChatQueue] = useState<ChatMessage[]>(() => readStorage(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, []));
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    const deletedDirect = readIdSetFromStorage(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS);
+    const savedUid = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    const hiddenDirect = savedUid ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${savedUid}`) : new Set<string>();
+    return readStorage(STORAGE_KEYS.CHAT_MESSAGES, INITIAL_CHAT_MESSAGES).filter(
+      m => !m.isDeleted && !deletedDirect.has(m.id) && !hiddenDirect.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
+    );
+  });
+  const [communityMessages, setCommunityMessages] = useState<ChatMessage[]>(() => {
+    const deletedComm = readIdSetFromStorage(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS);
+    const savedUid = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    const hiddenComm = savedUid ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${savedUid}`) : new Set<string>();
+    return readStorage<ChatMessage[]>(STORAGE_KEYS.COMMUNITY_MESSAGES, []).filter(
+      m => !m.isDeleted && !deletedComm.has(m.id) && !hiddenComm.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
+    );
+  });
+  const [offlineChatQueue, setOfflineChatQueue] = useState<ChatMessage[]>(() => readStorage<ChatMessage[]>(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, []));
+  const deletedCommunityIdsRef = useRef<Set<string>>(readIdSetFromStorage(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS));
+  const deletedDirectIdsRef = useRef<Set<string>>(readIdSetFromStorage(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS));
+  const hiddenCommunityIdsRef = useRef<Set<string>>(
+    currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${currentUserId}`) : new Set<string>()
+  );
+  const hiddenDirectIdsRef = useRef<Set<string>>(
+    currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUserId}`) : new Set<string>()
+  );
+  const localRecentSentMsgsRef = useRef<Map<string, number>>(new Map());
 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
   const [inspectedUserProfile, setInspectedUserProfile] = useState<User | null>(null);
@@ -650,13 +789,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
   const [activeOtpRecord, setActiveOtpRecord] = useState<StoredOTP | null>(() => getPendingEmailOTP());
 
-  // Sync RTL / LTR document direction & language
+  // Always keep LTR layout direction even when Urdu language is active
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+      document.documentElement.dir = 'ltr';
+      document.documentElement.dataset.lang = language;
       document.documentElement.lang = language;
     }
   }, [language]);
+
+  // Reload per-user hidden message sets when currentUserId changes
+  useEffect(() => {
+    hiddenCommunityIdsRef.current = currentUserId
+      ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${currentUserId}`)
+      : new Set<string>();
+    hiddenDirectIdsRef.current = currentUserId
+      ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUserId}`)
+      : new Set<string>();
+  }, [currentUserId]);
 
   // Apply dynamic theme preset CSS variables
   useEffect(() => {
@@ -729,13 +879,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshGitHubRelease(false);
   }, [refreshGitHubRelease]);
 
-  // Sync collections to localStorage asynchronously so tab transitions & 0ms UI updates never block on JSON.stringify
+  // Persist active user session cleanly in kifayat_current_user (ONLY cleared on explicit Logout or resetAllData)
   useEffect(() => {
-    try {
-      if (currentUserId) localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
-      else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
-    } catch { /* ignore quota errors */ }
-  }, [currentUserId]);
+    persistCurrentUserToStorage(currentUserState);
+  }, [currentUserState]);
   useEffect(() => {
     const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); } catch {} }, 0);
     return () => window.clearTimeout(id);
@@ -803,10 +950,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [acknowledgedUpdateVersion]);
 
-  const currentUser = useMemo(
-    () => (currentUserId ? (users.find(u => u.id === currentUserId) || null) : null),
-    [currentUserId, users]
-  );
+  const currentUser = currentUserState;
+  const isAuthenticated = Boolean(currentUserState);
+
+  const establishUserSession = useCallback((rawUser: User, options?: { resetTab?: boolean }): User => {
+    const normalized = normalizeUserRecord({
+      ...rawUser,
+      isOnline: true,
+      lastActiveAt: Date.now(),
+      lastLoginAt: rawUser.lastLoginAt || new Date().toISOString()
+    });
+    persistCurrentUserToStorage(normalized);
+    setCurrentUserState(normalized);
+    setCurrentUserId(normalized.id);
+    setUsers(prev => mergeUsersLists(prev, [normalized], true));
+    if (options?.resetTab) {
+      setActiveTab('dashboard');
+    }
+    return normalized;
+  }, [setActiveTab]);
+
+  // Keep currentUserState updated cleanly when directory sync updates fields, NEVER clearing currentUserState
+  useEffect(() => {
+    setCurrentUserState(prev => {
+      if (!prev) return null;
+      const prevEmail = prev.email?.trim().toLowerCase();
+      const matched = users.find(
+        u => u.id === prev.id || (prevEmail && u.email?.trim().toLowerCase() === prevEmail)
+      );
+      if (!matched) return prev;
+      if (matched.id !== currentUserId) {
+        setCurrentUserId(matched.id);
+      }
+      const next = normalizeUserRecord({
+        ...prev,
+        ...matched,
+        isOnline: matched.isOnline ?? prev.isOnline,
+        lastActiveAt: matched.lastActiveAt !== undefined ? matched.lastActiveAt : prev.lastActiveAt
+      });
+      if (
+        next.id === prev.id &&
+        next.name === prev.name &&
+        next.role === prev.role &&
+        next.approvalStatus === prev.approvalStatus &&
+        next.profileCompleted === prev.profileCompleted &&
+        next.photoUrl === prev.photoUrl &&
+        next.cnic === prev.cnic &&
+        next.phone === prev.phone &&
+        next.tabbarId === prev.tabbarId &&
+        next.tabbarUrdu === prev.tabbarUrdu &&
+        next.tabbarEnglish === prev.tabbarEnglish &&
+        next.passwordHash === prev.passwordHash &&
+        next.hasPassword === prev.hasPassword &&
+        next.isAuditOfficer === prev.isAuditOfficer &&
+        next.isSuspended === prev.isSuspended &&
+        next.district === prev.district &&
+        next.stateProvince === prev.stateProvince &&
+        next.totalContributed === prev.totalContributed &&
+        next.assignedOfficeTitle === prev.assignedOfficeTitle &&
+        next.isMutedInChat === prev.isMutedInChat
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [users, currentUserId]);
+
   const latestPublishedUpdate = useMemo(
     () => appUpdates.find(u => u.isPublished) || null,
     [appUpdates]
@@ -859,33 +1068,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Effect A: Firebase Google Auth Session Lifecycle
+  // CRITICAL: NEVER wipe currentUser / currentUserId when fbUser is null or anonymous
+  // because custom Email + Password & One-Time OTP accounts persist via kifayat_current_user.
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
-      if (fbUser && !fbUser.isAnonymous) {
-        try {
-          const syncedProfileRaw = await syncUserWithFirestore(fbUser);
-          const activeProfile = normalizeUserRecord({
-            ...syncedProfileRaw,
-            isOnline: true,
-            status: 'online'
-          });
-          setUsers(prev => mergeUsersLists(prev, [activeProfile], true));
-          setCurrentUserId(activeProfile.id);
-        } catch (err) {
-          console.warn('Google auth sync warning:', err);
-        }
+      if (!fbUser || fbUser.isAnonymous) {
+        return;
+      }
+      try {
+        const syncedProfileRaw = await syncUserWithFirestore(fbUser);
+        const activeProfile = normalizeUserRecord({
+          ...syncedProfileRaw,
+          isOnline: true,
+          status: resolveUserApprovalStatus(syncedProfileRaw)
+        });
+        establishUserSession(activeProfile);
+      } catch (err) {
+        console.warn('Google auth sync warning:', err);
       }
     });
 
     return () => {
       unsubscribeAuth();
     };
-  }, []);
+  }, [establishUserSession]);
 
-  // Effect B: True Real-Time Firestore Subscriptions (Works for BOTH Google & Email OTP/APK Users!)
+  // Effect B: True Real-Time Firestore Subscriptions (Works for BOTH Google & Email OTP/Password/APK Users!)
+  const activeSessionUid =
+    currentUserState?.id ||
+    currentUserId ||
+    (firebaseUser && !firebaseUser.isAnonymous ? firebaseUser.uid : null);
+
   useEffect(() => {
-    const activeUid = currentUserId || (firebaseUser && !firebaseUser.isAnonymous ? firebaseUser.uid : null);
+    const activeUid = activeSessionUid;
     if (!activeUid) {
       setIsFirebaseLive(false);
       return;
@@ -1003,22 +1219,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : { field: 'participantIds', value: activeUid, op: 'array-contains' }
     );
 
-    const mergeDirectMessages = (incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
-      if (!incoming || incoming.length === 0) return;
+    const dmPrimaryMap = new Map<string, ChatMessage>();
+    const dmSentMap = new Map<string, ChatMessage>();
+    const dmRecvMap = new Map<string, ChatMessage>();
+
+    const normalizeIncomingMsg = (m: ChatMessage & { serverCreatedAt?: unknown }, fallbackStatus: 'DELIVERED' | 'SEEN'): ChatMessage => {
+      const safeTs = toIsoTimestamp(m.timestamp || m.createdAt || m.serverCreatedAt, new Date().toISOString());
+      const safeCreated = toIsoTimestamp(m.createdAt || m.serverCreatedAt || m.timestamp, safeTs);
+      return {
+        ...m,
+        timestamp: safeTs,
+        createdAt: safeCreated,
+        deliveryStatus: m.read ? 'SEEN' : (m.deliveryStatus || fallbackStatus)
+      };
+    };
+
+    const reconcileDirectMessages = (targetMap: Map<string, ChatMessage>, incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
+      targetMap.clear();
+      (incoming || []).forEach(m => {
+        if (
+          m.isDeleted ||
+          deletedDirectIdsRef.current.has(m.id) ||
+          hiddenDirectIdsRef.current.has(m.id) ||
+          m.hiddenForUsers?.includes(activeUid)
+        ) {
+          return;
+        }
+        targetMap.set(m.id, normalizeIncomingMsg(m, m.read ? 'SEEN' : 'DELIVERED'));
+      });
+
       setChatMessages(prev => {
-        const map = new Map<string, ChatMessage>();
-        prev.forEach(m => map.set(m.id, m));
-        incoming.forEach(m => {
-          const safeTs = toIsoTimestamp(m.timestamp || m.createdAt || m.serverCreatedAt, new Date().toISOString());
-          const safeCreated = toIsoTimestamp(m.createdAt || m.serverCreatedAt || m.timestamp, safeTs);
-          map.set(m.id, {
-            ...m,
-            timestamp: safeTs,
-            createdAt: safeCreated,
-            deliveryStatus: m.read ? 'SEEN' : (m.deliveryStatus || 'DELIVERED')
-          });
+        const now = Date.now();
+        const combined = new Map<string, ChatMessage>();
+        dmSentMap.forEach((v, k) => combined.set(k, v));
+        dmRecvMap.forEach((v, k) => combined.set(k, v));
+        dmPrimaryMap.forEach((v, k) => combined.set(k, v));
+        prev.forEach(m => {
+          if (
+            m.isDeleted ||
+            deletedDirectIdsRef.current.has(m.id) ||
+            hiddenDirectIdsRef.current.has(m.id) ||
+            m.hiddenForUsers?.includes(activeUid)
+          ) {
+            return;
+          }
+          const sentAt = localRecentSentMsgsRef.current.get(m.id);
+          if (m.deliveryStatus === 'QUEUED' || (sentAt && now - sentAt < 15000)) {
+            if (!combined.has(m.id)) combined.set(m.id, m);
+          }
         });
-        return Array.from(map.values()).sort((a, b) =>
+        return Array.from(combined.values()).sort((a, b) =>
           (a.createdAt || a.timestamp).localeCompare(b.createdAt || b.timestamp)
         );
       });
@@ -1026,36 +1276,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const unsubDirectMsgs = subscribeToFirestoreCollection<ChatMessage>(
       'direct_messages',
-      mergeDirectMessages,
+      (incoming) => reconcileDirectMessages(dmPrimaryMap, incoming),
       { field: 'participants', value: activeUid, op: 'array-contains' }
     );
     const unsubMsgsSent = subscribeToFirestoreCollection<ChatMessage>(
       'chat_messages',
-      mergeDirectMessages,
+      (incoming) => reconcileDirectMessages(dmSentMap, incoming),
       { field: 'senderId', value: activeUid }
     );
     const unsubMsgsRecv = subscribeToFirestoreCollection<ChatMessage>(
       'chat_messages',
-      mergeDirectMessages,
+      (incoming) => reconcileDirectMessages(dmRecvMap, incoming),
       { field: 'recipientId', value: activeUid }
     );
 
-    const mergeCommunityMessages = (incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
-      if (!incoming || incoming.length === 0) return;
+    const commPrimaryMap = new Map<string, ChatMessage>();
+    const commLegacyMap = new Map<string, ChatMessage>();
+
+    const reconcileCommunityMessages = (targetMap: Map<string, ChatMessage>, incoming: (ChatMessage & { serverCreatedAt?: unknown })[]) => {
+      targetMap.clear();
+      (incoming || []).forEach(m => {
+        if (
+          m.isDeleted ||
+          deletedCommunityIdsRef.current.has(m.id) ||
+          hiddenCommunityIdsRef.current.has(m.id) ||
+          m.hiddenForUsers?.includes(activeUid)
+        ) {
+          return;
+        }
+        targetMap.set(m.id, normalizeIncomingMsg(m, 'DELIVERED'));
+      });
+
       setCommunityMessages(prev => {
-        const map = new Map<string, ChatMessage>();
-        prev.forEach(m => map.set(m.id, m));
-        incoming.forEach(m => {
-          const safeTs = toIsoTimestamp(m.timestamp || m.createdAt || m.serverCreatedAt, new Date().toISOString());
-          const safeCreated = toIsoTimestamp(m.createdAt || m.serverCreatedAt || m.timestamp, safeTs);
-          map.set(m.id, {
-            ...m,
-            timestamp: safeTs,
-            createdAt: safeCreated,
-            deliveryStatus: 'DELIVERED'
-          });
+        const now = Date.now();
+        const combined = new Map<string, ChatMessage>();
+        commLegacyMap.forEach((v, k) => combined.set(k, v));
+        commPrimaryMap.forEach((v, k) => combined.set(k, v));
+        prev.forEach(m => {
+          if (
+            m.isDeleted ||
+            deletedCommunityIdsRef.current.has(m.id) ||
+            hiddenCommunityIdsRef.current.has(m.id) ||
+            m.hiddenForUsers?.includes(activeUid)
+          ) {
+            return;
+          }
+          const sentAt = localRecentSentMsgsRef.current.get(m.id);
+          if (m.deliveryStatus === 'QUEUED' || (sentAt && now - sentAt < 15000)) {
+            if (!combined.has(m.id)) combined.set(m.id, m);
+          }
         });
-        return Array.from(map.values()).sort((a, b) =>
+        return Array.from(combined.values()).sort((a, b) =>
           (a.createdAt || a.timestamp).localeCompare(b.createdAt || b.timestamp)
         );
       });
@@ -1063,13 +1334,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const unsubCommunityMsgsPrimary = subscribeToFirestoreCollection<ChatMessage>(
       'community_messages',
-      mergeCommunityMessages,
+      (incoming) => reconcileCommunityMessages(commPrimaryMap, incoming),
       undefined,
       { field: 'createdAt', direction: 'asc' }
     );
     const unsubCommunityMsgsLegacy = subscribeToFirestoreCollection<ChatMessage>(
       'community_chat_messages',
-      mergeCommunityMessages
+      (incoming) => reconcileCommunityMessages(commLegacyMap, incoming)
     );
 
     return () => {
@@ -1090,37 +1361,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubCommunityMsgsPrimary();
       unsubCommunityMsgsLegacy();
     };
-  }, [currentUserId, firebaseUser?.uid]);
+  }, [activeSessionUid]);
 
-  // Effect C: Live Online/Offline Presence Heartbeat & Page-Close Marker
+  const currentUserObjRef = useRef<User | null>(null);
+  currentUserObjRef.current = currentUser;
+
+  // Effect C: Live Real-Time Online/Offline Presence (Immediate + 15s Heartbeat + Native Background Listeners)
   useEffect(() => {
     if (!currentUserId || !isOnline) return;
-    const active = users.find(u => u.id === currentUserId);
+    const active = currentUserObjRef.current || users.find(u => u.id === currentUserId);
     if (!active) return;
 
-    saveUserToFirestore(active, { isOnline: true }).catch(() => {});
+    const markOnlineNow = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      const target = currentUserObjRef.current || active;
+      const nowMs = Date.now();
+      setCurrentUserState(prev =>
+        prev && prev.id === target.id ? { ...prev, isOnline: true, lastActiveAt: nowMs } : prev
+      );
+      setUsers(prev =>
+        prev.map(u => (u.id === target.id ? { ...u, isOnline: true, lastActiveAt: nowMs } : u))
+      );
+      updateUserPresenceInFirestore(target, true, nowMs).catch(() => {});
+    };
+
+    const markOfflineNow = () => {
+      const target = currentUserObjRef.current || active;
+      setCurrentUserState(prev =>
+        prev && prev.id === target.id ? { ...prev, isOnline: false, lastActiveAt: 0 } : prev
+      );
+      setUsers(prev =>
+        prev.map(u => (u.id === target.id ? { ...u, isOnline: false, lastActiveAt: 0 } : u))
+      );
+      markUserOfflineInFirestore(target).catch(() => {});
+    };
+
+    if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+      markOnlineNow();
+    } else {
+      markOfflineNow();
+    }
 
     const heartbeat = window.setInterval(() => {
-      saveUserToFirestore(active, { isOnline: true }).catch(() => {});
-    }, 60000);
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        markOnlineNow();
+      }
+    }, 15000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        saveUserToFirestore(active, { isOnline: true }).catch(() => {});
+        markOnlineNow();
+      } else {
+        markOfflineNow();
       }
     };
 
-    const handlePageHide = () => {
-      markUserOfflineInFirestore(active).catch(() => {});
+    const handleFocus = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        markOnlineNow();
+      }
     };
+    const handlePageHide = () => markOfflineNow();
+    const handleBeforeUnload = () => markOfflineNow();
 
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    let capAppHandle: { remove?: () => void } | null = null;
+    try {
+      const capApp = (window as unknown as {
+        Capacitor?: { Plugins?: { App?: { addListener?: (ev: string, cb: (s: { isActive?: boolean }) => void) => Promise<{ remove?: () => void }> | { remove?: () => void } } } };
+      }).Capacitor?.Plugins?.App;
+      if (capApp?.addListener) {
+        const res = capApp.addListener('appStateChange', (state) => {
+          if (state?.isActive) markOnlineNow();
+          else markOfflineNow();
+        });
+        if (res && typeof (res as Promise<unknown>).then === 'function') {
+          (res as Promise<{ remove?: () => void }>).then(h => {
+            capAppHandle = h;
+          }).catch(() => {});
+        } else {
+          capAppHandle = res as { remove?: () => void };
+        }
+      }
+    } catch {
+      // Ignore on web browsers without Capacitor App plugin
+    }
 
     return () => {
       window.clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      try {
+        capAppHandle?.remove?.();
+      } catch {
+        // Ignore cleanup failure
+      }
     };
   }, [currentUserId, isOnline]);
 
@@ -1146,15 +1487,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogleAuth = async (): Promise<User> => {
     const fbUser = await loginWithGoogle();
     const rawSynced = await syncUserWithFirestore(fbUser);
-    const synced = normalizeUserRecord({
-      ...rawSynced,
-      isOnline: true,
-      status: 'online'
-    });
-    const existed = users.some(u => u.email.toLowerCase() === synced.email.toLowerCase());
-    setUsers(prev => mergeUsersLists(prev, [synced], true));
-    setCurrentUserId(synced.id);
-    setActiveTab('dashboard');
+    const existed = users.some(u => u.email.toLowerCase() === rawSynced.email.toLowerCase());
+    const synced = establishUserSession(rawSynced, { resetTab: true });
     saveUserToFirestore(synced, { isOnline: true }).catch(() => {});
     emitAuthAlertNotification(existed ? 'USER_LOGIN' : 'USER_SIGNUP', synced);
     return synced;
@@ -1166,7 +1500,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsers(prev =>
         prev.map(u =>
           u.id === exitingUser.id
-            ? { ...u, isOnline: false, status: 'offline', lastSeen: new Date().toISOString() }
+            ? { ...u, isOnline: false, lastActiveAt: 0, lastSeen: new Date().toISOString() }
             : u
         )
       );
@@ -1179,6 +1513,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setFirebaseUser(null);
     setIsFirebaseLive(false);
+    persistCurrentUserToStorage(null);
+    setCurrentUserState(null);
     setCurrentUserId(null);
     setActiveChatUser(null);
     setActiveTab('dashboard');
@@ -1196,14 +1532,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const upsertVerifiedUserByEmail = (
     normEmail: string,
-    options?: { hasPassword?: boolean; name?: string; remoteExisting?: User | null }
+    options?: {
+      hasPassword?: boolean;
+      passwordHash?: string;
+      otpVerifiedOnce?: boolean;
+      name?: string;
+      remoteExisting?: User | null;
+    }
   ): { user: User; isNewSignup: boolean } => {
     const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
     const existing = options?.remoteExisting
-      ? normalizeUserRecord({ ...(localExisting || {}), ...options.remoteExisting })
+      ? mergeUsersLists(localExisting ? [localExisting] : [], [options.remoteExisting], true)[0]
       : localExisting;
     const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
     const nowIso = new Date().toISOString();
+    const resolvedPwdHash = options?.passwordHash || existing?.passwordHash;
+    if (resolvedPwdHash) {
+      mirrorPasswordHashToLocalStorage(normEmail, resolvedPwdHash);
+    }
+    const resolvedHasPwd = Boolean(
+      options?.hasPassword ||
+      resolvedPwdHash ||
+      existing?.hasPassword ||
+      hasLocalPasswordCredential(normEmail)
+    );
 
     if (isFounderEmail) {
       if (existing) {
@@ -1220,7 +1572,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           approvalStatus: 'approved',
           status: 'approved',
           lastLoginAt: nowIso,
-          hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
+          passwordHash: resolvedPwdHash,
+          otpVerifiedOnce: Boolean(options?.otpVerifiedOnce ?? existing.otpVerifiedOnce ?? true),
+          hasPassword: resolvedHasPwd
         });
         setUsers(prev => mergeUsersLists(prev, [updatedSuperAdmin], true));
         saveUserToFirestore(updatedSuperAdmin, { isOnline: true }).catch(() => {});
@@ -1246,7 +1600,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'approved',
         lastLoginAt: nowIso,
         createdAt: nowIso,
-        hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
+        passwordHash: resolvedPwdHash,
+        otpVerifiedOnce: Boolean(options?.otpVerifiedOnce ?? true),
+        hasPassword: resolvedHasPwd,
         country: 'Pakistan',
         stateProvince: 'Islamabad Capital Territory',
         district: 'Islamabad',
@@ -1280,7 +1636,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approvalStatus: existingApproval,
         status: existingApproval,
         lastLoginAt: nowIso,
-        hasPassword: options?.hasPassword ?? (existing.hasPassword || hasLocalPasswordCredential(normEmail))
+        passwordHash: resolvedPwdHash,
+        otpVerifiedOnce: Boolean(options?.otpVerifiedOnce ?? existing.otpVerifiedOnce ?? true),
+        hasPassword: resolvedHasPwd
       });
       setUsers(prev => mergeUsersLists(prev, [updatedExisting], true));
       saveUserToFirestore(updatedExisting, { isOnline: true }).catch(() => {});
@@ -1310,7 +1668,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'pending',
       lastLoginAt: nowIso,
       createdAt: nowIso,
-      hasPassword: options?.hasPassword ?? hasLocalPasswordCredential(normEmail),
+      passwordHash: resolvedPwdHash,
+      otpVerifiedOnce: Boolean(options?.otpVerifiedOnce ?? true),
+      hasPassword: resolvedHasPwd,
       country: 'Pakistan',
       stateProvince: 'Punjab',
       district: 'Lahore',
@@ -1348,7 +1708,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
     const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
-    const { user: matched, isNewSignup } = upsertVerifiedUserByEmail(normEmail, { remoteExisting });
+    const { user: matched, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
+      remoteExisting,
+      otpVerifiedOnce: true
+    });
     if (matched.isSuspended && !isFounderUser(matched)) {
       return {
         success: false,
@@ -1356,17 +1719,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    setCurrentUserId(matched.id);
-    setActiveTab('dashboard');
-    saveUserToFirestore(matched, { isOnline: true }).catch(() => {});
-    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', matched);
-    return { ...res, user: matched };
+    const sessionUser = establishUserSession(matched, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', sessionUser);
+    return { ...res, user: sessionUser };
   };
 
   const loginWithPassword = async (
     email: string,
     password: string
-  ): Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean }> => {
+  ): Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean; existingAccountFound?: boolean }> => {
     const normEmail = email.trim().toLowerCase();
     if (!normEmail || !normEmail.includes('@')) {
       return { success: false, message: 'Please enter a valid Gmail or email address.' };
@@ -1376,22 +1738,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
-    const existing = remoteExisting || users.find(u => u.email.toLowerCase() === normEmail);
-    const hasPwd = hasLocalPasswordCredential(normEmail);
+    const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
+    const existing = remoteExisting
+      ? mergeUsersLists(localExisting ? [localExisting] : [], [remoteExisting], true)[0]
+      : localExisting;
+    const cloudPwdHash = remoteExisting?.passwordHash || existing?.passwordHash;
+    const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+    const hasPwd = Boolean(cloudPwdHash || hasLocalPasswordCredential(normEmail));
 
     if (!hasPwd) {
       return {
         success: false,
         needsPasswordSetup: true,
-        message: 'No password is set for this email yet. Use Email OTP to sign in or click "Forgot Password?" to create one.'
+        existingAccountFound: Boolean(existing || isFounderEmail),
+        message: (existing || isFounderEmail)
+          ? 'Your existing account does not have a password set yet. Create your password below to sign in directly.'
+          : 'No registered account found for this email. Tap Create Account to verify once via Email OTP.'
       };
     }
 
-    const ok = await verifyLocalPasswordCredential(normEmail, password);
+    const ok = await verifyLocalPasswordCredential(normEmail, password, cloudPwdHash);
     if (!ok) {
       return {
         success: false,
-        message: 'Incorrect email or password. Try again or use Forgot Password / Email OTP.'
+        message: 'Incorrect email or password. Try again or use Forgot Password.'
       };
     }
 
@@ -1402,15 +1772,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
+    const ensuredPwdHash = cloudPwdHash || (await computeUserPasswordHash(normEmail, password));
     const { user: loggedInUser, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
       hasPassword: true,
+      passwordHash: ensuredPwdHash,
+      otpVerifiedOnce: true,
       remoteExisting
     });
-    setCurrentUserId(loggedInUser.id);
-    setActiveTab('dashboard');
-    saveUserToFirestore(loggedInUser, { isOnline: true }).catch(() => {});
-    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', loggedInUser);
-    return { success: true, message: 'Signed in successfully.', user: loggedInUser };
+    const sessionUser = establishUserSession(loggedInUser, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', sessionUser);
+    return { success: true, message: 'Signed in successfully.', user: sessionUser };
+  };
+
+  const setupPasswordForExistingAccount = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; user?: User }> => {
+    const normEmail = email.trim().toLowerCase();
+    if (!normEmail || !normEmail.includes('@')) {
+      return { success: false, message: 'Please enter a valid Gmail or email address.' };
+    }
+    if (password.trim().length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters long.' };
+    }
+
+    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
+    const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
+    const existing = remoteExisting
+      ? mergeUsersLists(localExisting ? [localExisting] : [], [remoteExisting], true)[0]
+      : localExisting;
+    const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+
+    if (!existing && !isFounderEmail) {
+      return {
+        success: false,
+        message: 'No existing account found for this email. Please use Create Account with one-time Email OTP.'
+      };
+    }
+
+    // Security Guard: Only allow direct password setup if no passwordHash exists yet
+    const existingHash = remoteExisting?.passwordHash || existing?.passwordHash;
+    if (existingHash) {
+      return {
+        success: false,
+        message: 'This account already has a password set. Sign in with your password or use Forgot Password.'
+      };
+    }
+
+    const passwordHash = await saveLocalPasswordCredential(normEmail, password);
+    const { user } = upsertVerifiedUserByEmail(normEmail, {
+      hasPassword: true,
+      passwordHash,
+      otpVerifiedOnce: true,
+      remoteExisting
+    });
+    const sessionUser = establishUserSession(user, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification('USER_LOGIN', sessionUser);
+    return { success: true, message: 'Password saved to Cloud and signed in!', user: sessionUser };
   };
 
   const completePasswordAfterOtp = async (
@@ -1421,17 +1841,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (password.trim().length < 6) {
       return { success: false, message: 'Password must be at least 6 characters long.' };
     }
-    await saveLocalPasswordCredential(normEmail, password);
+    const passwordHash = await saveLocalPasswordCredential(normEmail, password);
     const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
     const { user, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
       hasPassword: true,
+      passwordHash,
+      otpVerifiedOnce: true,
       remoteExisting
     });
-    setCurrentUserId(user.id);
-    setActiveTab('dashboard');
-    saveUserToFirestore(user, { isOnline: true }).catch(() => {});
-    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', user);
-    return { success: true, message: 'Password saved and signed in.', user };
+    const sessionUser = establishUserSession(user, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', sessionUser);
+    return { success: true, message: 'Password saved and signed in.', user: sessionUser };
+  };
+
+  const completePasswordResetAndSignIn = async (
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string; user?: User }> => {
+    const res = await verifyPasswordReset(email, code, newPassword);
+    if (!res.success) {
+      return { success: false, message: res.message };
+    }
+    const normEmail = (res.verifiedEmail || email).trim().toLowerCase();
+    const passwordHash = await computeUserPasswordHash(normEmail, newPassword);
+    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
+    const { user, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
+      hasPassword: true,
+      passwordHash,
+      otpVerifiedOnce: true,
+      remoteExisting
+    });
+    if (user.isSuspended && !isFounderUser(user)) {
+      return {
+        success: false,
+        message: 'Your password was updated, but this account is suspended. Contact the Super Admin.'
+      };
+    }
+    const sessionUser = establishUserSession(user, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', sessionUser);
+    return { success: true, message: res.message, user: sessionUser };
   };
 
   const setOrChangeUserPassword = async (
@@ -1442,18 +1893,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (password.trim().length < 6) {
       return { success: false, message: 'Password must be at least 6 characters long.' };
     }
-    await saveLocalPasswordCredential(normEmail, password);
+    const passwordHash = await saveLocalPasswordCredential(normEmail, password);
     setUsers(prev =>
       prev.map(u => {
         if (u.email.toLowerCase() === normEmail) {
-          const updated = { ...u, hasPassword: true };
+          const updated = { ...u, hasPassword: true, passwordHash };
           saveUserToFirestore(updated, { isOnline: u.id === currentUserId }).catch(() => {});
           return updated;
         }
         return u;
       })
     );
-    return { success: true, message: 'Password updated successfully.' };
+    return { success: true, message: 'Password saved to Cloud and updated successfully.' };
   };
 
   const logAudit = (
@@ -1943,6 +2394,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     cityTown?: string;
     unionCouncil?: string;
     address: string;
+    tabbarId?: string;
+    tabbarUrdu?: string;
+    tabbarEnglish?: string;
     isOldMember: boolean;
     oldMembershipNo?: string;
     password?: string;
@@ -1952,9 +2406,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const prov = data.stateProvince || loc.stateProvince;
     const dist = data.district || loc.district;
     const normEmail = data.email.trim().toLowerCase();
+    const resolvedTabbar = resolveUserTabbar({
+      tabbarId: data.tabbarId,
+      tabbarUrdu: data.tabbarUrdu,
+      tabbarEnglish: data.tabbarEnglish
+    });
 
+    let savedPwdHash: string | undefined;
     if (data.password && data.password.trim().length >= 6) {
-      await saveLocalPasswordCredential(normEmail, data.password.trim());
+      savedPwdHash = await saveLocalPasswordCredential(normEmail, data.password.trim());
     }
 
     const newApp: MembershipApplication = {
@@ -1970,6 +2430,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cityTown: data.cityTown || dist,
       unionCouncil: data.unionCouncil || '',
       address: data.address,
+      tabbarId: resolvedTabbar?.id || data.tabbarId,
+      tabbarUrdu: resolvedTabbar?.urduName || data.tabbarUrdu,
+      tabbarEnglish: resolvedTabbar?.englishName || data.tabbarEnglish,
       submittedAt: new Date().toISOString(),
       status: 'PENDING_DISTRICT_REVIEW',
       isOldMemberVerification: data.isOldMember,
@@ -1980,7 +2443,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ensureFirebaseAuthSession().then(() => saveApplicationToFirestore(newApp)).catch(() => {});
 
     const remoteRegMatch = await findExistingFirestoreUserByEmail(normEmail);
-    const existing = remoteRegMatch || users.find(u => u.email.toLowerCase() === normEmail);
+    const localRegMatch = users.find(u => u.email.toLowerCase() === normEmail);
+    const existing = remoteRegMatch
+      ? mergeUsersLists(localRegMatch ? [localRegMatch] : [], [remoteRegMatch], true)[0]
+      : localRegMatch;
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
     const joinDate = new Date().toISOString().split('T')[0];
@@ -1994,6 +2460,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
     const nextApprovalStatus: 'approved' | 'pending' = alreadyApproved ? 'approved' : 'pending';
     const shouldEmitApprovalReq = !isFounderEmail && !alreadyApproved && !existing?.approvalRequestSentAt;
+    const finalPwdHash = savedPwdHash || existing?.passwordHash;
 
     const registeredUser: User = existing
       ? normalizeUserRecord({
@@ -2010,6 +2477,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cityTown: data.cityTown || dist,
           unionCouncil: data.unionCouncil || existing.unionCouncil,
           address: data.address || existing.address,
+          tabbarId: resolvedTabbar?.id ?? data.tabbarId ?? existing.tabbarId,
+          tabbarUrdu: resolvedTabbar?.urduName ?? data.tabbarUrdu ?? existing.tabbarUrdu,
+          tabbarEnglish: resolvedTabbar?.englishName ?? data.tabbarEnglish ?? existing.tabbarEnglish,
           profileCompleted: true,
           approvalStatus: nextApprovalStatus,
           status: nextApprovalStatus,
@@ -2017,9 +2487,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           verificationStatus: alreadyApproved ? 'VERIFIED' : 'PENDING',
           approvalRequestSentAt: shouldEmitApprovalReq ? nowIso : existing.approvalRequestSentAt,
           isOnline: true,
+          lastActiveAt: Date.now(),
           lastSeen: nowIso,
           lastLoginAt: nowIso,
-          hasPassword: Boolean(data.password) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
+          passwordHash: finalPwdHash,
+          otpVerifiedOnce: true,
+          hasPassword: Boolean(finalPwdHash) || existing.hasPassword || hasLocalPasswordCredential(normEmail)
         })
       : normalizeUserRecord({
           id: buildSafeEmailUserId(normEmail),
@@ -2033,14 +2506,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           approvalStatus: nextApprovalStatus,
           status: nextApprovalStatus,
           approvalRequestSentAt: isFounderEmail ? undefined : nowIso,
+          isOnline: true,
+          lastActiveAt: Date.now(),
           lastLoginAt: nowIso,
-          hasPassword: Boolean(data.password) || hasLocalPasswordCredential(normEmail),
+          passwordHash: finalPwdHash,
+          otpVerifiedOnce: true,
+          hasPassword: Boolean(finalPwdHash) || hasLocalPasswordCredential(normEmail),
           country: data.country || 'Pakistan',
           stateProvince: prov,
           district: dist,
           tehsil: data.tehsil || data.cityTown || dist,
           cityTown: data.cityTown || dist,
           unionCouncil: data.unionCouncil || '',
+          tabbarId: resolvedTabbar?.id ?? data.tabbarId,
+          tabbarUrdu: resolvedTabbar?.urduName ?? data.tabbarUrdu,
+          tabbarEnglish: resolvedTabbar?.englishName ?? data.tabbarEnglish,
           membershipId: `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
           membershipStatus: isFounderEmail ? 'ACTIVE' : 'PENDING_DISTRICT_REVIEW',
           verificationStatus: isFounderEmail ? 'VERIFIED' : 'PENDING',
@@ -2055,14 +2535,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           annualPledge: 0,
           totalContributed: 0,
           isStaff: false,
-          notes: 'Registered via Email OTP + Password flow'
+          notes: 'Registered via One-Time Email OTP + Password flow'
         });
 
-    setUsers(prev => mergeUsersLists(prev, [registeredUser], true));
-    saveUserToFirestore(registeredUser, { isOnline: true }).catch(() => {});
-    setCurrentUserId(registeredUser.id);
-    setActiveTab('dashboard');
-    emitAuthAlertNotification('USER_SIGNUP', registeredUser);
+    const sessionUser = establishUserSession(registeredUser, { resetTab: true });
+    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    emitAuthAlertNotification('USER_SIGNUP', sessionUser);
 
     if (shouldEmitApprovalReq || !existing) {
       const approvalNotifId = `notif_approval_${registeredUser.id}_${Date.now()}`;
@@ -2951,6 +3429,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [currentUser, users]);
 
+  const deleteUserPermanently = async (
+    userId: string
+  ): Promise<{ success: boolean; message: string; error?: string }> => {
+    if (!currentUser || !isFounderUser(currentUser)) {
+      const msg = 'Zero-Deletion Lock: Only the Main Super Admin (Founder) can permanently delete a member record.';
+      return { success: false, message: msg, error: msg };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) {
+      return { success: false, message: 'Member record not found.', error: 'Member record not found.' };
+    }
+    if (isFounderUser(target) || target.id === 'usr_super_admin') {
+      const msg = 'Founder Protection: Main Super Admin (Founder) account cannot be deleted.';
+      return { success: false, message: msg, error: msg };
+    }
+
+    const res = await deleteUserPermanentlyFromFirestore(currentUser, target);
+    if (!res.success) {
+      return {
+        success: false,
+        message: res.error || 'Failed to delete member record from Cloud Firestore.',
+        error: res.error
+      };
+    }
+
+    setUsers(prev => prev.filter(u => u.id !== target.id && u.email.toLowerCase() !== target.email.toLowerCase()));
+    if (inspectedUserProfile?.id === target.id) {
+      setInspectedUserProfile(null);
+    }
+    logAudit(
+      'USER_RECORD_PERMANENTLY_DELETED',
+      'SECURITY',
+      target.name,
+      `Founder (${currentUser.email}) permanently deleted user record for ${target.name} (${target.email}).`,
+      target.district,
+      target.stateProvince
+    );
+    return {
+      success: true,
+      message: `${target.name} (${target.email}) permanently deleted from Cloud & Directory.`
+    };
+  };
+
   const updateUserProfile = (profileData: Partial<User>) => {
     if (!currentUser) return;
     const nowIso = new Date().toISOString();
@@ -2979,6 +3500,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       approvalRequestSentAt: isTransitioningToCompleted ? nowIso : currentUser.approvalRequestSentAt,
       lastLoginAt: nowIso
     });
+    setCurrentUserState(updated);
+    persistCurrentUserToStorage(updated);
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
     ensureFirebaseAuthSession().then(() => saveUserToFirestore(updated)).catch(() => {});
 
@@ -3156,6 +3679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       attachmentType: attachment?.type
     };
 
+    localRecentSentMsgsRef.current.set(newMsg.id, Date.now());
     setChatMessages(prev => [...prev, newMsg]);
     if (isOnline) {
       saveChatMessageToFirestore(newMsg).catch(() => {});
@@ -3281,6 +3805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!cleanText) return { success: false, error: 'Cannot send an empty message.' };
 
     const nowIso = new Date().toISOString();
+    const senderTabbar = resolveUserTabbar(currentUser);
     const msg: ChatMessage = {
       id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       chatId: 'community_global_room',
@@ -3291,6 +3816,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderIsFounder: isFounder,
       senderIsAuditOfficer: Boolean(currentUser.isAuditOfficer),
       senderBubbleColor: isFounder ? (appSettings.founderBubbleColor || 'ROYAL_GOLD') : undefined,
+      senderTabbarId: senderTabbar?.id ?? currentUser.tabbarId,
+      senderTabbarUrdu: senderTabbar?.urduName ?? currentUser.tabbarUrdu,
+      senderTabbarEnglish: senderTabbar?.englishName ?? currentUser.tabbarEnglish,
       recipientId: 'ALL',
       recipientName: 'Kifayat Community Room',
       text: cleanText,
@@ -3309,6 +3837,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       highlightedBy: isFounder ? currentUser.name : undefined
     };
 
+    localRecentSentMsgsRef.current.set(msg.id, Date.now());
     setCommunityMessages(prev => [...prev, msg]);
     saveCommunityMessageToFirestore(msg).catch(() => {});
     return { success: true };
@@ -3382,7 +3911,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const deleteCommunityMessage = (messageId: string): { success: boolean; error?: string } => {
+  const deleteCommunityMessageForMe = (messageId: string): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    const key = `${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${currentUser.id}`;
+    hiddenCommunityIdsRef.current = addIdsToStorageSet(key, [messageId]);
+    setCommunityMessages(prev => prev.filter(m => m.id !== messageId));
+    hideCommunityMessageForUserInFirestore(messageId, currentUser.id).catch(() => {});
+    return { success: true };
+  };
+
+  const deleteCommunityMessageForEveryone = (messageId: string): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const target = communityMessages.find(m => m.id === messageId);
     if (!target) return { success: false, error: 'Message not found.' };
@@ -3406,18 +3944,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'Insufficient permission to delete this message.' };
     }
 
-    const updated: ChatMessage = {
-      ...target,
-      isDeleted: true,
-      isPinned: false,
-      deletedBy: currentUser.name,
-      text: `Message removed by ${currentUser.name}`,
-      attachmentUrl: undefined,
-      voiceNote: undefined,
-      islamicGifId: undefined
-    };
-    setCommunityMessages(prev => prev.map(m => (m.id === messageId ? updated : m)));
-    saveCommunityMessageToFirestore(updated).catch(() => {});
+    deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, [messageId]);
+    setCommunityMessages(prev => prev.filter(m => m.id !== messageId));
+    deleteCommunityMessageFromFirestore(messageId).catch(() => {});
+    return { success: true };
+  };
+
+  const deleteCommunityMessage = deleteCommunityMessageForEveryone;
+
+  const clearOldCommunityMessages = (
+    mode: 'OLDER_7_DAYS' | 'OLDER_24_HOURS' | 'ALL'
+  ): { success: boolean; count: number; error?: string } => {
+    if (!currentUser || !isFounderUser(currentUser)) {
+      return { success: false, count: 0, error: 'Founder Protection: Only the Founder Super Admin can clear room history.' };
+    }
+    const now = Date.now();
+    const cutoff =
+      mode === 'ALL'
+        ? Number.POSITIVE_INFINITY
+        : mode === 'OLDER_24_HOURS'
+        ? now - 24 * 60 * 60 * 1000
+        : now - 7 * 24 * 60 * 60 * 1000;
+
+    const toDelete = communityMessages.filter(m => {
+      if (mode === 'ALL') return true;
+      const ms = new Date(m.createdAt || m.timestamp).getTime();
+      return Number.isFinite(ms) && ms < cutoff;
+    });
+
+    if (toDelete.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const ids = toDelete.map(m => m.id);
+    deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, ids);
+    const idSet = new Set(ids);
+    setCommunityMessages(prev => prev.filter(m => !idSet.has(m.id)));
+    Promise.all(ids.map(id => deleteCommunityMessageFromFirestore(id))).catch(() => {});
+    return { success: true, count: ids.length };
+  };
+
+  const deleteDirectMessageForMe = (messageId: string): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    const key = `${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUser.id}`;
+    hiddenDirectIdsRef.current = addIdsToStorageSet(key, [messageId]);
+    setChatMessages(prev => prev.filter(m => m.id !== messageId));
+    hideDirectMessageForUserInFirestore(messageId, currentUser.id).catch(() => {});
+    return { success: true };
+  };
+
+  const deleteDirectMessageForEveryone = (messageId: string): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    const target = chatMessages.find(m => m.id === messageId);
+    if (!target) return { success: false, error: 'Message not found.' };
+    const canDelete = isFounderUser(currentUser) || target.senderId === currentUser.id;
+    if (!canDelete) {
+      return { success: false, error: 'Only the sender or Founder can delete this message for everyone.' };
+    }
+    deletedDirectIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS, [messageId]);
+    setChatMessages(prev => prev.filter(m => m.id !== messageId));
+    deleteDirectMessageFromFirestore(messageId).catch(() => {});
     return { success: true };
   };
 
@@ -3552,6 +4138,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetAllData = () => {
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
     setUsers(INITIAL_USERS);
+    persistCurrentUserToStorage(null);
+    setCurrentUserState(null);
     setCurrentUserId(null);
     setApplications(INITIAL_MEMBERSHIP_APPLICATIONS);
     setPayments(INITIAL_PAYMENTS);
@@ -3573,6 +4161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
         users,
         applications,
         payments,
@@ -3631,6 +4220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncAllUsersToCloud,
         approveMemberAccount,
         toggleUserSuspension,
+        deleteUserPermanently,
         updateUserPermissions,
         broadcastAdminAlert,
         updateUserProfile,
@@ -3652,6 +4242,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleHighlightCommunityMessage,
         togglePinCommunityMessage,
         deleteCommunityMessage,
+        deleteCommunityMessageForMe,
+        deleteCommunityMessageForEveryone,
+        clearOldCommunityMessages,
+        deleteDirectMessageForMe,
+        deleteDirectMessageForEveryone,
         muteChatUser,
         updateLiveChatAppearance,
         appUpdates,
@@ -3676,7 +4271,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isCloudSyncing,
         loginWithGoogleAuth,
         loginWithPassword,
+        setupPasswordForExistingAccount,
         completePasswordAfterOtp,
+        completePasswordResetAndSignIn,
         setOrChangeUserPassword,
         logoutFirebaseAuth,
         requestOTP,
