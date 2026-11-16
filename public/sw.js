@@ -1,15 +1,14 @@
-// Kifayat Connect Service Worker for PWA Offline Shell and Fast Loading
-const CACHE_NAME = 'kifayat-connect-v2.1.0';
+// Kifayat Connect Service Worker (Network-First HTML Navigation to Prevent Stale Chunk White Screens)
+const CACHE_NAME = 'kifayat-connect-v3.0.0';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './manifest.json',
+  './kc-emblem.svg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
   self.skipWaiting();
@@ -23,6 +22,7 @@ self.addEventListener('activate', (event) => {
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
+          return Promise.resolve(false);
         })
       );
     })
@@ -31,25 +31,38 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests, bypass Firebase API calls
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin.includes('firestore.googleapis.com') || url.origin.includes('identitytoolkit')) {
+  if (!url.protocol.startsWith('http')) return;
+  if (
+    url.origin.includes('firestore.googleapis.com') ||
+    url.origin.includes('identitytoolkit') ||
+    url.origin.includes('googleapis.com') ||
+    url.origin.includes('emailjs.com')
+  ) {
+    return;
+  }
+
+  // Always network-first for HTML navigations so fresh index.html & hashed assets load cleanly
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        return networkResponse;
-      }).catch(() => {
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
-        }
-      });
+      if (cachedResponse) return cachedResponse;
+      return fetch(event.request);
     })
   );
 });

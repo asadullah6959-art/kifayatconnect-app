@@ -159,17 +159,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     : (appSettings.appName || translate('en', 'appTitleShort'));
 
   return (
-    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#090D16] overflow-hidden overscroll-none touch-pan-y">
+    <div className="w-full h-full flex flex-col select-none text-slate-300 bg-[#021B14] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
-        <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#D4AF37]/30 bg-[#111726] shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
+        <div className="md:hidden flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-[#D4AF37]/30 bg-[#042920] shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)]">
           <div className="flex items-center gap-2.5">
             <BrandEmblem3D size="xs" />
             <div>
               <span className="font-extrabold text-sm kc-gold-gradient-text block leading-tight">
                 {appDisplayName}
               </span>
-              <span className="text-[10px] text-emerald-400 font-medium">
+              <span className="text-[10px] text-emerald-300 font-medium">
                 {translate(language, 'tagline')}
               </span>
             </div>
@@ -178,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#161F33] transition-colors cursor-pointer kc-pressable"
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#064E3B] transition-colors cursor-pointer kc-pressable"
           >
             <X className="w-5 h-5 text-[#F5D061]" />
           </button>
@@ -186,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       )}
 
       {/* Role & Jurisdiction Card */}
-      <div className="p-4 border-b border-[#D4AF37]/25 bg-gradient-to-b from-[#141B2D] to-[#0E1422] shrink-0 space-y-2 shadow-[inset_0_1px_0_rgba(252,227,138,0.1)]">
+      <div className="p-4 border-b border-[#D4AF37]/30 bg-gradient-to-b from-[#064E3B]/55 to-[#022C22] shrink-0 space-y-2 shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
         <div className="flex items-center justify-between gap-2">
           <RoleBadge
             role={currentUser.role}
@@ -244,9 +244,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       </div>
 
       {/* Footer Install Widget */}
-      <div className="p-3 border-t border-[#D4AF37]/25 bg-[#111726] space-y-2 shrink-0">
+      <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#D4AF37]/30 bg-[#021D15] space-y-2 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold text-slate-400">
+          <span className="text-[10px] font-semibold text-emerald-200/75">
             {language === 'ur' ? 'موبائل ایپ' : 'Mobile & PWA App'}
           </span>
           <PWAInstallButton compact />

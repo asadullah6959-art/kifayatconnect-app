@@ -8,13 +8,15 @@
 }
 
 :root {
-  --kc-bg: #090D16;
-  --kc-surface: #111726;
-  --kc-surface-elevated: #161F33;
+  --kc-bg: #021B14;
+  --kc-surface: #042920;
+  --kc-surface-elevated: #063B2E;
   --kc-border: rgba(212, 175, 55, 0.42);
   --kc-accent: #D4AF37;
-  --kc-emerald: #042920;
-  --kc-emerald-elevated: #063B2E;
+  --kc-gold-bright: #F59E0B;
+  --kc-emerald: #064E3B;
+  --kc-emerald-deep: #022C22;
+  --kc-emerald-elevated: #065F46;
 }
 
 html,
@@ -23,6 +25,11 @@ body,
   overflow-x: hidden;
   width: 100%;
   max-width: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -42,11 +49,12 @@ main,
 }
 
 html,
-body {
+body,
+#root {
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--kc-bg);
+  background-color: var(--kc-bg, #021B14);
   color: #f8fafc;
 }
 
@@ -60,7 +68,25 @@ body {
   font-family: 'Noto Nastaliq Urdu', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* Luxury Metallic Gold & 3D GPU-Accelerated Utilities (transform & opacity only) */
+/* Edge-to-Edge Safe-Area Inset Helpers */
+.kc-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.kc-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Crisp Retina SVG & Tabular Figure Support */
+svg {
+  shape-rendering: geometricPrecision;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ultra-HD 60FPS GPU-Accelerated Animations (transform & opacity ONLY) */
 @keyframes kcShimmer {
   0% {
     transform: translateX(-140%) skewX(-20deg);
@@ -108,7 +134,7 @@ body {
 }
 
 .kc-animate-tilt-3d {
-  animation: kcTilt3D 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: kcTilt3D 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
@@ -118,80 +144,83 @@ body {
 }
 
 .kc-gold-gradient-text {
-  background: linear-gradient(135deg, #FCE38A 0%, #D4AF37 50%, #9E7322 100%);
+  background: linear-gradient(135deg, #FCE38A 0%, #F59E0B 45%, #D4AF37 78%, #A17419 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .kc-gold-button {
-  background: linear-gradient(135deg, #FCE38A 0%, #D4AF37 45%, #8A6218 100%);
-  color: #090D16;
-  border: 1px solid rgba(252, 227, 138, 0.65);
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.32), inset 0 1px 0 rgba(255, 251, 235, 0.6);
-  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), filter 140ms ease;
+  background: linear-gradient(135deg, #FCE38A 0%, #F59E0B 38%, #D4AF37 72%, #8A6218 100%);
+  color: #021B14;
+  border: 1px solid rgba(252, 227, 138, 0.72);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 251, 235, 0.65);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
+  will-change: transform, opacity;
 }
 
 .kc-gold-button:hover {
-  filter: brightness(1.06);
+  opacity: 0.96;
 }
 
 .kc-gold-button:active {
   transform: scale(0.985);
 }
 
+/* Signature Emerald Green & Royal Gold Glassmorphic Banking Surfaces (60FPS zero-blur-lag) */
 .kc-obsidian-card {
-  background: linear-gradient(180deg, #141B2D 0%, #0E1422 100%);
-  border: 1px solid rgba(212, 175, 55, 0.34);
+  background: linear-gradient(165deg, rgba(6, 78, 59, 0.38) 0%, rgba(3, 36, 27, 0.95) 48%, rgba(2, 22, 16, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.36);
   box-shadow:
-    0 14px 36px -8px rgba(0, 0, 0, 0.72),
-    0 4px 12px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(252, 227, 138, 0.14);
-}
-
-.kc-luxury-modal {
-  background: linear-gradient(180deg, #141B2D 0%, #0B101C 100%);
-  border: 1px solid rgba(212, 175, 55, 0.45);
-  box-shadow:
-    0 24px 60px -12px rgba(0, 0, 0, 0.88),
-    0 0 0 1px rgba(212, 175, 55, 0.12),
-    inset 0 1px 0 rgba(252, 227, 138, 0.22);
-}
-
-.kc-emerald-panel {
-  background: linear-gradient(135deg, #063B2E 0%, #042920 65%, #031F18 100%);
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  box-shadow:
-    0 12px 28px -6px rgba(0, 0, 0, 0.65),
+    0 12px 30px -8px rgba(0, 0, 0, 0.72),
+    0 3px 10px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(252, 227, 138, 0.16);
 }
 
+.kc-luxury-modal {
+  background: linear-gradient(170deg, rgba(6, 78, 59, 0.44) 0%, #03241B 42%, #021610 100%);
+  border: 1px solid rgba(212, 175, 55, 0.48);
+  box-shadow:
+    0 24px 56px -12px rgba(0, 0, 0, 0.88),
+    0 0 0 1px rgba(212, 175, 55, 0.14),
+    inset 0 1px 0 rgba(252, 227, 138, 0.24);
+}
+
+.kc-emerald-panel {
+  background: linear-gradient(135deg, #064E3B 0%, #043927 58%, #022C22 100%);
+  border: 1px solid rgba(212, 175, 55, 0.44);
+  box-shadow:
+    0 12px 28px -6px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(252, 227, 138, 0.18);
+}
+
 .kc-luxury-input {
-  background-color: #090D16;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  background-color: #021912;
+  border: 1px solid rgba(212, 175, 55, 0.34);
   color: #f8fafc;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, opacity 150ms ease;
 }
 
 .kc-luxury-input::placeholder {
-  color: #64748b;
+  color: #6ee7b780;
 }
 
 .kc-luxury-input:focus {
   outline: none;
-  border-color: #F5D061;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(212, 175, 55, 0.18);
+  border-color: #F59E0B;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
 .kc-tab-shell {
-  background-color: #090D16;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  background-color: #021D15;
+  border: 1px solid rgba(212, 175, 55, 0.34);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.48);
 }
 
 .kc-pressable {
   transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
+  will-change: transform, opacity;
 }
 
 .kc-pressable:active {
@@ -290,11 +319,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.28);
+  background: rgba(212, 175, 55, 0.32);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.55);
+  background: rgba(245, 158, 11, 0.58);
 }
 
 /* Print to PDF Brand Formatting */

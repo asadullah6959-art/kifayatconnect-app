@@ -132,6 +132,13 @@ function readStorage<T>(key: string, fallback: T): T {
     if (!raw) return fallback;
     return JSON.parse(raw) as T;
   } catch {
+    try {
+      if (key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.CURRENT_USER_ID) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
     return fallback;
   }
 }
@@ -570,34 +577,34 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<string, string>> = {
   OBSIDIAN_GOLD: {
-    '--kc-bg': '#0A0D12',
-    '--kc-surface': '#111622',
-    '--kc-surface-elevated': '#161D2C',
-    '--kc-border': 'rgba(212, 175, 55, 0.25)',
+    '--kc-bg': '#021B14',
+    '--kc-surface': '#042920',
+    '--kc-surface-elevated': '#063B2E',
+    '--kc-border': 'rgba(212, 175, 55, 0.36)',
     '--kc-accent': '#D4AF37',
-    '--kc-emerald': '#043927'
+    '--kc-emerald': '#064E3B'
   },
   EMERALD_GOLD: {
-    '--kc-bg': '#06130F',
-    '--kc-surface': '#0B1F18',
-    '--kc-surface-elevated': '#102B22',
-    '--kc-border': 'rgba(212, 175, 55, 0.3)',
+    '--kc-bg': '#022C22',
+    '--kc-surface': '#064E3B',
+    '--kc-surface-elevated': '#08634B',
+    '--kc-border': 'rgba(245, 158, 11, 0.4)',
     '--kc-accent': '#F5D061',
     '--kc-emerald': '#065F46'
   },
   MIDNIGHT_ROYAL: {
-    '--kc-bg': '#070B16',
-    '--kc-surface': '#0F172A',
-    '--kc-surface-elevated': '#17233E',
-    '--kc-border': 'rgba(212, 175, 55, 0.25)',
+    '--kc-bg': '#041A18',
+    '--kc-surface': '#082B28',
+    '--kc-surface-elevated': '#0C3B36',
+    '--kc-border': 'rgba(212, 175, 55, 0.34)',
     '--kc-accent': '#EAB308',
-    '--kc-emerald': '#043927'
+    '--kc-emerald': '#064E3B'
   },
   IMPERIAL_ONYX: {
-    '--kc-bg': '#08080A',
-    '--kc-surface': '#121216',
-    '--kc-surface-elevated': '#1B1B21',
-    '--kc-border': 'rgba(245, 208, 97, 0.28)',
+    '--kc-bg': '#031712',
+    '--kc-surface': '#06261E',
+    '--kc-surface-elevated': '#09382C',
+    '--kc-border': 'rgba(245, 208, 97, 0.36)',
     '--kc-accent': '#D4AF37',
     '--kc-emerald': '#064E3B'
   }

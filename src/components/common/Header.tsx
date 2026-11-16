@@ -96,10 +96,10 @@ export const Header: React.FC<HeaderProps> = ({
     currentUser.photoUrl ||
     currentUser.avatarUrl ||
     currentUser.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=043927&color=F5D061&size=64`;
+    '';
 
   return (
-    <header className="shrink-0 z-30 w-full max-w-[100vw] box-border px-[10px] py-[8px] sm:px-4 md:px-6 sm:py-2.5 flex items-center justify-between gap-[6px] sm:gap-3 md:gap-5 bg-[#090D16] border-b border-[#D4AF37]/35 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(212,175,55,0.12)]">
+    <header className="shrink-0 z-30 w-full max-w-[100vw] box-border px-[10px] pt-[max(0.5rem,env(safe-area-inset-top))] pb-[8px] sm:px-4 md:px-6 sm:pt-[max(0.625rem,env(safe-area-inset-top))] sm:pb-2.5 flex items-center justify-between gap-[6px] sm:gap-3 md:gap-5 bg-gradient-to-b from-[#043026] to-[#021D16] border-b border-[#D4AF37]/40 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(212,175,55,0.16)]">
       {/* Zone 1: Mobile Hamburger & Compact 3D Brand Emblem */}
       <div className="flex items-center gap-[6px] sm:gap-3 flex-1 xl:flex-initial min-w-0 overflow-hidden">
         <button
@@ -293,7 +293,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Account Menu"
             className="flex items-center gap-1.5 p-0.5 sm:p-1 rounded-full lg:rounded-xl bg-[#111726] hover:bg-[#161F33] transition-all text-start cursor-pointer border border-[#D4AF37]/45 shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
           >
-            {!avatarFailed ? (
+            {avatarSrc && !avatarFailed ? (
               <img
                 src={avatarSrc}
                 alt={currentUser.name}
@@ -301,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#D4AF37]/60 shrink-0"
               />
             ) : (
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#043927] text-[#F5D061] flex items-center justify-center border border-[#D4AF37]/60 shrink-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#064E3B] text-[#F5D061] flex items-center justify-center border border-[#D4AF37]/60 shrink-0">
                 <UserIcon className="w-4 h-4" />
               </div>
             )}

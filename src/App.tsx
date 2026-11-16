@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { AuthWelcomeGate } from './components/auth/AuthWelcomeGate';
-import { SplashScreen } from './components/common/SplashScreen';
 import { BrandEmblem3D } from './components/common/BrandEmblem3D';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -78,7 +78,9 @@ const MainLayout: React.FC = () => {
     jumpToMemberApproval
   } = useApp();
 
-  const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
@@ -86,7 +88,7 @@ const MainLayout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const prevSignedInRef = React.useRef<boolean>(Boolean(currentUser));
-  React.useEffect(() => {
+  useEffect(() => {
     const isNowSignedIn = Boolean(currentUser);
     if (!prevSignedInRef.current && isNowSignedIn) {
       setIsRegisterModalOpen(false);
@@ -95,22 +97,16 @@ const MainLayout: React.FC = () => {
     prevSignedInRef.current = isNowSignedIn;
   }, [currentUser]);
 
-  const handleSplashFinish = useCallback(() => {
-    setShowSplash(false);
-  }, []);
+  // Keep HashRouter URL cleanly synchronized with activeTab without disrupting state navigation
+  useEffect(() => {
+    if (!currentUser) return;
+    const expectedPath = `/${activeTab || 'dashboard'}`;
+    if (location.pathname !== expectedPath) {
+      navigate(expectedPath, { replace: true });
+    }
+  }, [activeTab, currentUser, location.pathname, navigate]);
 
-  if (showSplash) {
-    return (
-      <SplashScreen
-        appName={appSettings.appName}
-        tagline={language === 'ur' ? appSettings.taglineUr : appSettings.tagline}
-        language={language}
-        onFinish={handleSplashFinish}
-      />
-    );
-  }
-
-  // Signed-out gate
+  // Signed-out gate (Instant Non-Blocking Boot within <100ms)
   if (!currentUser) {
     return (
       <>
@@ -127,10 +123,10 @@ const MainLayout: React.FC = () => {
   if (appSettings.maintenanceMode && currentUser.role !== 'SUPER_ADMIN') {
     return (
       <div
-        className="min-h-[100dvh] w-full text-white flex flex-col items-center justify-center p-6 text-center"
+        className="min-h-[100dvh] w-full text-white flex flex-col items-center justify-center p-6 kc-safe-top kc-safe-bottom text-center"
         style={{
-          backgroundColor: '#090D16',
-          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08), transparent 55%), radial-gradient(circle at 15% 85%, rgba(4, 41, 32, 0.35), transparent 50%)'
+          backgroundColor: '#021B14',
+          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1), transparent 55%), radial-gradient(circle at 15% 85%, rgba(6, 78, 59, 0.55), transparent 52%)'
         }}
       >
         <div className="max-w-md w-full kc-luxury-modal rounded-2xl p-6 sm:p-8 space-y-5">
@@ -222,11 +218,11 @@ const MainLayout: React.FC = () => {
 
   return (
     <div
-      className="h-[100vh] h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-slate-100"
+      className="h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-slate-100"
       style={{
-        backgroundColor: 'var(--kc-bg, #090D16)',
+        backgroundColor: 'var(--kc-bg, #021B14)',
         backgroundImage:
-          'radial-gradient(circle at 82% 8%, rgba(212, 175, 55, 0.06), transparent 42%), radial-gradient(circle at 12% 88%, rgba(4, 41, 32, 0.28), transparent 48%)'
+          'radial-gradient(circle at 82% 6%, rgba(212, 175, 55, 0.09), transparent 44%), radial-gradient(circle at 12% 88%, rgba(6, 78, 59, 0.45), transparent 54%)'
       }}
     >
       {/* Global Keyboard Shortcuts Handler */}
@@ -250,24 +246,24 @@ const MainLayout: React.FC = () => {
       <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
         {/* Desktop Docked Sidebar */}
         <aside
-          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-[#D4AF37]/20"
-          style={{ backgroundColor: 'var(--kc-surface, #111622)' }}
+          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-[#D4AF37]/25"
+          style={{ backgroundColor: 'var(--kc-surface, #042920)' }}
         >
           <Sidebar />
         </aside>
 
-        {/* Mobile Sidebar Overlay (zero blur) */}
+        {/* Mobile Sidebar Overlay (zero blur for 60FPS mobile performance) */}
         <div className="md:hidden overscroll-none touch-pan-y">
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-[#0A0D12]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
+            className={`fixed inset-0 bg-[#021B14]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
           />
 
           <aside
-            className={`fixed inset-y-0 left-0 border-r z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/25 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
+            className={`fixed inset-y-0 left-0 border-r z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/30 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
               isMobileSidebarOpen
                 ? 'translate-x-0 pointer-events-auto'
                 : '-translate-x-full pointer-events-none'
@@ -332,10 +328,10 @@ const MainLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Fixed Mobile Bottom Navigation Bar */}
+      {/* Fixed Mobile Bottom Navigation Bar with Android Gesture Safe-Area Inset */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-[#090D16] border-t border-[#D4AF37]/40 px-1.5 py-1.5 z-30 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(252,227,138,0.14)]"
+        className="md:hidden shrink-0 w-full max-w-full bg-gradient-to-t from-[#021912] to-[#042920] border-t border-[#D4AF37]/40 px-1.5 pt-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(252,227,138,0.16)]"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -348,16 +344,16 @@ const MainLayout: React.FC = () => {
                 setActiveTab(tab.id);
                 setIsMobileSidebarOpen(false);
               }}
-              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-all cursor-pointer kc-pressable ${
+              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-transform cursor-pointer kc-pressable ${
                 isActive
-                  ? 'text-[#F5D061] bg-[#042920] border border-[#D4AF37]/50 shadow-[0_4px_12px_rgba(212,175,55,0.18),inset_0_1px_0_rgba(252,227,138,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  ? 'text-[#F5D061] bg-[#064E3B] border border-[#D4AF37]/55 shadow-[0_4px_12px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(252,227,138,0.22)]'
+                  : 'text-emerald-100/70 hover:text-white border border-transparent'
               }`}
             >
               <div className="relative">
                 <Icon className="w-4 h-4 mb-0.5" />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#090D16] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#021B14] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
                     {tab.badge > 9 ? '9+' : tab.badge}
                   </span>
                 ) : null}
@@ -459,8 +455,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <ErrorBoundary isRoot>
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
