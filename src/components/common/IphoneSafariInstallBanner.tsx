@@ -34,25 +34,25 @@ export const IphoneSafariInstallBanner: React.FC<{ language: 'en' | 'ur' }> = ({
     <div
       role="region"
       aria-label={language === 'ur' ? 'آئی فون انسٹال گائیڈ' : 'iPhone Install Guide'}
-      className="relative w-full rounded-2xl p-3 sm:p-3.5 border-[1.5px] border-[#D4AF37] shadow-[0_10px_28px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(253,224,71,0.24)] text-white"
+      className="relative w-full rounded-2xl p-3 sm:p-3.5 border border-[#38BDF8]/40 shadow-[0_10px_28px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(56,189,248,0.18)] text-[#F8FAFC]"
       style={{
-        background: 'linear-gradient(135deg, #022C22 0%, #064E3B 58%, #022C22 100%)',
+        background: 'linear-gradient(135deg, #131C31 0%, #1E293B 58%, #0F172A 100%)',
       }}
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex items-start gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-[#021B14] border border-[#D4AF37]/70 flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
-            <Smartphone className="w-4 h-4 text-[#FDE047]" />
+          <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#38BDF8]/45 flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
+            <Smartphone className="w-4 h-4 text-[#38BDF8]" />
           </div>
           <div className="min-w-0 space-y-1 text-[11px] leading-snug">
-            <div className="flex items-center gap-1.5 flex-wrap font-extrabold text-[#FDE047]">
-              <Share className="w-3.5 h-3.5 shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap font-extrabold text-[#F5D061]">
+              <Share className="w-3.5 h-3.5 shrink-0 text-[#38BDF8]" />
               <span>
                 Install on iPhone: Tap Share (↑) then &apos;Add to Home Screen&apos;
               </span>
-              <PlusSquare className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+              <PlusSquare className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
             </div>
-            <p className="font-bold text-emerald-100 font-urdu-auto" dir="rtl">
+            <p className="font-bold text-[#F8FAFC] font-urdu-auto" dir="rtl">
               آئی فون پر انسٹال کریں: شیئر (↑) دبائیں اور &apos;Add to Home Screen&apos; منتخب کریں
             </p>
           </div>
@@ -62,7 +62,7 @@ export const IphoneSafariInstallBanner: React.FC<{ language: 'en' | 'ur' }> = ({
           type="button"
           onClick={handleDismiss}
           aria-label={language === 'ur' ? 'بند کریں' : 'Dismiss'}
-          className="p-1.5 rounded-lg bg-[#021B14]/80 hover:bg-[#021B14] border border-[#D4AF37]/40 text-slate-300 hover:text-[#FDE047] shrink-0 cursor-pointer kc-pressable"
+          className="p-1.5 rounded-lg bg-[#090D16]/85 hover:bg-[#090D16] border border-slate-400/25 text-[#94A3B8] hover:text-[#F8FAFC] shrink-0 cursor-pointer kc-pressable"
         >
           <X className="w-3.5 h-3.5" />
         </button>

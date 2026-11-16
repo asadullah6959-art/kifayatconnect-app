@@ -416,7 +416,7 @@ export const GlobalSearchBar: React.FC = () => {
                           className="kc-pressable w-full text-left p-2 rounded-xl hover:bg-[#161F33] transition-colors flex items-center justify-between cursor-pointer"
                         >
                           <div className="flex items-center gap-2.5 truncate">
-                            <div className="w-7 h-7 rounded-full bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] font-bold flex items-center justify-center text-xs shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-[#131C31] border border-[#38BDF8]/40 text-[#38BDF8] font-bold flex items-center justify-center text-xs shrink-0">
                               {member.name.charAt(0)}
                             </div>
                             <div className="truncate">
@@ -465,7 +465,7 @@ export const GlobalSearchBar: React.FC = () => {
                                 </span>
                                 <span className={`text-[9px] font-semibold px-1.5 rounded border ${
                                   tx.status === 'VERIFIED'
-                                    ? 'bg-[#042920] text-emerald-300 border-emerald-500/45'
+                                    ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45'
                                     : 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45'
                                 }`}>
                                   {tx.status}

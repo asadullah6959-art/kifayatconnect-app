@@ -101,20 +101,20 @@ export const Header: React.FC<HeaderProps> = ({
     '';
 
   return (
-    <header className="shrink-0 z-30 w-full max-w-[100vw] box-border px-[10px] pt-[max(0.5rem,env(safe-area-inset-top))] pb-[8px] sm:px-4 md:px-6 sm:pt-[max(0.625rem,env(safe-area-inset-top))] sm:pb-2.5 flex items-center justify-between gap-[6px] sm:gap-3 md:gap-5 bg-gradient-to-b from-[#043026] to-[#021D16] border-b border-[#D4AF37]/40 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(212,175,55,0.16)]">
+    <header className="shrink-0 z-40 w-full max-w-[100vw] box-border px-2.5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2 sm:px-4 md:px-6 sm:pt-[calc(env(safe-area-inset-top,12px)+10px)] sm:pb-2.5 flex items-center justify-between gap-1.5 sm:gap-3 md:gap-5 bg-gradient-to-b from-[#131C31] via-[#0F172A] to-[#090D16] border-b border-slate-400/20 text-[#F8FAFC] shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(56,189,248,0.16)]">
       {/* Zone 1: Mobile Hamburger & Compact 3D Brand Emblem */}
-      <div className="flex items-center gap-[6px] sm:gap-3 flex-1 xl:flex-initial min-w-0 overflow-hidden">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-1 xl:flex-initial min-w-0 overflow-hidden">
         <button
           type="button"
           onClick={onToggleSidebar}
           aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isSidebarOpen}
-          className="md:hidden p-1.5 rounded-xl text-[#F5D061] hover:bg-[#161D2C] transition-colors cursor-pointer flex items-center justify-center border border-[#D4AF37]/30 shrink-0"
+          className="md:hidden relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] p-2 rounded-xl text-[#38BDF8] bg-[#131C31] hover:bg-[#1E293B] transition-colors cursor-pointer flex items-center justify-center border border-slate-400/20 shrink-0 kc-pressable"
         >
           {isSidebarOpen ? (
-            <X className="w-4 h-4 text-[#F5D061]" />
+            <X className="w-5 h-5 text-[#F5D061]" />
           ) : (
-            <Menu className="w-4 h-4 text-[#F5D061]" />
+            <Menu className="w-5 h-5 text-[#38BDF8]" />
           )}
         </button>
 
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[14px] sm:text-base md:text-lg font-extrabold tracking-tight kc-gold-gradient-text leading-tight truncate block">
               {displayAppName}
             </span>
-            <span className="text-[9px] sm:text-[10px] text-emerald-400 font-semibold tracking-wide truncate block">
+            <span className="text-[9px] sm:text-[10px] text-[#38BDF8] font-semibold tracking-wide truncate block">
               {displayTagline}
             </span>
           </div>
@@ -251,11 +251,11 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={toggleLanguage}
-          className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-bold text-[#F5D061] bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/40 rounded-full sm:rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
+          className="relative z-50 min-h-[44px] sm:min-h-[48px] flex items-center gap-1 px-2.5 py-1.5 sm:px-3 text-[11px] sm:text-xs font-bold text-[#F5D061] bg-[#131C31] hover:bg-[#1E293B] border border-slate-400/20 rounded-full sm:rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           title="Switch Language (English / اردو)"
           aria-label="Switch Language"
         >
-          <Languages className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+          <Languages className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
           <span>{language === 'en' ? 'اردو' : 'EN'}</span>
         </button>
 
@@ -263,13 +263,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={onOpenNotifications}
-          className="relative p-1.5 sm:p-2 text-slate-200 hover:text-[#F5D061] bg-[#111726] hover:bg-[#161F33] rounded-xl transition-all shrink-0 cursor-pointer border border-[#D4AF37]/40 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
+          className="relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] flex items-center justify-center p-2 text-slate-200 hover:text-[#38BDF8] bg-[#131C31] hover:bg-[#1E293B] rounded-xl transition-all shrink-0 cursor-pointer border border-slate-400/20 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           title={translate(language, 'notifications')}
           aria-label={translate(language, 'notifications')}
         >
           <Bell className="w-4 h-4 text-[#F5D061]" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#090D16] bg-[#F5D061] rounded-full shadow-xs tabular-nums">
+            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#090D16] bg-[#38BDF8] rounded-full shadow-xs tabular-nums">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
             </span>
           )}
@@ -279,21 +279,21 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => setSelectedCardUser(currentUser)}
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl kc-gold-button cursor-pointer shrink-0"
+          className="hidden md:inline-flex relative z-50 min-h-[48px] items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl kc-gold-button cursor-pointer shrink-0"
         >
           <IdCard className="w-3.5 h-3.5" />
           <span>{translate(language, 'viewDigitalId')}</span>
         </button>
 
         {/* 3. Account / Profile Menu Button + Safe-Bound Dropdown */}
-        <div className="relative shrink-0" ref={profileMenuRef}>
+        <div className="relative z-50 shrink-0" ref={profileMenuRef}>
           <button
             type="button"
             onClick={() => setShowProfileMenu(prev => !prev)}
             aria-expanded={showProfileMenu}
             aria-haspopup="menu"
             aria-label="Account Menu"
-            className="flex items-center gap-1.5 p-0.5 sm:p-1 rounded-full lg:rounded-xl bg-[#111726] hover:bg-[#161F33] transition-all text-start cursor-pointer border border-[#D4AF37]/45 shrink-0 shadow-[inset_0_1px_0_rgba(252,227,138,0.14)] kc-pressable"
+            className="min-w-[44px] min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 p-1 rounded-full lg:rounded-xl bg-[#131C31] hover:bg-[#1E293B] transition-all text-start cursor-pointer border border-slate-400/20 shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           >
             {avatarSrc && !avatarFailed ? (
               <img
@@ -303,7 +303,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#D4AF37]/60 shrink-0"
               />
             ) : (
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#064E3B] text-[#F5D061] flex items-center justify-center border border-[#D4AF37]/60 shrink-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1E293B] text-[#38BDF8] flex items-center justify-center border border-[#38BDF8]/40 shrink-0">
                 <UserIcon className="w-4 h-4" />
               </div>
             )}
@@ -395,7 +395,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setShowProfileMenu(false);
                   await triggerShareForIphone();
                 }}
-                className="mx-2 my-1 w-[calc(100%-16px)] flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#022C22] via-[#064E3B] to-[#022C22] border border-[#D4AF37]/75 hover:border-[#FDE047] text-[#FDE047] text-start cursor-pointer font-bold shadow-[0_4px_12px_rgba(2,44,34,0.55)] kc-pressable"
+                className="mx-2 my-1 w-[calc(100%-16px)] flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#131C31] via-[#1E293B] to-[#0F172A] border border-[#38BDF8]/50 hover:border-[#FDE047] text-[#38BDF8] hover:text-[#FDE047] text-start cursor-pointer font-bold shadow-[0_4px_12px_rgba(14,165,233,0.22)] kc-pressable"
               >
                 <Share2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
                 <span className="leading-snug">

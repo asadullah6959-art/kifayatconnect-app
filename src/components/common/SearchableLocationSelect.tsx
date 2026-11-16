@@ -186,8 +186,8 @@ export const SearchableLocationSelect: React.FC<SearchableLocationSelectProps> =
                           }}
                           className={`w-full px-3 py-2 text-left rounded-xl flex items-center justify-between gap-2 text-xs kc-pressable cursor-pointer ${
                             isSelected
-                              ? 'bg-[#042920] border border-[#D4AF37]/50 text-[#F5D061] font-bold'
-                              : 'hover:bg-[#1A233A] text-slate-200 border border-transparent'
+                              ? 'bg-[#131C31] border border-[#38BDF8]/50 text-[#38BDF8] font-bold'
+                              : 'hover:bg-[#1E293B] text-[#F8FAFC] border border-transparent'
                           }`}
                         >
                           <div className="min-w-0">

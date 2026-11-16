@@ -418,8 +418,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
         ) : step === 1 ? (
           /* STEP 1: One-Time Email Verification via Working 6-Digit EmailJS OTP */
           <div className="space-y-4">
-            <div className="p-2.5 rounded-xl bg-[#043927]/45 border border-emerald-500/35 text-[11px] text-emerald-200 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#38BDF8] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0" />
               <span>{translate(language, 'oneTimeOtpBadge')}</span>
             </div>
             {otpError && (
@@ -679,7 +679,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   type="email"
                   readOnly
                   value={email}
-                  className="w-full px-3 py-2 border border-emerald-500/40 rounded-xl bg-[#043927]/30 text-xs text-emerald-300"
+                  className="w-full px-3 py-2 border border-[#38BDF8]/40 rounded-xl bg-[#131C31] text-xs text-[#38BDF8]"
                 />
               </div>
             </div>

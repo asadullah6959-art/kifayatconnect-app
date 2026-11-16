@@ -257,7 +257,7 @@ export const FundsAndPayments: React.FC = () => {
   const renderStatusPill = (status: PaymentTransaction['status']) => {
     if (status === 'VERIFIED') {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#042920] text-emerald-300 border border-emerald-500/45">
+        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45">
           <CheckCircle2 className="w-3 h-3" />
           {isUr ? 'منظور شدہ ✓' : 'Approved ✓'}
         </span>
@@ -586,9 +586,9 @@ export const FundsAndPayments: React.FC = () => {
                         <>
                           <button
                             onClick={() => verifyPayment(tx.id, true)}
-                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded-md font-bold cursor-pointer"
+                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded-md font-bold cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3 h-3 text-emerald-300" />
+                            <CheckCircle2 className="w-3 h-3 text-[#F8FAFC]" />
                             <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                           </button>
                           <button
@@ -696,9 +696,9 @@ export const FundsAndPayments: React.FC = () => {
                             <>
                               <button
                                 onClick={() => verifyPayment(tx.id, true)}
-                                className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#063B2E] to-[#0B664F] border border-emerald-400/50 text-white rounded font-bold transition-colors cursor-pointer"
+                                className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded font-bold transition-colors cursor-pointer"
                               >
-                                <CheckCircle2 className="w-3 h-3 text-emerald-300" />
+                                <CheckCircle2 className="w-3 h-3 text-[#F8FAFC]" />
                                 <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                               </button>
                               <button
@@ -758,7 +758,7 @@ export const FundsAndPayments: React.FC = () => {
                     step === item.num
                       ? 'bg-[#D4AF37]/20 text-[#F5D061] border-[#D4AF37]'
                       : step > item.num
-                      ? 'bg-[#042920] text-emerald-300 border-emerald-500/45'
+                      ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45'
                       : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/20'
                   }`}
                 >
@@ -968,7 +968,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isCompressing || !isPayAmountValid}
-                      className="kc-pressable flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 disabled:opacity-50 text-[#F5D061] border border-[#D4AF37]/50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
+                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 disabled:opacity-50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{isUr ? 'منظوری کے لیے جمع کروائیں' : 'Submit for Approval'}</span>

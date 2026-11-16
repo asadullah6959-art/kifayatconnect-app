@@ -144,7 +144,7 @@ export const SuperAdminDashboard: React.FC = () => {
       label: translate(language, 'actionManageRoles'),
       sub: language === 'ur' ? `${totalSuperAdmins + totalAdmins + totalCoAdmins} عملہ` : `${totalSuperAdmins + totalAdmins + totalCoAdmins} Staff`,
       icon: Crown,
-      accent: 'from-[#063B2E] to-[#0E1422] border-[#D4AF37]/45 text-emerald-300',
+      accent: 'from-[#131C31] to-[#0F172A] border-[#38BDF8]/40 text-[#38BDF8]',
       onClick: () => setActiveTab('staff')
     },
     {
@@ -542,7 +542,7 @@ export const SuperAdminDashboard: React.FC = () => {
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                           seat.status === 'ACTIVE'
-                            ? 'bg-[#042920] text-emerald-300 border border-emerald-500/30'
+                            ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35'
                             : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/30'
                         }`}
                       >

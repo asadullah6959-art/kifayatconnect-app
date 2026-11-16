@@ -219,9 +219,9 @@ export const ProfileSettings: React.FC = () => {
             onClick={() => {
               void triggerShareForIphone();
             }}
-            className="kc-pressable flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl border-[1.5px] border-[#D4AF37] text-[#FDE047] shadow-[0_6px_18px_rgba(2,44,34,0.55),inset_0_1px_0_rgba(253,224,71,0.22)] hover:brightness-110 transition-all cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl border border-[#38BDF8]/55 text-[#38BDF8] hover:text-[#FDE047] hover:border-[#FDE047] shadow-[0_6px_18px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(56,189,248,0.18)] hover:brightness-110 transition-all cursor-pointer"
             style={{
-              background: 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)',
+              background: 'linear-gradient(135deg, #131C31 0%, #1E293B 55%, #0F172A 100%)',
             }}
           >
             <Share2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
@@ -233,9 +233,9 @@ export const ProfileSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-[#F5D061] text-xs font-bold rounded-xl border border-[#D4AF37]/45 shadow-md transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#131C31] hover:bg-[#1E293B] text-[#F5D061] text-xs font-bold rounded-xl border border-slate-400/20 shadow-md transition-colors cursor-pointer"
           >
-            <IdCard className="w-3.5 h-3.5 text-[#F5D061]" />
+            <IdCard className="w-3.5 h-3.5 text-[#38BDF8]" />
             <span>{t('viewDigitalId')}</span>
           </button>
         </div>
@@ -246,13 +246,13 @@ export const ProfileSettings: React.FC = () => {
         style={
           isFaizKhelUser(currentUser)
             ? {
-                background: 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)',
-                boxShadow: '0 10px 28px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(253, 224, 71, 0.24)',
+                background: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)',
+                boxShadow: '0 10px 28px rgba(212, 175, 55, 0.28), 0 0 16px rgba(253, 224, 71, 0.16), inset 0 1px 0 rgba(254, 240, 138, 0.34)',
               }
             : undefined
         }
-        className={`p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-          isFaizKhelUser(currentUser) ? 'border-[1.5px] border-[#D4AF37]' : 'kc-obsidian-card'
+        className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+          isFaizKhelUser(currentUser) ? 'border-[1.5px] border-[#FDE047]' : 'kc-obsidian-card'
         }`}
       >
         <div className="flex items-center gap-4">
@@ -261,14 +261,22 @@ export const ProfileSettings: React.FC = () => {
               <img
                 src={avatarUrl}
                 alt={currentUser.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#D4AF37]/80"
+                className={`w-16 h-16 rounded-2xl object-cover border-2 ${
+                  isFaizKhelUser(currentUser) ? 'border-[#FDE047]' : 'border-[#38BDF8]/65'
+                }`}
               />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-[#042920] text-[#F5D061] flex items-center justify-center font-bold text-2xl border-2 border-[#D4AF37]/70">
+              <div
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl border-2 ${
+                  isFaizKhelUser(currentUser)
+                    ? 'bg-[#1C1404] text-[#FEF08A] border-[#FDE047]'
+                    : 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/55'
+                }`}
+              >
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <label className="kc-pressable absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center cursor-pointer shadow-md border-2 border-[#111726]">
+            <label className="kc-pressable absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center cursor-pointer shadow-md border-2 border-[#0F172A]">
               <Camera className="w-3.5 h-3.5" />
               <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
             </label>
@@ -276,8 +284,8 @@ export const ProfileSettings: React.FC = () => {
 
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-4 h-4" />}
-              <h2 className={`text-base font-bold truncate ${isFaizKhelUser(currentUser) ? 'text-[#FDE047]' : 'text-white'}`}>
+              {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-6 h-6" />}
+              <h2 className={`text-base font-bold truncate ${isFaizKhelUser(currentUser) ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
                 {currentUser.name}
               </h2>
             </div>
@@ -287,15 +295,15 @@ export const ProfileSettings: React.FC = () => {
               </p>
               <TabbarBadge user={currentUser} language={language} compact />
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-[#94A3B8]">
               {language === 'ur' ? 'تصویر اپ لوڈ کرنے کے لیے کیمرہ دبائیں' : 'Tap the camera icon to upload a compressed profile photo'}
             </p>
             {avatarError && <p className="text-[11px] text-rose-400 mt-1">{avatarError}</p>}
           </div>
         </div>
 
-        <div className="kc-emerald-panel flex items-start gap-2 p-3 rounded-xl text-[11px] text-emerald-200 max-w-xs">
-          <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+        <div className="kc-emerald-panel flex items-start gap-2 p-3 rounded-xl text-[11px] text-[#F8FAFC] max-w-xs">
+          <Lock className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
           <span>
             {language === 'ur'
               ? 'شناختی کارڈ اور ممبرشپ آئی ڈی آڈٹ کے تحت محفوظ اور قیادت سے تصدیق شدہ ہیں۔'

@@ -532,12 +532,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
             {activeAuthMethod === 'PASSWORD' && allowPasswordLogin && (
               <form onSubmit={handlePasswordSignIn} className="mt-4 space-y-3">
                 {needsDirectPwdSetup && (
-                  <div className="p-3 rounded-xl bg-[#043927]/50 border border-emerald-500/45 text-emerald-200 text-xs space-y-1">
+                  <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F8FAFC] text-xs space-y-1">
                     <div className="font-bold text-[#F5D061] flex items-center gap-1.5">
                       <KeyRound className="w-3.5 h-3.5" />
                       <span>{translate(language, 'existingAccountSetPwdTitle')}</span>
                     </div>
-                    <p className="text-[11px] text-emerald-100/90 leading-relaxed">
+                    <p className="text-[11px] text-[#94A3B8] leading-relaxed">
                       {translate(language, 'existingAccountSetPwdDesc')}
                     </p>
                   </div>

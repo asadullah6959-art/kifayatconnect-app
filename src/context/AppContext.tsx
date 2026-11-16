@@ -590,36 +590,36 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<string, string>> = {
   OBSIDIAN_GOLD: {
-    '--kc-bg': '#021B14',
-    '--kc-surface': '#042920',
-    '--kc-surface-elevated': '#063B2E',
-    '--kc-border': 'rgba(212, 175, 55, 0.36)',
-    '--kc-accent': '#D4AF37',
-    '--kc-emerald': '#064E3B'
+    '--kc-bg': '#090D16',
+    '--kc-surface': '#131C31',
+    '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
+    '--kc-border': 'rgba(148, 163, 184, 0.18)',
+    '--kc-accent': '#38BDF8',
+    '--kc-emerald': '#0EA5E9'
   },
   EMERALD_GOLD: {
-    '--kc-bg': '#022C22',
-    '--kc-surface': '#064E3B',
-    '--kc-surface-elevated': '#08634B',
-    '--kc-border': 'rgba(245, 158, 11, 0.4)',
-    '--kc-accent': '#F5D061',
-    '--kc-emerald': '#065F46'
+    '--kc-bg': '#090D16',
+    '--kc-surface': '#131C31',
+    '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
+    '--kc-border': 'rgba(56, 189, 248, 0.24)',
+    '--kc-accent': '#D4AF37',
+    '--kc-emerald': '#38BDF8'
   },
   MIDNIGHT_ROYAL: {
-    '--kc-bg': '#041A18',
-    '--kc-surface': '#082B28',
-    '--kc-surface-elevated': '#0C3B36',
-    '--kc-border': 'rgba(212, 175, 55, 0.34)',
-    '--kc-accent': '#EAB308',
-    '--kc-emerald': '#064E3B'
+    '--kc-bg': '#0A0F1D',
+    '--kc-surface': '#131C31',
+    '--kc-surface-elevated': '#1E293B',
+    '--kc-border': 'rgba(148, 163, 184, 0.2)',
+    '--kc-accent': '#38BDF8',
+    '--kc-emerald': '#0EA5E9'
   },
   IMPERIAL_ONYX: {
-    '--kc-bg': '#031712',
-    '--kc-surface': '#06261E',
-    '--kc-surface-elevated': '#09382C',
-    '--kc-border': 'rgba(245, 208, 97, 0.36)',
-    '--kc-accent': '#D4AF37',
-    '--kc-emerald': '#064E3B'
+    '--kc-bg': '#090D16',
+    '--kc-surface': '#0F172A',
+    '--kc-surface-elevated': '#1E293B',
+    '--kc-border': 'rgba(212, 175, 55, 0.28)',
+    '--kc-accent': '#F59E0B',
+    '--kc-emerald': '#38BDF8'
   }
 };
 

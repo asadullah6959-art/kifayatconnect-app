@@ -389,7 +389,7 @@ export const ComplaintsManager: React.FC = () => {
 
                   <span className={`text-[10px] px-2.5 py-0.5 rounded-md font-bold uppercase shrink-0 ${
                     cmp.status === 'RESOLVED'
-                      ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
+                      ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45'
                       : cmp.status === 'UNDER_REVIEW'
                       ? 'bg-amber-500/15 text-[#F5D061] border border-[#D4AF37]/45'
                       : 'bg-rose-950/80 text-rose-300 border border-rose-500/45'
@@ -423,9 +423,9 @@ export const ComplaintsManager: React.FC = () => {
                   <div className="pt-2.5 border-t border-[#D4AF37]/20 flex justify-end">
                     <button
                       onClick={() => handleOpenResponse(cmp)}
-                      className="kc-pressable flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 border border-emerald-400/45 text-white text-xs font-bold rounded-lg shadow-md cursor-pointer"
+                      className="kc-pressable flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] hover:brightness-110 border border-[#38BDF8]/50 text-white text-xs font-bold rounded-lg shadow-md cursor-pointer"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#F8FAFC]" />
                       <span>{isUr ? 'ٹکٹ اپڈیٹ اور جواب دیں' : 'Update Ticket & Respond'}</span>
                     </button>
                   </div>
@@ -627,7 +627,7 @@ export const ComplaintsManager: React.FC = () => {
                   className="kc-luxury-input w-full text-xs p-3 rounded-xl resize-none"
                 />
                 {speech.isListening && dictationTarget === 'DESCRIPTION' && (
-                  <div className="mt-1.5 px-3 py-2 rounded-xl bg-[#042920] border border-[#D4AF37]/40 text-[11px] text-[#F5D061] flex items-center justify-between gap-2">
+                  <div className="mt-1.5 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#F5D061] flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                       <span className="truncate">

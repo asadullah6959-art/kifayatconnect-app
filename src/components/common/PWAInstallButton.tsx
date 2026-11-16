@@ -54,7 +54,7 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
   if (isInstalled) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#042920] text-emerald-300 border border-[#D4AF37]/35">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35">
         <Check className="w-3.5 h-3.5 text-[#F5D061]" />
         <span>{language === 'ur' ? 'انسٹال شدہ' : 'PWA Ready'}</span>
       </span>

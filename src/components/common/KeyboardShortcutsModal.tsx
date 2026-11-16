@@ -57,7 +57,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
       <div className="kc-luxury-modal relative w-full max-w-2xl rounded-2xl p-5 sm:p-6 my-6 text-xs">
         <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] rounded-lg">
+            <div className="p-2 bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] rounded-lg">
               <Command className="w-4 h-4" />
             </div>
             <div>

@@ -75,18 +75,18 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
       style={
         isFaizKhel
           ? {
-              background: 'linear-gradient(155deg, #022C22 0%, #064E3B 52%, #022C22 100%)',
-              boxShadow: '0 8px 26px rgba(212, 175, 55, 0.22), inset 0 1px 0 rgba(253, 224, 71, 0.28)',
+              background: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)',
+              boxShadow: '0 10px 28px rgba(212, 175, 55, 0.28), 0 0 16px rgba(253, 224, 71, 0.16), inset 0 1px 0 rgba(254, 240, 138, 0.34)',
             }
           : undefined
       }
-      className={`p-3.5 rounded-2xl space-y-2.5 transition-colors ${
+      className={`relative overflow-hidden p-3.5 rounded-2xl space-y-2.5 transition-colors ${
         isFaizKhel
-          ? 'border-[1.5px] border-[#D4AF37]'
+          ? 'border-[1.5px] border-[#FDE047]'
           : 'kc-obsidian-card'
       } ${
         isFocused
-          ? 'border-[#FDE047] ring-2 ring-[#F5D061]/45'
+          ? 'border-[#38BDF8] ring-2 ring-[#38BDF8]/45'
           : ''
       }`}
     >
@@ -100,30 +100,30 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
                 loading="lazy"
                 decoding="async"
                 className={`w-10 h-10 rounded-full object-cover ${
-                  isFaizKhel ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/40'
+                  isFaizKhel ? 'border-2 border-[#FDE047]' : 'border border-slate-400/30'
                 }`}
               />
             ) : (
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                   isFaizKhel
-                    ? 'bg-[#021B14] text-[#FDE047] border-2 border-[#D4AF37]'
-                    : 'bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40'
+                    ? 'bg-[#1C1404] text-[#FEF08A] border-2 border-[#FDE047]'
+                    : 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
                 }`}
               >
                 {member.name.charAt(0).toUpperCase()}
               </div>
             )}
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#111622] ${
+              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#090D16] ${
                 onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
               }`}
             />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
-              {isFaizKhel && <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />}
-              <span className={`font-bold text-xs truncate ${isFaizKhel ? 'text-[#FDE047]' : 'text-white'}`}>
+              {isFaizKhel && <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" />}
+              <span className={`font-bold text-xs truncate ${isFaizKhel ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
                 {member.name}
               </span>
               <span
@@ -296,10 +296,10 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
       id={`member-row-${member.id}`}
       className={`transition-colors ${
         isFocused
-          ? 'bg-[#231D0B]/70 ring-1 ring-inset ring-[#F5D061]/60'
+          ? 'bg-[#1E293B] ring-1 ring-inset ring-[#38BDF8]/60'
           : isFaizKhel
-          ? 'bg-[#022C22]/55 hover:bg-[#064E3B]/55 border-l-2 border-l-[#D4AF37]'
-          : 'hover:bg-[#1A233A]/55'
+          ? 'bg-gradient-to-r from-[#2B1F06]/85 via-[#42300A]/55 to-[#1C1404]/85 hover:from-[#362708]/90 hover:to-[#241A05]/90 border-l-2 border-l-[#FDE047]'
+          : 'hover:bg-[#1E293B]/55'
       }`}
     >
       <td className="py-3 px-4">
@@ -312,30 +312,30 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
                 loading="lazy"
                 decoding="async"
                 className={`w-8 h-8 rounded-full object-cover ${
-                  isFaizKhel ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/40'
+                  isFaizKhel ? 'border-2 border-[#FDE047]' : 'border border-slate-400/30'
                 }`}
               />
             ) : (
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
                   isFaizKhel
-                    ? 'bg-[#021B14] text-[#FDE047] border-2 border-[#D4AF37]'
-                    : 'bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40'
+                    ? 'bg-[#1C1404] text-[#FEF08A] border-2 border-[#FDE047]'
+                    : 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
                 }`}
               >
                 {member.name.charAt(0).toUpperCase()}
               </div>
             )}
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#111622] ${
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#090D16] ${
                 onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
               }`}
             />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              {isFaizKhel && <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />}
-              <span className={`font-bold ${isFaizKhel ? 'text-[#FDE047]' : 'text-white'}`}>{member.name}</span>
+              {isFaizKhel && <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" />}
+              <span className={`font-bold ${isFaizKhel ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>{member.name}</span>
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                   onlineNow
@@ -707,7 +707,7 @@ export const MemberDirectory: React.FC = () => {
             type="button"
             onClick={handleManualCloudSync}
             disabled={isSyncingDir}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#042920] border border-[#D4AF37]/40 text-[#F5D061] text-xs font-bold hover:border-[#F5D061] kc-pressable cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[#38BDF8] text-xs font-bold hover:border-[#F5D061] hover:text-[#F5D061] kc-pressable cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDir ? 'animate-spin' : ''}`} />
             <span className="tabular-nums">
@@ -875,21 +875,26 @@ export const MemberDirectory: React.FC = () => {
                     isSelected
                       ? { background: clan.gradientBg, borderColor: clan.borderColor, color: clan.textColor }
                       : isFlagship
-                      ? { background: 'linear-gradient(135deg, #022C22 0%, #043927 100%)', borderColor: 'rgba(212, 175, 55, 0.72)', color: '#FDE047' }
+                      ? { background: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)', borderColor: '#FDE047', color: '#FEF08A' }
                       : undefined
                   }
                   className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border kc-pressable cursor-pointer ${
                     isSelected
-                      ? 'ring-1 ring-[#F5D061]/60 shadow-md'
+                      ? 'ring-1 ring-[#FDE047]/65 shadow-md'
                       : isFlagship
-                      ? 'hover:border-[#FDE047]'
-                      : 'bg-[#111726] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/60'
+                      ? 'border-[1.5px] hover:brightness-110 shadow-[0_2px_10px_rgba(253,224,71,0.22)]'
+                      : 'bg-[#131C31] border-slate-400/20 text-[#F8FAFC] hover:border-[#38BDF8]/50'
                   }`}
                 >
-                  {isFlagship ? <FaizKhelVipCrownIcon className="w-3.5 h-3.5" /> : <span>{clan.emblem}</span>}
+                  {isFlagship ? <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" /> : <span className="text-xs leading-none">{clan.emblem}</span>}
                   <span className="font-urdu-auto">
                     {language === 'ur' ? clan.urduName : `${clan.urduName} · ${clan.englishName}`}
                   </span>
+                  {isFlagship && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black uppercase leading-none">
+                      VIP
+                    </span>
+                  )}
                   <span className="tabular-nums text-[10px] opacity-80">({count})</span>
                 </button>
               );

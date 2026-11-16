@@ -115,9 +115,9 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       ctx.fillText('VERIFIED PREMIUM DIGITAL IDENTITY', 58, 114);
 
       // Photo Box / Initials
-      ctx.fillStyle = '#043927';
+      ctx.fillStyle = isFaizKhel ? '#2B1F06' : '#131C31';
       ctx.fillRect(58, 162, 180, 210);
-      ctx.strokeStyle = '#D4AF37';
+      ctx.strokeStyle = isFaizKhel ? '#FDE047' : '#38BDF8';
       ctx.lineWidth = 4;
       ctx.strokeRect(58, 162, 180, 210);
       ctx.fillStyle = '#F5D061';
@@ -234,14 +234,14 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             }`}
             onClick={() => setIsFlipped(prev => !prev)}
           >
-            {/* FRONT: Black Velvet / Royal Emerald VIP Card */}
+            {/* FRONT: Fintech Dark Slate / Faiz Khel Royal Imperial Gold VIP Card */}
             <div
-              className="absolute inset-0 w-full h-full rounded-2xl p-3.5 sm:p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between backface-hidden overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-2xl p-3.5 sm:p-5 text-[#F8FAFC] shadow-[0_18px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between backface-hidden overflow-hidden"
               style={{
                 background: isFaizKhel
-                  ? 'linear-gradient(145deg, #022C22 0%, #064E3B 46%, #021B14 100%)'
-                  : 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)',
-                border: '2px solid #D4AF37'
+                  ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
+                  : 'linear-gradient(145deg, #090D16 0%, #131C31 55%, #0F172A 100%)',
+                border: isFaizKhel ? '2px solid #FDE047' : '1.5px solid #D4AF37'
               }}
             >
               {/* Inner Gold Trim + 3D Gold Corner Accents */}
@@ -259,15 +259,15 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                     <h4 className="font-extrabold text-xs sm:text-sm tracking-[0.14em] uppercase kc-gold-gradient-text truncate">
                       KIFAYAT CONNECT 👑
                     </h4>
-                    <span className="text-[9px] text-emerald-300 font-semibold tracking-wider uppercase block">
+                    <span className="text-[9px] text-[#38BDF8] font-semibold tracking-wider uppercase block">
                       {translate(language, 'vipPremiumMember')}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {isFaizKhel && <FaizKhelVipCrownIcon className="w-5 h-5" />}
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-200 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 shrink-0">
+                  {isFaizKhel && <FaizKhelVipCrownIcon className="w-6 h-6" />}
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 shrink-0">
                     <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
                     <span>ACTIVE</span>
                   </span>
@@ -284,7 +284,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border-2 border-[#F5D061] shadow-md"
                     />
                   ) : (
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#043927] to-[#0A0D12] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-xl shadow-md">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#131C31] to-[#090D16] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-xl shadow-md">
                       {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -417,7 +417,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             <button
               type="button"
               onClick={() => setShowQrVerifyModal(prev => !prev)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#043927] hover:bg-emerald-900 border border-[#D4AF37]/40 text-[#F5D061] rounded-xl font-bold cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/40 text-[#38BDF8] rounded-xl font-bold cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>{translate(language, 'vipVerifyQrBtn')}</span>

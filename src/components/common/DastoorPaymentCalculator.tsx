@@ -33,21 +33,21 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
 
     return (
       <div
-        className="rounded-2xl p-3.5 sm:p-4 border-[1.5px] border-[#D4AF37] space-y-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(253,224,71,0.22)]"
+        className="rounded-2xl p-3.5 sm:p-4 border border-slate-400/20 space-y-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(248,250,252,0.08)]"
         style={{
-          background: 'linear-gradient(145deg, #022C22 0%, #064E3B 55%, #022C22 100%)',
+          background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, #131C31 55%, #0F172A 100%)',
         }}
       >
-        <div className="flex items-center justify-between gap-2 flex-wrap border-b border-[#D4AF37]/30 pb-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap border-b border-slate-400/20 pb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-[#021B14] border border-[#D4AF37]/70 flex items-center justify-center shrink-0">
-              <Building2 className="w-4 h-4 text-[#FDE047]" />
+            <div className="w-7 h-7 rounded-lg bg-[#090D16] border border-[#38BDF8]/50 flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4 text-[#38BDF8]" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-extrabold text-[#FDE047] truncate">
+              <h4 className="text-xs font-extrabold text-[#F8FAFC] truncate">
                 {isUr ? 'آفیشل ایڈمن ادائیگی اکاؤنٹس' : 'Official Admin Payment Accounts'}
               </h4>
-              <p className="text-[10px] text-emerald-100/85 truncate">
+              <p className="text-[10px] text-[#94A3B8] truncate">
                 {isUr
                   ? 'اکاؤنٹ نمبر کاپی کریں اور رقم بھیج کر رسید اپ لوڈ کریں'
                   : 'Tap Copy to send your contribution, then upload receipt'}
@@ -55,7 +55,7 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
             </div>
           </div>
           {contactHelpline && (
-            <span className="text-[10px] font-mono text-emerald-200 bg-[#021B14]/80 border border-[#D4AF37]/35 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-mono text-[#38BDF8] bg-[#090D16]/85 border border-[#38BDF8]/30 px-2 py-0.5 rounded-md">
               {contactHelpline}
             </span>
           )}
@@ -67,21 +67,21 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
             return (
               <div
                 key={acc.id}
-                className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-[#021B14]/85 border border-[#D4AF37]/35"
+                className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-[#090D16]/90 border border-slate-400/20"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-extrabold text-[#FDE047]">
+                    <span className="text-[11px] font-extrabold text-[#F5D061]">
                       {isUr ? acc.methodUr : acc.methodEn}
                     </span>
-                    <span className="text-[10px] text-emerald-200/80 truncate">
+                    <span className="text-[10px] text-[#94A3B8] truncate">
                       · {isUr ? acc.bankOrProviderUr : acc.bankOrProviderEn}
                     </span>
                   </div>
-                  <div className="text-xs font-mono font-extrabold text-white tracking-wide truncate mt-0.5">
+                  <div className="text-xs font-mono font-extrabold text-[#F8FAFC] tracking-wide truncate mt-0.5">
                     {acc.accountNumber}
                   </div>
-                  <div className="text-[10px] text-slate-300 truncate">
+                  <div className="text-[10px] text-[#94A3B8] truncate">
                     {acc.accountTitle}
                   </div>
                 </div>
@@ -89,20 +89,20 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
                 <button
                   type="button"
                   onClick={() => handleCopy(acc.id, acc.accountNumber)}
-                  className={`kc-pressable shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold border transition-colors cursor-pointer ${
+                  className={`kc-pressable relative z-50 shrink-0 min-w-[48px] min-h-[48px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-colors cursor-pointer ${
                     isCopied
-                      ? 'bg-emerald-600 border-emerald-300 text-white'
-                      : 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#9A711A] border-[#FEF08A]/70 text-[#021B14]'
+                      ? 'bg-[#0EA5E9] border-[#38BDF8] text-[#090D16]'
+                      : 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#A17419] border-[#FEF08A]/75 text-[#090D16]'
                   }`}
                 >
                   {isCopied ? (
                     <>
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-4 h-4 shrink-0" />
                       <span>{isUr ? 'کاپی ہو گیا!' : 'Copied!'}</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4 shrink-0" />
                       <span>{isUr ? 'کاپی کریں' : 'Copy'}</span>
                     </>
                   )}
@@ -222,11 +222,11 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
       {paymentMode === 'DASTOOR' ? (
         <div className="space-y-3">
           {/* Official Rate Strip */}
-          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#022C22] border border-[#D4AF37]/50 text-[11px]">
-            <span className="font-bold text-emerald-200">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px]">
+            <span className="font-bold text-[#94A3B8]">
               {isUr ? 'سرکاری ماہانہ دستور ریٹ:' : 'Official Dastoor Rate:'}
             </span>
-            <span className="font-mono font-extrabold text-[#FDE047] tabular-nums">
+            <span className="font-mono font-extrabold text-[#38BDF8] tabular-nums">
               {isUr
                 ? `۱۰۰ روپے فی مہینہ (PKR ${DASTOOR_MONTHLY_RATE})`
                 : `Rs. ${DASTOOR_MONTHLY_RATE} / Month`}
@@ -248,8 +248,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     onClick={() => onMonthsCountChange(preset.months)}
                     className={`kc-pressable p-2 rounded-xl border text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#9A711A] border-[#FEF08A] text-[#021B14] shadow-[0_4px_14px_rgba(212,175,55,0.35)]'
-                        : 'bg-[#021B14] border-[#D4AF37]/40 text-white hover:border-[#FDE047]'
+                        ? 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#A17419] border-[#FEF08A] text-[#090D16] shadow-[0_4px_14px_rgba(212,175,55,0.3)]'
+                        : 'bg-[#0F172A] border-slate-400/20 text-[#F8FAFC] hover:border-[#38BDF8]'
                     }`}
                   >
                     <div className="text-[11px] font-extrabold leading-tight">
@@ -257,7 +257,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     </div>
                     <div
                       className={`text-[11px] font-mono tabular-nums font-black mt-0.5 ${
-                        isSelected ? 'text-[#022C22]' : 'text-[#FDE047]'
+                        isSelected ? 'text-[#090D16]' : 'text-[#F5D061]'
                       }`}
                     >
                       {isUr
@@ -269,8 +269,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               })}
 
               {/* Custom Months Direct Focus Card */}
-              <div className="p-2 rounded-xl border border-[#D4AF37]/45 bg-[#021B14] flex flex-col justify-between">
-                <label className="text-[10px] font-bold text-[#F5D061] block leading-tight">
+              <div className="p-2 rounded-xl border border-slate-400/20 bg-[#0F172A] flex flex-col justify-between">
+                <label className="text-[10px] font-bold text-[#94A3B8] block leading-tight">
                   {isUr ? 'اپنی مرضی کے مہینے' : 'Custom Months'}
                 </label>
                 <input
@@ -284,7 +284,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     onMonthsCountChange(Number.isFinite(parsed) && parsed > 0 ? Math.min(240, parsed) : 1);
                   }}
                   placeholder={isUr ? 'مہینے' : 'Months'}
-                  className="mt-1 w-full bg-[#063B2E]/60 border border-[#D4AF37]/50 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-white tabular-nums focus:outline-none focus:border-[#FDE047]"
+                  className="mt-1 w-full bg-[#131C31] border border-slate-400/25 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#38BDF8]"
                 />
               </div>
             </div>
@@ -324,13 +324,13 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 
           {/* Live Calculated Summary Strip */}
           <div
-            className="rounded-xl p-3 border-[1.5px] border-[#D4AF37] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            className="rounded-xl p-3 border border-[#38BDF8]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
             style={{
-              background: 'linear-gradient(135deg, #022C22 0%, #064E3B 100%)',
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, #131C31 55%, #0F172A 100%)',
             }}
           >
             <div className="min-w-0 space-y-0.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#FDE047]">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#38BDF8]">
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {isUr
@@ -338,22 +338,22 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     : `${period.monthsCount} ${period.monthsCount === 1 ? 'Month' : 'Months'} × Rs. ${DASTOOR_MONTHLY_RATE}`}
                 </span>
               </div>
-              <div className="text-xs font-extrabold text-white break-words">
+              <div className="text-xs font-extrabold text-[#F8FAFC] break-words">
                 {isUr ? period.periodLabelUr : period.periodLabelEn}
               </div>
-              <div className="text-[10px] text-emerald-200/85">
+              <div className="text-[10px] text-[#94A3B8]">
                 {isUr ? period.periodLabelEn : period.periodLabelUr}
               </div>
             </div>
 
-            <div className="sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D4AF37]/25">
-              <span className="text-[10px] text-emerald-200 block uppercase font-bold">
+            <div className="sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-400/20">
+              <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">
                 {isUr ? 'کل واجب الادا رقم' : 'Total Payable'}
               </span>
-              <span className="text-lg font-black font-mono tabular-nums text-[#FDE047]">
+              <span className="text-lg font-black font-mono tabular-nums text-[#F5D061]">
                 PKR {period.totalAmount.toLocaleString()}
               </span>
-              <span className="block text-[11px] font-bold text-white font-urdu-auto">
+              <span className="block text-[11px] font-bold text-[#F8FAFC] font-urdu-auto">
                 {formatRupeesUr(period.totalAmount)}
               </span>
             </div>

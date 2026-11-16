@@ -132,16 +132,16 @@ const MainLayout: React.FC = () => {
   if (appSettings.maintenanceMode && currentUser.role !== 'SUPER_ADMIN') {
     return (
       <div
-        className="min-h-[100dvh] w-full text-white flex flex-col items-center justify-center p-6 kc-safe-top kc-safe-bottom text-center"
+        className="min-h-[100dvh] w-full text-[#F8FAFC] flex flex-col items-center justify-center p-6 kc-safe-top kc-safe-bottom text-center"
         style={{
-          backgroundColor: '#021B14',
-          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1), transparent 55%), radial-gradient(circle at 15% 85%, rgba(6, 78, 59, 0.55), transparent 52%)'
+          backgroundColor: '#090D16',
+          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), transparent 55%), radial-gradient(circle at 15% 85%, rgba(212, 175, 55, 0.08), transparent 52%)'
         }}
       >
         <div className="max-w-md w-full kc-luxury-modal rounded-2xl p-6 sm:p-8 space-y-5">
           <div className="flex flex-col items-center gap-3">
             <BrandEmblem3D size="lg" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] text-[11px] font-bold uppercase shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#131C31] border border-[#38BDF8]/35 text-[#38BDF8] text-[11px] font-bold uppercase shadow-sm">
               <Wrench className="w-3.5 h-3.5" />
               <span>{translate(language, 'maintenanceTitle')}</span>
             </span>
@@ -227,11 +227,11 @@ const MainLayout: React.FC = () => {
 
   return (
     <div
-      className="h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-slate-100"
+      className="h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC]"
       style={{
-        backgroundColor: 'var(--kc-bg, #021B14)',
+        backgroundColor: 'var(--kc-bg, #090D16)',
         backgroundImage:
-          'radial-gradient(circle at 82% 6%, rgba(212, 175, 55, 0.09), transparent 44%), radial-gradient(circle at 12% 88%, rgba(6, 78, 59, 0.45), transparent 54%)'
+          'radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.10), transparent 44%), radial-gradient(circle at 12% 88%, rgba(212, 175, 55, 0.08), transparent 54%)'
       }}
     >
       {/* Global Keyboard Shortcuts Handler */}
@@ -255,8 +255,8 @@ const MainLayout: React.FC = () => {
       <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
         {/* Desktop Docked Sidebar */}
         <aside
-          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-[#D4AF37]/25"
-          style={{ backgroundColor: 'var(--kc-surface, #042920)' }}
+          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-slate-400/15"
+          style={{ backgroundColor: 'var(--kc-surface, #131C31)' }}
         >
           <Sidebar />
         </aside>
@@ -265,14 +265,14 @@ const MainLayout: React.FC = () => {
         <div className="md:hidden overscroll-none touch-pan-y">
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-[#021B14]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
+            className={`fixed inset-0 bg-[#090D16]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
           />
 
           <aside
-            className={`fixed inset-y-0 left-0 border-r z-50 w-72 max-w-[85vw] h-full shadow-2xl border-[#D4AF37]/30 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
+            className={`fixed inset-y-0 left-0 border-r z-50 w-72 max-w-[85vw] h-full shadow-2xl border-slate-400/20 transition-transform duration-200 ease-out transform overscroll-none touch-pan-y ${
               isMobileSidebarOpen
                 ? 'translate-x-0 pointer-events-auto'
                 : '-translate-x-full pointer-events-none'
@@ -338,10 +338,10 @@ const MainLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Fixed Mobile Bottom Navigation Bar with Android Gesture Safe-Area Inset */}
+      {/* Fixed Mobile Bottom Navigation Bar with Android/iPhone Gesture Safe-Area Inset */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-gradient-to-t from-[#021912] to-[#042920] border-t border-[#D4AF37]/40 px-1.5 pt-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(252,227,138,0.16)]"
+        className="md:hidden shrink-0 w-full max-w-full bg-gradient-to-t from-[#090D16] to-[#131C31] border-t border-slate-400/20 px-1.5 pt-1.5 pb-[calc(env(safe-area-inset-bottom,12px)+8px)] z-50 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(148,163,184,0.14)]"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -354,16 +354,16 @@ const MainLayout: React.FC = () => {
                 setActiveTab(tab.id);
                 setIsMobileSidebarOpen(false);
               }}
-              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-transform cursor-pointer kc-pressable ${
+              className={`relative z-50 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-transform cursor-pointer kc-pressable ${
                 isActive
-                  ? 'text-[#F5D061] bg-[#064E3B] border border-[#D4AF37]/55 shadow-[0_4px_12px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(252,227,138,0.22)]'
-                  : 'text-emerald-100/70 hover:text-white border border-transparent'
+                  ? 'text-[#38BDF8] bg-[#1E293B] border border-[#38BDF8]/45 shadow-[0_4px_14px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(56,189,248,0.22)]'
+                  : 'text-[#94A3B8] hover:text-[#F8FAFC] border border-transparent'
               }`}
             >
               <div className="relative">
                 <Icon className="w-4 h-4 mb-0.5" />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#F5D061] text-[#021B14] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#D4AF37] text-[#090D16] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
                     {tab.badge > 9 ? '9+' : tab.badge}
                   </span>
                 ) : null}
@@ -464,22 +464,22 @@ const MainLayout: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top)+3.75rem))] inset-x-3 sm:inset-x-auto sm:right-5 z-[90] sm:max-w-md rounded-2xl p-3.5 border-[1.5px] border-[#D4AF37] shadow-[0_14px_34px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(253,224,71,0.28)] text-white"
+          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top)+3.75rem))] inset-x-3 sm:inset-x-auto sm:right-5 z-[90] sm:max-w-md rounded-2xl p-3.5 border border-[#38BDF8]/45 shadow-[0_14px_34px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(56,189,248,0.22)] text-[#F8FAFC]"
           style={{
-            background: 'linear-gradient(135deg, #022C22 0%, #064E3B 58%, #022C22 100%)',
+            background: 'linear-gradient(135deg, #131C31 0%, #1E293B 58%, #0F172A 100%)',
           }}
         >
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2.5 min-w-0">
-              <CheckCircle2 className="w-4 h-4 text-[#FDE047] shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
               <div className="min-w-0 space-y-1 text-xs">
-                <p className="font-extrabold text-[#FDE047] leading-snug">
+                <p className="font-extrabold text-[#F8FAFC] leading-snug">
                   Link copied! Send it on WhatsApp to iPhone users.
                 </p>
-                <p className="font-bold text-emerald-100 font-urdu-auto leading-snug" dir="rtl">
+                <p className="font-bold text-[#38BDF8] font-urdu-auto leading-snug" dir="rtl">
                   لنک کاپی ہو گیا! آئی فون ممبران کو واٹس ایپ پر بھیج دیں۔
                 </p>
-                <p className="text-[10px] font-mono text-emerald-200/90 truncate pt-0.5">
+                <p className="text-[10px] font-mono text-[#94A3B8] truncate pt-0.5">
                   {iphoneShareNotice.url}
                 </p>
               </div>
@@ -488,7 +488,7 @@ const MainLayout: React.FC = () => {
               type="button"
               onClick={dismissIphoneShareNotice}
               aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-              className="p-1 rounded-lg bg-[#021B14]/80 border border-[#D4AF37]/40 text-slate-300 hover:text-white shrink-0 cursor-pointer"
+              className="p-1 rounded-lg bg-[#090D16]/80 border border-slate-400/25 text-slate-300 hover:text-white shrink-0 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

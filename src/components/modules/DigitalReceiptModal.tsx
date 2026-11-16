@@ -130,8 +130,8 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
         <div
           className={`receipt-print-area mt-4 print:bg-white p-4 sm:p-6 rounded-xl border shadow-[inset_0_1px_0_rgba(252,227,138,0.12)] relative overflow-hidden ${
             isFaizKhel
-              ? 'bg-[#021B14] border-[1.5px] border-[#D4AF37]'
-              : 'bg-[#090D16] border-[#D4AF37]/35'
+              ? 'bg-gradient-to-br from-[#2B1F06] via-[#42300A] to-[#1C1404] border-[1.5px] border-[#FDE047]'
+              : 'bg-[#090D16] border-[#38BDF8]/30'
           }`}
         >
           {/* Official Seal Watermark */}

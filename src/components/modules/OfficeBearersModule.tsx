@@ -251,7 +251,7 @@ export const OfficeBearersModule: React.FC = () => {
 
                     <span className={`text-[10px] px-2.5 py-0.5 rounded-lg font-bold uppercase shrink-0 ${
                       isOccupied
-                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
+                        ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45'
                         : 'bg-[#111726] text-[#F5D061] border border-[#D4AF37]/40'
                     }`}>
                       {isUr ? (ob.status === 'ACTIVE' ? 'فعال' : 'خالی') : ob.status}

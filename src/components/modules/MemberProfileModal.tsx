@@ -100,29 +100,32 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
       <div className="fixed inset-0 z-[10000] bg-black/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
         <div
           className={`kc-luxury-modal rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto max-h-[92dvh] ${
-            isFaizKhel ? '!border-[1.5px] !border-[#D4AF37] shadow-[0_18px_50px_rgba(2,44,34,0.85),0_0_26px_rgba(212,175,55,0.22)]' : ''
+            isFaizKhel ? '!border-[1.5px] !border-[#FDE047] shadow-[0_18px_50px_rgba(28,20,4,0.88),0_0_28px_rgba(253,224,71,0.26)]' : ''
           }`}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div
-            className="h-24 p-4 relative border-b border-[#D4AF37]/45"
+            className="h-24 p-4 relative border-b border-slate-400/20 overflow-hidden"
             style={{
               background: isFaizKhel
-                ? 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)'
-                : 'linear-gradient(135deg, #063B2E 0%, #042920 55%, #090D16 100%)',
+                ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
+                : 'linear-gradient(135deg, #1E293B 0%, #131C31 55%, #090D16 100%)',
             }}
           >
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FDE047] to-[#D4AF37]" />
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FDE047] to-[#38BDF8]" />
             {isFaizKhel && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#021B14]/90 border border-[#D4AF37] text-[#FDE047] text-[10px] font-extrabold shadow">
-                <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1404]/95 border-[1.5px] border-[#FDE047] text-[#FEF08A] text-[10px] font-extrabold shadow-[0_2px_12px_rgba(253,224,71,0.28)]">
+                <FaizKhelVipCrownIcon className="w-6 h-6" />
                 <span>{language === 'ur' ? 'شاہی وی آئی پی · فیض خیل' : 'ROYAL VIP · FAIZ KHEL'}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black uppercase leading-none">
+                  VIP
+                </span>
               </div>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="kc-pressable absolute top-3.5 right-3.5 p-1.5 rounded-full bg-[#090D16]/85 hover:bg-[#161F33] border border-[#D4AF37]/40 text-slate-200 hover:text-[#F5D061] transition-colors cursor-pointer"
+              className="kc-pressable absolute top-3.5 right-3.5 p-1.5 rounded-full bg-[#090D16]/85 hover:bg-[#1E293B] border border-slate-400/25 text-slate-200 hover:text-[#38BDF8] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -137,23 +140,23 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                     alt={liveUser.name}
                     className={`w-24 h-24 rounded-2xl border-4 object-cover shadow-xl bg-[#090D16] ${
                       isFaizKhel
-                        ? 'border-[#D4AF37] ring-2 ring-[#FDE047]/60'
-                        : 'border-[#111726] ring-1 ring-[#D4AF37]/50'
+                        ? 'border-[#FDE047] ring-2 ring-[#FDE047]/65'
+                        : 'border-[#0F172A] ring-1 ring-[#38BDF8]/45'
                     }`}
                   />
                 ) : (
                   <div
                     className={`w-24 h-24 rounded-2xl border-4 flex items-center justify-center font-bold text-3xl shadow-xl ${
                       isFaizKhel
-                        ? 'border-[#D4AF37] ring-2 ring-[#FDE047]/60 bg-[#022C22] text-[#FDE047]'
-                        : 'border-[#111726] ring-1 ring-[#D4AF37]/50 bg-[#042920] text-[#F5D061]'
+                        ? 'border-[#FDE047] ring-2 ring-[#FDE047]/65 bg-[#2B1F06] text-[#FEF08A]'
+                        : 'border-[#0F172A] ring-1 ring-[#38BDF8]/45 bg-[#131C31] text-[#38BDF8]'
                     }`}
                   >
                     {liveUser.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <span
-                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#111726] ${
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#0F172A] ${
                     isUserOnline ? 'bg-emerald-500' : 'bg-slate-500'
                   }`}
                 />
@@ -169,8 +172,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   <span
                     className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                       isUserOnline
-                        ? 'bg-[#042920] text-emerald-300 border-emerald-500/45'
-                        : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/25'
+                        ? 'bg-[#0F172A] text-emerald-300 border-emerald-500/45'
+                        : 'bg-[#090D16] text-[#94A3B8] border-slate-400/20'
                     }`}
                   >
                     {isUserOnline
@@ -321,9 +324,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                     <button
                       type="button"
                       onClick={() => handleApproveDecision(true)}
-                      className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#063B2E] to-[#0B664F] hover:brightness-110 border border-emerald-400/50 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                      className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] hover:brightness-110 border border-[#38BDF8]/60 text-[#090D16] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                      <CheckCircle2 className="w-4 h-4 text-[#090D16]" />
                       <span>{language === 'ur' ? 'منظور کریں' : 'Approve'}</span>
                     </button>
                     {approvalState !== 'rejected' && (

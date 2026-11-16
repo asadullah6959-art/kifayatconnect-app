@@ -44,7 +44,7 @@ import {
 } from '../../utils/imageCompression';
 import { uploadMediaToFirebaseStorage, isUserActuallyOnline } from '../../services/firebase';
 import { RoleBadge } from '../common/RoleBadge';
-import { TabbarBadge } from '../common/TabbarBadge';
+import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 import { translate, AppLanguage } from '../../data/translations';
@@ -208,18 +208,18 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
   const progressRatio = Math.min(1, currentSec / totalSec);
 
   return (
-    <div className="rounded-xl bg-black/35 border border-[#D4AF37]/30 px-2.5 py-2 space-y-1">
+    <div className="rounded-xl bg-[#0F172A]/90 border border-[#38BDF8]/30 px-2.5 py-2 space-y-1 shadow-[inset_0_1px_0_rgba(56,189,248,0.12)]">
       <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={togglePlay}
-          className="w-8 h-8 rounded-full kc-gold-button flex items-center justify-center shrink-0 cursor-pointer"
+          className="relative z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full kc-gold-button flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
           aria-label={isPlaying ? 'Pause voice note' : 'Play voice note'}
         >
-          {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
         </button>
 
-        <div className="flex-1 flex items-end gap-0.5 h-6 min-w-[110px]" aria-hidden="true">
+        <div className="flex-1 flex items-end gap-0.5 h-7 min-w-[110px]" aria-hidden="true">
           {bars.map((heightPct, idx) => {
             const barRatio = (idx + 1) / bars.length;
             const active = isPlaying ? true : barRatio <= progressRatio;
@@ -234,15 +234,15 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
                   isPlaying
                     ? 'bg-[#F5D061] kc-wave-bar-active'
                     : active
-                    ? 'bg-[#F5D061]'
-                    : 'bg-slate-600'
+                    ? 'bg-[#38BDF8]'
+                    : 'bg-slate-700/80'
                 }`}
               />
             );
           })}
         </div>
 
-        <span className="text-[10px] font-mono text-[#F5D061] shrink-0">
+        <span className="text-[11px] font-mono font-bold text-[#F5D061] shrink-0 tabular-nums">
           {formatDuration(isPlaying ? currentSec : totalSec)}
         </span>
       </div>
@@ -324,15 +324,27 @@ const ChatModuleContent: React.FC = () => {
     return () => window.clearInterval(id);
   }, []);
 
-  // Voice Recorder States
+  // Voice Recorder & Step-2 Preview Draft States (WhatsApp Flow: Record -> Stop -> Preview -> Send)
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [draftVoiceNote, setDraftVoiceNote] = useState<ChatVoiceNote | null>(null);
+  const [isDraftPlaying, setIsDraftPlaying] = useState(false);
+  const [draftPlaySec, setDraftPlaySec] = useState(0);
+  const draftAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<number | null>(null);
   const recordDurationRef = useRef<number>(0);
   const cancelRecordingFlagRef = useRef<boolean>(false);
+
+  // Soft Keyboard & Auto-Expanding Multi-line Composer Refs
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const maxViewportHeightRef = useRef<number>(
+    typeof window !== 'undefined' ? (window.visualViewport?.height || window.innerHeight) : 800
+  );
+  const communityTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const directTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [chatError, setChatError] = useState<string | null>(null);
   const [micHint, setMicHint] = useState<string | null>(null);
@@ -348,9 +360,9 @@ const ChatModuleContent: React.FC = () => {
     speechLangOverride: dictationLocale,
     onFinalTranscript: (spoken) => {
       if (dictationTarget === 'COMMUNITY') {
-        setCommunityText(prev => appendDictatedText(prev, spoken));
+        setCommunityText(prev => appendDictatedText(prev, spoken).slice(0, 5000));
       } else if (dictationTarget === 'DIRECT') {
-        setMessageText(prev => appendDictatedText(prev, spoken));
+        setMessageText(prev => appendDictatedText(prev, spoken).slice(0, 5000));
       }
     }
   });
@@ -389,6 +401,42 @@ const ChatModuleContent: React.FC = () => {
     speech.startDictation(dictationLocale);
   };
 
+  const syncTextareaHeight = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    const nextHeight = Math.min(120, Math.max(46, el.scrollHeight));
+    el.style.height = `${nextHeight}px`;
+  };
+
+  useEffect(() => {
+    syncTextareaHeight(communityTextareaRef.current);
+  }, [communityText, isRecording, draftVoiceNote, chatMode]);
+
+  useEffect(() => {
+    syncTextareaHeight(directTextareaRef.current);
+  }, [messageText, chatMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const getH = () => window.visualViewport?.height || window.innerHeight;
+    maxViewportHeightRef.current = Math.max(maxViewportHeightRef.current, getH());
+    const handleViewportChange = () => {
+      const currentH = getH();
+      if (currentH > maxViewportHeightRef.current) {
+        maxViewportHeightRef.current = currentH;
+      }
+      const delta = maxViewportHeightRef.current - currentH;
+      setIsKeyboardOpen(delta > 140);
+    };
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', handleViewportChange);
+    window.addEventListener('resize', handleViewportChange);
+    return () => {
+      vv?.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, []);
+
   const communityEndRef = useRef<HTMLDivElement | null>(null);
   const directEndRef = useRef<HTMLDivElement | null>(null);
   const communityMessageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -405,6 +453,10 @@ const ChatModuleContent: React.FC = () => {
         if (recordTimerRef.current) window.clearInterval(recordTimerRef.current);
         if (mediaStreamRef.current) {
           mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        }
+        if (draftAudioRef.current) {
+          draftAudioRef.current.pause();
+          draftAudioRef.current = null;
         }
       } catch {
         // ignore cleanup
@@ -673,7 +725,72 @@ const ChatModuleContent: React.FC = () => {
     }
   };
 
-  // Voice Recording (try/catch guarded + 60s hard cap)
+  // Discard Voice Note Draft Preview
+  const discardDraftVoiceNote = () => {
+    try {
+      if (draftAudioRef.current) {
+        draftAudioRef.current.pause();
+        draftAudioRef.current = null;
+      }
+    } catch {
+      // ignore
+    }
+    setIsDraftPlaying(false);
+    setDraftPlaySec(0);
+    setDraftVoiceNote(null);
+  };
+
+  const toggleDraftVoicePlay = async () => {
+    if (!draftVoiceNote) return;
+    setChatError(null);
+    try {
+      if (!draftAudioRef.current) {
+        const audio = new Audio(draftVoiceNote.url);
+        audio.preload = 'metadata';
+        (audio as unknown as { playsInline?: boolean }).playsInline = true;
+        audio.onended = () => {
+          setIsDraftPlaying(false);
+          setDraftPlaySec(0);
+        };
+        audio.ontimeupdate = () => {
+          setDraftPlaySec(Math.floor(audio.currentTime || 0));
+        };
+        audio.onerror = () => {
+          setIsDraftPlaying(false);
+          setChatError(language === 'ur' ? 'اس ڈیوائس پر وائس نوٹ چلایا نہیں جا سکا۔' : 'Unable to preview voice note on this device.');
+        };
+        draftAudioRef.current = audio;
+      }
+      if (isDraftPlaying) {
+        draftAudioRef.current.pause();
+        setIsDraftPlaying(false);
+      } else {
+        await draftAudioRef.current.play();
+        setIsDraftPlaying(true);
+      }
+    } catch {
+      setIsDraftPlaying(false);
+      setChatError(language === 'ur' ? 'وائس نوٹ پیش نظارہ دستیاب نہیں ہے۔' : 'Unable to play voice note preview.');
+    }
+  };
+
+  const handleSendDraftVoiceNote = () => {
+    if (!draftVoiceNote) return;
+    setChatError(null);
+    const voicePayload = draftVoiceNote;
+    discardDraftVoiceNote();
+    const res = sendCommunityMessage({
+      voiceNote: voicePayload,
+      replyTo: replyingTo || undefined
+    });
+    if (!res.success) {
+      setChatError(res.error || (language === 'ur' ? 'وائس نوٹ نہیں بھیجا جا سکا۔' : 'Could not send voice note.'));
+    } else {
+      setReplyingTo(null);
+    }
+  };
+
+  // Voice Recording (try/catch guarded + 60s hard cap -> transitions into Step 2 Preview without auto-sending)
   const stopVoiceRecording = (shouldCancel = false) => {
     cancelRecordingFlagRef.current = shouldCancel;
     try {
@@ -693,6 +810,7 @@ const ChatModuleContent: React.FC = () => {
   const startVoiceRecording = async () => {
     setChatError(null);
     setMicHint(null);
+    discardDraftVoiceNote();
     if (speech.isListening) {
       speech.stopDictation();
       setDictationTarget(null);
@@ -789,22 +907,14 @@ const ChatModuleContent: React.FC = () => {
         reader.onloadend = () => {
           const dataUrl = reader.result as string;
           if (!dataUrl) return;
-          const waveform = Array.from({ length: 16 }, (_, i) =>
+          const waveform = Array.from({ length: 18 }, (_, i) =>
             30 + Math.round(((Math.sin(i * 1.7 + recordedSec) + 1) / 2) * 65)
           );
-          const res = sendCommunityMessage({
-            voiceNote: {
-              url: dataUrl,
-              durationSec: recordedSec,
-              waveform
-            },
-            replyTo: replyingTo || undefined
+          setDraftVoiceNote({
+            url: dataUrl,
+            durationSec: recordedSec,
+            waveform
           });
-          if (!res.success) {
-            setChatError(res.error || (language === 'ur' ? 'وائس نوٹ نہیں بھیجا جا سکا۔' : 'Could not send voice note.'));
-          } else {
-            setReplyingTo(null);
-          }
         };
         reader.readAsDataURL(blob);
       };
@@ -974,29 +1084,29 @@ const ChatModuleContent: React.FC = () => {
           MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM (PORTAL)
           ============================================================ */}
       {chatMode === 'COMMUNITY' && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#0A0D12] overscroll-none touch-pan-y">
+        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#090D16] overscroll-none touch-pan-y">
           {/* Live Scenic GPU-Only SVG/CSS Wallpaper Background */}
           <ScenicChatBackground
             themeId={activeThemeId}
             customBgUrl={appSettings.liveChatCustomBgUrl}
           />
 
-          {/* Full-Screen Top Bar */}
-          <div className="relative z-10 px-3 sm:px-5 py-2.5 border-b border-[#D4AF37]/30 bg-black/55 flex flex-wrap items-center justify-between gap-2 shrink-0">
+          {/* Full-Screen Top Bar with Status Bar Safe Clearance */}
+          <div className="relative z-40 px-3 sm:px-5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2.5 border-b border-slate-400/20 bg-gradient-to-b from-[#131C31]/95 via-[#0F172A]/95 to-[#090D16]/95 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#F5D061] to-[#8A6218] text-[#0A0D12] flex items-center justify-center font-black text-sm shrink-0 shadow">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center font-black text-sm shrink-0 shadow-[0_4px_12px_rgba(212,175,55,0.3)] border border-[#FEF08A]/70">
                 🌐
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <h2 className="text-xs sm:text-sm font-extrabold text-white truncate">
+                  <h2 className="text-xs sm:text-sm font-extrabold text-[#F8FAFC] truncate">
                     {translate(language, 'communityRoomTab')}
                   </h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/35 tabular-nums">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 tabular-nums">
                     🟢 {onlineMembersCount} {translate(language, 'online')} · {users.length} {language === 'ur' ? 'ممبران' : 'Members'}
                   </span>
                 </div>
-                <p className="text-[10px] text-[#F5D061]/90 truncate">
+                <p className="text-[10px] text-[#F5D061]/95 truncate">
                   {activeThemeId === 'CUSTOM'
                     ? (language === 'ur' ? 'بانی کی منتخب کردہ لائیو اسکرین تھیم' : 'Founder Custom Scenic Wallpaper')
                     : (() => {
@@ -1011,10 +1121,10 @@ const ChatModuleContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setChatMode('DIRECT')}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/35 text-slate-100 text-[11px] font-bold cursor-pointer"
+                className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/35 text-[#F8FAFC] text-[11px] font-bold cursor-pointer kc-pressable"
                 title={language === 'ur' ? 'ون آن ون براہ راست پیغامات پر جائیں' : 'Switch to 1-on-1 Direct Messages'}
               >
-                <MessageSquare className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                <MessageSquare className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
                 <span>{language === 'ur' ? 'براہ راست' : 'Direct'}</span>
               </button>
 
@@ -1023,7 +1133,7 @@ const ChatModuleContent: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsBubbleColorModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer"
+                    className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer kc-pressable"
                   >
                     <Crown className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline">{language === 'ur' ? 'میرا ببل' : 'My Bubble'}</span>
@@ -1032,7 +1142,7 @@ const ChatModuleContent: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsClearOldModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 text-rose-200 text-[11px] font-bold cursor-pointer"
+                    className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-950/85 hover:bg-rose-900 border border-rose-500/45 text-rose-200 text-[11px] font-bold cursor-pointer kc-pressable"
                     title={translate(language, 'clearOldMessagesBtn')}
                   >
                     <Trash2 className="w-3.5 h-3.5 shrink-0" />
@@ -1045,9 +1155,9 @@ const ChatModuleContent: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsThemeModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#161D2C]/90 hover:bg-[#1E273B] border border-[#D4AF37]/40 text-slate-100 text-[11px] font-bold cursor-pointer"
+                  className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] text-[11px] font-bold cursor-pointer kc-pressable"
                 >
-                  <Palette className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                  <Palette className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
                   <span className="hidden sm:inline">{language === 'ur' ? 'تھیم' : 'Theme'}</span>
                 </button>
               )}
@@ -1058,7 +1168,7 @@ const ChatModuleContent: React.FC = () => {
                 onClick={minimizeLiveChat}
                 title={language === 'ur' ? 'فلوٹنگ ببل میں چھوٹا کریں' : 'Minimize Live Chat to Floating Bubble'}
                 aria-label="Minimize Live Chat Room"
-                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-[#1E273B] border border-[#D4AF37]/50 text-[#F5D061] font-extrabold cursor-pointer shrink-0"
+                className="relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#D4AF37]/45 text-[#F5D061] font-extrabold cursor-pointer shrink-0 kc-pressable"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -1069,7 +1179,7 @@ const ChatModuleContent: React.FC = () => {
                 onClick={closeAndHideLiveChat}
                 title={language === 'ur' ? 'لائیو چیٹ بند کریں' : 'Close & Hide Live Chat'}
                 aria-label="Close and Hide Live Chat"
-                className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[#161D2C]/95 hover:bg-rose-950/80 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0"
+                className="relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-rose-950/85 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1205,12 +1315,12 @@ const ChatModuleContent: React.FC = () => {
                 const bubbleContainerClass = msgIsFounder
                   ? getFounderBubbleStyle(msg.senderBubbleColor || appSettings.founderBubbleColor)
                   : msg.isHighlighted
-                  ? 'bg-gradient-to-br from-[#231D0B] to-[#111622] border-[#F5D061] shadow-[0_0_16px_rgba(212,175,55,0.2)]'
+                  ? 'bg-gradient-to-br from-[#231D0B] to-[#131C31] border-[#F5D061] shadow-[0_0_16px_rgba(212,175,55,0.2)]'
                   : msgIsFaizKhel
-                  ? 'bg-gradient-to-br from-[#022C22] via-[#064E3B] to-[#022C22] border-[1.5px] border-[#D4AF37] text-white shadow-[0_4px_18px_rgba(212,175,55,0.22),inset_0_1px_0_rgba(253,224,71,0.24)]'
+                  ? 'bg-gradient-to-br from-[#2B1F06] via-[#42300A] to-[#1C1404] border-[1.5px] border-[#FDE047] text-[#F8FAFC] shadow-[0_4px_20px_rgba(253,224,71,0.28),inset_0_1px_0_rgba(254,240,138,0.28)]'
                   : isMine
-                  ? 'bg-gradient-to-br from-[#043927] to-[#074F37] border-[#D4AF37]/45'
-                  : 'bg-[#111622]/95 border-slate-700/80';
+                  ? 'bg-gradient-to-br from-[#131C31] to-[#1E293B] border-[#38BDF8]/40 text-[#F8FAFC]'
+                  : 'bg-[#131C31]/95 border-slate-400/20 text-[#F8FAFC]';
 
                 return (
                   <React.Fragment key={msg.id}>
@@ -1239,17 +1349,17 @@ const ChatModuleContent: React.FC = () => {
                             src={avatarSrc}
                             alt={msg.senderName}
                             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${
-                              msgIsFounder || msgIsFaizKhel ? 'border-[#D4AF37]' : 'border-[#D4AF37]/40'
+                              msgIsFounder || msgIsFaizKhel ? 'border-[#FDE047]' : 'border-[#38BDF8]/45'
                             }`}
                           />
                         ) : (
                           <div
                             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-extrabold text-xs border-2 ${
                               msgIsFounder
-                                ? 'bg-gradient-to-br from-[#F5D061] to-[#9E7322] text-[#0A0D12] border-[#F5D061]'
+                                ? 'bg-gradient-to-br from-[#F5D061] to-[#9E7322] text-[#090D16] border-[#F5D061]'
                                 : msgIsFaizKhel
-                                ? 'bg-[#022C22] text-[#FDE047] border-[#D4AF37]'
-                                : 'bg-[#043927] text-[#F5D061] border-[#D4AF37]/40'
+                                ? 'bg-[#1C1404] text-[#FEF08A] border-[#FDE047]'
+                                : 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/40'
                             }`}
                           >
                             {msg.senderName.charAt(0).toUpperCase()}
@@ -1257,7 +1367,7 @@ const ChatModuleContent: React.FC = () => {
                         )}
                         {authorRecord && (
                           <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#0A0D12] ${
+                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#090D16] ${
                               authorOnline ? 'bg-emerald-500' : 'bg-slate-500'
                             }`}
                           />
@@ -1266,7 +1376,7 @@ const ChatModuleContent: React.FC = () => {
 
                       {/* Message Bubble */}
                       <div className={`flex flex-col max-w-[84%] sm:max-w-[74%] ${isMine ? 'items-end' : 'items-start'}`}>
-                        <div className={`rounded-2xl border px-3.5 py-2.5 text-xs text-white space-y-2 ${bubbleContainerClass}`}>
+                        <div className={`rounded-2xl border px-3.5 py-2.5 text-xs text-[#F8FAFC] space-y-2 ${bubbleContainerClass}`}>
                           {/* Wrapped Header: Name + RoleBadge + TabbarBadge */}
                           <div className="flex flex-wrap items-center gap-1.5">
                             {msgIsFounder && (
@@ -1274,13 +1384,16 @@ const ChatModuleContent: React.FC = () => {
                                 👑
                               </span>
                             )}
+                            {!msgIsFounder && msgIsFaizKhel && (
+                              <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" />
+                            )}
                             <span
                               className={`font-extrabold text-xs ${
                                 msgIsFounder
                                   ? 'text-[#F5D061]'
                                   : msgIsFaizKhel
-                                  ? 'text-[#FDE047]'
-                                  : 'text-emerald-300'
+                                  ? 'text-[#FEF08A]'
+                                  : 'text-[#38BDF8]'
                               }`}
                             >
                               {msg.senderName}
@@ -1579,14 +1692,14 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {speech.isListening && dictationTarget === 'COMMUNITY' && !isUserMutedInCommunity && (
-            <div className="relative z-10 px-3.5 py-2 bg-[#042920]/95 border-t border-[#D4AF37]/40 flex items-center justify-between gap-2 text-xs shrink-0">
+            <div className="relative z-10 px-3.5 py-2 bg-[#131C31]/95 border-t border-[#38BDF8]/30 flex items-center justify-between gap-2 text-xs shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                 <div className="min-w-0">
                   <span className="text-[10px] font-extrabold text-[#F5D061] block">
                     {language === 'ur' ? 'وائس ڈکٹیشن فعال ہے' : 'Voice Dictation Active'}
                   </span>
-                  <span className="text-xs text-slate-100 truncate block">
+                  <span className="text-xs text-[#F8FAFC] truncate block">
                     {speech.interimTranscript
                       ? speech.interimTranscript
                       : (language === 'ur' ? 'اب بولیں — آپ کا پیغام خودکار لکھا جا رہا ہے...' : 'Speak now — transcribing live into message box...')}
@@ -1602,7 +1715,7 @@ const ChatModuleContent: React.FC = () => {
                     setDictationLocale(next);
                     speech.startDictation(next);
                   }}
-                  className="px-2 py-1 rounded-lg bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold cursor-pointer"
+                  className="px-2 py-1 rounded-lg bg-[#090D16] border border-[#38BDF8]/35 text-[#38BDF8] text-[10px] font-bold cursor-pointer"
                   title={language === 'ur' ? 'زبان تبدیل کریں' : 'Switch Dictation Language'}
                 >
                   {dictationLocale === 'ur-PK' ? 'اردو' : 'EN'}
@@ -1622,52 +1735,148 @@ const ChatModuleContent: React.FC = () => {
             </div>
           )}
 
-          {/* Composer Area */}
+          {/* Composer Area with Protected System Nav Clearance & 2-Step WhatsApp Voice Flow */}
           {requiresProfileCompletion ? (
-            <div className="relative z-10 p-3 bg-black/65 border-t border-[#D4AF37]/30 shrink-0">
+            <div
+              className="relative z-40 p-3 bg-[#090D16]/95 border-t border-slate-400/20 shrink-0"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
               <ProfileCompletionGate compact featureName={language === 'ur' ? 'لائیو کمیونٹی چیٹ' : 'Live Community Chat'} />
             </div>
           ) : isUserMutedInCommunity ? (
-            <div className="relative z-10 p-3 bg-rose-950/90 border-t border-rose-500/40 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2 shrink-0">
+            <div
+              className="relative z-40 p-3 bg-rose-950/90 border-t border-rose-500/45 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2 shrink-0"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
               <VolumeX className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{translate(language, 'mutedNotice')}</span>
             </div>
           ) : isRecording ? (
-            <div className="relative z-10 p-3 bg-black/75 border-t border-[#D4AF37]/40 flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-3 h-3 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
-                <span className="text-xs font-extrabold text-white">
-                  {language === 'ur' ? 'وائس نوٹ ریکارڈ ہو رہا ہے...' : 'Recording Voice Note...'}
-                </span>
-                <span className="text-xs font-mono font-bold text-[#F5D061] tabular-nums">
+            /* STEP 1: RECORDING BAR (Delete Left · Red Live Timer & Wave Center · Stop Button Right — NEVER Auto-Sends) */
+            <div
+              className="relative z-40 px-3 pt-3 bg-gradient-to-b from-[#131C31]/95 to-[#090D16] border-t border-slate-400/25 flex items-center justify-between gap-2.5 shrink-0 shadow-[0_-8px_24px_rgba(0,0,0,0.65)]"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => stopVoiceRecording(true)}
+                aria-label={language === 'ur' ? 'ریکارڈنگ حذف کریں' : 'Discard recording'}
+                title={language === 'ur' ? 'حذف کریں' : 'Discard Recording'}
+                className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-rose-950/90 hover:bg-rose-900 border border-rose-500/55 text-rose-200 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+
+              <div className="flex-1 min-w-0 flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl bg-[#0F172A] border border-rose-500/45">
+                <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                <span className="text-sm font-mono font-extrabold text-rose-400 tabular-nums shrink-0">
                   {formatDuration(recordingSeconds)} / 1:00
                 </span>
+                <div className="hidden xs:flex items-end gap-0.5 h-5 flex-1 max-w-[110px]" aria-hidden="true">
+                  {[40, 85, 55, 95, 65, 80, 45, 90, 60, 75].map((h, i) => (
+                    <span
+                      key={i}
+                      style={{ height: `${h}%`, animationDelay: `${i * 0.08}s` }}
+                      className="flex-1 rounded-full bg-rose-400 kc-wave-bar-active"
+                    />
+                  ))}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => stopVoiceRecording(false)}
+                aria-label={language === 'ur' ? 'ریکارڈنگ روکیں اور سنیں' : 'Stop recording to preview'}
+                title={language === 'ur' ? 'روکیں اور پیش نظارہ کریں' : 'Stop & Preview'}
+                className="relative z-50 min-w-[48px] min-h-[48px] h-12 px-3.5 rounded-xl kc-gold-button inline-flex items-center justify-center gap-1.5 text-xs font-extrabold shrink-0 cursor-pointer kc-pressable"
+              >
+                <Square className="w-4 h-4 fill-current shrink-0" />
+                <span className="hidden sm:inline">{language === 'ur' ? 'روکیں' : 'Stop'}</span>
+              </button>
+            </div>
+          ) : draftVoiceNote ? (
+            /* STEP 2: VOICE NOTE PREVIEW BAR (Delete Left · Play/Pause & Progress Center · Large Send Right) */
+            <div
+              className="relative z-40 px-3 pt-3 bg-gradient-to-b from-[#131C31]/95 to-[#090D16] border-t border-slate-400/25 flex items-center justify-between gap-2 shrink-0 shadow-[0_-8px_24px_rgba(0,0,0,0.65)]"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
+              <button
+                type="button"
+                onClick={discardDraftVoiceNote}
+                aria-label={language === 'ur' ? 'وائس نوٹ حذف کریں' : 'Delete voice note'}
+                title={language === 'ur' ? 'حذف کریں' : 'Delete'}
+                className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-rose-950/90 hover:bg-rose-900 border border-rose-500/55 text-rose-200 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+
+              <div className="flex-1 min-w-0 flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl bg-[#0F172A] border border-[#D4AF37]/45">
                 <button
                   type="button"
-                  onClick={() => stopVoiceRecording(true)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold cursor-pointer"
+                  onClick={toggleDraftVoicePlay}
+                  aria-label={isDraftPlaying ? 'Pause voice preview' : 'Play voice preview'}
+                  className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-full bg-[#131C31] hover:bg-[#1E293B] border border-[#F5D061]/70 text-[#F5D061] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                 >
-                  {translate(language, 'cancel')}
+                  {isDraftPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => stopVoiceRecording(false)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl kc-gold-button text-xs font-extrabold cursor-pointer"
-                >
-                  <Square className="w-3 h-3 fill-current" />
-                  <span>{language === 'ur' ? 'روکیں اور بھیجیں' : 'Stop & Send'}</span>
-                </button>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-end gap-0.5 h-5" aria-hidden="true">
+                    {draftVoiceNote.waveform.map((hPct, idx) => {
+                      const ratio = (idx + 1) / draftVoiceNote.waveform.length;
+                      const prog = draftPlaySec / Math.max(1, draftVoiceNote.durationSec);
+                      const filled = isDraftPlaying ? ratio <= prog : true;
+                      return (
+                        <span
+                          key={idx}
+                          style={{ height: `${Math.max(22, Math.min(100, hPct))}%` }}
+                          className={`flex-1 rounded-full transition-colors ${
+                            isDraftPlaying && filled
+                              ? 'bg-[#F5D061] kc-wave-bar-active'
+                              : filled
+                              ? 'bg-[#38BDF8]'
+                              : 'bg-slate-700'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#F5D061] tabular-nums">
+                    <span>{language === 'ur' ? 'وائس نوٹ تیار ہے' : 'Ready to send'}</span>
+                    <span>{formatDuration(isDraftPlaying ? draftPlaySec : draftVoiceNote.durationSec)}</span>
+                  </div>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleSendDraftVoiceNote}
+                aria-label={language === 'ur' ? 'وائس نوٹ بھیجیں' : 'Send voice note'}
+                className="relative z-50 min-w-[48px] min-h-[48px] h-12 px-4 rounded-xl kc-gold-button inline-flex items-center justify-center gap-1.5 text-xs font-extrabold shrink-0 cursor-pointer kc-pressable"
+              >
+                <Send className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
+              </button>
             </div>
           ) : (
-            <div className="relative z-10 shrink-0">
+            <div
+              className="relative z-40 shrink-0 bg-gradient-to-b from-[#131C31]/95 to-[#090D16] border-t border-slate-400/25 shadow-[0_-8px_24px_rgba(0,0,0,0.65)]"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
               {typeof window !== 'undefined' &&
                 !(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() && (
-                <div className="px-3 py-1 bg-black/75 border-t border-[#D4AF37]/15 text-[10px] text-[#F5D061]/85 flex items-center gap-1.5">
-                  <Mic className="w-3 h-3 shrink-0 text-[#F5D061]" />
+                <div className="px-3 py-1 bg-[#0F172A]/95 border-b border-slate-400/15 text-[10px] text-[#38BDF8]/90 flex items-center gap-1.5">
+                  <Mic className="w-3 h-3 shrink-0 text-[#38BDF8]" />
                   <span className="truncate">
                     {language === 'ur'
                       ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
@@ -1677,78 +1886,113 @@ const ChatModuleContent: React.FC = () => {
               )}
               <form
                 onSubmit={handleSendCommunityMessage}
-                className="p-2.5 sm:p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/75 border-t border-[#D4AF37]/30 flex items-center gap-1.5 sm:gap-2"
+                className="p-2.5 sm:p-3.5 pb-0 flex flex-wrap sm:flex-nowrap items-end gap-1.5 sm:gap-2"
               >
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmojiStrip(s => !s);
-                  setShowIslamicGifDrawer(false);
-                }}
-                className="p-2 rounded-xl bg-[#161D2C] text-slate-300 hover:text-[#F5D061] shrink-0 cursor-pointer"
-                title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
-              >
-                <Smile className="w-4 h-4" />
-              </button>
+                {/* Utility Icons Row on <640px, Inline on >=640px */}
+                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEmojiStrip(s => !s);
+                        setShowIslamicGifDrawer(false);
+                      }}
+                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] hover:text-[#38BDF8] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                      title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
+                      aria-label={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowIslamicGifDrawer(d => !d);
-                  setShowEmojiStrip(false);
-                }}
-                className="px-2 py-2 rounded-xl bg-[#161D2C] text-[#F5D061] border border-[#D4AF37]/30 text-xs font-bold shrink-0 cursor-pointer"
-                title={translate(language, 'islamicGifs')}
-              >
-                ☪️
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowIslamicGifDrawer(d => !d);
+                        setShowEmojiStrip(false);
+                      }}
+                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#F5D061] border border-slate-400/25 text-base font-bold flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                      title={translate(language, 'islamicGifs')}
+                      aria-label={translate(language, 'islamicGifs')}
+                    >
+                      ☪️
+                    </button>
 
-              {/* Phone Gallery Photo / GIF Upload (Super Admins & Admins Only) */}
-              {canUploadGallery && (
-                <label
-                  className="p-2 rounded-xl bg-[#161D2C] text-[#F5D061] border border-[#F5D061]/35 hover:bg-[#1E273B] shrink-0 cursor-pointer"
-                  title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  <input
-                    type="file"
-                    accept="image/*,.gif"
-                    onChange={handleGalleryMediaUpload}
-                    disabled={isCompressingMedia}
-                    className="hidden"
-                  />
-                </label>
-              )}
+                    {/* Phone Gallery Photo / GIF Upload (Super Admins & Admins Only) */}
+                    {canUploadGallery && (
+                      <label
+                        className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] text-[#38BDF8] border border-[#38BDF8]/35 hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                        title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        <input
+                          type="file"
+                          accept="image/*,.gif"
+                          onChange={handleGalleryMediaUpload}
+                          disabled={isCompressingMedia}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
 
-              <input
-                type="text"
-                value={communityText}
-                onChange={(e) => setCommunityText(e.target.value)}
-                placeholder={
-                  isCompressingMedia
-                    ? (language === 'ur' ? 'تصویر/GIF تیار کی جا رہی ہے...' : 'Optimizing image/GIF...')
-                    : translate(language, 'chatTypeMessage')
-                }
-                className="flex-1 min-w-[140px] px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622]/90 text-white focus:outline-hidden focus:border-[#D4AF37]"
-              />
+                  {communityText.length >= 4000 && (
+                    <span className="sm:hidden text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40">
+                      {communityText.length.toLocaleString()} / 5,000
+                    </span>
+                  )}
+                </div>
 
-              <button
-                type="button"
-                onClick={startVoiceRecording}
-                className="p-2 rounded-xl bg-[#161D2C] border border-[#D4AF37]/30 text-[#F5D061] hover:bg-[#1E273B] shrink-0 cursor-pointer"
-                title={translate(language, 'voiceNoteHold')}
-              >
-                <Mic className="w-4 h-4" />
-              </button>
+                {/* Main Input Bar: Auto-Expanding 5,000-Char Textarea + Single Mic + Send */}
+                <div className="flex-1 w-full sm:w-auto flex items-end gap-1.5 sm:gap-2 min-w-0">
+                  <div className="flex-1 min-w-[140px] flex flex-col">
+                    {communityText.length >= 4000 && (
+                      <span className="hidden sm:inline-block self-end mb-1 text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40">
+                        {communityText.length.toLocaleString()} / 5,000
+                      </span>
+                    )}
+                    <textarea
+                      ref={communityTextareaRef}
+                      rows={1}
+                      maxLength={5000}
+                      dir="auto"
+                      value={communityText}
+                      onChange={(e) => setCommunityText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSendCommunityMessage();
+                        }
+                      }}
+                      placeholder={
+                        isCompressingMedia
+                          ? (language === 'ur' ? 'تصویر/GIF تیار کی جا رہی ہے...' : 'Optimizing image/GIF...')
+                          : translate(language, 'chatTypeMessage')
+                      }
+                      style={{ fontSize: '16px', maxHeight: '120px' }}
+                      className="w-full min-h-[48px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={isCompressingMedia || (!communityText.trim() && !communityAttachment)}
-                className="flex items-center gap-1 px-3.5 py-2 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={startVoiceRecording}
+                    className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] border border-[#38BDF8]/35 text-[#38BDF8] hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                    title={translate(language, 'voiceNoteHold')}
+                    aria-label={translate(language, 'voiceNoteHold')}
+                  >
+                    <Mic className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isCompressingMedia || (!communityText.trim() && !communityAttachment)}
+                    className="relative z-50 min-w-[48px] min-h-[48px] h-12 px-3.5 flex items-center justify-center gap-1.5 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer kc-pressable"
+                    aria-label={translate(language, 'chatSend')}
+                  >
+                    <Send className="w-4 h-4 shrink-0" />
+                    <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
+                  </button>
+                </div>
               </form>
             </div>
           )}
@@ -1837,7 +2081,7 @@ const ChatModuleContent: React.FC = () => {
                             className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/40"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-[#043927] text-[#F5D061] flex items-center justify-center font-bold text-sm border border-[#D4AF37]/40">
+                          <div className="w-10 h-10 rounded-full bg-[#131C31] text-[#38BDF8] flex items-center justify-center font-bold text-sm border border-[#38BDF8]/40">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -1914,7 +2158,7 @@ const ChatModuleContent: React.FC = () => {
                           className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/40"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#043927] text-[#F5D061] flex items-center justify-center font-bold text-sm border border-[#D4AF37]/40">
+                        <div className="w-9 h-9 rounded-full bg-[#131C31] text-[#38BDF8] flex items-center justify-center font-bold text-sm border border-[#38BDF8]/40">
                           {activeRecipient.name.charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -2013,24 +2257,27 @@ const ChatModuleContent: React.FC = () => {
                             <div
                               className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
                                 directSenderIsFaizKhel
-                                  ? `bg-gradient-to-br from-[#022C22] via-[#064E3B] to-[#022C22] text-white border-[1.5px] border-[#D4AF37] shadow-[0_4px_16px_rgba(212,175,55,0.18)] ${
+                                  ? `bg-gradient-to-br from-[#2B1F06] via-[#42300A] to-[#1C1404] text-[#F8FAFC] border-[1.5px] border-[#FDE047] shadow-[0_4px_18px_rgba(253,224,71,0.24)] ${
                                       isMine ? 'rounded-br-none' : 'rounded-bl-none'
                                     }`
                                   : isMine
-                                  ? 'bg-gradient-to-br from-[#043927] to-[#065239] text-white border border-[#D4AF37]/40 rounded-br-none'
-                                  : 'bg-[#161D2C] text-slate-100 border border-slate-700/80 rounded-bl-none'
+                                  ? 'bg-gradient-to-br from-[#131C31] to-[#1E293B] text-[#F8FAFC] border border-[#38BDF8]/40 rounded-br-none'
+                                  : 'bg-[#131C31]/95 text-[#F8FAFC] border border-slate-400/20 rounded-bl-none'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-3 text-[10px] opacity-90 font-semibold">
                                 <span
-                                  className={
+                                  className={`inline-flex items-center gap-1 ${
                                     directSenderIsFaizKhel
-                                      ? 'text-[#FDE047]'
+                                      ? 'text-[#FEF08A]'
                                       : isMine
                                       ? 'text-[#F5D061]'
-                                      : 'text-emerald-300'
-                                  }
+                                      : 'text-[#38BDF8]'
+                                  }`}
                                 >
+                                  {directSenderIsFaizKhel && !msgFromFounder && (
+                                    <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" />
+                                  )}
                                   {isMine ? (language === 'ur' ? 'آپ' : 'You') : msg.senderName}
                                 </span>
                                 <div className="flex items-center gap-2">
@@ -2109,7 +2356,7 @@ const ChatModuleContent: React.FC = () => {
                 )}
 
                 {speech.isListening && dictationTarget === 'DIRECT' && (
-                  <div className="px-3 py-2 bg-[#042920] border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
+                  <div className="px-3 py-2 bg-[#131C31] border-t border-[#38BDF8]/30 flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                       <span className="text-[#F5D061] truncate">
@@ -2126,7 +2373,7 @@ const ChatModuleContent: React.FC = () => {
                           setDictationLocale(next);
                           speech.startDictation(next);
                         }}
-                        className="px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold cursor-pointer"
+                        className="px-2 py-0.5 rounded-md bg-[#090D16] border border-[#38BDF8]/35 text-[#38BDF8] text-[10px] font-bold cursor-pointer"
                       >
                         {dictationLocale === 'ur-PK' ? 'اردو' : 'EN'}
                       </button>
@@ -2145,55 +2392,86 @@ const ChatModuleContent: React.FC = () => {
                 )}
 
                 {requiresProfileCompletion ? (
-                  <div className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 bg-[#0A0D12]">
+                  <div
+                    className="p-2.5 sm:p-3 border-t border-slate-400/20 bg-[#090D16]"
+                    style={{
+                      paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+                    }}
+                  >
                     <ProfileCompletionGate compact featureName={language === 'ur' ? 'براہ راست پیغام رسانی' : 'Direct Messaging'} />
                   </div>
                 ) : (
-                <form onSubmit={handleSendDirectMessage} className="p-2.5 sm:p-3 border-t border-[#D4AF37]/20 flex items-center gap-2 bg-[#0A0D12]">
+                <form
+                  onSubmit={handleSendDirectMessage}
+                  className="px-2.5 pt-2.5 sm:px-3 sm:pt-3 border-t border-slate-400/25 flex items-end gap-1.5 sm:gap-2 bg-gradient-to-b from-[#131C31]/95 to-[#090D16]"
+                  style={{
+                    paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setIsAttachmentModalOpen(true)}
-                    className="p-2 text-slate-400 hover:text-[#F5D061] rounded-xl hover:bg-[#161D2C] cursor-pointer"
+                    className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 text-[#F8FAFC] hover:text-[#38BDF8] rounded-xl bg-[#0F172A] border border-slate-400/25 hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                     title={language === 'ur' ? 'تصویر یا فائل منسلک کریں' : 'Attach photo or document'}
+                    aria-label={language === 'ur' ? 'تصویر یا فائل منسلک کریں' : 'Attach photo or document'}
                   >
-                    <Paperclip className="w-4 h-4" />
+                    <Paperclip className="w-5 h-5" />
                   </button>
 
-                  <input
-                    type="text"
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={isOnline ? translate(language, 'chatTypeMessage') : `${translate(language, 'chatTypeMessage')} (${language === 'ur' ? 'آف لائن قطار' : 'Offline Queue'})`}
-                    className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl border border-slate-700 bg-[#111622] text-white focus:outline-hidden focus:border-[#D4AF37]"
-                  />
+                  <div className="flex-1 min-w-[140px] flex flex-col">
+                    {messageText.length >= 4000 && (
+                      <span className="self-end mb-1 text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40">
+                        {messageText.length.toLocaleString()} / 5,000
+                      </span>
+                    )}
+                    <textarea
+                      ref={directTextareaRef}
+                      rows={1}
+                      maxLength={5000}
+                      dir="auto"
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSendDirectMessage(e as unknown as React.FormEvent);
+                        }
+                      }}
+                      placeholder={isOnline ? translate(language, 'chatTypeMessage') : `${translate(language, 'chatTypeMessage')} (${language === 'ur' ? 'آف لائن قطار' : 'Offline Queue'})`}
+                      style={{ fontSize: '16px', maxHeight: '120px' }}
+                      className="w-full min-h-[48px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
+                    />
+                  </div>
 
                   <button
                     type="button"
                     onClick={() => toggleChatDictation('DIRECT')}
-                    className={`p-2 rounded-xl border shrink-0 cursor-pointer transition-colors ${
+                    className={`relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition-colors kc-pressable ${
                       speech.isListening && dictationTarget === 'DIRECT'
                         ? 'bg-rose-950/90 border-rose-500 text-rose-200'
-                        : 'bg-[#161D2C] border-[#D4AF37]/30 text-emerald-300 hover:text-[#F5D061] hover:bg-[#1E273B]'
+                        : 'bg-[#0F172A] border-[#38BDF8]/35 text-[#38BDF8] hover:text-[#F5D061] hover:bg-[#1E293B]'
                     }`}
                     title={
                       speech.isListening && dictationTarget === 'DIRECT'
                         ? (language === 'ur' ? 'وائس ڈکٹیشن روکیں' : 'Stop Voice Dictation')
                         : (language === 'ur' ? 'بول کر پیغام لکھیں' : 'Dictate Message with Voice')
                     }
+                    aria-label={language === 'ur' ? 'وائس ڈکٹیشن' : 'Voice Dictation'}
                   >
                     {speech.isListening && dictationTarget === 'DIRECT' ? (
-                      <Square className="w-4 h-4 fill-current" />
+                      <Square className="w-5 h-5 fill-current" />
                     ) : (
-                      <AudioLines className="w-4 h-4" />
+                      <AudioLines className="w-5 h-5" />
                     )}
                   </button>
 
                   <button
                     type="submit"
                     disabled={!messageText.trim() && !attachmentPreview}
-                    className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer"
+                    className="relative z-50 min-w-[48px] min-h-[48px] h-12 flex items-center justify-center gap-1.5 px-3.5 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer kc-pressable"
+                    aria-label={translate(language, 'chatSend')}
                   >
-                    {isOnline ? <Send className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                    {isOnline ? <Send className="w-4 h-4 shrink-0" /> : <Clock className="w-4 h-4 shrink-0" />}
                     <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
                   </button>
                 </form>

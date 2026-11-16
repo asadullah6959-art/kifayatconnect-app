@@ -344,15 +344,19 @@ export const MemberDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Split: Black Velvet / Faiz Khel Royal Emerald VIP Card Preview + KPI Grid */}
+      {/* Hero Split: Fintech Slate / Faiz Khel Royal Imperial Gold VIP Card Preview + KPI Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div
           onClick={() => setSelectedCardUser(currentUser)}
-          className="lg:col-span-5 rounded-2xl p-5 text-white shadow-xl border-2 border-[#D4AF37] cursor-pointer hover:border-[#F5D061] transition-colors flex flex-col justify-between relative overflow-hidden"
+          className={`lg:col-span-5 rounded-2xl p-5 text-[#F8FAFC] shadow-xl cursor-pointer transition-colors flex flex-col justify-between relative overflow-hidden ${
+            isFaizKhelUser(currentUser)
+              ? 'border-[1.5px] border-[#FDE047] shadow-[0_12px_32px_rgba(212,175,55,0.28)]'
+              : 'border border-slate-400/25 hover:border-[#38BDF8]/65'
+          }`}
           style={{
             background: isFaizKhelUser(currentUser)
-              ? 'linear-gradient(145deg, #022C22 0%, #064E3B 48%, #021B14 100%)'
-              : 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)'
+              ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
+              : 'linear-gradient(145deg, #131C31 0%, #1E293B 55%, #090D16 100%)'
           }}
         >
           <div className="flex items-start justify-between">
@@ -362,13 +366,13 @@ export const MemberDashboard: React.FC = () => {
                 <h4 className="font-extrabold text-xs uppercase tracking-wider kc-gold-gradient-text">
                   KIFAYAT CONNECT 👑
                 </h4>
-                <p className="text-[10px] text-emerald-300 font-semibold">{translate(language, 'vipPremiumMember')}</p>
+                <p className="text-[10px] text-[#38BDF8] font-semibold">{translate(language, 'vipPremiumMember')}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
-              {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-4 h-4" />}
-              <span className="text-[10px] font-mono font-bold text-emerald-300 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 flex items-center gap-1">
+              {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-6 h-6" />}
+              <span className="text-[10px] font-mono font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
                 <span>{translate(language, 'activeLabel')}</span>
               </span>
@@ -383,28 +387,30 @@ export const MemberDashboard: React.FC = () => {
                 className="w-16 h-16 rounded-xl object-cover border-2 border-[#F5D061] shadow-md"
               />
             ) : (
-              <div className="w-16 h-16 rounded-xl bg-[#043927] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-lg shadow-md shrink-0">
+              <div className="w-16 h-16 rounded-xl bg-[#0F172A] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-lg shadow-md shrink-0">
                 {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
             )}
             <div className="min-w-0 space-y-1">
-              <h3 className="font-extrabold text-base text-white truncate">{currentUser.name}</h3>
+              <h3 className={`font-extrabold text-base truncate ${isFaizKhelUser(currentUser) ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
+                {currentUser.name}
+              </h3>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <p className="text-[11px] font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
                 <TabbarBadge user={currentUser} language={language} compact />
               </div>
-              <p className="text-[10px] text-slate-300 truncate">
+              <p className="text-[10px] text-[#94A3B8] truncate">
                 {memberDistrict}, {memberProvince}{memberTehsil ? ` · ${memberTehsil}` : ''}
               </p>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-[#D4AF37]/25 flex items-center justify-between text-[10px] text-slate-400">
+          <div className="pt-2 border-t border-slate-400/20 flex items-center justify-between text-[10px] text-[#94A3B8]">
             <div>
               <span>{language === 'ur' ? 'میعاد:' : 'VALID THRU:'} </span>
               <span className="font-mono text-[#F5D061] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
             </div>
-            <span className="text-[#F5D061] font-semibold">
+            <span className="text-[#38BDF8] font-semibold">
               {language === 'ur' ? 'وی آئی پی کارڈ اور QR دیکھیں →' : 'Tap for VIP Card & QR →'}
             </span>
           </div>
@@ -563,7 +569,7 @@ export const MemberDashboard: React.FC = () => {
                   <td className="py-2.5 px-3 text-center">
                     <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
                       tx.status === 'VERIFIED'
-                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/40'
+                        ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
                         : tx.status === 'REJECTED'
                         ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
                         : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
@@ -637,7 +643,7 @@ export const MemberDashboard: React.FC = () => {
                       <p className="text-[10px] text-slate-400 font-mono">{cmp.ticketNumber} · {cmp.category}</p>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                      cmp.status === 'RESOLVED' ? 'bg-[#042920] text-emerald-300 border border-emerald-500/35' : 'bg-amber-950/60 text-[#F5D061] border border-[#D4AF37]/35'
+                      cmp.status === 'RESOLVED' ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35' : 'bg-amber-950/60 text-[#F5D061] border border-[#D4AF37]/35'
                     }`}>
                       {cmp.status === 'RESOLVED' ? translate(language, 'resolvedLabel') : translate(language, 'openLabel')}
                     </span>

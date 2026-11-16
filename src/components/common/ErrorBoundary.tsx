@@ -72,26 +72,26 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       const isUr = typeof document !== 'undefined' && document.documentElement.dataset.lang === 'ur';
       const wrapperClass = this.props.isRoot
-        ? 'min-h-[100dvh] w-full flex items-center justify-center p-5 bg-[#021B14] text-slate-100'
+        ? 'min-h-[100dvh] w-full flex items-center justify-center p-5 bg-[#090D16] text-[#F8FAFC]'
         : 'my-6 px-3';
 
       return (
         <div className={wrapperClass}>
           <div className="kc-obsidian-card rounded-2xl p-6 text-center max-w-md w-full mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-[#022C22] border border-[#D4AF37]/55 text-[#F5D061] flex items-center justify-center mx-auto mb-3 shadow-md">
+            <div className="w-12 h-12 rounded-2xl bg-[#131C31] border border-[#38BDF8]/45 text-[#F5D061] flex items-center justify-center mx-auto mb-3 shadow-md">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-black text-white">
+            <h3 className="text-base font-black text-[#F8FAFC]">
               {this.props.title || (isUr ? 'اسکرین محفوظ طریقے سے بحال ہو رہی ہے' : 'Recovering Secure View')}
             </h3>
-            <p className="text-xs text-emerald-100/80 mt-1.5 leading-relaxed">
+            <p className="text-xs text-[#94A3B8] mt-1.5 leading-relaxed">
               {this.props.description ||
                 (isUr
                   ? 'آپ کا لاگ ان سیشن محفوظ رکھتے ہوئے عارضی خرابی صاف کر دی گئی ہے۔'
                   : 'A temporary rendering issue was safely caught and broken cache was repaired while preserving your login session.')}
             </p>
             {this.state.errorMessage && (
-              <p className="text-[11px] font-mono text-amber-300/90 bg-[#021B14] border border-[#D4AF37]/30 rounded-lg px-2.5 py-1.5 mt-3 break-words">
+              <p className="text-[11px] font-mono text-amber-300/90 bg-[#0F172A] border border-slate-400/20 rounded-lg px-2.5 py-1.5 mt-3 break-words">
                 {this.state.errorMessage}
               </p>
             )}

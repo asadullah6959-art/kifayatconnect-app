@@ -74,7 +74,7 @@ export const AuditLogsView: React.FC = () => {
       case 'FINANCIAL':
         return 'bg-sky-950/60 text-sky-300 border-sky-500/40';
       case 'MEMBERSHIP':
-        return 'bg-[#042920] text-emerald-300 border-emerald-500/45';
+        return 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45';
       case 'REGIONAL':
         return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
       case 'SECURITY':

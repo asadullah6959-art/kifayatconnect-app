@@ -98,7 +98,7 @@ export const AppUpdateModal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#042920] text-[#F5D061] border border-[#D4AF37]/40">
+                <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40">
                   v{activeVersion}
                 </span>
                 {isMandatory && (
@@ -157,7 +157,7 @@ export const AppUpdateModal: React.FC = () => {
             <button
               type="button"
               onClick={handlePwaUpdate}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#042920] hover:bg-[#063B2E] text-emerald-100 font-semibold text-xs flex items-center justify-center gap-2 border border-[#D4AF37]/40 kc-pressable cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#131C31] hover:bg-[#1E293B] text-[#F8FAFC] font-semibold text-xs flex items-center justify-center gap-2 border border-[#38BDF8]/40 kc-pressable cursor-pointer"
             >
               <RefreshCw className="w-4 h-4 text-[#F5D061]" />
               <span>

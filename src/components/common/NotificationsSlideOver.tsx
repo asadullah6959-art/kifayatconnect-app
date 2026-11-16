@@ -132,7 +132,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
       case 'MEMBERSHIP_APPROVED':
       case 'PAYMENT_VERIFIED':
       case 'USER_SIGNUP':
-        return 'bg-[#042920] text-emerald-300 border-emerald-500/45';
+        return 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/40';
       case 'USER_LOGIN':
         return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
       case 'MEMBERSHIP_PENDING_DISTRICT':
@@ -215,7 +215,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           <div className="px-6 py-5 border-b border-[#D4AF37]/25 bg-[#090D16]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#042920] border border-[#D4AF37]/45 text-[#F5D061] flex items-center justify-center relative">
+                <div className="w-9 h-9 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] flex items-center justify-center relative">
                   <Bell className="w-5 h-5" />
                   {unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums">
@@ -343,7 +343,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 transition-all cursor-pointer relative hover:bg-[#161F33]/80 ${
                       !notification.read
-                        ? 'bg-[#042920]/45'
+                        ? 'bg-[#131C31]/75'
                         : ''
                     }`}
                   >

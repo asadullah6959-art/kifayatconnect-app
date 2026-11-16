@@ -296,9 +296,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
       >
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[#D4AF37]/30 bg-gradient-to-r from-[#090D16] via-[#042920]/70 to-[#090D16] text-white flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-400/20 bg-gradient-to-r from-[#090D16] via-[#131C31] to-[#090D16] text-[#F8FAFC] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#042920] border border-[#D4AF37]/50 flex items-center justify-center text-[#F5D061] shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-[#131C31] border border-[#38BDF8]/45 flex items-center justify-center text-[#38BDF8] shadow-inner">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
@@ -370,8 +370,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
             )}
 
             {uploadSuccess && (
-              <div className="p-3 rounded-xl bg-[#042920] border border-emerald-500/40 flex items-center gap-2 text-xs text-emerald-200">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/45 flex items-center gap-2 text-xs text-[#38BDF8]">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-[#38BDF8]" />
                 <span>{uploadSuccess}</span>
               </div>
             )}
@@ -390,8 +390,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                       onClick={() => setSelectedType(cat.type)}
                       className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer kc-pressable ${
                         selectedType === cat.type
-                          ? 'bg-[#042920] border-[#F5D061] text-white shadow-[0_4px_14px_rgba(212,175,55,0.18)]'
-                          : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-300 hover:border-[#D4AF37]/60 hover:text-white'
+                          ? 'bg-[#131C31] border-[#38BDF8] text-[#F8FAFC] shadow-[0_4px_14px_rgba(56,189,248,0.18)]'
+                          : 'bg-[#090D16] border-slate-400/20 text-slate-300 hover:border-[#38BDF8]/50 hover:text-white'
                       }`}
                     >
                       <span className="text-lg leading-none mt-0.5">{cat.icon}</span>
@@ -413,8 +413,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
                   fileDataUrl
-                    ? 'border-emerald-500/60 bg-[#042920]/40'
-                    : 'border-[#D4AF37]/35 hover:border-[#F5D061] bg-[#090D16]'
+                    ? 'border-[#38BDF8]/60 bg-[#131C31]/70'
+                    : 'border-slate-400/25 hover:border-[#38BDF8] bg-[#090D16]'
                 }`}
               >
                 <input
@@ -455,7 +455,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                   </div>
                 ) : (
                   <div className="space-y-1.5 py-2">
-                    <div className="w-10 h-10 rounded-full bg-[#042920] border border-[#D4AF37]/40 text-[#F5D061] mx-auto flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#131C31] border border-[#38BDF8]/40 text-[#38BDF8] mx-auto flex items-center justify-center">
                       <UploadCloud className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-semibold text-slate-200">
@@ -556,7 +556,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                             doc.verificationStatus === 'VERIFIED'
-                              ? 'bg-[#042920] text-emerald-300 border border-emerald-500/45'
+                              ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45'
                               : doc.verificationStatus === 'FLAGGED'
                               ? 'bg-rose-950/70 text-rose-300 border border-rose-500/45'
                               : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
@@ -666,7 +666,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                               <button
                                 type="button"
                                 onClick={() => verifyApplicationDocument(application.id, doc.id, 'VERIFIED')}
-                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-200 bg-[#042920] hover:bg-[#063B2E] border border-emerald-500/45 rounded-lg transition-colors cursor-pointer kc-pressable"
+                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-[#38BDF8] bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/45 rounded-lg transition-colors cursor-pointer kc-pressable"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
                                 <span>{isUr ? 'تصدیق کریں' : 'Verify'}</span>

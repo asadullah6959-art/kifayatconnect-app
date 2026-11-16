@@ -174,7 +174,7 @@
         "senderId": { "type": "string", "maxLength": 128 },
         "recipientId": { "type": "string", "maxLength": 128 },
         "participants": { "type": "array" },
-        "text": { "type": "string", "maxLength": 2000 },
+        "text": { "type": "string", "maxLength": 5000 },
         "timestamp": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
         "hiddenForUsers": { "type": "array" }
@@ -198,7 +198,7 @@
         "senderTabbarId": { "type": "string", "maxLength": 64 },
         "senderTabbarUrdu": { "type": "string", "maxLength": 120 },
         "senderTabbarEnglish": { "type": "string", "maxLength": 120 },
-        "text": { "type": "string", "maxLength": 4000 },
+        "text": { "type": "string", "maxLength": 5000 },
         "timestamp": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
         "islamicGifId": { "type": "string", "maxLength": 64 },

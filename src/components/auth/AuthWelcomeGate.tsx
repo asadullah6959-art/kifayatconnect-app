@@ -297,11 +297,11 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
 
   return (
     <div
-      className="min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-white flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#F8FAFC] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
       style={{
-        backgroundColor: '#021B14',
+        backgroundColor: '#090D16',
         backgroundImage:
-          'radial-gradient(circle at 50% 15%, rgba(6, 78, 59, 0.55) 0%, rgba(2, 44, 34, 0.4) 45%, #021B14 100%)'
+          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #090D16 100%)'
       }}
     >
       {/* Top Bar */}
@@ -312,7 +312,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
             <span className="font-extrabold text-sm tracking-tight kc-gold-gradient-text block leading-none">
               {language === 'ur' ? (appSettings.appNameUr || 'کفایت کنیکٹ') : (appSettings.appName || 'Kifayat Connect')}
             </span>
-            <span className="text-[10px] text-emerald-300 font-semibold">
+            <span className="text-[10px] text-[#38BDF8] font-semibold">
               {translate(language, 'tagline', appSettings.textOverrides)}
             </span>
           </div>
@@ -321,16 +321,16 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
         <button
           type="button"
           onClick={toggleLanguage}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#F5D061] bg-[#042920] border border-[#D4AF37]/40 hover:bg-[#064E3B] rounded-xl transition-colors cursor-pointer kc-pressable"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#F5D061] bg-[#131C31] border border-slate-400/20 hover:bg-[#1E293B] rounded-xl transition-colors cursor-pointer kc-pressable"
         >
-          <Languages className="w-3.5 h-3.5 text-[#D4AF37]" />
+          <Languages className="w-3.5 h-3.5 text-[#38BDF8]" />
           <span>{translate(language, 'languageToggle')}</span>
         </button>
       </div>
 
-      {/* Main Luxury Emerald & Gold Card */}
+      {/* Main Fintech Wallet Dark Slate & Gold Card */}
       <div className="w-full max-w-md mx-auto my-5 kc-obsidian-card rounded-2xl overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-[#064E3B] via-[#D4AF37] to-[#F59E0B]" />
+        <div className="h-1.5 bg-gradient-to-r from-[#0EA5E9] via-[#D4AF37] to-[#F59E0B]" />
 
         <div className="p-5 sm:p-6 space-y-5">
           <div className="text-center space-y-2">
@@ -526,12 +526,12 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
               {authTab === 'PASSWORD' && allowPasswordLogin && (
                 <form onSubmit={handlePasswordSubmit} className="space-y-3">
                   {needsDirectPwdSetup && (
-                    <div className="p-3 rounded-xl bg-[#043927]/50 border border-emerald-500/45 text-emerald-200 text-xs space-y-1">
+                    <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F8FAFC] text-xs space-y-1">
                       <div className="font-bold text-[#F5D061] flex items-center gap-1.5">
                         <KeyRound className="w-3.5 h-3.5" />
                         <span>{translate(language, 'existingAccountSetPwdTitle')}</span>
                       </div>
-                      <p className="text-[11px] text-emerald-100/90 leading-relaxed">
+                      <p className="text-[11px] text-[#94A3B8] leading-relaxed">
                         {translate(language, 'existingAccountSetPwdDesc')}
                       </p>
                     </div>
@@ -797,19 +797,19 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
               )}
 
               {/* Persistent Session Notice */}
-              <div className="px-3 py-2 rounded-xl bg-[#043927]/35 border border-emerald-500/25 text-[10px] text-emerald-300 text-center font-medium">
+              <div className="px-3 py-2 rounded-xl bg-[#0F172A] border border-[#38BDF8]/30 text-[10px] text-[#38BDF8] text-center font-medium">
                 {translate(language, 'rememberSessionBadge')}
               </div>
 
               {/* New Member Registration CTA */}
-              <div className="pt-3 border-t border-[#D4AF37]/20 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-slate-400">
+              <div className="pt-3 border-t border-slate-400/20 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-[#94A3B8]">
                   {language === 'ur' ? 'نئے ممبر ہیں؟' : 'New to Kifayat Connect?'}
                 </span>
                 <button
                   type="button"
                   onClick={onOpenRegisterModal}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#043927] hover:bg-[#065F46] text-[#F5D061] font-bold text-xs border border-[#D4AF37]/35 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#131C31] hover:bg-[#1E293B] text-[#38BDF8] hover:text-[#F5D061] font-bold text-xs border border-[#38BDF8]/35 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>{translate(language, 'registerBtn')}</span>

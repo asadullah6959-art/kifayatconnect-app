@@ -73,39 +73,39 @@ const THEME_PRESET_OPTIONS: Array<{
 }> = [
   {
     id: 'OBSIDIAN_GOLD',
-    name: 'Obsidian Black & Royal Gold',
-    nameUr: 'اوبسیڈین بلیک اور شاہی گولڈ',
-    bg: '#0A0D12',
-    surface: '#111622',
-    accent: '#D4AF37',
-    emerald: '#043927'
+    name: 'Fintech Slate & Royal Gold',
+    nameUr: 'فن ٹیک سلیٹ اور شاہی گولڈ',
+    bg: '#090D16',
+    surface: '#131C31',
+    accent: '#38BDF8',
+    emerald: '#D4AF37'
   },
   {
     id: 'EMERALD_GOLD',
-    name: 'Royal Emerald & Gold',
-    nameUr: 'شاہی زمرد اور گولڈ',
-    bg: '#06130F',
-    surface: '#0B1F18',
-    accent: '#F5D061',
-    emerald: '#065F46'
+    name: 'Cyan Slate & Champagne',
+    nameUr: 'سیان سلیٹ اور شیمپین گولڈ',
+    bg: '#090D16',
+    surface: '#0F172A',
+    accent: '#0EA5E9',
+    emerald: '#F59E0B'
   },
   {
     id: 'MIDNIGHT_ROYAL',
     name: 'Midnight Sapphire & Gold',
     nameUr: 'مڈ نائٹ رائل اور گولڈ',
-    bg: '#070B16',
-    surface: '#0F172A',
-    accent: '#EAB308',
-    emerald: '#043927'
+    bg: '#090D16',
+    surface: '#131C31',
+    accent: '#38BDF8',
+    emerald: '#EAB308'
   },
   {
     id: 'IMPERIAL_ONYX',
     name: 'Imperial Onyx Velvet',
     nameUr: 'امپیریل اونکس مخملی',
-    bg: '#08080A',
-    surface: '#121216',
+    bg: '#090D16',
+    surface: '#131C31',
     accent: '#D4AF37',
-    emerald: '#064E3B'
+    emerald: '#38BDF8'
   }
 ];
 
@@ -513,7 +513,7 @@ export const ManageAppModule: React.FC = () => {
                 type="button"
                 disabled={pinBusy}
                 onClick={handleSendPinResetOtp}
-                className="px-2.5 py-1 rounded-lg bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 font-bold shrink-0"
+                className="px-2.5 py-1 rounded-lg bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 font-bold shrink-0"
               >
                 {translate(language, 'sendOtpBtn')}
               </button>
@@ -818,7 +818,7 @@ export const ManageAppModule: React.FC = () => {
             <span>{isUr ? `زیرِ التواء منظوریاں (${pendingApprovalsCount})` : `Pending Approvals (${pendingApprovalsCount})`}</span>
           </button>
           {currentIsFounder && (
-            <span className="text-[11px] px-3 py-1.5 bg-[#043927]/70 border border-[#D4AF37]/50 text-[#F5D061] rounded-lg font-bold flex items-center gap-1.5">
+            <span className="text-[11px] px-3 py-1.5 bg-[#131C31] border border-[#D4AF37]/50 text-[#F5D061] rounded-lg font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
               <span>{isUr ? 'بانی روٹ فعال ہے' : 'Founder Root Active'}</span>
             </span>
@@ -969,15 +969,15 @@ export const ManageAppModule: React.FC = () => {
           </div>
 
           <div
-            className="p-4 rounded-xl border border-[#D4AF37]/50 space-y-2"
-            style={{ background: 'linear-gradient(135deg, #022C22 0%, #063B2E 100%)' }}
+            className="p-4 rounded-xl border border-[#38BDF8]/40 space-y-2"
+            style={{ background: 'linear-gradient(135deg, #131C31 0%, #0F172A 100%)' }}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <label className="font-bold text-[#FDE047] flex items-center gap-1.5">
+              <label className="font-bold text-[#38BDF8] flex items-center gap-1.5">
                 <Share2 className="w-3.5 h-3.5 shrink-0" />
                 <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک (iPhone / Web App Live Link)' : 'iPhone / Web App Live Link'}</span>
               </label>
-              <span className="text-[10px] font-mono text-emerald-200 truncate max-w-xs">
+              <span className="text-[10px] font-mono text-[#94A3B8] truncate max-w-xs">
                 {isUr ? 'فعال لنک:' : 'Active:'} {resolveIphoneLiveUrl(webAppLiveUrl)}
               </span>
             </div>
@@ -986,9 +986,9 @@ export const ManageAppModule: React.FC = () => {
               value={webAppLiveUrl}
               onChange={(e) => setWebAppLiveUrl(e.target.value)}
               placeholder="https://your-app.vercel.app"
-              className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/45 bg-[#021B14] text-white font-mono text-[11px] focus:outline-none focus:border-[#FDE047]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-400/25 bg-[#090D16] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#38BDF8]"
             />
-            <p className="text-[11px] text-emerald-100/80">
+            <p className="text-[11px] text-[#94A3B8]">
               {isUr
                 ? 'APK کو دوبارہ بلڈ کیے بغیر آئی فون صارفین کے لیے شیئر کیا جانے والا لائیو ویب لنک یہاں محفوظ کریں۔'
                 : 'Paste your Vercel or live web URL here so every "Share App for iPhone" button shares it instantly without rebuilding the APK.'}
@@ -1231,7 +1231,7 @@ export const ManageAppModule: React.FC = () => {
                     : 'Strict 4-Role Hierarchy: Super Admin · Admin · Co-Admin · Member. The Founder account cannot be edited, demoted, or suspended by any Additional Super Admin.'}
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-lg bg-[#043927]/70 border border-[#D4AF37]/40 text-[#F5D061] font-bold self-start">
+              <span className="px-2.5 py-1 rounded-lg bg-[#131C31] border border-[#D4AF37]/40 text-[#F5D061] font-bold self-start">
                 {translate(language, 'founderProtected')}
               </span>
             </div>
@@ -1345,7 +1345,7 @@ export const ManageAppModule: React.FC = () => {
             </div>
 
             <div className="flex justify-end">
-              <button type="submit" className="px-4 py-2 rounded-xl bg-[#043927] hover:bg-emerald-900 border border-[#D4AF37]/40 text-[#F5D061] font-bold cursor-pointer">
+              <button type="submit" className="px-4 py-2 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/40 text-[#38BDF8] font-bold cursor-pointer">
                 {isUr ? 'کوٹہ محفوظ کریں' : 'Save Role Quotas'}
               </button>
             </div>
@@ -1919,15 +1919,15 @@ export const ManageAppModule: React.FC = () => {
           {/* iPhone / Web App Live Link Setting */}
           <form
             onSubmit={handleSaveLiveLink}
-            className="p-5 rounded-2xl border-[1.5px] border-[#D4AF37]/70 space-y-3"
-            style={{ background: 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)' }}
+            className="p-5 rounded-2xl border-[1.5px] border-[#38BDF8]/45 space-y-3"
+            style={{ background: 'linear-gradient(135deg, #131C31 0%, #0F172A 55%, #090D16 100%)' }}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-[#FDE047] flex items-center gap-2">
+              <h3 className="font-bold text-sm text-[#38BDF8] flex items-center gap-2">
                 <Share2 className="w-4 h-4 shrink-0" />
                 <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک' : 'iPhone / Web App Live Link'}</span>
               </h3>
-              <span className="text-[10px] font-mono text-emerald-100 bg-[#021B14]/80 px-2 py-0.5 rounded border border-[#D4AF37]/40 truncate max-w-xs">
+              <span className="text-[10px] font-mono text-[#94A3B8] bg-[#090D16] px-2 py-0.5 rounded border border-slate-400/20 truncate max-w-xs">
                 {resolveIphoneLiveUrl(webAppLiveUrl)}
               </span>
             </div>
@@ -1937,7 +1937,7 @@ export const ManageAppModule: React.FC = () => {
                 value={webAppLiveUrl}
                 onChange={(e) => setWebAppLiveUrl(e.target.value)}
                 placeholder="https://your-app.vercel.app"
-                className="flex-1 px-3 py-2 rounded-xl border border-[#D4AF37]/45 bg-[#021B14] text-white font-mono text-[11px] focus:outline-none focus:border-[#FDE047]"
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-400/25 bg-[#090D16] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#38BDF8]"
               />
               <button
                 type="submit"

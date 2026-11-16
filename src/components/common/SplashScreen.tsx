@@ -27,23 +27,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0D12] overflow-hidden select-none transition-opacity duration-350 ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#090D16] overflow-hidden select-none transition-opacity duration-350 ${
         fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       aria-label="Kifayat Connect Splash Screen"
     >
-      {/* Subtle radial obsidian-emerald atmosphere */}
+      {/* Subtle radial midnight slate & cyan atmosphere */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 50% 42%, rgba(4, 57, 39, 0.42) 0%, rgba(10, 13, 18, 0.96) 62%, #0A0D12 100%)'
+            'radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.96) 58%, #090D16 100%)'
         }}
       />
 
       {/* Apollo-Style 3D Perspective Stage */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 kc-animate-tilt-3d">
-        <div className="relative p-5 rounded-3xl bg-[#111622] border border-[#D4AF37]/40 shadow-[0_20px_60px_rgba(212,175,55,0.18)] overflow-hidden">
+        <div className="relative p-5 rounded-3xl bg-[#131C31] border border-[#D4AF37]/40 shadow-[0_20px_60px_rgba(212,175,55,0.18)] overflow-hidden">
           {/* Moving Golden Light-Sweep Shimmer (GPU transform/opacity only) */}
           <div
             className="absolute inset-y-0 left-0 w-1/2 pointer-events-none kc-animate-shimmer"
@@ -62,16 +62,16 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
         <div className="mt-2.5 flex items-center justify-center gap-2">
           <span className="h-[1px] w-8 bg-gradient-to-r from-transparent to-[#D4AF37]" />
-          <p className="text-xs sm:text-sm font-semibold tracking-wider text-emerald-300/95">
+          <p className="text-xs sm:text-sm font-semibold tracking-wider text-[#38BDF8]">
             {language === 'ur' ? 'بہتر کل کے لیے ایک ساتھ' : tagline}
           </p>
           <span className="h-[1px] w-8 bg-gradient-to-l from-transparent to-[#D4AF37]" />
         </div>
 
         {/* Minimal Apollo-style Progress Accent */}
-        <div className="mt-8 w-44 h-1 rounded-full bg-[#161D2C] overflow-hidden border border-[#D4AF37]/20">
+        <div className="mt-8 w-44 h-1 rounded-full bg-[#131C31] overflow-hidden border border-[#38BDF8]/25">
           <div
-            className="h-full w-full origin-left bg-gradient-to-r from-[#043927] via-[#D4AF37] to-[#F5D061]"
+            className="h-full w-full origin-left bg-gradient-to-r from-[#0EA5E9] via-[#D4AF37] to-[#F5D061]"
             style={{
               animation: 'kcShimmer 1.6s ease-in-out infinite'
             }}

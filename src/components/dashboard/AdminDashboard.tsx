@@ -414,7 +414,7 @@ export const AdminDashboard: React.FC = () => {
                     {(member.avatarUrl || member.avatar) ? (
                       <img src={member.avatarUrl || member.avatar} alt={member.name} className="w-8 h-8 rounded-full border border-[#D4AF37]/40 object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#042920] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 flex items-center justify-center font-bold text-xs shrink-0">
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -441,7 +441,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleOpenChat(member)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#042920] text-[#F5D061] hover:bg-[#063B2E] rounded-lg border border-[#D4AF37]/40 kc-pressable cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#131C31] text-[#38BDF8] hover:bg-[#1E293B] rounded-lg border border-[#38BDF8]/40 kc-pressable cursor-pointer"
                     >
                       <MessageSquare className="w-3 h-3" />
                       <span>{translate(language, 'mobileNavChat')}</span>
@@ -485,7 +485,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                       cmp.status === 'RESOLVED'
-                        ? 'bg-[#042920] text-emerald-300 border border-emerald-500/35'
+                        ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35'
                         : 'bg-rose-950/70 text-rose-300 border border-rose-500/35'
                     }`}>
                       {cmp.status === 'RESOLVED' ? translate(language, 'resolvedLabel') : translate(language, 'openLabel')}

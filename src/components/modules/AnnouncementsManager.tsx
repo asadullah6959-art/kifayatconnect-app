@@ -298,7 +298,7 @@ export const AnnouncementsManager: React.FC = () => {
                       className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
                         isOfficial
                           ? 'bg-[#090D16] border-[#F5D061]/50 text-[#F5D061]'
-                          : 'bg-[#042920] border-emerald-500/40 text-emerald-300'
+                          : 'bg-[#131C31] border-[#38BDF8]/45 text-[#38BDF8]'
                       }`}
                     >
                       {isOfficial
@@ -307,7 +307,7 @@ export const AnnouncementsManager: React.FC = () => {
                     </span>
 
                     {ann.isPinned && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#042920] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#131C31] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
                         <Pin className="w-3 h-3" />
                         <span>{translate(language, 'pinnedBadge')}</span>
                       </span>
@@ -415,8 +415,8 @@ export const AnnouncementsManager: React.FC = () => {
                     onClick={() => setAnnType('OFFICIAL_APP')}
                     className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'OFFICIAL_APP'
-                        ? 'border-[#F5D061] bg-[#042920] text-[#F5D061]'
-                        : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
+                        ? 'border-[#F5D061] bg-[#131C31] text-[#F5D061]'
+                        : 'border-slate-400/20 bg-[#090D16] text-slate-400'
                     }`}
                   >
                     {isUr ? '👑 آفیشل ایپ' : '👑 Official App'}
@@ -431,8 +431,8 @@ export const AnnouncementsManager: React.FC = () => {
                     onClick={() => setAnnType('COMMUNITY')}
                     className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'COMMUNITY'
-                        ? 'border-[#F5D061] bg-[#042920] text-[#F5D061]'
-                        : 'border-[#D4AF37]/25 bg-[#090D16] text-slate-400'
+                        ? 'border-[#38BDF8] bg-[#131C31] text-[#38BDF8]'
+                        : 'border-slate-400/20 bg-[#090D16] text-slate-400'
                     }`}
                   >
                     {isUr ? '📢 کمیونٹی' : '📢 Community'}

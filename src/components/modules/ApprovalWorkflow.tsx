@@ -246,8 +246,8 @@ export const ApprovalWorkflow: React.FC = () => {
             <span>{isUr ? 'ضلعی تصدیق' : 'District Verify'}</span>
           </div>
           <span className="text-[#D4AF37]/60">→</span>
-          <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-emerald-300 font-bold' : 'text-slate-300'}`}>
-            <span className="w-5 h-5 rounded-full bg-[#042920] border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
+          <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-[#38BDF8] font-bold' : 'text-slate-300'}`}>
+            <span className="w-5 h-5 rounded-full bg-[#131C31] border border-[#38BDF8]/45 text-[#38BDF8] flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
             <span>{isUr ? 'سپر ایڈمن دستخط' : 'Super Admin Sign'}</span>
           </div>
           <span className="text-[#D4AF37]/60">→</span>
@@ -437,8 +437,8 @@ export const ApprovalWorkflow: React.FC = () => {
                           compact
                           language={language}
                         />
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-medium bg-[#042920] border border-[#D4AF37]/35 text-emerald-200 text-xs">
-                          <MapPin className="w-3 h-3 text-[#F5D061] shrink-0" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-medium bg-[#131C31] border border-[#38BDF8]/35 text-[#F8FAFC] text-xs">
+                          <MapPin className="w-3 h-3 text-[#38BDF8] shrink-0" />
                           <span>{dist}, {prov}</span>
                         </div>
                         {app.isOldMemberVerification && (
@@ -451,7 +451,7 @@ export const ApprovalWorkflow: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-lg ${
                           app.status === 'ACTIVE'
-                            ? 'bg-[#042920] text-emerald-300 border border-emerald-500/40'
+                            ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
                             : (app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT'
                             ? 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/45'
                             : app.status === 'REJECTED'
@@ -520,8 +520,8 @@ export const ApprovalWorkflow: React.FC = () => {
                       )}
 
                       {app.superAdminRemarks && (
-                        <div className="p-2.5 rounded-xl bg-[#042920]/80 border border-emerald-500/35">
-                          <span className="font-semibold text-emerald-300">
+                        <div className="p-2.5 rounded-xl bg-[#131C31]/90 border border-[#38BDF8]/35">
+                          <span className="font-semibold text-[#38BDF8]">
                             {isUr ? 'سپر ایڈمن حتمی منظوری:' : 'Super Admin Final Sign-Off:'}
                           </span>
                           <p className="text-slate-200 mt-0.5">
@@ -548,7 +548,7 @@ export const ApprovalWorkflow: React.FC = () => {
                                 onClick={() => setActiveDocAppId(app.id)}
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer kc-pressable ${
                                   doc.verificationStatus === 'VERIFIED'
-                                    ? 'bg-[#042920] text-emerald-200 border-emerald-500/40'
+                                    ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/40'
                                     : doc.verificationStatus === 'FLAGGED'
                                     ? 'bg-rose-950/70 text-rose-200 border-rose-500/40'
                                     : 'bg-[#090D16] text-[#F5D061] border-[#D4AF37]/35'
@@ -695,7 +695,7 @@ export const ApprovalWorkflow: React.FC = () => {
                   onClick={() => setRecommendationChoice('APPROVE')}
                   className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-colors flex items-center justify-center gap-1.5 cursor-pointer kc-pressable ${
                     recommendationChoice === 'APPROVE'
-                      ? 'bg-[#042920] text-emerald-300 border-emerald-500/60'
+                      ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/60'
                       : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
                   }`}
                 >
@@ -864,7 +864,7 @@ export const ApprovalWorkflow: React.FC = () => {
           className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-1.5rem)] kc-luxury-modal text-white rounded-2xl px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#042920] text-[#F5D061] font-bold text-xs border border-[#D4AF37]/50 tabular-nums">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#131C31] text-[#38BDF8] font-bold text-xs border border-[#38BDF8]/50 tabular-nums">
               {selectedIds.length}
             </div>
             <div>

@@ -1,5 +1,5 @@
 // Kifayat Connect Service Worker (Network-First HTML Navigation to Prevent Stale Chunk White Screens)
-const CACHE_NAME = 'kifayat-connect-v3.1.0';
+const CACHE_NAME = 'kifayat-connect-v3.2.0';
 const STATIC_ASSETS = [
   './manifest.json',
   './kc-emblem.svg',
