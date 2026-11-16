@@ -23,7 +23,8 @@ import { resolveUserApprovalStatus, isUserActuallyOnline } from '../../services/
 import { TABBAR_CLANS, CUSTOM_TABBAR_ID, resolveUserTabbar } from '../../data/tabbars';
 import { translate, AppLanguage } from '../../data/translations';
 import { RoleBadge } from '../common/RoleBadge';
-import { TabbarBadge } from '../common/TabbarBadge';
+import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
+import { isFaizKhelUser } from '../../utils/dastoor';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { AssignRoleModal } from '../common/AssignRoleModal';
 
@@ -66,13 +67,26 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   const onlineNow = isOnlineNow;
   const approvalState = resolveUserApprovalStatus(member);
   const targetIsFounder = isFounderUser(member);
+  const isFaizKhel = isFaizKhelUser(member);
 
   return (
     <div
       id={`member-card-${member.id}`}
-      className={`p-3.5 rounded-2xl kc-obsidian-card space-y-2.5 transition-colors ${
+      style={
+        isFaizKhel
+          ? {
+              background: 'linear-gradient(155deg, #022C22 0%, #064E3B 52%, #022C22 100%)',
+              boxShadow: '0 8px 26px rgba(212, 175, 55, 0.22), inset 0 1px 0 rgba(253, 224, 71, 0.28)',
+            }
+          : undefined
+      }
+      className={`p-3.5 rounded-2xl space-y-2.5 transition-colors ${
+        isFaizKhel
+          ? 'border-[1.5px] border-[#D4AF37]'
+          : 'kc-obsidian-card'
+      } ${
         isFocused
-          ? 'border-[#F5D061] ring-2 ring-[#F5D061]/35'
+          ? 'border-[#FDE047] ring-2 ring-[#F5D061]/45'
           : ''
       }`}
     >
@@ -85,10 +99,18 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
                 alt={member.name}
                 loading="lazy"
                 decoding="async"
-                className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/40"
+                className={`w-10 h-10 rounded-full object-cover ${
+                  isFaizKhel ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/40'
+                }`}
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-sm">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                  isFaizKhel
+                    ? 'bg-[#021B14] text-[#FDE047] border-2 border-[#D4AF37]'
+                    : 'bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40'
+                }`}
+              >
                 {member.name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -100,7 +122,10 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-bold text-xs text-white truncate">{member.name}</span>
+              {isFaizKhel && <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />}
+              <span className={`font-bold text-xs truncate ${isFaizKhel ? 'text-[#FDE047]' : 'text-white'}`}>
+                {member.name}
+              </span>
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
                   onlineNow
@@ -264,6 +289,7 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
   const onlineNow = isOnlineNow;
   const approvalState = resolveUserApprovalStatus(member);
   const targetIsFounder = isFounderUser(member);
+  const isFaizKhel = isFaizKhelUser(member);
 
   return (
     <tr
@@ -271,6 +297,8 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
       className={`transition-colors ${
         isFocused
           ? 'bg-[#231D0B]/70 ring-1 ring-inset ring-[#F5D061]/60'
+          : isFaizKhel
+          ? 'bg-[#022C22]/55 hover:bg-[#064E3B]/55 border-l-2 border-l-[#D4AF37]'
           : 'hover:bg-[#1A233A]/55'
       }`}
     >
@@ -283,10 +311,18 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
                 alt={member.name}
                 loading="lazy"
                 decoding="async"
-                className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40"
+                className={`w-8 h-8 rounded-full object-cover ${
+                  isFaizKhel ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/40'
+                }`}
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40 flex items-center justify-center font-bold text-xs">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                  isFaizKhel
+                    ? 'bg-[#021B14] text-[#FDE047] border-2 border-[#D4AF37]'
+                    : 'bg-[#043927] text-[#F5D061] border border-[#D4AF37]/40'
+                }`}
+              >
                 {member.name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -298,7 +334,8 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-white">{member.name}</span>
+              {isFaizKhel && <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />}
+              <span className={`font-bold ${isFaizKhel ? 'text-[#FDE047]' : 'text-white'}`}>{member.name}</span>
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                   onlineNow
@@ -828,6 +865,7 @@ export const MemberDirectory: React.FC = () => {
             {TABBAR_CLANS.map(clan => {
               const count = tabbarCounts[clan.id] || 0;
               const isSelected = tabbarFilter === clan.id;
+              const isFlagship = Boolean(clan.isFlagship);
               return (
                 <button
                   key={clan.id}
@@ -836,15 +874,19 @@ export const MemberDirectory: React.FC = () => {
                   style={
                     isSelected
                       ? { background: clan.gradientBg, borderColor: clan.borderColor, color: clan.textColor }
+                      : isFlagship
+                      ? { background: 'linear-gradient(135deg, #022C22 0%, #043927 100%)', borderColor: 'rgba(212, 175, 55, 0.72)', color: '#FDE047' }
                       : undefined
                   }
                   className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border kc-pressable cursor-pointer ${
                     isSelected
                       ? 'ring-1 ring-[#F5D061]/60 shadow-md'
+                      : isFlagship
+                      ? 'hover:border-[#FDE047]'
                       : 'bg-[#111726] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/60'
                   }`}
                 >
-                  <span>{clan.emblem}</span>
+                  {isFlagship ? <FaizKhelVipCrownIcon className="w-3.5 h-3.5" /> : <span>{clan.emblem}</span>}
                   <span className="font-urdu-auto">
                     {language === 'ur' ? clan.urduName : `${clan.urduName} · ${clan.englishName}`}
                   </span>

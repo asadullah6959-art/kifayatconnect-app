@@ -99,6 +99,7 @@ import {
 } from '../services/firebase';
 import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
+import { shareKifayatForIphone } from '../utils/iphoneShare';
 
 const STORAGE_KEYS = {
   USERS: 'kifayat_users_v3',
@@ -446,6 +447,13 @@ interface AppContextType {
     proofNote?: string;
     receiptImageUrl?: string;
     receiptImageName?: string;
+    paymentMode?: 'DASTOOR' | 'OTHER';
+    monthsCount?: number;
+    ratePerMonth?: number;
+    startMonth?: number;
+    startYear?: number;
+    periodLabelEn?: string;
+    periodLabelUr?: string;
   }) => void;
   verifyPayment: (txId: string, approved: boolean, reason?: string) => void;
   submitComplaint: (data: {
@@ -532,6 +540,11 @@ interface AppContextType {
   // App Settings Module
   appSettings: AppSettings;
   updateAppSettings: (newSettings: Partial<AppSettings>) => void;
+
+  // iPhone (iOS) App Link Sharing
+  iphoneShareNotice: { url: string; id: number } | null;
+  dismissIphoneShareNotice: () => void;
+  triggerShareForIphone: () => Promise<void>;
 
   // Global Notifications System
   notifications: AppNotification[];
@@ -669,6 +682,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [appUpdates, setAppUpdates] = useState<AppUpdate[]>(() => readStorage(STORAGE_KEYS.APP_UPDATES, INITIAL_APP_UPDATES));
   const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.ACK_VERSION));
   const [appSettings, setAppSettings] = useState<AppSettings>(() => mergeAppSettings(readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS)));
+  const [iphoneShareNotice, setIphoneShareNotice] = useState<{ url: string; id: number } | null>(null);
+  const iphoneShareTimerRef = useRef<number | null>(null);
   const [chats, setChats] = useState<ChatConversation[]>(() => readStorage(STORAGE_KEYS.CHATS, INITIAL_CHATS));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     const deletedDirect = readIdSetFromStorage(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS);
@@ -2599,6 +2614,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     proofNote?: string;
     receiptImageUrl?: string;
     receiptImageName?: string;
+    paymentMode?: 'DASTOOR' | 'OTHER';
+    monthsCount?: number;
+    ratePerMonth?: number;
+    startMonth?: number;
+    startYear?: number;
+    periodLabelEn?: string;
+    periodLabelUr?: string;
   }) => {
     if (!currentUser) return;
     const newTx: PaymentTransaction = {
@@ -2607,6 +2629,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userId: currentUser.id,
       userName: currentUser.name,
       userMembershipId: currentUser.membershipId || 'KC-PENDING',
+      userTabbarId: currentUser.tabbarId,
+      userTabbarEnglish: currentUser.tabbarEnglish,
+      userTabbarUrdu: currentUser.tabbarUrdu,
       country: currentUser.country,
       stateProvince: currentUser.stateProvince,
       district: currentUser.district,
@@ -2614,6 +2639,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cityTown: currentUser.cityTown,
       unionCouncil: currentUser.unionCouncil,
       amount: data.amount,
+      paymentMode: data.paymentMode,
+      monthsCount: data.monthsCount,
+      ratePerMonth: data.ratePerMonth,
+      startMonth: data.startMonth,
+      startYear: data.startYear,
+      periodLabelEn: data.periodLabelEn,
+      periodLabelUr: data.periodLabelUr,
       fundCategory: data.fundCategory,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber,
@@ -4142,6 +4174,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const dismissIphoneShareNotice = useCallback(() => {
+    if (iphoneShareTimerRef.current) {
+      window.clearTimeout(iphoneShareTimerRef.current);
+      iphoneShareTimerRef.current = null;
+    }
+    setIphoneShareNotice(null);
+  }, []);
+
+  const triggerShareForIphone = useCallback(async () => {
+    const result = await shareKifayatForIphone(appSettings.webAppLiveUrl);
+    if (iphoneShareTimerRef.current) {
+      window.clearTimeout(iphoneShareTimerRef.current);
+    }
+    const id = Date.now();
+    setIphoneShareNotice({ url: result.url, id });
+    iphoneShareTimerRef.current = window.setTimeout(() => {
+      setIphoneShareNotice(prev => (prev && prev.id === id ? null : prev));
+    }, 5500);
+  }, [appSettings.webAppLiveUrl]);
+
   const resetAllData = () => {
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
     setUsers(INITIAL_USERS);
@@ -4266,6 +4318,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleUpdatePublish,
         appSettings,
         updateAppSettings,
+        iphoneShareNotice,
+        dismissIphoneShareNotice,
+        triggerShareForIphone,
         notifications,
         userNotifications,
         unreadNotificationsCount,

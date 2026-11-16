@@ -37,6 +37,7 @@ import { GlobalShortcutsHandler } from './components/common/GlobalShortcutsHandl
 import { NotificationsSlideOver } from './components/common/NotificationsSlideOver';
 import { AppUpdateModal } from './components/common/AppUpdateModal';
 import { MemberProfileModal } from './components/modules/MemberProfileModal';
+import { IphoneSafariInstallBanner } from './components/common/IphoneSafariInstallBanner';
 
 import {
   LayoutDashboard,
@@ -48,7 +49,8 @@ import {
   Wrench,
   X,
   UserCheck,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import { translate } from './data/translations';
 
@@ -75,7 +77,9 @@ const MainLayout: React.FC = () => {
     hideLiveChat,
     userNotifications,
     markNotificationAsRead,
-    jumpToMemberApproval
+    jumpToMemberApproval,
+    iphoneShareNotice,
+    dismissIphoneShareNotice
   } = useApp();
 
   const location = useLocation();
@@ -110,7 +114,12 @@ const MainLayout: React.FC = () => {
   if (!currentUser) {
     return (
       <>
-        <AuthWelcomeGate onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+        <div className="relative">
+          <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] inset-x-3 z-50 max-w-md mx-auto pointer-events-auto">
+            <IphoneSafariInstallBanner language={language} />
+          </div>
+          <AuthWelcomeGate onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+        </div>
         <RegisterModal
           isOpen={isRegisterModalOpen}
           onClose={() => setIsRegisterModalOpen(false)}
@@ -282,6 +291,7 @@ const MainLayout: React.FC = () => {
         {/* Scrollable Center Content Viewport */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
           <div className="max-w-7xl mx-auto w-full min-w-0 space-y-4">
+            <IphoneSafariInstallBanner language={language} />
             {liveApprovalAlert && (
               <div className="p-3.5 rounded-xl kc-emerald-panel flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -449,6 +459,42 @@ const MainLayout: React.FC = () => {
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
       />
+
+      {iphoneShareNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top)+3.75rem))] inset-x-3 sm:inset-x-auto sm:right-5 z-[90] sm:max-w-md rounded-2xl p-3.5 border-[1.5px] border-[#D4AF37] shadow-[0_14px_34px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(253,224,71,0.28)] text-white"
+          style={{
+            background: 'linear-gradient(135deg, #022C22 0%, #064E3B 58%, #022C22 100%)',
+          }}
+        >
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <CheckCircle2 className="w-4 h-4 text-[#FDE047] shrink-0 mt-0.5" />
+              <div className="min-w-0 space-y-1 text-xs">
+                <p className="font-extrabold text-[#FDE047] leading-snug">
+                  Link copied! Send it on WhatsApp to iPhone users.
+                </p>
+                <p className="font-bold text-emerald-100 font-urdu-auto leading-snug" dir="rtl">
+                  لنک کاپی ہو گیا! آئی فون ممبران کو واٹس ایپ پر بھیج دیں۔
+                </p>
+                <p className="text-[10px] font-mono text-emerald-200/90 truncate pt-0.5">
+                  {iphoneShareNotice.url}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={dismissIphoneShareNotice}
+              aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+              className="p-1 rounded-lg bg-[#021B14]/80 border border-[#D4AF37]/40 text-slate-300 hover:text-white shrink-0 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -29,6 +29,12 @@ import {
 import { compressImageFile } from '../../utils/imageCompression';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
+import { DastoorPaymentCalculator } from '../common/DastoorPaymentCalculator';
+import {
+  DASTOOR_MONTHLY_RATE,
+  calculateDastoorPeriod,
+  toUrduDigits,
+} from '../../utils/dastoor';
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; labelUr: string; hint: string; hintUr: string }> = [
   { id: 'EasyPaisa', label: 'EasyPaisa', labelUr: 'ایزی پیسہ', hint: 'Mobile Wallet / Till', hintUr: 'موبائل والٹ / ٹل' },
@@ -45,6 +51,7 @@ export const FundsAndPayments: React.FC = () => {
     submitPayment,
     setSelectedReceipt,
     openCompleteProfileModal,
+    appSettings,
     language
   } = useApp();
   const isUr = language === 'ur';
@@ -72,9 +79,13 @@ export const FundsAndPayments: React.FC = () => {
       : 'ALL'
   );
 
-  // 3-Step Payment Submission Modal
+  // 3-Step Payment Submission Modal (Dastoor Rs. 100/Month Auto-Calculator + Other Fund)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [paymentMode, setPaymentMode] = useState<'DASTOOR' | 'OTHER'>('DASTOOR');
+  const [monthsCount, setMonthsCount] = useState<number>(1);
+  const [startMonth, setStartMonth] = useState<number>(() => new Date().getMonth());
+  const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
   const [payAmount, setPayAmount] = useState<string>('');
   const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
@@ -157,6 +168,10 @@ export const FundsAndPayments: React.FC = () => {
   const resetPaymentModal = () => {
     setIsSubmitModalOpen(false);
     setStep(1);
+    setPaymentMode('DASTOOR');
+    setMonthsCount(1);
+    setStartMonth(new Date().getMonth());
+    setStartYear(new Date().getFullYear());
     setPayAmount('');
     setPayFund('Monthly Contribution');
     setPayMethod('EasyPaisa');
@@ -167,8 +182,13 @@ export const FundsAndPayments: React.FC = () => {
     setUploadError(null);
   };
 
-  const numericPayAmount = Number(payAmount);
-  const isPayAmountValid = Boolean(payAmount.trim()) && Number.isFinite(numericPayAmount) && numericPayAmount > 0;
+  const dastoorPeriod = calculateDastoorPeriod(startMonth, startYear, monthsCount);
+  const numericPayAmount =
+    paymentMode === 'DASTOOR' ? dastoorPeriod.totalAmount : Number(payAmount);
+  const isPayAmountValid =
+    paymentMode === 'DASTOOR'
+      ? dastoorPeriod.monthsCount >= 1 && dastoorPeriod.totalAmount > 0
+      : Boolean(payAmount.trim()) && Number.isFinite(numericPayAmount) && numericPayAmount > 0;
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,12 +200,23 @@ export const FundsAndPayments: React.FC = () => {
 
     submitPayment({
       amount: Math.round(numericPayAmount),
-      fundCategory: payFund,
+      fundCategory: paymentMode === 'DASTOOR' ? 'Monthly Contribution' : payFund,
       paymentMethod: payMethod,
       referenceNumber: cleanRef,
       proofNote: payNotes.trim() || undefined,
       receiptImageUrl: receiptImageUrl || undefined,
-      receiptImageName: receiptImageName || undefined
+      receiptImageName: receiptImageName || undefined,
+      paymentMode,
+      ...(paymentMode === 'DASTOOR'
+        ? {
+            monthsCount: dastoorPeriod.monthsCount,
+            ratePerMonth: DASTOOR_MONTHLY_RATE,
+            startMonth: dastoorPeriod.startMonth,
+            startYear: dastoorPeriod.startYear,
+            periodLabelEn: dastoorPeriod.periodLabelEn,
+            periodLabelUr: dastoorPeriod.periodLabelUr,
+          }
+        : {}),
     });
 
     resetPaymentModal();
@@ -228,7 +259,7 @@ export const FundsAndPayments: React.FC = () => {
       return (
         <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#042920] text-emerald-300 border border-emerald-500/45">
           <CheckCircle2 className="w-3 h-3" />
-          {isUr ? 'منظور شدہ' : 'Approved'}
+          {isUr ? 'منظور شدہ ✓' : 'Approved ✓'}
         </span>
       );
     }
@@ -236,7 +267,7 @@ export const FundsAndPayments: React.FC = () => {
       return (
         <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/45">
           <Clock className="w-3 h-3" />
-          {isUr ? 'زیرِ التواء' : 'Pending'}
+          {isUr ? 'جمع شدہ / زیرِ جائزہ' : 'Under Review'}
         </span>
       );
     }
@@ -512,11 +543,16 @@ export const FundsAndPayments: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#D4AF37]/15">
-                    <div>
+                    <div className="min-w-0 pr-2">
                       <span className="text-slate-300 block">{localizeMethod(tx.paymentMethod)}</span>
                       <span className="text-[10px] font-mono text-slate-400">{isUr ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}</span>
+                      {(tx.periodLabelUr || tx.periodLabelEn) && (
+                        <span className="text-[10px] font-bold text-emerald-300 block truncate mt-0.5">
+                          {isUr ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <span className="font-mono tabular-nums font-extrabold text-sm text-white">
                         PKR {tx.amount.toLocaleString()}
                       </span>
@@ -539,15 +575,13 @@ export const FundsAndPayments: React.FC = () => {
                     )}
 
                     <div className="flex items-center gap-1.5">
-                      {tx.status === 'VERIFIED' && (
-                        <button
-                          onClick={() => setSelectedReceipt(tx)}
-                          className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-md font-semibold cursor-pointer"
-                        >
-                          <Printer className="w-3 h-3 text-emerald-400" />
-                          <span>{isUr ? 'ای رسید' : 'E-Receipt'}</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setSelectedReceipt(tx)}
+                        className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-md font-semibold cursor-pointer"
+                      >
+                        <Printer className="w-3 h-3 text-emerald-400" />
+                        <span>{isUr ? 'ڈیجیٹل رسید' : 'Digital Receipt'}</span>
+                      </button>
                       {canVerify && tx.status === 'PENDING_VERIFICATION' && (
                         <>
                           <button
@@ -618,7 +652,12 @@ export const FundsAndPayments: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-emerald-400 font-medium">
-                        {localizeFundCategory(tx.fundCategory)}
+                        <div>{localizeFundCategory(tx.fundCategory)}</div>
+                        {(tx.periodLabelUr || tx.periodLabelEn) && (
+                          <div className="text-[10px] text-[#F5D061] font-semibold mt-0.5">
+                            {isUr ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 text-slate-200">
                         <div className="flex items-center gap-2">
@@ -646,15 +685,14 @@ export const FundsAndPayments: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="inline-flex items-center gap-1.5">
-                          {tx.status === 'VERIFIED' ? (
-                            <button
-                              onClick={() => setSelectedReceipt(tx)}
-                              className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/40 text-slate-100 rounded font-medium transition-colors cursor-pointer"
-                            >
-                              <Printer className="w-3 h-3 text-emerald-400" />
-                              <span>{isUr ? 'رسید' : 'Receipt'}</span>
-                            </button>
-                          ) : canVerify && tx.status === 'PENDING_VERIFICATION' ? (
+                          <button
+                            onClick={() => setSelectedReceipt(tx)}
+                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/40 text-slate-100 rounded font-medium transition-colors cursor-pointer"
+                          >
+                            <Printer className="w-3 h-3 text-emerald-400" />
+                            <span>{isUr ? 'رسید' : 'Receipt'}</span>
+                          </button>
+                          {canVerify && tx.status === 'PENDING_VERIFICATION' && (
                             <>
                               <button
                                 onClick={() => verifyPayment(tx.id, true)}
@@ -670,10 +708,6 @@ export const FundsAndPayments: React.FC = () => {
                                 <XCircle className="w-3 h-3" />
                               </button>
                             </>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">
-                              {tx.status === 'REJECTED' ? tx.rejectionReason || (isUr ? 'مسترد شدہ' : 'Declined') : (isUr ? 'تصدیق جاری ہے' : 'In Verification')}
-                            </span>
                           )}
                         </div>
                       </td>
@@ -736,39 +770,22 @@ export const FundsAndPayments: React.FC = () => {
             <form onSubmit={handleFinalSubmit} className="space-y-4">
               {step === 1 && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      {isUr ? 'فنڈ کا مقصد / قسم' : 'Fund Purpose / Category'}
-                    </label>
-                    <LuxurySelect
-                      value={payFund}
-                      onChange={(val) => setPayFund(val as FundCategory)}
-                      label={isUr ? 'فنڈ کا مقصد / قسم' : 'Fund Purpose / Category'}
-                      options={[
-                        { value: 'Monthly Contribution', label: localizeFundCategory('Monthly Contribution') },
-                        { value: 'Annual Welfare Fund', label: localizeFundCategory('Annual Welfare Fund') },
-                        { value: 'Emergency Relief', label: localizeFundCategory('Emergency Relief') },
-                        { value: 'Zakat & Sadqah', label: localizeFundCategory('Zakat & Sadqah') }
-                      ]}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      {isUr ? 'جمع شدہ رقم (PKR)' : 'Contribution Amount (PKR)'}
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      step="any"
-                      inputMode="numeric"
-                      placeholder={isUr ? 'روپے میں جمع کردہ رقم درج کریں' : 'Enter deposited amount in PKR'}
-                      value={payAmount}
-                      onChange={(e) => setPayAmount(e.target.value)}
-                      className="kc-luxury-input w-full text-sm font-mono tabular-nums font-bold px-3.5 py-2.5 rounded-xl"
-                    />
-                  </div>
+                  <DastoorPaymentCalculator
+                    language={language}
+                    paymentMode={paymentMode}
+                    onPaymentModeChange={setPaymentMode}
+                    monthsCount={monthsCount}
+                    onMonthsCountChange={setMonthsCount}
+                    startMonth={startMonth}
+                    onStartMonthChange={setStartMonth}
+                    startYear={startYear}
+                    onStartYearChange={setStartYear}
+                    customAmount={payAmount}
+                    onCustomAmountChange={setPayAmount}
+                    fundCategory={payFund}
+                    onFundCategoryChange={setPayFund}
+                    contactHelpline={appSettings.contactHelpline}
+                  />
 
                   <div className="flex justify-end pt-2">
                     <button
@@ -858,15 +875,24 @@ export const FundsAndPayments: React.FC = () => {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-slate-400 block">{localizeFundCategory(payFund)} · {localizeMethod(payMethod)}</span>
+                  <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0">
+                      <span className="text-slate-400 block truncate">
+                        {localizeFundCategory(paymentMode === 'DASTOOR' ? 'Monthly Contribution' : payFund)} · {localizeMethod(payMethod)}
+                      </span>
                       <span className="font-mono tabular-nums font-bold text-[#F5D061]">
                         PKR {Math.round(numericPayAmount || 0).toLocaleString()}
+                        {paymentMode === 'DASTOOR' && (
+                          <span className="text-emerald-300 font-sans ml-1.5">
+                            ({isUr
+                              ? `${toUrduDigits(dastoorPeriod.monthsCount)} مہینے · ${dastoorPeriod.periodLabelUr}`
+                              : dastoorPeriod.periodLabelEn})
+                          </span>
+                        )}
                       </span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/35 font-bold">
-                      {isUr ? 'منظوری زیرِ التواء' : 'Pending Approval'}
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/35 font-bold shrink-0">
+                      {isUr ? 'منظوری زیرِ التواء' : 'Under Review'}
                     </span>
                   </div>
 

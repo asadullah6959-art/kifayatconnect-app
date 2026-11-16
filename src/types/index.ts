@@ -145,6 +145,9 @@ export interface PaymentTransaction {
   userId: string;
   userName: string;
   userMembershipId: string;
+  userTabbarId?: string;
+  userTabbarEnglish?: string;
+  userTabbarUrdu?: string;
   country?: string;
   stateProvince?: string;
   district?: string;
@@ -152,6 +155,13 @@ export interface PaymentTransaction {
   cityTown?: string;
   unionCouncil?: string;
   amount: number;
+  paymentMode?: 'DASTOOR' | 'OTHER';
+  monthsCount?: number;
+  ratePerMonth?: number;
+  startMonth?: number;
+  startYear?: number;
+  periodLabelEn?: string;
+  periodLabelUr?: string;
   fundCategory: FundCategory;
   paymentMethod: PaymentMethod;
   referenceNumber: string;
@@ -542,6 +552,7 @@ export interface AppSettings {
   maxCoAdminsPerState: number; // exactly 3
   contactEmail: string;
   contactHelpline: string;
+  webAppLiveUrl?: string;
   masterPinHash?: string;
   dashboardVisibility?: DashboardSectionVisibility;
   featureToggles?: FeatureToggles;

@@ -22,8 +22,15 @@ import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { compressImageFile } from '../../utils/imageCompression';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
+import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
+import { DastoorPaymentCalculator } from '../common/DastoorPaymentCalculator';
+import {
+  DASTOOR_MONTHLY_RATE,
+  calculateDastoorPeriod,
+  isFaizKhelUser,
+} from '../../utils/dastoor';
 import { translate } from '../../data/translations';
 
 export const MemberDashboard: React.FC = () => {
@@ -44,7 +51,11 @@ export const MemberDashboard: React.FC = () => {
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [payAmount, setPayAmount] = useState<number>(currentUser?.monthlyPledge || 2500);
+  const [paymentMode, setPaymentMode] = useState<'DASTOOR' | 'OTHER'>('DASTOOR');
+  const [monthsCount, setMonthsCount] = useState<number>(1);
+  const [startMonth, setStartMonth] = useState<number>(() => new Date().getMonth());
+  const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
+  const [customPayAmount, setCustomPayAmount] = useState<string>('');
   const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
   const [payReference, setPayReference] = useState('');
@@ -116,28 +127,52 @@ export const MemberDashboard: React.FC = () => {
     }
   };
 
+  const dastoorPeriod = calculateDastoorPeriod(startMonth, startYear, monthsCount);
+  const effectivePayAmount =
+    paymentMode === 'DASTOOR' ? dastoorPeriod.totalAmount : Math.round(Number(customPayAmount) || 0);
+  const isPayAmountValid =
+    paymentMode === 'DASTOOR'
+      ? dastoorPeriod.monthsCount >= 1 && dastoorPeriod.totalAmount > 0
+      : Boolean(customPayAmount.trim()) && Number.isFinite(Number(customPayAmount)) && Number(customPayAmount) > 0;
+
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (payAmount <= 0) return;
+    if (!isPayAmountValid || effectivePayAmount <= 0) return;
 
     const cleanRef =
       payReference.trim() ||
       `${payMethod.replace(/\s+/g, '').substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
     submitPayment({
-      amount: Number(payAmount),
-      fundCategory: payFund,
+      amount: effectivePayAmount,
+      fundCategory: paymentMode === 'DASTOOR' ? 'Monthly Contribution' : payFund,
       paymentMethod: payMethod,
       referenceNumber: cleanRef,
       proofNote: payNote.trim() || undefined,
       receiptImageUrl: receiptImageUrl || undefined,
-      receiptImageName: receiptImageName || undefined
+      receiptImageName: receiptImageName || undefined,
+      paymentMode,
+      ...(paymentMode === 'DASTOOR'
+        ? {
+            monthsCount: dastoorPeriod.monthsCount,
+            ratePerMonth: DASTOOR_MONTHLY_RATE,
+            startMonth: dastoorPeriod.startMonth,
+            startYear: dastoorPeriod.startYear,
+            periodLabelEn: dastoorPeriod.periodLabelEn,
+            periodLabelUr: dastoorPeriod.periodLabelUr,
+          }
+        : {}),
     });
 
     setPaymentSubmittedSuccess(true);
     setTimeout(() => {
       setPaymentSubmittedSuccess(false);
       setIsPaymentModalOpen(false);
+      setPaymentMode('DASTOOR');
+      setMonthsCount(1);
+      setStartMonth(new Date().getMonth());
+      setStartYear(new Date().getFullYear());
+      setCustomPayAmount('');
       setPayReference('');
       setPayNote('');
       setReceiptImageUrl('');
@@ -309,13 +344,15 @@ export const MemberDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Split: Black Velvet VIP Card Preview + KPI Grid */}
+      {/* Hero Split: Black Velvet / Faiz Khel Royal Emerald VIP Card Preview + KPI Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div
           onClick={() => setSelectedCardUser(currentUser)}
           className="lg:col-span-5 rounded-2xl p-5 text-white shadow-xl border-2 border-[#D4AF37] cursor-pointer hover:border-[#F5D061] transition-colors flex flex-col justify-between relative overflow-hidden"
           style={{
-            background: 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)'
+            background: isFaizKhelUser(currentUser)
+              ? 'linear-gradient(145deg, #022C22 0%, #064E3B 48%, #021B14 100%)'
+              : 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)'
           }}
         >
           <div className="flex items-start justify-between">
@@ -329,10 +366,13 @@ export const MemberDashboard: React.FC = () => {
               </div>
             </div>
 
-            <span className="text-[10px] font-mono font-bold text-emerald-300 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
-              <span>{translate(language, 'activeLabel')}</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-4 h-4" />}
+              <span className="text-[10px] font-mono font-bold text-emerald-300 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
+                <span>{translate(language, 'activeLabel')}</span>
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3.5 my-4">
@@ -349,7 +389,10 @@ export const MemberDashboard: React.FC = () => {
             )}
             <div className="min-w-0 space-y-1">
               <h3 className="font-extrabold text-base text-white truncate">{currentUser.name}</h3>
-              <p className="text-[11px] font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-[11px] font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
+                <TabbarBadge user={currentUser} language={language} compact />
+              </div>
               <p className="text-[10px] text-slate-300 truncate">
                 {memberDistrict}, {memberProvince}{memberTehsil ? ` · ${memberTehsil}` : ''}
               </p>
@@ -506,7 +549,14 @@ export const MemberDashboard: React.FC = () => {
                 <tr key={tx.id} className="hover:bg-[#1A233A]/55 transition-colors">
                   <td className="py-2.5 px-3 font-mono font-bold text-white">{tx.receiptNumber}</td>
                   <td className="py-2.5 px-3 font-mono tabular-nums text-slate-400">{tx.date}</td>
-                  <td className="py-2.5 px-3 text-emerald-300 font-medium">{tx.fundCategory}</td>
+                  <td className="py-2.5 px-3 text-emerald-300 font-medium">
+                    <div>{tx.fundCategory}</div>
+                    {(tx.periodLabelUr || tx.periodLabelEn) && (
+                      <div className="text-[10px] text-[#F5D061] font-semibold">
+                        {language === 'ur' ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
+                      </div>
+                    )}
+                  </td>
                   <td className="py-2.5 px-3 text-slate-300">{tx.paymentMethod}</td>
                   <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400">{tx.referenceNumber}</td>
                   <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-white">{tx.amount.toLocaleString()}</td>
@@ -521,30 +571,22 @@ export const MemberDashboard: React.FC = () => {
                       {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                       <span>
                         {tx.status === 'VERIFIED'
-                          ? (language === 'ur' ? 'منظور شدہ' : 'Approved')
+                          ? (language === 'ur' ? 'منظور شدہ ✓' : 'Approved ✓')
                           : tx.status === 'REJECTED'
                           ? translate(language, 'rejectedLabel')
-                          : translate(language, 'pendingLabel')}
+                          : (language === 'ur' ? 'زیرِ جائزہ' : 'Under Review')}
                       </span>
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-right">
-                    {tx.status === 'VERIFIED' ? (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedReceipt(tx)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#090D16] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-lg font-medium kc-pressable cursor-pointer"
-                      >
-                        <Printer className="w-3 h-3" />
-                        <span>{language === 'ur' ? 'رسید' : 'Receipt'}</span>
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-slate-500">
-                        {tx.status === 'REJECTED'
-                          ? (language === 'ur' ? 'نامنظور' : 'Declined')
-                          : (language === 'ur' ? 'کارروائی جاری' : 'Processing')}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReceipt(tx)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#090D16] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-lg font-medium kc-pressable cursor-pointer"
+                    >
+                      <Printer className="w-3 h-3" />
+                      <span>{language === 'ur' ? 'رسید' : 'Receipt'}</span>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -689,56 +731,40 @@ export const MemberDashboard: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handlePaymentSubmit} className="mt-4 space-y-4">
+                <DastoorPaymentCalculator
+                  compact
+                  language={language}
+                  paymentMode={paymentMode}
+                  onPaymentModeChange={setPaymentMode}
+                  monthsCount={monthsCount}
+                  onMonthsCountChange={setMonthsCount}
+                  startMonth={startMonth}
+                  onStartMonthChange={setStartMonth}
+                  startYear={startYear}
+                  onStartYearChange={setStartYear}
+                  customAmount={customPayAmount}
+                  onCustomAmountChange={setCustomPayAmount}
+                  fundCategory={payFund}
+                  onFundCategoryChange={setPayFund}
+                  contactHelpline={appSettings.contactHelpline}
+                />
+
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    {language === 'ur' ? 'ویلفیئر فنڈ کی مد منتخب کریں' : 'Select Welfare Fund Category'}
+                    {language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
                   </label>
                   <LuxurySelect
                     compact
-                    value={payFund}
-                    onChange={(val) => setPayFund(val as FundCategory)}
-                    label={language === 'ur' ? 'ویلفیئر فنڈ مد' : 'Welfare Fund Category'}
+                    value={payMethod}
+                    onChange={(val) => setPayMethod(val as PaymentMethod)}
+                    label={language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
                     options={[
-                      { value: 'Monthly Contribution', label: language === 'ur' ? 'ماہانہ چندہ / تعاون' : 'Monthly Contribution' },
-                      { value: 'Annual Welfare Fund', label: language === 'ur' ? 'سالانہ ویلفیئر فنڈ' : 'Annual Welfare Fund' },
-                      { value: 'Emergency Relief', label: language === 'ur' ? 'ہنگامی امداد فنڈ' : 'Emergency Relief' },
-                      { value: 'Zakat & Sadqah', label: language === 'ur' ? 'زکوٰۃ و صدقات' : 'Zakat & Sadqah' }
+                      { value: 'EasyPaisa', label: language === 'ur' ? 'ایزی پیسہ (EasyPaisa)' : 'EasyPaisa' },
+                      { value: 'JazzCash', label: language === 'ur' ? 'جاز کیش (JazzCash)' : 'JazzCash' },
+                      { value: 'Bank Transfer', label: language === 'ur' ? 'بینک ٹرانسفر' : 'Bank Transfer' },
+                      { value: 'Cash', label: language === 'ur' ? 'نقد (Cash)' : 'Cash' }
                     ]}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-300 block mb-1">
-                      {language === 'ur' ? 'رقم (PKR)' : 'Amount (PKR)'}
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={100}
-                      step={50}
-                      value={payAmount}
-                      onChange={(e) => setPayAmount(Number(e.target.value))}
-                      className="w-full text-xs font-mono tabular-nums font-bold px-3 py-2 rounded-xl kc-luxury-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-300 block mb-1">
-                      {language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
-                    </label>
-                    <LuxurySelect
-                      compact
-                      value={payMethod}
-                      onChange={(val) => setPayMethod(val as PaymentMethod)}
-                      label={language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
-                      options={[
-                        { value: 'EasyPaisa', label: language === 'ur' ? 'ایزی پیسہ (EasyPaisa)' : 'EasyPaisa' },
-                        { value: 'JazzCash', label: language === 'ur' ? 'جاز کیش (JazzCash)' : 'JazzCash' },
-                        { value: 'Bank Transfer', label: language === 'ur' ? 'بینک ٹرانسفر' : 'Bank Transfer' },
-                        { value: 'Cash', label: language === 'ur' ? 'نقد (Cash)' : 'Cash' }
-                      ]}
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -792,9 +818,13 @@ export const MemberDashboard: React.FC = () => {
                   <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                     {translate(language, 'cancel')}
                   </button>
-                  <button type="submit" className="flex items-center gap-1.5 px-4 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer">
+                  <button
+                    type="submit"
+                    disabled={!isPayAmountValid || isCompressing}
+                    className="flex items-center gap-1.5 px-4 py-2 kc-gold-button disabled:opacity-45 text-xs font-extrabold rounded-xl cursor-pointer"
+                  >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{translate(language, 'actionPayFunds')}</span>
+                    <span>{translate(language, 'actionPayFunds')} (PKR {effectivePayAmount.toLocaleString()})</span>
                   </button>
                 </div>
               </form>

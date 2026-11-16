@@ -13,7 +13,8 @@ import {
   Award,
   Crown,
   Menu,
-  X
+  X,
+  Share2
 } from 'lucide-react';
 import { GlobalSearchBar } from './GlobalSearchBar';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -49,7 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
     isFirebaseLive,
     logoutFirebaseAuth,
     appSettings,
-    isOnline
+    isOnline,
+    triggerShareForIphone
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -384,6 +386,21 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
                 <span>+ {translate(language, 'registerBtn')}</span>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={async () => {
+                  setShowProfileMenu(false);
+                  await triggerShareForIphone();
+                }}
+                className="mx-2 my-1 w-[calc(100%-16px)] flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#022C22] via-[#064E3B] to-[#022C22] border border-[#D4AF37]/75 hover:border-[#FDE047] text-[#FDE047] text-start cursor-pointer font-bold shadow-[0_4px_12px_rgba(2,44,34,0.55)] kc-pressable"
+              >
+                <Share2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
+                <span className="leading-snug">
+                  {language === 'ur' ? 'آئی فون کے لیے ایپ لنک شیئر کریں' : 'Share App for iPhone (iOS Link)'}
+                </span>
               </button>
 
               {currentUser.role === 'SUPER_ADMIN' && (

@@ -19,9 +19,10 @@ import {
   Trash2
 } from 'lucide-react';
 import { RoleBadge } from '../common/RoleBadge';
-import { TabbarBadge } from '../common/TabbarBadge';
+import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { AssignRoleModal } from '../common/AssignRoleModal';
 import { resolveUserApprovalStatus, isUserActuallyOnline } from '../../services/firebase';
+import { isFaizKhelUser } from '../../utils/dastoor';
 import { translate } from '../../data/translations';
 
 interface MemberProfileModalProps {
@@ -92,16 +93,32 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
   };
 
   const avatarSrc = liveUser.avatarUrl || liveUser.photoUrl || liveUser.avatar;
+  const isFaizKhel = isFaizKhelUser(liveUser);
 
   return (
     <>
       <div className="fixed inset-0 z-[10000] bg-black/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
         <div
-          className="kc-luxury-modal rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto max-h-[92dvh]"
+          className={`kc-luxury-modal rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto max-h-[92dvh] ${
+            isFaizKhel ? '!border-[1.5px] !border-[#D4AF37] shadow-[0_18px_50px_rgba(2,44,34,0.85),0_0_26px_rgba(212,175,55,0.22)]' : ''
+          }`}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="h-24 bg-gradient-to-br from-[#063B2E] via-[#042920] to-[#090D16] p-4 relative border-b border-[#D4AF37]/35">
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FCE38A] to-[#D4AF37]" />
+          <div
+            className="h-24 p-4 relative border-b border-[#D4AF37]/45"
+            style={{
+              background: isFaizKhel
+                ? 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)'
+                : 'linear-gradient(135deg, #063B2E 0%, #042920 55%, #090D16 100%)',
+            }}
+          >
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FDE047] to-[#D4AF37]" />
+            {isFaizKhel && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#021B14]/90 border border-[#D4AF37] text-[#FDE047] text-[10px] font-extrabold shadow">
+                <FaizKhelVipCrownIcon className="w-3.5 h-3.5" />
+                <span>{language === 'ur' ? 'شاہی وی آئی پی · فیض خیل' : 'ROYAL VIP · FAIZ KHEL'}</span>
+              </div>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -118,10 +135,20 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   <img
                     src={avatarSrc}
                     alt={liveUser.name}
-                    className="w-24 h-24 rounded-2xl border-4 border-[#111726] ring-1 ring-[#D4AF37]/50 object-cover shadow-xl bg-[#090D16]"
+                    className={`w-24 h-24 rounded-2xl border-4 object-cover shadow-xl bg-[#090D16] ${
+                      isFaizKhel
+                        ? 'border-[#D4AF37] ring-2 ring-[#FDE047]/60'
+                        : 'border-[#111726] ring-1 ring-[#D4AF37]/50'
+                    }`}
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-2xl border-4 border-[#111726] ring-1 ring-[#D4AF37]/50 bg-[#042920] text-[#F5D061] flex items-center justify-center font-bold text-3xl shadow-xl">
+                  <div
+                    className={`w-24 h-24 rounded-2xl border-4 flex items-center justify-center font-bold text-3xl shadow-xl ${
+                      isFaizKhel
+                        ? 'border-[#D4AF37] ring-2 ring-[#FDE047]/60 bg-[#022C22] text-[#FDE047]'
+                        : 'border-[#111726] ring-1 ring-[#D4AF37]/50 bg-[#042920] text-[#F5D061]'
+                    }`}
+                  >
                     {liveUser.name.charAt(0).toUpperCase()}
                   </div>
                 )}

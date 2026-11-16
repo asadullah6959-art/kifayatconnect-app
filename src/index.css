@@ -77,6 +77,15 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Prevent iOS Safari Auto-Zoom on Input Focus (requires >= 16px on iOS WebKit) */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Crisp Retina SVG & Tabular Figure Support */
 svg {
   shape-rendering: geometricPrecision;

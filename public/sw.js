@@ -1,8 +1,11 @@
 // Kifayat Connect Service Worker (Network-First HTML Navigation to Prevent Stale Chunk White Screens)
-const CACHE_NAME = 'kifayat-connect-v3.0.0';
+const CACHE_NAME = 'kifayat-connect-v3.1.0';
 const STATIC_ASSETS = [
   './manifest.json',
-  './kc-emblem.svg'
+  './kc-emblem.svg',
+  './apple-touch-icon.png',
+  './pwa-192x192.png',
+  './pwa-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {

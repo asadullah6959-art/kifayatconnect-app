@@ -49,6 +49,7 @@ import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 import { translate, AppLanguage } from '../../data/translations';
 import { resolveUserTabbar } from '../../data/tabbars';
+import { isFaizKhelUser } from '../../utils/dastoor';
 import {
   ChatMessage,
   ChatReplySnapshot,
@@ -170,6 +171,8 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
     try {
       if (!audioRef.current) {
         const audio = new Audio(voiceNote.url);
+        audio.preload = 'metadata';
+        (audio as unknown as { playsInline?: boolean }).playsInline = true;
         audio.onended = () => {
           setIsPlaying(false);
           setCurrentSec(0);
@@ -705,9 +708,14 @@ const ChatModuleContent: React.FC = () => {
         (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
       );
 
+    const isIosDevice =
+      typeof navigator !== 'undefined' &&
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1));
+
     try {
       if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-        if (!isNativeAndroidApk) {
+        if (!isNativeAndroidApk && !isIosDevice) {
           setMicHint(
             language === 'ur'
               ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
@@ -722,7 +730,9 @@ const ChatModuleContent: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
 
-      const preferredTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+      const preferredTypes = isIosDevice
+        ? ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/aac', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg']
+        : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
       const supportedMime = preferredTypes.find(t => {
         try {
           return MediaRecorder.isTypeSupported(t);
@@ -730,6 +740,7 @@ const ChatModuleContent: React.FC = () => {
           return false;
         }
       });
+      const fallbackMime = supportedMime || (isIosDevice ? 'audio/mp4' : 'audio/webm');
 
       const recorder = supportedMime
         ? new MediaRecorder(stream, { mimeType: supportedMime })
@@ -766,7 +777,7 @@ const ChatModuleContent: React.FC = () => {
           return;
         }
 
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || fallbackMime });
         audioChunksRef.current = [];
 
         if (blob.size > 950 * 1024) {
@@ -1184,10 +1195,19 @@ const ChatModuleContent: React.FC = () => {
                 const prevDayKey = idx > 0 ? getCalendarDayKey(visibleCommunityMessages[idx - 1].timestamp) : null;
                 const showDateDivider = idx === 0 || dayKey !== prevDayKey;
 
+                const msgResolvedTabbar = resolveUserTabbar({
+                  tabbarId: msg.senderTabbarId ?? authorRecord?.tabbarId,
+                  tabbarEnglish: msg.senderTabbarEnglish ?? authorRecord?.tabbarEnglish,
+                  tabbarUrdu: msg.senderTabbarUrdu ?? authorRecord?.tabbarUrdu,
+                });
+                const msgIsFaizKhel = msgResolvedTabbar?.id === 'faiz_khel';
+
                 const bubbleContainerClass = msgIsFounder
                   ? getFounderBubbleStyle(msg.senderBubbleColor || appSettings.founderBubbleColor)
                   : msg.isHighlighted
                   ? 'bg-gradient-to-br from-[#231D0B] to-[#111622] border-[#F5D061] shadow-[0_0_16px_rgba(212,175,55,0.2)]'
+                  : msgIsFaizKhel
+                  ? 'bg-gradient-to-br from-[#022C22] via-[#064E3B] to-[#022C22] border-[1.5px] border-[#D4AF37] text-white shadow-[0_4px_18px_rgba(212,175,55,0.22),inset_0_1px_0_rgba(253,224,71,0.24)]'
                   : isMine
                   ? 'bg-gradient-to-br from-[#043927] to-[#074F37] border-[#D4AF37]/45'
                   : 'bg-[#111622]/95 border-slate-700/80';
@@ -1219,7 +1239,7 @@ const ChatModuleContent: React.FC = () => {
                             src={avatarSrc}
                             alt={msg.senderName}
                             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${
-                              msgIsFounder ? 'border-[#F5D061]' : 'border-[#D4AF37]/40'
+                              msgIsFounder || msgIsFaizKhel ? 'border-[#D4AF37]' : 'border-[#D4AF37]/40'
                             }`}
                           />
                         ) : (
@@ -1227,6 +1247,8 @@ const ChatModuleContent: React.FC = () => {
                             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-extrabold text-xs border-2 ${
                               msgIsFounder
                                 ? 'bg-gradient-to-br from-[#F5D061] to-[#9E7322] text-[#0A0D12] border-[#F5D061]'
+                                : msgIsFaizKhel
+                                ? 'bg-[#022C22] text-[#FDE047] border-[#D4AF37]'
                                 : 'bg-[#043927] text-[#F5D061] border-[#D4AF37]/40'
                             }`}
                           >
@@ -1252,7 +1274,15 @@ const ChatModuleContent: React.FC = () => {
                                 👑
                               </span>
                             )}
-                            <span className={`font-extrabold text-xs ${msgIsFounder ? 'text-[#F5D061]' : 'text-emerald-300'}`}>
+                            <span
+                              className={`font-extrabold text-xs ${
+                                msgIsFounder
+                                  ? 'text-[#F5D061]'
+                                  : msgIsFaizKhel
+                                  ? 'text-[#FDE047]'
+                                  : 'text-emerald-300'
+                              }`}
+                            >
                               {msg.senderName}
                             </span>
                             <RoleBadge
@@ -1966,6 +1996,10 @@ const ChatModuleContent: React.FC = () => {
                       const prevDayKey = idx > 0 ? getCalendarDayKey(currentDirectMessages[idx - 1].timestamp) : null;
                       const showDateDivider = idx === 0 || dayKey !== prevDayKey;
 
+                      const directSenderIsFaizKhel = isMine
+                        ? isFaizKhelUser(currentUser)
+                        : isFaizKhelUser(activeRecipient);
+
                       return (
                         <React.Fragment key={msg.id}>
                           {showDateDivider && (
@@ -1978,13 +2012,25 @@ const ChatModuleContent: React.FC = () => {
                           <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                             <div
                               className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
-                                isMine
+                                directSenderIsFaizKhel
+                                  ? `bg-gradient-to-br from-[#022C22] via-[#064E3B] to-[#022C22] text-white border-[1.5px] border-[#D4AF37] shadow-[0_4px_16px_rgba(212,175,55,0.18)] ${
+                                      isMine ? 'rounded-br-none' : 'rounded-bl-none'
+                                    }`
+                                  : isMine
                                   ? 'bg-gradient-to-br from-[#043927] to-[#065239] text-white border border-[#D4AF37]/40 rounded-br-none'
                                   : 'bg-[#161D2C] text-slate-100 border border-slate-700/80 rounded-bl-none'
                               }`}
                             >
-                              <div className="flex items-center justify-between gap-3 text-[10px] opacity-85 font-semibold">
-                                <span className={isMine ? 'text-[#F5D061]' : 'text-emerald-300'}>
+                              <div className="flex items-center justify-between gap-3 text-[10px] opacity-90 font-semibold">
+                                <span
+                                  className={
+                                    directSenderIsFaizKhel
+                                      ? 'text-[#FDE047]'
+                                      : isMine
+                                      ? 'text-[#F5D061]'
+                                      : 'text-emerald-300'
+                                  }
+                                >
                                   {isMine ? (language === 'ur' ? 'آپ' : 'You') : msg.senderName}
                                 </span>
                                 <div className="flex items-center gap-2">

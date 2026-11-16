@@ -29,8 +29,10 @@ import {
   UserCheck,
   UserX,
   FileClock,
-  Trash2
+  Trash2,
+  Share2
 } from 'lucide-react';
+import { resolveIphoneLiveUrl } from '../../utils/iphoneShare';
 import { PROVINCE_OPTIONS, getAllDistricts, addCustomDistrict } from '../../data/locationData';
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
 import { RoleBadge } from '../common/RoleBadge';
@@ -164,7 +166,12 @@ export const ManageAppModule: React.FC = () => {
   const [chatEnabled, setChatEnabled] = useState(appSettings.chatEnabled);
   const [contactEmail, setContactEmail] = useState(appSettings.contactEmail);
   const [contactHelpline, setContactHelpline] = useState(appSettings.contactHelpline);
+  const [webAppLiveUrl, setWebAppLiveUrl] = useState(appSettings.webAppLiveUrl || '');
   const [profileVisibility, setProfileVisibility] = useState(appSettings.profileVisibility);
+
+  React.useEffect(() => {
+    setWebAppLiveUrl(appSettings.webAppLiveUrl || '');
+  }, [appSettings.webAppLiveUrl]);
 
   // 2. Branding & Logo
   const [appName, setAppName] = useState(appSettings.appName);
@@ -572,9 +579,21 @@ export const ManageAppModule: React.FC = () => {
       chatEnabled,
       contactEmail: contactEmail.trim(),
       contactHelpline: contactHelpline.trim(),
+      webAppLiveUrl: webAppLiveUrl.trim(),
       profileVisibility
     });
     showNotice('success', isUr ? 'سسٹم اور دیکھ بھال کی ترتیبات لائیو محفوظ ہو گئیں۔' : 'System & maintenance settings saved live.');
+  };
+
+  const handleSaveLiveLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateAppSettings({
+      webAppLiveUrl: webAppLiveUrl.trim()
+    });
+    showNotice(
+      'success',
+      isUr ? 'آئی فون / ویب ایپ لائیو لنک تمام ڈیوائسز کے لیے محفوظ ہو گیا۔' : 'iPhone / Web App Live Link updated across all devices.'
+    );
   };
 
   const handleSaveBranding = (e: React.FormEvent) => {
@@ -947,6 +966,33 @@ export const ManageAppModule: React.FC = () => {
                 ]}
               />
             </div>
+          </div>
+
+          <div
+            className="p-4 rounded-xl border border-[#D4AF37]/50 space-y-2"
+            style={{ background: 'linear-gradient(135deg, #022C22 0%, #063B2E 100%)' }}
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="font-bold text-[#FDE047] flex items-center gap-1.5">
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک (iPhone / Web App Live Link)' : 'iPhone / Web App Live Link'}</span>
+              </label>
+              <span className="text-[10px] font-mono text-emerald-200 truncate max-w-xs">
+                {isUr ? 'فعال لنک:' : 'Active:'} {resolveIphoneLiveUrl(webAppLiveUrl)}
+              </span>
+            </div>
+            <input
+              type="url"
+              value={webAppLiveUrl}
+              onChange={(e) => setWebAppLiveUrl(e.target.value)}
+              placeholder="https://your-app.vercel.app"
+              className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/45 bg-[#021B14] text-white font-mono text-[11px] focus:outline-none focus:border-[#FDE047]"
+            />
+            <p className="text-[11px] text-emerald-100/80">
+              {isUr
+                ? 'APK کو دوبارہ بلڈ کیے بغیر آئی فون صارفین کے لیے شیئر کیا جانے والا لائیو ویب لنک یہاں محفوظ کریں۔'
+                : 'Paste your Vercel or live web URL here so every "Share App for iPhone" button shares it instantly without rebuilding the APK.'}
+            </p>
           </div>
 
           <div className="flex justify-end pt-3 border-t border-slate-800">
@@ -1869,6 +1915,38 @@ export const ManageAppModule: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* iPhone / Web App Live Link Setting */}
+          <form
+            onSubmit={handleSaveLiveLink}
+            className="p-5 rounded-2xl border-[1.5px] border-[#D4AF37]/70 space-y-3"
+            style={{ background: 'linear-gradient(135deg, #022C22 0%, #064E3B 55%, #022C22 100%)' }}
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="font-bold text-sm text-[#FDE047] flex items-center gap-2">
+                <Share2 className="w-4 h-4 shrink-0" />
+                <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک' : 'iPhone / Web App Live Link'}</span>
+              </h3>
+              <span className="text-[10px] font-mono text-emerald-100 bg-[#021B14]/80 px-2 py-0.5 rounded border border-[#D4AF37]/40 truncate max-w-xs">
+                {resolveIphoneLiveUrl(webAppLiveUrl)}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                type="url"
+                value={webAppLiveUrl}
+                onChange={(e) => setWebAppLiveUrl(e.target.value)}
+                placeholder="https://your-app.vercel.app"
+                className="flex-1 px-3 py-2 rounded-xl border border-[#D4AF37]/45 bg-[#021B14] text-white font-mono text-[11px] focus:outline-none focus:border-[#FDE047]"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl font-extrabold kc-gold-button text-xs shrink-0 cursor-pointer"
+              >
+                {isUr ? 'لائیو لنک محفوظ کریں' : 'Save Live Link'}
+              </button>
+            </div>
+          </form>
 
           {/* Manual APK Override */}
           <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4">

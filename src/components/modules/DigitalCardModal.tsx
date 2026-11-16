@@ -5,8 +5,9 @@ import { X, Printer, ShieldCheck, QrCode, RefreshCw, Download, CheckCircle2 } fr
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
-import { TabbarBadge } from '../common/TabbarBadge';
+import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { resolveUserTabbar } from '../../data/tabbars';
+import { isFaizKhelUser } from '../../utils/dastoor';
 import { translate } from '../../data/translations';
 
 interface DigitalCardModalProps {
@@ -54,6 +55,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
   const [isFlipped, setIsFlipped] = useState(false);
   const [showQrVerifyModal, setShowQrVerifyModal] = useState(false);
   const [downloadingPng, setDownloadingPng] = useState(false);
+  const isFaizKhel = isFaizKhelUser(user);
 
   const locFallback = mapLegacyRegionToHierarchy(user.region);
   const dist = user.district || locFallback.district;
@@ -232,11 +234,13 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             }`}
             onClick={() => setIsFlipped(prev => !prev)}
           >
-            {/* FRONT: Black Velvet VIP Card */}
+            {/* FRONT: Black Velvet / Royal Emerald VIP Card */}
             <div
               className="absolute inset-0 w-full h-full rounded-2xl p-3.5 sm:p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between backface-hidden overflow-hidden"
               style={{
-                background: 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)',
+                background: isFaizKhel
+                  ? 'linear-gradient(145deg, #022C22 0%, #064E3B 46%, #021B14 100%)'
+                  : 'linear-gradient(145deg, #080A0E 0%, #141821 55%, #090C11 100%)',
                 border: '2px solid #D4AF37'
               }}
             >
@@ -261,10 +265,13 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                   </div>
                 </div>
 
-                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-200 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 shrink-0">
-                  <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
-                  <span>ACTIVE</span>
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isFaizKhel && <FaizKhelVipCrownIcon className="w-5 h-5" />}
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-200 bg-[#043927] px-2 py-0.5 rounded-md border border-[#D4AF37]/40 shrink-0">
+                    <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
+                    <span>ACTIVE</span>
+                  </span>
+                </div>
               </div>
 
               {/* Center: Gold-Framed Photo + Identity + 3D RoleBadge */}

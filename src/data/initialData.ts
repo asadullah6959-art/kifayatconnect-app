@@ -202,6 +202,7 @@ export const INITIAL_APP_SETTINGS: AppSettings = {
   maxCoAdminsPerState: 3,
   contactEmail: 'support@kifayatconnect.org',
   contactHelpline: '+92 51 111 8841',
+  webAppLiveUrl: '',
   dashboardVisibility: {
     showKpiGrid: true,
     showQuickActions: true,
