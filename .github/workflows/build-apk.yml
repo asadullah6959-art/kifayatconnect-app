@@ -80,6 +80,10 @@ jobs:
               mkdir -p /tmp/kc_android_preserve/res
               cp -r android/app/src/main/res/mipmap-* /tmp/kc_android_preserve/res/
             fi
+            if [ -f "android/app/src/main/res/values/ic_launcher_background.xml" ]; then
+              mkdir -p /tmp/kc_android_preserve/res/values
+              cp android/app/src/main/res/values/ic_launcher_background.xml /tmp/kc_android_preserve/res/values/ic_launcher_background.xml
+            fi
             rm -rf android
             npx cap add android
             if [ -f "/tmp/kc_android_preserve/build.gradle" ]; then
@@ -99,110 +103,13 @@ jobs:
               rm -rf android/app/src/main/res/mipmap-*
               cp -r /tmp/kc_android_preserve/res/mipmap-* android/app/src/main/res/
             fi
+            if [ -f "/tmp/kc_android_preserve/res/values/ic_launcher_background.xml" ]; then
+              mkdir -p android/app/src/main/res/values
+              cp /tmp/kc_android_preserve/res/values/ic_launcher_background.xml android/app/src/main/res/values/ic_launcher_background.xml
+            fi
             rm -rf /tmp/kc_android_preserve
           fi
           npx cap sync android
-
-      - name: Apply Kifayat Connect Launcher Icons (Royal Emerald & Gold Crown)
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq librsvg2-bin imagemagick
-          cat << 'EOF' > /tmp/kc_emblem.svg
-          <svg viewBox="0 0 120 128" width="512" height="546" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="kcGold" x1="12" y1="6" x2="108" y2="122" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#F5D061" />
-                <stop offset="48%" stop-color="#D4AF37" />
-                <stop offset="100%" stop-color="#8A6218" />
-              </linearGradient>
-              <linearGradient id="kcGoldBright" x1="20" y1="8" x2="96" y2="52" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#FFF2B2" />
-                <stop offset="50%" stop-color="#F5D061" />
-                <stop offset="100%" stop-color="#B88725" />
-              </linearGradient>
-              <linearGradient id="kcEmerald" x1="20" y1="34" x2="100" y2="116" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#086E4E" />
-                <stop offset="55%" stop-color="#043927" />
-                <stop offset="100%" stop-color="#021F15" />
-              </linearGradient>
-              <linearGradient id="kcObsidian" x1="26" y1="40" x2="94" y2="110" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#171E2E" />
-                <stop offset="100%" stop-color="#0A0D12" />
-              </linearGradient>
-            </defs>
-            <g>
-              <path d="M35 31L29 14L46 22L60 7L74 22L91 14L85 31H35Z" fill="url(#kcGoldBright)" stroke="#5C3D09" stroke-width="1.5" stroke-linejoin="round" />
-              <rect x="33" y="29.5" width="54" height="5.5" rx="2.5" fill="url(#kcGold)" stroke="#5C3D09" stroke-width="1.2" />
-              <circle cx="29" cy="13" r="2.6" fill="#F5D061" stroke="#5C3D09" stroke-width="1" />
-              <circle cx="60" cy="6.5" r="3.2" fill="#FFF2B2" stroke="#5C3D09" stroke-width="1" />
-              <circle cx="91" cy="13" r="2.6" fill="#F5D061" stroke="#5C3D09" stroke-width="1" />
-              <circle cx="60" cy="21" r="2.8" fill="#086E4E" stroke="#FFF2B2" stroke-width="1" />
-            </g>
-            <path d="M60 37L102 51V76C102 99 83 116 60 123C37 116 18 99 18 76V51L60 37Z" fill="url(#kcGold)" />
-            <path d="M60 41.5L97.5 54V75.5C97.5 96 80.5 111.5 60 118C39.5 111.5 22.5 96 22.5 75.5V54L60 41.5Z" fill="url(#kcEmerald)" />
-            <path d="M60 47L91 57.5V75C91 92 77 105.5 60 111.5C43 105.5 29 92 29 75V57.5L60 47Z" fill="url(#kcObsidian)" stroke="url(#kcGold)" stroke-width="1.6" />
-            <path d="M42 63V92M42 77.5L55.5 63M47.5 72L56.5 92" stroke="url(#kcGoldBright)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M80.5 68C78.2 64.5 74.2 62.6 69.8 63C63.6 63.5 59.5 69.5 59.5 77.5C59.5 85.5 63.8 91.5 70 92C74.5 92.3 78.5 90.2 80.7 86.5" stroke="url(#kcGoldBright)" stroke-width="4.6" stroke-linecap="round" />
-            <path d="M42 100C47.5 103.5 53.5 105.2 60 105.2C66.5 105.2 72.5 103.5 78 100" stroke="url(#kcGold)" stroke-width="2.2" stroke-linecap="round" />
-          </svg>
-          EOF
-
-          rsvg-convert -w 512 -h 546 /tmp/kc_emblem.svg -o /tmp/kc_emblem.png
-
-          RES_DIR="android/app/src/main/res"
-          rm -f "$RES_DIR"/drawable*/ic_launcher* 2>/dev/null || true
-
-          mkdir -p "$RES_DIR/values"
-          cat << 'EOF' > "$RES_DIR/values/ic_launcher_background.xml"
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="ic_launcher_background">#064E3B</color>
-          </resources>
-          EOF
-
-          mkdir -p "$RES_DIR/mipmap-anydpi-v26"
-          cat << 'EOF' > "$RES_DIR/mipmap-anydpi-v26/ic_launcher.xml"
-          <?xml version="1.0" encoding="utf-8"?>
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@mipmap/ic_launcher_background"/>
-              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-          </adaptive-icon>
-          EOF
-          cp "$RES_DIR/mipmap-anydpi-v26/ic_launcher.xml" "$RES_DIR/mipmap-anydpi-v26/ic_launcher_round.xml"
-
-          for spec in "mdpi:48:108" "hdpi:72:162" "xhdpi:96:216" "xxhdpi:144:324" "xxxhdpi:192:432"; do
-            density="${spec%%:*}"
-            rest="${spec#*:}"
-            legacy="${rest%%:*}"
-            adaptive="${rest##*:}"
-            dir="$RES_DIR/mipmap-$density"
-            mkdir -p "$dir"
-
-            # Solid Royal Emerald #064E3B background layer for adaptive icon
-            convert -size "${adaptive}x${adaptive}" "xc:#064E3B" PNG32:"$dir/ic_launcher_background.png"
-
-            # Transparent foreground centered cleanly inside 66% safe zone
-            fg_inner=$(( adaptive * 62 / 100 ))
-            convert /tmp/kc_emblem.png -resize "${fg_inner}x${fg_inner}" \
-              -gravity center -background none -extent "${adaptive}x${adaptive}" \
-              PNG32:"$dir/ic_launcher_foreground.png"
-
-            # Legacy square/rounded icon on #064E3B Royal Emerald
-            leg_inner=$(( legacy * 78 / 100 ))
-            convert -size "${legacy}x${legacy}" "xc:#064E3B" \
-              \( /tmp/kc_emblem.png -resize "${leg_inner}x${leg_inner}" \) \
-              -gravity center -composite PNG32:"$dir/ic_launcher.png"
-
-            # Legacy round icon masked to crisp circle on #064E3B Royal Emerald
-            half=$(( legacy / 2 ))
-            edge=$(( legacy - 1 ))
-            convert -size "${legacy}x${legacy}" xc:none \
-              -fill white -draw "circle ${half},${half} ${half},1" \
-              -alpha off /tmp/circle_mask.png
-            convert "$dir/ic_launcher.png" /tmp/circle_mask.png \
-              -alpha off -compose CopyOpacity -composite PNG32:"$dir/ic_launcher_round.png"
-          done
-          rm -f /tmp/kc_emblem.svg /tmp/kc_emblem.png /tmp/circle_mask.png
 
       - name: Build & Rename Debug APK
         env:

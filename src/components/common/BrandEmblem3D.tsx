@@ -1,5 +1,5 @@
 import React from 'react';
-import kcUnityEmblem from '../../assets/images/kc-unity-emblem.png';
+import kcRoyalRoundEmblem from '../../assets/images/kc-royal-round-emblem.png';
 
 interface BrandEmblem3DProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -25,13 +25,13 @@ export const BrandEmblem3D: React.FC<BrandEmblem3DProps> = React.memo(({
       className={`relative inline-flex items-center justify-center select-none shrink-0 rounded-full ${SIZE_MAP[size]} ${
         animated ? 'kc-animate-crown-float' : ''
       } ${className}`}
-      aria-label="Kifayat Connect Unity Emblem"
+      aria-label="Kifayat Connect Royal Crown KC Emblem"
     >
       <img
-        src={kcUnityEmblem}
-        alt="Kifayat Connect Unity"
+        src={kcRoyalRoundEmblem}
+        alt="Kifayat Connect"
         draggable={false}
-        className="w-full h-full rounded-full object-contain drop-shadow-[0_6px_14px_rgba(212,175,55,0.28)]"
+        className="w-full h-full rounded-full object-contain drop-shadow-[0_6px_14px_rgba(212,175,55,0.32)]"
       />
     </div>
   );

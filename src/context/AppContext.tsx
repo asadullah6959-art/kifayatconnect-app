@@ -1,4 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  safeGetItem,
+  safeSetItem,
+  safeRemoveItem,
+  mirrorSessionToIndexedDB,
+  readSessionFromIndexedDB
+} from '../utils/safeStorage';
 import { 
   User, 
   UserRole,
@@ -129,13 +136,13 @@ const STORAGE_KEYS = {
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = safeGetItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw) as T;
   } catch {
     try {
       if (key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.CURRENT_USER_ID) {
-        localStorage.removeItem(key);
+        safeRemoveItem(key);
       }
     } catch {
       // Ignore cleanup errors
@@ -147,14 +154,16 @@ function readStorage<T>(key: string, fallback: T): T {
 function persistCurrentUserToStorage(user: User | null): void {
   try {
     if (!user) {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+      safeRemoveItem(STORAGE_KEYS.CURRENT_USER);
+      safeRemoveItem(STORAGE_KEYS.CURRENT_USER_ID);
+      void mirrorSessionToIndexedDB(STORAGE_KEYS.CURRENT_USER, null);
+      void mirrorSessionToIndexedDB(STORAGE_KEYS.CURRENT_USER_ID, null);
       return;
     }
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
-    try {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
-    } catch {
+    safeSetItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
+    void mirrorSessionToIndexedDB(STORAGE_KEYS.CURRENT_USER_ID, user.id);
+    const fullSerialized = JSON.stringify(user);
+    if (!safeSetItem(STORAGE_KEYS.CURRENT_USER, fullSerialized)) {
       // Fallback if oversized base64 photo triggers storage quota limit
       const compactUser: User = {
         ...user,
@@ -162,7 +171,11 @@ function persistCurrentUserToStorage(user: User | null): void {
         avatarUrl: user.avatarUrl && user.avatarUrl.startsWith('data:') && user.avatarUrl.length > 48000 ? undefined : user.avatarUrl,
         avatar: user.avatar && user.avatar.startsWith('data:') && user.avatar.length > 48000 ? undefined : user.avatar
       };
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(compactUser));
+      const compactSerialized = JSON.stringify(compactUser);
+      safeSetItem(STORAGE_KEYS.CURRENT_USER, compactSerialized);
+      void mirrorSessionToIndexedDB(STORAGE_KEYS.CURRENT_USER, compactSerialized);
+    } else {
+      void mirrorSessionToIndexedDB(STORAGE_KEYS.CURRENT_USER, fullSerialized);
     }
   } catch {
     // Ignore storage unavailable errors
@@ -181,7 +194,7 @@ function addIdsToStorageSet(key: string, ids: string[]): Set<string> {
   });
   const trimmed = Array.from(set).slice(-1200);
   try {
-    localStorage.setItem(key, JSON.stringify(trimmed));
+    safeSetItem(key, JSON.stringify(trimmed));
   } catch {
     // Ignore quota errors
   }
@@ -626,7 +639,7 @@ const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Purge legacy v2 dummy storage once on upgrade
   useEffect(() => {
-    if (!localStorage.getItem('kifayat_migrated_clean_v3')) {
+    if (!safeGetItem('kifayat_migrated_clean_v3')) {
       [
         'kifayat_users_v2',
         'kifayat_current_user_v2',
@@ -643,8 +656,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'kifayat_chats',
         'kifayat_chat_messages',
         'kifayat_ack_update_version'
-      ].forEach(k => localStorage.removeItem(k));
-      localStorage.setItem('kifayat_migrated_clean_v3', 'true');
+      ].forEach(k => safeRemoveItem(k));
+      safeSetItem('kifayat_migrated_clean_v3', 'true');
     }
   }, []);
 
@@ -652,7 +665,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [initialSession] = useState<{ users: User[]; currentUser: User | null }>(() => {
     const rawUsers = readStorage(STORAGE_KEYS.USERS, INITIAL_USERS).map(normalizeUserRecord);
     const savedSessionUser = readStorage<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    const savedId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    const savedId = safeGetItem(STORAGE_KEYS.CURRENT_USER_ID);
     let resolvedUser: User | null = savedSessionUser ? normalizeUserRecord(savedSessionUser) : null;
     if (!resolvedUser && savedId) {
       const matched = rawUsers.find(u => u.id === savedId);
@@ -671,6 +684,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>(initialSession.users);
   const [currentUserState, setCurrentUserState] = useState<User | null>(initialSession.currentUser);
   const [currentUserId, setCurrentUserId] = useState<string | null>(initialSession.currentUser?.id || null);
+
+  // Restore session silently from IndexedDB if Safari cleared localStorage while IndexedDB kept it
+  useEffect(() => {
+    if (currentUserState) return;
+    let active = true;
+    readSessionFromIndexedDB(STORAGE_KEYS.CURRENT_USER).then((raw) => {
+      if (!active || !raw) return;
+      try {
+        const parsed = JSON.parse(raw) as User;
+        if (parsed && parsed.id) {
+          const normalized = normalizeUserRecord(parsed);
+          setCurrentUserState(prev => prev ?? normalized);
+          setCurrentUserId(prev => prev ?? normalized.id);
+          persistCurrentUserToStorage(normalized);
+        }
+      } catch {
+        // Ignore corrupted IDB payload
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [currentUserState]);
+
   const [applications, setApplications] = useState<MembershipApplication[]>(() => readStorage(STORAGE_KEYS.APPLICATIONS, INITIAL_MEMBERSHIP_APPLICATIONS));
   const [payments, setPayments] = useState<PaymentTransaction[]>(() => readStorage(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS));
   const [complaints, setComplaints] = useState<Complaint[]>(() => readStorage(STORAGE_KEYS.COMPLAINTS, INITIAL_COMPLAINTS));
@@ -680,14 +717,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [officeBearers, setOfficeBearers] = useState<OfficeBearer[]>(() => readStorage(STORAGE_KEYS.OFFICE_BEARERS, INITIAL_OFFICE_BEARERS));
   const [officeBearerHistory, setOfficeBearerHistory] = useState<OfficeBearerHistory[]>(() => readStorage(STORAGE_KEYS.OFFICE_BEARER_HISTORY, INITIAL_OFFICE_BEARER_HISTORY));
   const [appUpdates, setAppUpdates] = useState<AppUpdate[]>(() => readStorage(STORAGE_KEYS.APP_UPDATES, INITIAL_APP_UPDATES));
-  const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.ACK_VERSION));
+  const [acknowledgedUpdateVersion, setAcknowledgedUpdateVersion] = useState<string | null>(() => safeGetItem(STORAGE_KEYS.ACK_VERSION));
   const [appSettings, setAppSettings] = useState<AppSettings>(() => mergeAppSettings(readStorage(STORAGE_KEYS.APP_SETTINGS, INITIAL_APP_SETTINGS)));
   const [iphoneShareNotice, setIphoneShareNotice] = useState<{ url: string; id: number } | null>(null);
   const iphoneShareTimerRef = useRef<number | null>(null);
   const [chats, setChats] = useState<ChatConversation[]>(() => readStorage(STORAGE_KEYS.CHATS, INITIAL_CHATS));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     const deletedDirect = readIdSetFromStorage(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS);
-    const savedUid = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    const savedUid = safeGetItem(STORAGE_KEYS.CURRENT_USER_ID);
     const hiddenDirect = savedUid ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${savedUid}`) : new Set<string>();
     return readStorage(STORAGE_KEYS.CHAT_MESSAGES, INITIAL_CHAT_MESSAGES).filter(
       m => !m.isDeleted && !deletedDirect.has(m.id) && !hiddenDirect.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
@@ -695,7 +732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [communityMessages, setCommunityMessages] = useState<ChatMessage[]>(() => {
     const deletedComm = readIdSetFromStorage(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS);
-    const savedUid = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    const savedUid = safeGetItem(STORAGE_KEYS.CURRENT_USER_ID);
     const hiddenComm = savedUid ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${savedUid}`) : new Set<string>();
     return readStorage<ChatMessage[]>(STORAGE_KEYS.COMMUNITY_MESSAGES, []).filter(
       m => !m.isDeleted && !deletedComm.has(m.id) && !hiddenComm.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
@@ -800,7 +837,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [communityMessages, activeTab, liveChatDisplayMode]);
 
-  const [language, setLanguage] = useState<'en' | 'ur'>(() => (localStorage.getItem(STORAGE_KEYS.LANGUAGE) === 'ur' ? 'ur' : 'en'));
+  const [language, setLanguage] = useState<'en' | 'ur'>(() => (safeGetItem(STORAGE_KEYS.LANGUAGE) === 'ur' ? 'ur' : 'en'));
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentTransaction | null>(null);
   const [selectedCardUser, setSelectedCardUser] = useState<User | null>(null);
   const [githubRelease, setGithubRelease] = useState<GitHubReleaseStatus | null>(null);
@@ -906,69 +943,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     persistCurrentUserToStorage(currentUserState);
   }, [currentUserState]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(users)); }, 0);
     return () => window.clearTimeout(id);
   }, [users]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(applications)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(applications)); }, 0);
     return () => window.clearTimeout(id);
   }, [applications]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); }, 0);
     return () => window.clearTimeout(id);
   }, [payments]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints)); }, 0);
     return () => window.clearTimeout(id);
   }, [complaints]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements)); }, 0);
     return () => window.clearTimeout(id);
   }, [announcements]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs)); }, 0);
     return () => window.clearTimeout(id);
   }, [auditLogs]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)); }, 0);
     return () => window.clearTimeout(id);
   }, [notifications]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARERS, JSON.stringify(officeBearers)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.OFFICE_BEARERS, JSON.stringify(officeBearers)); }, 0);
     return () => window.clearTimeout(id);
   }, [officeBearers]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFICE_BEARER_HISTORY, JSON.stringify(officeBearerHistory)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.OFFICE_BEARER_HISTORY, JSON.stringify(officeBearerHistory)); }, 0);
     return () => window.clearTimeout(id);
   }, [officeBearerHistory]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APP_UPDATES, JSON.stringify(appUpdates)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.APP_UPDATES, JSON.stringify(appUpdates)); }, 0);
     return () => window.clearTimeout(id);
   }, [appUpdates]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(appSettings)); }, 0);
     return () => window.clearTimeout(id);
   }, [appSettings]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.CHATS, JSON.stringify(chats)); }, 0);
     return () => window.clearTimeout(id);
   }, [chats]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(chatMessages)); }, 0);
     return () => window.clearTimeout(id);
   }, [chatMessages]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.COMMUNITY_MESSAGES, JSON.stringify(communityMessages)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.COMMUNITY_MESSAGES, JSON.stringify(communityMessages)); }, 0);
     return () => window.clearTimeout(id);
   }, [communityMessages]);
   useEffect(() => {
-    const id = window.setTimeout(() => { try { localStorage.setItem(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, JSON.stringify(offlineChatQueue)); } catch {} }, 0);
+    const id = window.setTimeout(() => { safeSetItem(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, JSON.stringify(offlineChatQueue)); }, 0);
     return () => window.clearTimeout(id);
   }, [offlineChatQueue]);
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.LANGUAGE, language); } catch {} }, [language]);
+  useEffect(() => { safeSetItem(STORAGE_KEYS.LANGUAGE, language); }, [language]);
   useEffect(() => {
     if (acknowledgedUpdateVersion) {
-      try { localStorage.setItem(STORAGE_KEYS.ACK_VERSION, acknowledgedUpdateVersion); } catch {}
+      safeSetItem(STORAGE_KEYS.ACK_VERSION, acknowledgedUpdateVersion);
     }
   }, [acknowledgedUpdateVersion]);
 
@@ -4195,7 +4232,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [appSettings.webAppLiveUrl]);
 
   const resetAllData = () => {
-    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+    Object.values(STORAGE_KEYS).forEach(k => safeRemoveItem(k));
     setUsers(INITIAL_USERS);
     persistCurrentUserToStorage(null);
     setCurrentUserState(null);

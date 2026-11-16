@@ -43,7 +43,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Apollo-Style 3D Perspective Stage */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 kc-animate-tilt-3d">
-        <div className="relative p-5 rounded-3xl bg-[#131C31] border border-[#D4AF37]/40 shadow-[0_20px_60px_rgba(212,175,55,0.18)] overflow-hidden">
+        <div className="relative p-2.5 rounded-full bg-[#131C31] border border-[#D4AF37]/45 shadow-[0_20px_60px_rgba(212,175,55,0.22)] overflow-hidden">
           {/* Moving Golden Light-Sweep Shimmer (GPU transform/opacity only) */}
           <div
             className="absolute inset-y-0 left-0 w-1/2 pointer-events-none kc-animate-shimmer"

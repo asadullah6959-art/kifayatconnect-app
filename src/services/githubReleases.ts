@@ -12,6 +12,8 @@ export interface GitHubReleaseStatus {
   checkedAt: string;
 }
 
+import { safeGetItem, safeSetItem } from '../utils/safeStorage';
+
 const GITHUB_REPO = 'asadullah6959-art/kifayatconnect-app';
 const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`;
 const CACHE_KEY = 'kifayat_github_release_cache_v1';
@@ -40,7 +42,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
 
   if (!forceRefresh) {
     try {
-      const cachedRaw = localStorage.getItem(CACHE_KEY);
+      const cachedRaw = safeGetItem(CACHE_KEY);
       if (cachedRaw) {
         const cached = JSON.parse(cachedRaw) as { timestamp: number; data: GitHubReleaseStatus };
         if (Date.now() - cached.timestamp < CACHE_TTL_MS && cached.data && cached.data.tagName) {
@@ -88,11 +90,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
         publishedAt: null,
         checkedAt: nowIso
       };
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: fallback }));
-      } catch {
-        // Ignore
-      }
+      safeSetItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: fallback }));
       return fallback;
     }
 
@@ -141,11 +139,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
       checkedAt: nowIso
     };
 
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
-    } catch {
-      // Ignore
-    }
+    safeSetItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
 
     return result;
   } catch {

@@ -12,8 +12,10 @@
     <meta name="theme-color" content="#090D16" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Kifayat Connect" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" type="image/svg+xml" href="./kc-emblem.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
@@ -51,7 +53,7 @@
     <div id="root">
       <!-- Instant (<50ms) Fintech Dark Obsidian Slate & Royal Gold Shell before JS mounts -->
       <div class="kc-boot-shell" aria-label="Kifayat Connect">
-        <img src="./pwa-192x192.png" width="84" height="84" alt="Kifayat Connect" style="border-radius:9999px;display:block;box-shadow:0 8px 24px rgba(212,175,55,0.28);" />
+        <img src="./pwa-192x192.png" width="96" height="96" alt="Kifayat Connect" style="border-radius:9999px;display:block;filter:drop-shadow(0 8px 22px rgba(212,175,55,0.34));" />
         <div style="margin-top:16px;font-size:18px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#F8FAFC;">KIFAYAT CONNECT</div>
         <div style="margin-top:6px;font-size:12px;font-weight:600;color:#38BDF8;">Together for a Better Tomorrow</div>
       </div>
@@ -61,8 +63,22 @@
       (function () {
         var isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
         if (!isNative && 'serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+          var reloadedOnUpdate = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (!reloadedOnUpdate) {
+              reloadedOnUpdate = true;
+              window.location.reload();
+            }
+          });
           window.addEventListener('load', function () {
-            navigator.serviceWorker.register('./sw.js').catch(function () {});
+            navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
+              try { reg.update(); } catch (e) {}
+              document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                  try { reg.update(); } catch (e) {}
+                }
+              });
+            }).catch(function () {});
           });
         }
       })();

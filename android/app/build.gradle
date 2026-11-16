@@ -7,7 +7,7 @@ android {
         applicationId "com.kifayatconnect.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 30)
+        versionCode = ((System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 1) + 100)
         versionName = "1.0.${versionCode}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

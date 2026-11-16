@@ -1,11 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  inMemoryPersistence,
+  browserPopupRedirectResolver,
   signInWithPopup,
   signInAnonymously,
   signOut as fbSignOut, 
   GoogleAuthProvider,
   onAuthStateChanged,
+  Auth,
   User as FirebaseUser
 } from 'firebase/auth';
 import { 
@@ -45,6 +51,7 @@ import {
   ChatConversation,
   normalizeLegacyRole
 } from '../types';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safeStorage';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
@@ -77,8 +84,18 @@ export async function uploadMediaToFirebaseStorage(
   }
 }
 
-// Initialize Authentication
-export const auth = getAuth(app);
+// Initialize Authentication with multi-layer persistence (IndexedDB -> localStorage -> inMemory)
+// so Safari Private Mode, iPhone Google App, and WhatsApp in-app browsers never crash on blocked cookies/storage.
+let resolvedAuth: Auth;
+try {
+  resolvedAuth = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+    popupRedirectResolver: browserPopupRedirectResolver
+  });
+} catch {
+  resolvedAuth = getAuth(app);
+}
+export const auth: Auth = resolvedAuth;
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
@@ -178,10 +195,20 @@ export function isNativeMobileRuntime(): boolean {
   return false;
 }
 
-// Google Sign-In with Popup (Web browsers only)
+// Detect in-app browsers (WhatsApp, Facebook, Instagram, Google App) where cross-site auth cookies/popups are blocked
+export function isRestrictedInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /(WhatsApp|FBAN|FBAV|Instagram|Line\/|Snapchat|Twitter|GSA\/|MicroMessenger)/i.test(ua);
+}
+
+// Google Sign-In with Popup (Standard Web browsers only; zero cookies required for app load or Email/Password login)
 export async function loginWithGoogle(): Promise<FirebaseUser> {
   if (isNativeMobileRuntime()) {
-    throw new Error('Please use Email OTP to sign in on the mobile app.');
+    throw new Error('Please use Email OTP or Password to sign in on the mobile app.');
+  }
+  if (isRestrictedInAppBrowser()) {
+    throw new Error('In-app browsers block cross-site popups. Please sign in with Password or Email OTP, or open in Safari/Chrome.');
   }
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -481,8 +508,7 @@ const otpStore = new Map<string, StoredOTP>();
 
 function writePendingOTPToStorage(record: StoredOTP): void {
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(PENDING_OTP_STORAGE_KEY, JSON.stringify(record));
+    safeSetItem(PENDING_OTP_STORAGE_KEY, JSON.stringify(record));
   } catch {
     // Ignore storage write failure
   }
@@ -490,9 +516,8 @@ function writePendingOTPToStorage(record: StoredOTP): void {
 
 export function clearPendingEmailOTP(): void {
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(PENDING_OTP_STORAGE_KEY);
-    localStorage.removeItem(LEGACY_PENDING_OTP_STORAGE_KEY);
+    safeRemoveItem(PENDING_OTP_STORAGE_KEY);
+    safeRemoveItem(LEGACY_PENDING_OTP_STORAGE_KEY);
   } catch {
     // Ignore storage remove failure
   }
@@ -500,10 +525,9 @@ export function clearPendingEmailOTP(): void {
 
 export function getPendingEmailOTP(): StoredOTP | null {
   try {
-    if (typeof localStorage === 'undefined') return null;
     const raw =
-      localStorage.getItem(PENDING_OTP_STORAGE_KEY) ||
-      localStorage.getItem(LEGACY_PENDING_OTP_STORAGE_KEY);
+      safeGetItem(PENDING_OTP_STORAGE_KEY) ||
+      safeGetItem(LEGACY_PENDING_OTP_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredOTP>;
     if (!parsed || typeof parsed.email !== 'string' || typeof parsed.expiresAt !== 'number') {
@@ -773,8 +797,7 @@ const resetStore = new Map<string, StoredOTP>();
 
 function writePendingResetToStorage(record: StoredOTP): void {
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(PENDING_RESET_STORAGE_KEY, JSON.stringify(record));
+    safeSetItem(PENDING_RESET_STORAGE_KEY, JSON.stringify(record));
   } catch {
     // Ignore storage write failure
   }
@@ -782,8 +805,7 @@ function writePendingResetToStorage(record: StoredOTP): void {
 
 export function clearPendingPasswordReset(): void {
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(PENDING_RESET_STORAGE_KEY);
+    safeRemoveItem(PENDING_RESET_STORAGE_KEY);
   } catch {
     // Ignore storage remove failure
   }
@@ -791,8 +813,7 @@ export function clearPendingPasswordReset(): void {
 
 export function getPendingPasswordReset(): StoredOTP | null {
   try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(PENDING_RESET_STORAGE_KEY);
+    const raw = safeGetItem(PENDING_RESET_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredOTP>;
     if (!parsed || typeof parsed.email !== 'string' || typeof parsed.expiresAt !== 'number') {
@@ -1000,8 +1021,7 @@ export async function computeUserPasswordHash(email: string, password: string): 
 
 function readCredentialsMap(): Record<string, StoredCredentialEntry> {
   try {
-    if (typeof localStorage === 'undefined') return {};
-    const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY);
+    const raw = safeGetItem(CREDENTIALS_STORAGE_KEY);
     if (!raw) return {};
     return JSON.parse(raw) as Record<string, StoredCredentialEntry>;
   } catch {
@@ -1013,10 +1033,9 @@ export function mirrorPasswordHashToLocalStorage(email: string, passwordHash: st
   const norm = email.trim().toLowerCase();
   if (!norm || !passwordHash) return;
   try {
-    if (typeof localStorage === 'undefined') return;
     const map = readCredentialsMap();
     map[norm] = { passwordHash, updatedAt: Date.now() };
-    localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+    safeSetItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
   } catch {
     // Ignore storage write failure
   }
@@ -1034,18 +1053,16 @@ export async function saveLocalPasswordCredential(email: string, password: strin
   if (!norm || !password) return '';
   const passwordHash = await computeUserPasswordHash(norm, password);
   try {
-    if (typeof localStorage !== 'undefined') {
-      const map = readCredentialsMap();
-      map[norm] = { passwordHash, updatedAt: Date.now() };
-      localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+    const map = readCredentialsMap();
+    map[norm] = { passwordHash, updatedAt: Date.now() };
+    safeSetItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
 
-      // Also mirror into legacy recovery key for seamless cross-flow compatibility
-      const emailHash = await hashOTP(norm, 'identity');
-      localStorage.setItem(
-        `kc_recovery_credential_${emailHash}`,
-        JSON.stringify({ passwordHash, updatedAt: Date.now() })
-      );
-    }
+    // Also mirror into legacy recovery key for seamless cross-flow compatibility
+    const emailHash = await hashOTP(norm, 'identity');
+    safeSetItem(
+      `kc_recovery_credential_${emailHash}`,
+      JSON.stringify({ passwordHash, updatedAt: Date.now() })
+    );
   } catch {
     // Non-blocking storage write
   }
@@ -1074,16 +1091,14 @@ export async function verifyLocalPasswordCredential(
     return true;
   }
   try {
-    if (typeof localStorage !== 'undefined') {
-      const emailHash = await hashOTP(norm, 'identity');
-      const legacyRaw = localStorage.getItem(`kc_recovery_credential_${emailHash}`);
-      if (legacyRaw) {
-        const legacy = JSON.parse(legacyRaw) as { passwordHash?: string };
-        if (legacy?.passwordHash === candidateHash) {
-          map[norm] = { passwordHash: candidateHash, updatedAt: Date.now() };
-          localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
-          return true;
-        }
+    const emailHash = await hashOTP(norm, 'identity');
+    const legacyRaw = safeGetItem(`kc_recovery_credential_${emailHash}`);
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw) as { passwordHash?: string };
+      if (legacy?.passwordHash === candidateHash) {
+        map[norm] = { passwordHash: candidateHash, updatedAt: Date.now() };
+        safeSetItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(map));
+        return true;
       }
     }
   } catch {
