@@ -6,6 +6,9 @@ RUN npm install
 COPY . .
 # The build needs dev dependencies; they are removed before the copy below.
 RUN npm run build && npm prune --omit=dev
+# The build stage copies the whole repo; drop the native Android shell, signing
+# material and git metadata so they are not inherited by the runtime image below.
+RUN rm -rf /app/android /app/ios /app/.git /app/.github /app/*.jks /app/*.keystore
 FROM node:26-alpine
 # The date keys the build cache so this layer installs today's OS fixes; AppJet keeps it current on deploy.
 RUN echo "os-refresh 2026-11-17" && apk upgrade --no-cache
