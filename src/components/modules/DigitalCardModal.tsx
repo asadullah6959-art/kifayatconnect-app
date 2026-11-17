@@ -8,6 +8,7 @@ import { RoleBadge } from '../common/RoleBadge';
 import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { resolveUserTabbar } from '../../data/tabbars';
 import { isFaizKhelUser } from '../../utils/dastoor';
+import { canViewUserCnic } from '../../utils/privacy';
 import { translate } from '../../data/translations';
 
 interface DigitalCardModalProps {
@@ -51,11 +52,12 @@ function buildQrMatrix(seed: string): boolean[][] {
 }
 
 export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClose }) => {
-  const { language, appSettings } = useApp();
+  const { language, appSettings, currentUser } = useApp();
   const [isFlipped, setIsFlipped] = useState(false);
   const [showQrVerifyModal, setShowQrVerifyModal] = useState(false);
   const [downloadingPng, setDownloadingPng] = useState(false);
   const isFaizKhel = isFaizKhelUser(user);
+  const showCnicOnCard = canViewUserCnic(currentUser, user);
 
   const locFallback = mapLegacyRegionToHierarchy(user.region);
   const dist = user.district || locFallback.district;
@@ -148,7 +150,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
 
       ctx.fillStyle = '#CBD5E1';
       ctx.font = '22px monospace';
-      ctx.fillText(`CNIC: ${user.cnic || 'VERIFIED'}`, 274, resolvedTabbar ? 312 : 302);
+      ctx.fillText(
+        showCnicOnCard ? `CNIC: ${user.cnic || 'VERIFIED'}` : 'IDENTITY: VERIFIED ID',
+        274,
+        resolvedTabbar ? 312 : 302
+      );
       ctx.fillStyle = '#6EE7B7';
       ctx.font = 'bold 22px sans-serif';
       ctx.fillText(`${dist}, ${prov}`, 274, resolvedTabbar ? 348 : 342);
@@ -304,10 +310,12 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                     <TabbarBadge user={user} language={language} compact />
                   </div>
                   <div className="text-[10px] text-slate-300 space-y-0.5 pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400">CNIC:</span>
-                      <span className="font-mono text-white truncate">{user.cnic || 'Verified'}</span>
-                    </div>
+                    {showCnicOnCard && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">CNIC:</span>
+                        <span className="font-mono text-white truncate">{user.cnic || 'Verified'}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 truncate">
                       <span className="text-emerald-300 font-semibold truncate">{dist}</span>
                       <span className="text-slate-400 truncate">({prov})</span>

@@ -21,6 +21,7 @@ import { PWAInstallButton } from './PWAInstallButton';
 import { BrandEmblem3D } from './BrandEmblem3D';
 import { RoleBadge } from './RoleBadge';
 import { translate } from '../../data/translations';
+import { canAccessRouteTab, isFounderIdentity } from '../../utils/permissions';
 
 interface HeaderProps {
   onOpenRegisterModal: () => void;
@@ -162,16 +163,18 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{translate(language, 'navChat')}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('office_bearers')}
-          className={`hover:text-[#F5D061] transition-colors py-1 flex items-center gap-1 cursor-pointer ${
-            activeTab === 'office_bearers' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
-          }`}
-        >
-          <Award className="w-3.5 h-3.5" />
-          <span>{translate(language, 'navOfficeBearers')}</span>
-        </button>
+        {canAccessRouteTab(currentUser, 'office_bearers') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('office_bearers')}
+            className={`hover:text-[#F5D061] transition-colors py-1 flex items-center gap-1 cursor-pointer ${
+              activeTab === 'office_bearers' ? 'text-[#F5D061] font-bold border-b-2 border-[#D4AF37]' : ''
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>{translate(language, 'navOfficeBearers')}</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -183,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
           {translate(language, 'navMembers')}
         </button>
 
-        {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
+        {canAccessRouteTab(currentUser, 'approvals') && (
           <button
             type="button"
             onClick={() => setActiveTab('approvals')}
@@ -403,7 +406,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </button>
 
-              {currentUser.role === 'SUPER_ADMIN' && (
+              {isFounderIdentity(currentUser) && (
                 <button
                   type="button"
                   role="menuitem"

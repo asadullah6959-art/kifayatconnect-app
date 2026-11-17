@@ -17,8 +17,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFadingOut(true), 1850);
-    const doneTimer = setTimeout(() => onFinish(), 2200);
+    const fadeTimer = setTimeout(() => setFadingOut(true), 650);
+    const doneTimer = setTimeout(() => onFinish(), 920);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
@@ -27,7 +27,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#090D16] overflow-hidden select-none transition-opacity duration-350 ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#070D14] overflow-hidden select-none transition-opacity duration-250 ${
         fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       aria-label="Kifayat Connect Splash Screen"
@@ -37,7 +37,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.96) 58%, #090D16 100%)'
+            'radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.12) 0%, rgba(13, 22, 36, 0.96) 58%, #070D14 100%)'
         }}
       />
 

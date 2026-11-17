@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, Check, Copy, Coins, Sparkles, Building2 } from 'lucide-react';
 import type { FundCategory } from '../../types';
 import { LuxurySelect } from './LuxurySelect';
@@ -134,6 +134,7 @@ interface DastoorPaymentCalculatorProps {
   onFundCategoryChange: (cat: FundCategory) => void;
   contactHelpline?: string;
   compact?: boolean;
+  actionSlot?: React.ReactNode;
 }
 
 export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> = ({
@@ -152,9 +153,15 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
   onFundCategoryChange,
   contactHelpline,
   compact = false,
+  actionSlot,
 }) => {
   const isUr = language === 'ur';
   const currentYear = new Date().getFullYear();
+  const [customMonthsDraft, setCustomMonthsDraft] = useState(String(monthsCount));
+
+  useEffect(() => {
+    setCustomMonthsDraft(String(monthsCount));
+  }, [monthsCount]);
 
   const yearOptions = useMemo(() => {
     const years: Array<{ value: string; label: string }> = [];
@@ -174,7 +181,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 
   const localizeFund = (cat: FundCategory) => {
     if (!isUr) return cat;
-    if (cat === 'Monthly Contribution') return 'ماہانہ دستور / چندہ';
+    if (cat === 'Monthly Contribution') return 'ماہانہ فنڈ / چندہ';
     if (cat === 'Annual Welfare Fund') return 'سالانہ فلاحی فنڈ';
     if (cat === 'Emergency Relief') return 'ہنگامی امداد';
     if (cat === 'Zakat & Sadqah') return 'زکوٰۃ و صدقات';
@@ -183,7 +190,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 
   return (
     <div className="space-y-3.5">
-      {/* Mode Tabs: Monthly Dastoor (Rs. 100/Month) vs Other / Extra Fund */}
+      {/* Mode Tabs: Monthly Fund (Rs. 100/Month) vs Other / Extra Fund */}
       <div className="grid grid-cols-2 gap-2 p-1 rounded-xl kc-tab-shell">
         <button
           type="button"
@@ -198,8 +205,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           }`}
         >
           <Coins className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">
-            {isUr ? 'ماہانہ دستور (۱۰۰ روپے/ماہ)' : 'Monthly Dastoor (Rs. 100)'}
+          <span className="whitespace-nowrap">
+            {isUr ? 'ماہانہ فنڈ' : 'Monthly Fund'}
           </span>
         </button>
 
@@ -224,7 +231,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           {/* Official Rate Strip */}
           <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px]">
             <span className="font-bold text-[#94A3B8]">
-              {isUr ? 'سرکاری ماہانہ دستور ریٹ:' : 'Official Dastoor Rate:'}
+              {isUr ? 'سرکاری ماہانہ فنڈ ریٹ:' : 'Official Monthly Fund Rate:'}
             </span>
             <span className="font-mono font-extrabold text-[#38BDF8] tabular-nums">
               {isUr
@@ -278,10 +285,20 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                   min={1}
                   max={240}
                   inputMode="numeric"
-                  value={monthsCount}
+                  value={customMonthsDraft}
                   onChange={(e) => {
-                    const parsed = parseInt(e.target.value, 10);
-                    onMonthsCountChange(Number.isFinite(parsed) && parsed > 0 ? Math.min(240, parsed) : 1);
+                    const raw = e.target.value;
+                    setCustomMonthsDraft(raw);
+                    const parsed = parseInt(raw, 10);
+                    if (Number.isFinite(parsed) && parsed > 0) {
+                      onMonthsCountChange(Math.min(240, parsed));
+                    }
+                  }}
+                  onBlur={() => {
+                    const parsed = parseInt(customMonthsDraft, 10);
+                    const valid = Number.isFinite(parsed) && parsed > 0 ? Math.min(240, parsed) : 1;
+                    setCustomMonthsDraft(String(valid));
+                    onMonthsCountChange(valid);
                   }}
                   placeholder={isUr ? 'مہینے' : 'Months'}
                   className="mt-1 w-full bg-[#131C31] border border-slate-400/25 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#38BDF8]"
@@ -397,6 +414,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           </div>
         </div>
       )}
+
+      {actionSlot}
 
       {/* 1-Click Copy Emerald & Gold Admin Payment Account Card */}
       <AdminPaymentAccountCard language={language} contactHelpline={contactHelpline} />

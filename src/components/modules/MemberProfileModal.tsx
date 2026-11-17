@@ -298,21 +298,10 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/25">
                 <div className="flex items-center gap-2 text-slate-200 min-w-0">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                  {showContact ? (
-                    <span className="font-mono tabular-nums text-slate-100">
-                      {liveUser.phone || (language === 'ur' ? 'درج نہیں' : 'Not provided')}
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 flex items-center gap-1.5 font-mono">
-                      <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> +92 3** *******
-                    </span>
-                  )}
-                </div>
-                {!showContact && (
-                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">
-                    {language === 'ur' ? 'محفوظ' : 'Protected'}
+                  <span className="font-mono tabular-nums text-slate-100">
+                    {liveUser.phone || (language === 'ur' ? 'درج نہیں' : 'Not provided')}
                   </span>
-                )}
+                </div>
               </div>
             </div>
 

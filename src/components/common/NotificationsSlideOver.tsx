@@ -56,6 +56,13 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Auto-mark unread notifications as read when opened so 9+ badge clears immediately
+  useEffect(() => {
+    if (isOpen && unreadNotificationsCount > 0) {
+      markAllNotificationsAsRead();
+    }
+  }, [isOpen, unreadNotificationsCount, markAllNotificationsAsRead]);
+
   // Prevent body scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
@@ -72,7 +79,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
 
   // Filter notifications
   const filteredNotifications = userNotifications.filter(n => {
-    if (activeFilter === 'UNREAD') return !n.read;
+    if (activeFilter === 'UNREAD') return !n.read && !n.isRead;
     if (activeFilter === 'MEMBERSHIPS') {
       return (
         n.type === 'approval_request' ||
@@ -208,14 +215,14 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-gradient-to-b from-[#141B2D] to-[#0B101C] shadow-[0_24px_70px_rgba(0,0,0,0.92)] flex flex-col border-l border-[#D4AF37]/45 animate-in slide-in-from-right duration-300 ease-out">
+      <div className="fixed inset-y-0 right-0 w-full sm:w-auto max-w-full flex justify-end pl-0 sm:pl-10">
+        <div className="w-full max-w-[100vw] sm:max-w-md box-border bg-gradient-to-b from-[#141B2D] to-[#0B101C] shadow-[0_24px_70px_rgba(0,0,0,0.92)] flex flex-col border-l border-[#D4AF37]/45 animate-in slide-in-from-right duration-200 ease-out overflow-hidden">
           
           {/* Header */}
-          <div className="px-6 py-5 border-b border-[#D4AF37]/25 bg-[#090D16]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] flex items-center justify-center relative">
+          <div className="px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-[#D4AF37]/25 bg-[#070D14] shrink-0">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] flex items-center justify-center relative shrink-0">
                   <Bell className="w-5 h-5" />
                   {unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums">
@@ -223,11 +230,11 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                     </span>
                   )}
                 </div>
-                <div>
-                  <h2 id="slide-over-title" className="text-base font-bold text-white">
+                <div className="min-w-0">
+                  <h2 id="slide-over-title" className="text-base font-bold text-white truncate">
                     {language === 'ur' ? 'اطلاعات و الرٹس' : 'Notifications'}
                   </h2>
-                  <p className="text-xs text-slate-400 tabular-nums">
+                  <p className="text-xs text-slate-400 tabular-nums truncate">
                     {language === 'ur' 
                       ? `${unreadNotificationsCount} غیر خواندہ اطلاعات`
                       : `${unreadNotificationsCount} unread alert${unreadNotificationsCount === 1 ? '' : 's'}`}
@@ -235,10 +242,11 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="kc-pressable p-2 rounded-lg text-slate-300 hover:text-[#F5D061] hover:bg-[#161F33] transition-colors cursor-pointer"
+                  className="kc-pressable min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-slate-400/20 text-slate-200 hover:text-[#F5D061] hover:bg-[#1E293B] transition-colors cursor-pointer"
                   aria-label="Close notifications"
                 >
                   <X className="w-5 h-5" />
@@ -247,11 +255,12 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
             </div>
 
             {/* Filter Tabs & Quick Actions */}
-            <div className="mt-4 flex items-center justify-between gap-2">
-              <div className="kc-tab-shell flex items-center gap-1 p-1 rounded-xl text-xs font-semibold">
+            <div className="mt-3.5 flex items-center justify-between gap-2 min-w-0">
+              <div className="kc-tab-shell flex items-center gap-1 p-1 rounded-xl text-[11px] sm:text-xs font-semibold overflow-x-auto max-w-full min-w-0 flex-1">
                 <button
+                  type="button"
                   onClick={() => setActiveFilter('ALL')}
-                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     activeFilter === 'ALL'
                       ? 'kc-gold-button'
                       : 'text-slate-300 hover:text-white'
@@ -260,8 +269,9 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   {language === 'ur' ? 'سب' : 'All'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilter('UNREAD')}
-                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
                     activeFilter === 'UNREAD'
                       ? 'kc-gold-button'
                       : 'text-slate-300 hover:text-white'
@@ -273,8 +283,9 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilter('MEMBERSHIPS')}
-                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     activeFilter === 'MEMBERSHIPS'
                       ? 'kc-gold-button'
                       : 'text-slate-300 hover:text-white'
@@ -283,8 +294,9 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                   {language === 'ur' ? 'ممبرشپ' : 'Members'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilter('PAYMENTS')}
-                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  className={`kc-pressable px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     activeFilter === 'PAYMENTS'
                       ? 'kc-gold-button'
                       : 'text-slate-300 hover:text-white'
@@ -336,54 +348,55 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
               </div>
             ) : (
               filteredNotifications.map((notification) => {
+                const isNotifUnread = !notification.read && !notification.isRead;
                 const badgeClass = getNotificationBadgeClass(notification.type);
                 return (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 transition-all cursor-pointer relative hover:bg-[#161F33]/80 ${
-                      !notification.read
+                    className={`p-3.5 sm:p-4 transition-all cursor-pointer relative hover:bg-[#161F33]/80 ${
+                      isNotifUnread
                         ? 'bg-[#131C31]/75'
                         : ''
                     }`}
                   >
                     {/* Unread indicator bar */}
-                    {!notification.read && (
+                    {isNotifUnread && (
                       <span className="absolute left-0 top-3 bottom-3 w-1 bg-[#F5D061] rounded-r-md" />
                     )}
 
-                    <div className="flex items-start gap-3 pl-1">
+                    <div className="flex items-start gap-2.5 sm:gap-3 pl-1 min-w-0">
                       {/* Icon container */}
-                      <div className="w-9 h-9 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#070D14] border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center justify-between gap-2 mb-1 min-w-0">
                           <h4 className={`text-xs font-semibold truncate ${
-                            !notification.read 
-                              ? 'text-white font-bold' 
+                            isNotifUnread
+                              ? 'text-white font-bold'
                               : 'text-slate-200'
                           }`}>
                             {notification.title}
                           </h4>
-                          <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap tabular-nums">
+                          <span className="text-[10px] sm:text-[11px] text-slate-400 shrink-0 whitespace-nowrap tabular-nums">
                             {formatTimestamp(notification.timestamp)}
                           </span>
                         </div>
 
-                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed break-words">
                           {notification.message}
                         </p>
 
-                        <div className="mt-2.5 flex items-center justify-between">
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border truncate max-w-[65%] ${badgeClass}`}>
                             {notification.type.replace(/_/g, ' ')}
                           </span>
 
                           {notification.linkTab && (
-                            <span className="text-[11px] font-semibold text-[#F5D061] hover:text-white flex items-center gap-1 group">
+                            <span className="text-[11px] font-semibold text-[#F5D061] hover:text-white flex items-center gap-1 group shrink-0">
                               <span>
                                 {notification.type === 'PAYMENT_VERIFIED' 
                                   ? (language === 'ur' ? 'رسید دیکھیں' : 'View Receipt')
@@ -404,7 +417,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Footer note */}
-          <div className="p-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] text-center">
+          <div className="px-4 py-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t border-[#D4AF37]/25 bg-[#070D14] text-center shrink-0">
             <p className="text-[11px] text-slate-400">
               {language === 'ur'
                 ? `کردار کی بنیاد پر محفوظ سیکیورٹی: ${currentUser.role}`

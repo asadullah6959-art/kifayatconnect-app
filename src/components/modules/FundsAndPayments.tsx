@@ -280,7 +280,7 @@ export const FundsAndPayments: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 max-w-full">
+    <div className="space-y-5 max-w-full pb-[100px]">
       {downloadToast && (
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
           <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
@@ -724,7 +724,7 @@ export const FundsAndPayments: React.FC = () => {
       {isSubmitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 pb-[100px] sm:pb-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
@@ -785,19 +785,20 @@ export const FundsAndPayments: React.FC = () => {
                     fundCategory={payFund}
                     onFundCategoryChange={setPayFund}
                     contactHelpline={appSettings.contactHelpline}
+                    actionSlot={
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          disabled={!isPayAmountValid}
+                          onClick={() => setStep(2)}
+                          className="kc-pressable kc-gold-button w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 disabled:opacity-45 font-extrabold text-xs rounded-xl cursor-pointer"
+                        >
+                          <span>{isUr ? 'اگلا مرحلہ: ادائیگی کا طریقہ' : 'Next: Payment Method'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    }
                   />
-
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      disabled={!isPayAmountValid}
-                      onClick={() => setStep(2)}
-                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 disabled:opacity-45 font-extrabold text-xs rounded-xl cursor-pointer"
-                    >
-                      <span>{isUr ? 'اگلا مرحلہ: ادائیگی کا طریقہ' : 'Next: Payment Method'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
               )}
 

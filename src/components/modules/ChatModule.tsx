@@ -33,8 +33,16 @@ import {
   Smile,
   Upload,
   Minus,
-  AudioLines
+  AudioLines,
+  MoreVertical,
+  Lock,
+  Unlock,
+  Users,
+  UserX,
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
+import { isFounderIdentity, isChatModerator } from '../../utils/permissions';
 import { useSpeechDictation, appendDictatedText } from '../../hooks/useSpeechDictation';
 import {
   compressImageFile,
@@ -271,6 +279,8 @@ const ChatModuleContent: React.FC = () => {
     deleteDirectMessageForMe,
     deleteDirectMessageForEveryone,
     muteChatUser,
+    updateChatRoomModeration,
+    updateMemberChatControl,
     updateLiveChatAppearance,
     minimizeLiveChat,
     closeAndHideLiveChat,
@@ -314,6 +324,20 @@ const ChatModuleContent: React.FC = () => {
     canDeleteForEveryone: boolean;
   } | null>(null);
   const [isClearOldModalOpen, setIsClearOldModalOpen] = useState(false);
+
+  // WhatsApp-Style Top Menu, More Moderation Sub-menu, Room Members Control & Pinned Messages Modals
+  const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
+  const [isMoreSubmenuOpen, setIsMoreSubmenuOpen] = useState(false);
+  const [isRoomMembersModalOpen, setIsRoomMembersModalOpen] = useState(false);
+  const [isPinnedModalOpen, setIsPinnedModalOpen] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const actionCooldownRef = useRef<number>(0);
+  const runDebouncedAction = (fn: () => void) => {
+    const now = Date.now();
+    if (now - actionCooldownRef.current < 350) return;
+    actionCooldownRef.current = now;
+    fn();
+  };
 
   // Presence heartbeat refresh tick (every 10s)
   const [presenceNowMs, setPresenceNowMs] = useState(() => Date.now());
@@ -476,9 +500,8 @@ const ChatModuleContent: React.FC = () => {
 
   if (!currentUser) return null;
 
-  const isFounder =
-    Boolean(currentUser.isFounder) ||
-    currentUser.email.trim().toLowerCase() === FOUNDER_EMAIL.toLowerCase();
+  const isFounder = isFounderIdentity(currentUser);
+  const canModerateRoom = isChatModerator(currentUser);
   const canUploadGallery =
     isFounder ||
     currentUser.role === 'SUPER_ADMIN' ||
@@ -488,6 +511,20 @@ const ChatModuleContent: React.FC = () => {
     currentUser.role === 'CO_ADMIN';
   const canMuteUsers = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
   const isUserMutedInCommunity = Boolean(currentUser.isMutedInChat) && !isFounder;
+  const myMemberControl = appSettings.chatMemberControls?.[currentUser.id];
+  const isMyRemovedFromRoom = Boolean(currentUser.isMutedInChat && !isFounder);
+  const isGlobalFullLocked = Boolean(appSettings.chatLockFullRoom);
+  const isGlobalTextLocked = Boolean(appSettings.chatLockMessages);
+  const isGlobalVoiceLocked = Boolean(appSettings.chatLockVoiceNotes);
+  const roomFullLockedForMe = isMyRemovedFromRoom || (!canModerateRoom && isGlobalFullLocked);
+  const roomTextLockedForMe =
+    roomFullLockedForMe ||
+    (!canModerateRoom && isGlobalTextLocked) ||
+    (!isFounder && Boolean(myMemberControl?.lockMessages));
+  const roomVoiceLockedForMe =
+    roomFullLockedForMe ||
+    (!canModerateRoom && isGlobalVoiceLocked) ||
+    (!isFounder && Boolean(myMemberControl?.lockVoice));
 
   // Direct Chat Logic
   const availableUsers = users.filter(u => {
@@ -612,7 +649,8 @@ const ChatModuleContent: React.FC = () => {
   };
 
   // Live Community Room Handlers
-  const pinnedMessage = communityMessages.find(m => m.isPinned && !m.isDeleted);
+  const pinnedMessages = communityMessages.filter(m => m.isPinned && !m.isDeleted);
+  const pinnedMessage = pinnedMessages[pinnedMessages.length - 1];
 
   const handleSendCommunityMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -623,6 +661,14 @@ const ChatModuleContent: React.FC = () => {
     }
     if (isUserMutedInCommunity) {
       setChatError(translate(language, 'mutedNotice'));
+      return;
+    }
+    if (roomTextLockedForMe) {
+      setChatError(
+        language === 'ur'
+          ? 'انتظامیہ کی جانب سے اس وقت کمیونٹی روم میں ٹیکسٹ پیغامات بند ہیں۔'
+          : 'Text messages are currently locked by administration.'
+      );
       return;
     }
     if (!communityText.trim() && !communityAttachment) return;
@@ -817,6 +863,14 @@ const ChatModuleContent: React.FC = () => {
     }
     if (isUserMutedInCommunity) {
       setChatError(translate(language, 'mutedNotice'));
+      return;
+    }
+    if (roomVoiceLockedForMe) {
+      setChatError(
+        language === 'ur'
+          ? 'انتظامیہ کی جانب سے اس وقت وائس نوٹس بند ہیں۔'
+          : 'Voice notes are currently locked by administration.'
+      );
       return;
     }
 
@@ -1117,61 +1171,237 @@ const ChatModuleContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-              <button
-                type="button"
-                onClick={() => setChatMode('DIRECT')}
-                className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/35 text-[#F8FAFC] text-[11px] font-bold cursor-pointer kc-pressable"
-                title={language === 'ur' ? 'ون آن ون براہ راست پیغامات پر جائیں' : 'Switch to 1-on-1 Direct Messages'}
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
-                <span>{language === 'ur' ? 'براہ راست' : 'Direct'}</span>
-              </button>
-
-              {isFounder && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsBubbleColorModalOpen(true)}
-                    className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#F5D061]/45 text-[#F5D061] text-[11px] font-bold cursor-pointer kc-pressable"
-                  >
-                    <Crown className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">{language === 'ur' ? 'میرا ببل' : 'My Bubble'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsClearOldModalOpen(true)}
-                    className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-950/85 hover:bg-rose-900 border border-rose-500/45 text-rose-200 text-[11px] font-bold cursor-pointer kc-pressable"
-                    title={translate(language, 'clearOldMessagesBtn')}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">{language === 'ur' ? 'صفائی' : 'Clear Chat'}</span>
-                  </button>
-                </>
+            <div className="relative flex items-center gap-1.5 shrink-0">
+              {isChatMenuOpen && (
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => {
+                    setIsChatMenuOpen(false);
+                    setIsMoreSubmenuOpen(false);
+                  }}
+                />
               )}
 
-              {isLeadership && (
+              {/* WhatsApp-style Vertical 3-Dot (⋮) Room Menu */}
+              <div className="relative z-50">
                 <button
                   type="button"
-                  onClick={() => setIsThemeModalOpen(true)}
-                  className="relative z-50 min-h-[44px] sm:min-h-[48px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] text-[11px] font-bold cursor-pointer kc-pressable"
+                  onClick={() => {
+                    setIsChatMenuOpen(prev => {
+                      const next = !prev;
+                      if (!next) setIsMoreSubmenuOpen(false);
+                      return next;
+                    });
+                  }}
+                  title={language === 'ur' ? 'روم مینو' : 'Room Menu'}
+                  aria-label="Room Menu"
+                  aria-expanded={isChatMenuOpen}
+                  className="min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#D4AF37]/45 text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
                 >
-                  <Palette className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
-                  <span className="hidden sm:inline">{language === 'ur' ? 'تھیم' : 'Theme'}</span>
+                  <MoreVertical className="w-5 h-5" />
                 </button>
-              )}
 
-              {/* Minimize (—) to Floating Bubble */}
-              <button
-                type="button"
-                onClick={minimizeLiveChat}
-                title={language === 'ur' ? 'فلوٹنگ ببل میں چھوٹا کریں' : 'Minimize Live Chat to Floating Bubble'}
-                aria-label="Minimize Live Chat Room"
-                className="relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#D4AF37]/45 text-[#F5D061] font-extrabold cursor-pointer shrink-0 kc-pressable"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
+                {isChatMenuOpen && (
+                  <div
+                    className={`absolute top-full mt-2 w-64 rounded-2xl bg-[#0F172A]/98 border border-[#D4AF37]/45 shadow-[0_18px_48px_rgba(0,0,0,0.85)] overflow-hidden py-1.5 z-50 ${
+                      language === 'ur' ? 'left-0' : 'right-0'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChatMenuOpen(false);
+                        setIsMoreSubmenuOpen(false);
+                        setChatMode('DIRECT');
+                      }}
+                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-[#38BDF8] shrink-0" />
+                      <span>{language === 'ur' ? 'براہ راست پیغامات' : 'Direct Messages'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChatMenuOpen(false);
+                        setIsMoreSubmenuOpen(false);
+                        setIsPinnedModalOpen(true);
+                      }}
+                      className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Pin className="w-4 h-4 text-[#F5D061] shrink-0" />
+                        <span>{language === 'ur' ? 'پن شدہ پیغامات' : 'Pinned Messages'}</span>
+                      </span>
+                      {pinnedMessages.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-[#F5D061] text-[#090D16] text-[10px] font-black tabular-nums">
+                          {pinnedMessages.length}
+                        </span>
+                      )}
+                    </button>
+
+                    {isLeadership && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsChatMenuOpen(false);
+                          setIsMoreSubmenuOpen(false);
+                          setIsThemeModalOpen(true);
+                        }}
+                        className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                      >
+                        <Palette className="w-4 h-4 text-[#38BDF8] shrink-0" />
+                        <span>{language === 'ur' ? 'چیٹ تھیم' : 'Chat Theme'}</span>
+                      </button>
+                    )}
+
+                    {isFounder && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsChatMenuOpen(false);
+                            setIsMoreSubmenuOpen(false);
+                            setIsBubbleColorModalOpen(true);
+                          }}
+                          className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <Crown className="w-4 h-4 text-[#F5D061] shrink-0" />
+                          <span>{language === 'ur' ? 'میرا ببل اسٹائل' : 'My Bubble'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsChatMenuOpen(false);
+                            setIsMoreSubmenuOpen(false);
+                            setIsClearOldModalOpen(true);
+                          }}
+                          className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-rose-300 hover:bg-rose-950/50 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>{language === 'ur' ? 'پرانے پیغامات صاف کریں' : 'Clear Chat'}</span>
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChatMenuOpen(false);
+                        setIsMoreSubmenuOpen(false);
+                        minimizeLiveChat();
+                      }}
+                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                    >
+                      <Minus className="w-4 h-4 text-[#F5D061] shrink-0" />
+                      <span>{language === 'ur' ? 'روم چھوٹا کریں' : 'Minimize Room'}</span>
+                    </button>
+
+                    {canModerateRoom && (
+                      <div className="mt-1 pt-1 border-t border-slate-700/70">
+                        <button
+                          type="button"
+                          onClick={() => setIsMoreSubmenuOpen(prev => !prev)}
+                          className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-[#F5D061] shrink-0" />
+                            <span>{language === 'ur' ? 'مزید کنٹرولز' : 'More'}</span>
+                          </span>
+                          <ChevronRight className={`w-4 h-4 transition-transform ${isMoreSubmenuOpen ? 'rotate-90' : ''}`} />
+                        </button>
+
+                        {isMoreSubmenuOpen && (
+                          <div className="bg-[#090D16]/95 border-t border-slate-800 py-1 space-y-0.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                runDebouncedAction(() => {
+                                  const res = updateChatRoomModeration({ chatLockMessages: !isGlobalTextLocked });
+                                  if (!res.success && res.error) setChatError(res.error);
+                                })
+                              }
+                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                {isGlobalTextLocked ? (
+                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                ) : (
+                                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                )}
+                                <span>{language === 'ur' ? 'پیغامات لاک کریں' : 'Lock Messages'}</span>
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalTextLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {isGlobalTextLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                runDebouncedAction(() => {
+                                  const res = updateChatRoomModeration({ chatLockVoiceNotes: !isGlobalVoiceLocked });
+                                  if (!res.success && res.error) setChatError(res.error);
+                                })
+                              }
+                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                {isGlobalVoiceLocked ? (
+                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                ) : (
+                                  <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                )}
+                                <span>{language === 'ur' ? 'وائس نوٹس لاک کریں' : 'Lock Voice Notes'}</span>
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalVoiceLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {isGlobalVoiceLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                runDebouncedAction(() => {
+                                  const res = updateChatRoomModeration({ chatLockFullRoom: !isGlobalFullLocked });
+                                  if (!res.success && res.error) setChatError(res.error);
+                                })
+                              }
+                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                {isGlobalFullLocked ? (
+                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                ) : (
+                                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                )}
+                                <span>{language === 'ur' ? 'پورا روم لاک کریں' : 'Lock Full Room'}</span>
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalFullLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {isGlobalFullLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsChatMenuOpen(false);
+                                setIsMoreSubmenuOpen(false);
+                                setIsRoomMembersModalOpen(true);
+                              }}
+                              className="w-full px-4 py-2 flex items-center gap-2 text-[11px] font-extrabold text-[#38BDF8] hover:bg-[#1E293B] cursor-pointer"
+                            >
+                              <Users className="w-3.5 h-3.5 shrink-0" />
+                              <span>{language === 'ur' ? 'روم ممبران کنٹرول' : 'Room Members Control'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Hide / Close (✕) Completely */}
               <button
@@ -1244,7 +1474,7 @@ const ChatModuleContent: React.FC = () => {
               {isFounder && (
                 <button
                   type="button"
-                  onClick={() => togglePinCommunityMessage(pinnedMessage.id)}
+                  onClick={() => runDebouncedAction(() => togglePinCommunityMessage(pinnedMessage.id))}
                   className="px-2 py-1 rounded-lg bg-[#2A210B] text-[#F5D061] border border-[#D4AF37]/40 text-[10px] font-bold shrink-0 cursor-pointer"
                 >
                   {language === 'ur' ? 'ان پن' : 'Unpin'}
@@ -1275,8 +1505,7 @@ const ChatModuleContent: React.FC = () => {
                 const authorRecord = getUserRecord(msg.senderId);
                 const msgIsFounder = Boolean(
                   msg.senderIsFounder ||
-                  authorRecord?.isFounder ||
-                  (authorRecord?.email && authorRecord.email.trim().toLowerCase() === FOUNDER_EMAIL.toLowerCase())
+                  isFounderIdentity(authorRecord)
                 );
                 const msgIsAudit = Boolean(msg.senderIsAuditOfficer || authorRecord?.isAuditOfficer);
                 const avatarSrc = authorRecord?.photoUrl || authorRecord?.avatarUrl;
@@ -1544,7 +1773,7 @@ const ChatModuleContent: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => togglePinCommunityMessage(msg.id)}
+                              onClick={() => runDebouncedAction(() => togglePinCommunityMessage(msg.id))}
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer ${
                                 msg.isPinned
                                   ? 'bg-[#F5D061] border-[#F5D061] text-[#0A0D12] font-bold'
@@ -1755,6 +1984,20 @@ const ChatModuleContent: React.FC = () => {
               <VolumeX className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{translate(language, 'mutedNotice')}</span>
             </div>
+          ) : roomFullLockedForMe ? (
+            <div
+              className="relative z-40 p-3 bg-rose-950/90 border-t border-rose-500/45 text-center text-xs font-bold text-rose-200 flex items-center justify-center gap-2 shrink-0"
+              style={{
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+              }}
+            >
+              <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>
+                {isMyRemovedFromRoom
+                  ? (language === 'ur' ? 'آپ کو انتظامیہ کی جانب سے اس چیٹ روم سے ہٹا دیا گیا ہے۔' : 'You have been removed from this community room by administration.')
+                  : (language === 'ur' ? 'انتظامیہ کی جانب سے پورا کمیونٹی روم اس وقت لاک ہے۔' : 'Community Room is currently locked by administration.')}
+              </span>
+            </div>
           ) : isRecording ? (
             /* STEP 1: RECORDING BAR (Delete Left · Red Live Timer & Wave Center · Stop Button Right — NEVER Auto-Sends) */
             <div
@@ -1884,6 +2127,18 @@ const ChatModuleContent: React.FC = () => {
                   </span>
                 </div>
               )}
+              {(roomTextLockedForMe || roomVoiceLockedForMe) && (
+                <div className="px-3 py-1.5 bg-amber-950/85 border-b border-[#D4AF37]/30 text-[11px] font-bold text-[#FDE047] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {roomTextLockedForMe && roomVoiceLockedForMe
+                      ? (language === 'ur' ? 'ٹیکسٹ اور وائس نوٹس انتظامیہ نے بند کر دیے ہیں۔' : 'Messages and voice notes are locked by administration.')
+                      : roomTextLockedForMe
+                      ? (language === 'ur' ? 'ٹیکسٹ پیغامات انتظامیہ نے بند کر دیے ہیں۔' : 'Text messages are locked by administration.')
+                      : (language === 'ur' ? 'وائس نوٹس انتظامیہ نے بند کر دیے ہیں۔' : 'Voice notes are locked by administration.')}
+                  </span>
+                </div>
+              )}
               <form
                 onSubmit={handleSendCommunityMessage}
                 className="p-2.5 sm:p-3.5 pb-0 flex flex-wrap sm:flex-nowrap items-end gap-1.5 sm:gap-2"
@@ -1893,11 +2148,12 @@ const ChatModuleContent: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
+                      disabled={roomTextLockedForMe}
                       onClick={() => {
                         setShowEmojiStrip(s => !s);
                         setShowIslamicGifDrawer(false);
                       }}
-                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] hover:text-[#38BDF8] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] hover:text-[#38BDF8] disabled:opacity-40 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                       title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
                       aria-label={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
                     >
@@ -1906,11 +2162,12 @@ const ChatModuleContent: React.FC = () => {
 
                     <button
                       type="button"
+                      disabled={roomTextLockedForMe}
                       onClick={() => {
                         setShowIslamicGifDrawer(d => !d);
                         setShowEmojiStrip(false);
                       }}
-                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#F5D061] border border-slate-400/25 text-base font-bold flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#F5D061] border border-slate-400/25 disabled:opacity-40 text-base font-bold flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                       title={translate(language, 'islamicGifs')}
                       aria-label={translate(language, 'islamicGifs')}
                     >
@@ -1918,7 +2175,7 @@ const ChatModuleContent: React.FC = () => {
                     </button>
 
                     {/* Phone Gallery Photo / GIF Upload (Super Admins & Admins Only) */}
-                    {canUploadGallery && (
+                    {canUploadGallery && !roomTextLockedForMe && (
                       <label
                         className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] text-[#38BDF8] border border-[#38BDF8]/35 hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                         title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
@@ -1955,6 +2212,7 @@ const ChatModuleContent: React.FC = () => {
                       rows={1}
                       maxLength={5000}
                       dir="auto"
+                      disabled={roomTextLockedForMe}
                       value={communityText}
                       onChange={(e) => setCommunityText(e.target.value)}
                       onKeyDown={(e) => {
@@ -1964,19 +2222,22 @@ const ChatModuleContent: React.FC = () => {
                         }
                       }}
                       placeholder={
-                        isCompressingMedia
+                        roomTextLockedForMe
+                          ? (language === 'ur' ? 'ٹیکسٹ پیغامات فی الحال بند ہیں' : 'Messages locked by administration')
+                          : isCompressingMedia
                           ? (language === 'ur' ? 'تصویر/GIF تیار کی جا رہی ہے...' : 'Optimizing image/GIF...')
                           : translate(language, 'chatTypeMessage')
                       }
                       style={{ fontSize: '16px', maxHeight: '120px' }}
-                      className="w-full min-h-[48px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
+                      className="w-full min-h-[48px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 disabled:opacity-50 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
                     />
                   </div>
 
                   <button
                     type="button"
+                    disabled={roomVoiceLockedForMe}
                     onClick={startVoiceRecording}
-                    className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] border border-[#38BDF8]/35 text-[#38BDF8] hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                    className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] border border-[#38BDF8]/35 text-[#38BDF8] hover:bg-[#1E293B] disabled:opacity-40 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                     title={translate(language, 'voiceNoteHold')}
                     aria-label={translate(language, 'voiceNoteHold')}
                   >
@@ -1985,7 +2246,7 @@ const ChatModuleContent: React.FC = () => {
 
                   <button
                     type="submit"
-                    disabled={isCompressingMedia || (!communityText.trim() && !communityAttachment)}
+                    disabled={roomTextLockedForMe || isCompressingMedia || (!communityText.trim() && !communityAttachment)}
                     className="relative z-50 min-w-[48px] min-h-[48px] h-12 px-3.5 flex items-center justify-center gap-1.5 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer kc-pressable"
                     aria-label={translate(language, 'chatSend')}
                   >
@@ -2865,6 +3126,219 @@ const ChatModuleContent: React.FC = () => {
               alt="Full preview"
               className="max-h-[82dvh] max-w-full rounded-2xl border border-[#D4AF37]/40 object-contain"
             />
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* Pinned Messages Modal */}
+      {isPinnedModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[10002] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          onClick={() => setIsPinnedModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md kc-luxury-modal rounded-2xl p-5 space-y-3 my-auto max-h-[88dvh] overflow-y-auto text-xs text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2">
+                <Pin className="w-4 h-4 text-[#F5D061]" />
+                <h3 className="text-sm font-extrabold text-[#F5D061]">
+                  {language === 'ur' ? 'پن شدہ پیغامات' : 'Pinned Messages'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPinnedModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {pinnedMessages.length === 0 ? (
+              <p className="py-6 text-center text-slate-400">
+                {language === 'ur' ? 'ابھی کوئی پیغام پن نہیں کیا گیا۔' : 'No pinned messages yet.'}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {pinnedMessages.map(pm => (
+                  <div
+                    key={pm.id}
+                    className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-start justify-between gap-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPinnedModalOpen(false);
+                        scrollToMessageId(pm.id);
+                      }}
+                      className="text-left min-w-0 flex-1 cursor-pointer"
+                    >
+                      <span className="font-bold text-[#F5D061] block truncate">{pm.senderName}</span>
+                      <p className="text-slate-200 mt-0.5 line-clamp-2">
+                        {pm.voiceNote ? (language === 'ur' ? '🎤 وائس نوٹ' : '🎤 Voice Note') : pm.text}
+                      </p>
+                    </button>
+                    {isFounder && (
+                      <button
+                        type="button"
+                        onClick={() => runDebouncedAction(() => togglePinCommunityMessage(pm.id))}
+                        className="px-2 py-1 rounded-lg bg-[#2A210B] text-[#F5D061] border border-[#D4AF37]/40 text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        {language === 'ur' ? 'ان پن' : 'Unpin'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Room Members Control Modal (Founder, Additional Super Admins, Admins & Co-Admins ONLY) */}
+      {isRoomMembersModalOpen && canModerateRoom && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[10002] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          onClick={() => setIsRoomMembersModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg kc-luxury-modal rounded-2xl p-5 space-y-4 my-auto max-h-[90dvh] flex flex-col text-xs text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#38BDF8]" />
+                <div>
+                  <h3 className="text-sm font-extrabold text-white">
+                    {language === 'ur' ? 'روم ممبران کنٹرول' : 'Room Members Control'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {language === 'ur' ? 'کسی بھی ممبر کے پیغامات، وائس نوٹس یا روم رسائی کنٹرول کریں۔' : '1-tap lock messages, lock voice, or remove member from room.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRoomMembersModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative shrink-0">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={memberSearchQuery}
+                onChange={(e) => setMemberSearchQuery(e.target.value)}
+                placeholder={language === 'ur' ? 'نام یا ممبر ID تلاش کریں...' : 'Search member name or ID...'}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+              />
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+              {users
+                .filter(u => {
+                  const q = memberSearchQuery.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    u.name.toLowerCase().includes(q) ||
+                    (u.membershipId && u.membershipId.toLowerCase().includes(q)) ||
+                    u.role.toLowerCase().includes(q)
+                  );
+                })
+                .map(member => {
+                  const targetIsFounder = isFounderIdentity(member);
+                  const ctrl = appSettings.chatMemberControls?.[member.id] || {};
+                  const textLocked = Boolean(ctrl.lockMessages);
+                  const voiceLocked = Boolean(ctrl.lockVoice);
+                  const removed = Boolean(member.isMutedInChat);
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="p-3 rounded-xl bg-[#090D16] border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-white truncate">{member.name}</span>
+                          <RoleBadge role={member.role} isFounder={targetIsFounder} compact />
+                        </div>
+                        <span className="text-[10px] font-mono text-[#F5D061] block mt-0.5">
+                          {member.membershipId || 'KC-PENDING'}
+                        </span>
+                      </div>
+
+                      {targetIsFounder ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2B2108] border border-[#F5D061]/50 text-[#F5D061] text-[10px] font-extrabold shrink-0">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{language === 'ur' ? 'محفوظ (بانی)' : 'Protected (Founder)'}</span>
+                        </span>
+                      ) : (
+                        <div className="flex items-center flex-wrap gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runDebouncedAction(() => {
+                                const res = updateMemberChatControl(member.id, { lockMessages: !textLocked });
+                                if (!res.success && res.error) setChatError(res.error);
+                              })
+                            }
+                            className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold cursor-pointer inline-flex items-center gap-1 ${
+                              textLocked
+                                ? 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+                                : 'bg-[#131C31] border-slate-600 text-slate-200 hover:border-[#38BDF8]'
+                            }`}
+                          >
+                            {textLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                            <span>{language === 'ur' ? (textLocked ? 'ٹیکسٹ کھولیں' : 'ٹیکسٹ بند') : (textLocked ? 'Unlock Msg' : 'Lock Msg')}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runDebouncedAction(() => {
+                                const res = updateMemberChatControl(member.id, { lockVoice: !voiceLocked });
+                                if (!res.success && res.error) setChatError(res.error);
+                              })
+                            }
+                            className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold cursor-pointer inline-flex items-center gap-1 ${
+                              voiceLocked
+                                ? 'bg-amber-950/90 border-amber-500/50 text-amber-200'
+                                : 'bg-[#131C31] border-slate-600 text-slate-200 hover:border-[#38BDF8]'
+                            }`}
+                          >
+                            {voiceLocked ? <VolumeX className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                            <span>{language === 'ur' ? (voiceLocked ? 'وائس کھولیں' : 'وائس بند') : (voiceLocked ? 'Unlock Voice' : 'Lock Voice')}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runDebouncedAction(() => {
+                                const res = updateMemberChatControl(member.id, { removeFromRoom: !removed });
+                                if (!res.success && res.error) setChatError(res.error);
+                              })
+                            }
+                            className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold cursor-pointer inline-flex items-center gap-1 ${
+                              removed
+                                ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+                                : 'bg-rose-950/80 border-rose-500/45 text-rose-200 hover:bg-rose-900'
+                            }`}
+                          >
+                            <UserX className="w-3 h-3" />
+                            <span>{language === 'ur' ? (removed ? 'بحال کریں' : 'روم سے ہٹائیں') : (removed ? 'Restore' : 'Remove')}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         </div>,
         document.body

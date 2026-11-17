@@ -36,9 +36,11 @@ export const AnnouncementsManager: React.FC = () => {
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isDistrictAdmin = currentUser?.role === 'ADMIN';
   const isCoAdmin = currentUser?.role === 'CO_ADMIN';
+  const isRegularMember = !currentUser || currentUser.role === 'MEMBER';
 
-  const canPublishOfficial = isSuperAdmin || Boolean(currentUser?.permissions?.canPostOfficialAnnouncements);
+  const canPublishOfficial = !isRegularMember && (isSuperAdmin || Boolean(currentUser?.permissions?.canPostOfficialAnnouncements));
   const canPublishCommunity =
+    !isRegularMember &&
     appSettings.featureToggles?.allowCommunityAnnouncements !== false &&
     (isSuperAdmin || isDistrictAdmin || isCoAdmin || Boolean(currentUser?.permissions?.canPostCommunityAnnouncements));
   const canPublishAny = canPublishOfficial || canPublishCommunity;

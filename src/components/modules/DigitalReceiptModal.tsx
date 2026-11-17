@@ -6,6 +6,7 @@ import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { DASTOOR_MONTHLY_RATE, formatRupeesUr, isFaizKhelUser, toUrduDigits } from '../../utils/dastoor';
+import { canViewUserCnic } from '../../utils/privacy';
 import receiptSealImg from '../../assets/images/receipt_watermark_seal_1794225904149.jpg';
 
 interface DigitalReceiptModalProps {
@@ -14,9 +15,10 @@ interface DigitalReceiptModalProps {
 }
 
 export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receipt, onClose }) => {
-  const { language, users } = useApp();
+  const { language, users, currentUser } = useApp();
   const isUr = language === 'ur';
   const payer = users.find(u => u.id === receipt.userId);
+  const canShowPayerCnic = Boolean(payer?.cnic && payer && canViewUserCnic(currentUser, payer));
 
   const tabbarId = receipt.userTabbarId || payer?.tabbarId;
   const tabbarEnglish = receipt.userTabbarEnglish || payer?.tabbarEnglish;
@@ -72,7 +74,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
 
   const localizeFund = (cat: string) => {
     if (!isUr) return cat;
-    if (cat === 'Monthly Contribution') return 'ماہانہ دستور / چندہ';
+    if (cat === 'Monthly Contribution') return 'ماہانہ فنڈ / چندہ';
     if (cat === 'Annual Welfare Fund') return 'سالانہ فلاحی فنڈ';
     if (cat === 'Emergency Relief') return 'ہنگامی امداد';
     if (cat === 'Zakat & Sadqah') return 'زکوٰۃ و صدقات';
@@ -213,7 +215,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
                   {isUr ? 'صوبہ:' : 'Province:'} {receipt.stateProvince || payer?.stateProvince || (receipt.userRegion ? mapLegacyRegionToHierarchy(receipt.userRegion).stateProvince : 'Islamabad Capital Territory')}
                 </p>
               </div>
-              {payer?.cnic && (
+              {canShowPayerCnic && payer?.cnic && (
                 <p className="text-slate-400 font-mono text-[10px] mt-1">
                   {isUr ? 'شناختی کارڈ:' : 'CNIC:'} {payer.cnic}
                 </p>
@@ -250,7 +252,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
               <div className="flex items-center justify-between gap-2 text-[11px]">
                 <span className="inline-flex items-center gap-1.5 font-extrabold text-[#FDE047] uppercase tracking-wider">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>{isUr ? 'دستور ادائیگی کی مدت' : 'Dastoor Covered Period'}</span>
+                  <span>{isUr ? 'ماہانہ فنڈ کی مدت' : 'Monthly Fund Covered Period'}</span>
                 </span>
                 {hasDastoorBreakdown && (
                   <span className="font-mono font-bold text-emerald-200 tabular-nums">

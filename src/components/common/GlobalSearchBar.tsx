@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { PaymentTransaction, User, MembershipApplication } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
+import { canAccessRouteTab } from '../../utils/permissions';
+import { canViewUserCnic } from '../../utils/privacy';
 
 export const GlobalSearchBar: React.FC = () => {
   const { 
@@ -101,7 +103,7 @@ export const GlobalSearchBar: React.FC = () => {
       return (
         user.name.toLowerCase().includes(q) ||
         (user.membershipId && user.membershipId.toLowerCase().includes(q)) ||
-        user.cnic.includes(q) ||
+        (canViewUserCnic(currentUser, user) && user.cnic.includes(q)) ||
         uDist.toLowerCase().includes(q) ||
         uProv.toLowerCase().includes(q) ||
         uTeh.toLowerCase().includes(q) ||
@@ -154,17 +156,17 @@ export const GlobalSearchBar: React.FC = () => {
 
   const searchReports = (): ReportResult[] => {
     const reportsCatalog: ReportResult[] = [];
+    const canViewReportsTab = canAccessRouteTab(currentUser, 'reports');
 
-    // All roles can access relevant reports
-    reportsCatalog.push({
-      id: 'rep_q4_stmt',
-      title: language === 'ur' ? 'سہ ماہی 2026 آڈٹ شدہ ویلفیئر گوشوارہ' : 'Q4 2026 Audited Welfare Statement',
-      type: language === 'ur' ? 'مالی گوشوارہ' : 'Financial Statement',
-      description: isMember 
-        ? (language === 'ur' ? 'ذاتی تعاون کا بیلنس اور ٹیکس رسید کی تفصیل' : 'Personal contribution balance & tax receipt breakdown')
-        : (language === 'ur' ? 'مرکزی خزانے کے کھاتوں کی تصدیق شدہ وصولیاں' : 'Reconciled collections across central treasury ledgers'),
-      targetTab: 'reports'
-    });
+    if (canViewReportsTab) {
+      reportsCatalog.push({
+        id: 'rep_q4_stmt',
+        title: language === 'ur' ? 'سہ ماہی 2026 آڈٹ شدہ ویلفیئر گوشوارہ' : 'Q4 2026 Audited Welfare Statement',
+        type: language === 'ur' ? 'مالی گوشوارہ' : 'Financial Statement',
+        description: language === 'ur' ? 'مرکزی خزانے کے کھاتوں کی تصدیق شدہ وصولیاں' : 'Reconciled collections across central treasury ledgers',
+        targetTab: 'reports'
+      });
+    }
 
     if (isSuperAdmin) {
       reportsCatalog.push({
@@ -174,21 +176,31 @@ export const GlobalSearchBar: React.FC = () => {
         description: language === 'ur' ? 'تصدیق شدہ بینک ڈپازٹس اور ڈیجیٹل واؤچر ریکارڈ' : 'Complete verified bank deposits and digital voucher history',
         targetTab: 'funds'
       });
+      if (canViewReportsTab) {
+        reportsCatalog.push({
+          id: 'rep_annual_fund',
+          title: language === 'ur' ? 'سالانہ ویلفیئر اور صحت فنڈ خلاصہ' : 'Annual Welfare & Healthcare Fund Summary',
+          type: language === 'ur' ? 'فنڈ رپورٹ' : 'Fund Report',
+          description: language === 'ur' ? 'ڈسپنسری اور تعلیمی وظائف کی تقسیم کا ریکارڈ' : 'Dispensary and education scholarship allocation matrix',
+          targetTab: 'reports'
+        });
+      }
+    } else if (isMember) {
       reportsCatalog.push({
-        id: 'rep_annual_fund',
-        title: language === 'ur' ? 'سالانہ ویلفیئر اور صحت فنڈ خلاصہ' : 'Annual Welfare & Healthcare Fund Summary',
-        type: language === 'ur' ? 'فنڈ رپورٹ' : 'Fund Report',
-        description: language === 'ur' ? 'ڈسپنسری اور تعلیمی وظائف کی تقسیم کا ریکارڈ' : 'Dispensary and education scholarship allocation matrix',
-        targetTab: 'reports'
+        id: 'rep_my_funds',
+        title: language === 'ur' ? 'ذاتی ماہانہ فنڈ اور رسیدیں' : 'My Monthly Fund & Receipts',
+        type: language === 'ur' ? 'ادائیگی' : 'Payments',
+        description: language === 'ur' ? 'ذاتی ادائیگی کی تاریخ اور ڈیجیٹل رسیدیں دیکھیں' : 'Personal contribution history and verified digital receipts',
+        targetTab: 'funds'
       });
     }
 
-    if (isSuperAdmin || isDistrictAdmin || isCoAdmin) {
+    if (canViewReportsTab && (isDistrictAdmin || isCoAdmin)) {
       reportsCatalog.push({
         id: 'rep_regional_quota',
         title: language === 'ur'
-          ? `${isDistrictAdmin ? (currentUser.assignedDistrict || 'ضلع') : isCoAdmin ? (currentUser.assignedStateProvince || 'صوبہ') : 'انتظامی'} کوٹہ اور تصدیقی رپورٹ`
-          : `${isDistrictAdmin ? (currentUser.assignedDistrict || 'District') : isCoAdmin ? (currentUser.assignedStateProvince || 'State') : 'Administrative'} Quota & Verification Report`,
+          ? `${isDistrictAdmin ? (currentUser.assignedDistrict || 'ضلع') : (currentUser.assignedStateProvince || 'صوبہ')} کوٹہ اور تصدیقی رپورٹ`
+          : `${isDistrictAdmin ? (currentUser.assignedDistrict || 'District') : (currentUser.assignedStateProvince || 'State')} Quota & Verification Report`,
         type: language === 'ur' ? 'گورننس رپورٹ' : 'Governance Report',
         description: language === 'ur' ? 'فعال ممبران اور منظوریوں کے اعداد و شمار' : 'Active member onboarding and compliance statistics',
         targetTab: 'reports'
@@ -207,7 +219,7 @@ export const GlobalSearchBar: React.FC = () => {
 
   // 4. Applications / Approvals search (for Super Admin & District Admin):
   const searchApplications = (): MembershipApplication[] => {
-    if (isMember) return [];
+    if (!canAccessRouteTab(currentUser, 'approvals')) return [];
 
     return applications.filter(app => {
       const aFb = mapLegacyRegionToHierarchy(app.region);

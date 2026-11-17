@@ -1,5 +1,5 @@
 // Kifayat Connect Auto-Updating Service Worker (Zero-Reinstall OTA Updates + Offline Resilience)
-const CACHE_NAME = 'kifayat-connect-v4.0.0';
+const CACHE_NAME = 'kifayat-connect-v5.0.0';
 const STATIC_ASSETS = [
   './manifest.json',
   './kc-emblem.svg',

@@ -342,6 +342,7 @@ export interface AppNotification {
   message: string;
   timestamp: string;
   read: boolean;
+  isRead?: boolean;
   targetUserId?: string;
   targetRole?: UserRole | 'ALL' | 'Super Admin';
   targetStateProvince?: string;
@@ -548,6 +549,10 @@ export interface AppSettings {
   maintenanceMode: boolean;
   profileVisibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
   chatEnabled: boolean;
+  chatLockMessages?: boolean;
+  chatLockVoiceNotes?: boolean;
+  chatLockFullRoom?: boolean;
+  chatMemberControls?: Record<string, { lockMessages?: boolean; lockVoice?: boolean }>;
   maxAdminsPerDistrict: number; // exactly 10
   maxCoAdminsPerState: number; // exactly 3
   contactEmail: string;

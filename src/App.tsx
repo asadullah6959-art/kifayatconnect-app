@@ -53,6 +53,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { translate } from './data/translations';
+import { canAccessRouteTab } from './utils/permissions';
 
 const MainLayout: React.FC = () => {
   const {
@@ -101,14 +102,18 @@ const MainLayout: React.FC = () => {
     prevSignedInRef.current = isNowSignedIn;
   }, [currentUser]);
 
-  // Keep HashRouter URL cleanly synchronized with activeTab without disrupting state navigation
+  // Redirect unauthorized tabs back to dashboard cleanly
   useEffect(() => {
     if (!currentUser) return;
+    if (!canAccessRouteTab(currentUser, activeTab || 'dashboard')) {
+      setActiveTab('dashboard');
+      return;
+    }
     const expectedPath = `/${activeTab || 'dashboard'}`;
     if (location.pathname !== expectedPath) {
       navigate(expectedPath, { replace: true });
     }
-  }, [activeTab, currentUser, location.pathname, navigate]);
+  }, [activeTab, currentUser, location.pathname, navigate, setActiveTab]);
 
   // Signed-out gate (Instant Non-Blocking Boot within <100ms)
   if (!currentUser) {
@@ -170,15 +175,22 @@ const MainLayout: React.FC = () => {
     0
   );
 
-  // Render content based on current active tab & strict 4-role hierarchy
+  // Render content based on current active tab & strict 4-role hierarchy + Founder governance rules
   const renderContent = () => {
+    const renderDefaultDashboard = () => {
+      if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
+      if (currentUser.role === 'ADMIN') return <AdminDashboard />;
+      if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
+      return <MemberDashboard />;
+    };
+
+    if (!canAccessRouteTab(currentUser, activeTab)) {
+      return renderDefaultDashboard();
+    }
+
     switch (activeTab) {
       case 'dashboard':
-        if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
-        if (currentUser.role === 'ADMIN') return <AdminDashboard />;
-        if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
-        return <MemberDashboard />;
-
+        return renderDefaultDashboard();
       case 'chat':
         return <ChatModule />;
       case 'office_bearers':
@@ -205,10 +217,7 @@ const MainLayout: React.FC = () => {
       case 'profile':
         return <ProfileSettings />;
       default:
-        if (currentUser.role === 'SUPER_ADMIN') return <SuperAdminDashboard />;
-        if (currentUser.role === 'ADMIN') return <AdminDashboard />;
-        if (currentUser.role === 'CO_ADMIN') return <CoAdminDashboard />;
-        return <MemberDashboard />;
+        return renderDefaultDashboard();
     }
   };
 
@@ -222,14 +231,14 @@ const MainLayout: React.FC = () => {
 
   const liveApprovalAlert =
     currentUser.role === 'SUPER_ADMIN'
-      ? userNotifications.find(n => n.type === 'approval_request' && !n.read) || null
+      ? userNotifications.find(n => n.type === 'approval_request' && !n.read && !n.isRead) || null
       : null;
 
   return (
     <div
       className="h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC]"
       style={{
-        backgroundColor: 'var(--kc-bg, #090D16)',
+        backgroundColor: 'var(--kc-bg, #070D14)',
         backgroundImage:
           'radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.10), transparent 44%), radial-gradient(circle at 12% 88%, rgba(212, 175, 55, 0.08), transparent 54%)'
       }}

@@ -11,8 +11,10 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Lock
+  Lock,
+  Phone
 } from 'lucide-react';
+import { canViewUserCnic } from '../../utils/privacy';
 import { User } from '../../types';
 import {
   PROVINCE_OPTIONS,
@@ -35,6 +37,7 @@ interface MemberRowProps {
   language: AppLanguage;
   isFocused: boolean;
   canViewSensitive: boolean;
+  canViewCnic: boolean;
   canAssignRole: boolean;
   canApprove: boolean;
   onInspect: (u: User) => void;
@@ -51,6 +54,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
   language,
   isFocused,
   canViewSensitive,
+  canViewCnic,
   canAssignRole,
   canApprove,
   onInspect,
@@ -190,7 +194,14 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
         )}
       </div>
 
-      {canViewSensitive ? (
+      {member.phone && (
+        <div className="text-[11px] font-mono text-slate-200 flex items-center gap-1.5">
+          <Phone className="w-3 h-3 text-[#38BDF8] shrink-0" />
+          <span className="tabular-nums">{member.phone}</span>
+        </div>
+      )}
+
+      {canViewCnic ? (
         member.cnic && (
           <div className="text-[10px] font-mono text-slate-400">
             CNIC: {member.cnic}
@@ -199,7 +210,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
       ) : (
         <div className="text-[10px] text-slate-500 flex items-center gap-1">
           <Lock className="w-3 h-3 shrink-0" />
-          <span>{language === 'ur' ? 'رابطہ اور شناختی کارڈ محفوظ ہیں' : 'Contact & CNIC Protected'}</span>
+          <span>{language === 'ur' ? 'شناختی کارڈ محفوظ ہے' : 'CNIC Protected'}</span>
         </div>
       )}
 
@@ -272,6 +283,7 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
   language,
   isFocused,
   canViewSensitive,
+  canViewCnic,
   canAssignRole,
   canApprove,
   onInspect,
@@ -375,7 +387,7 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
       </td>
 
       <td className="py-3 px-4 font-mono text-slate-300">
-        {canViewSensitive ? (
+        {canViewCnic ? (
           member.cnic || '—'
         ) : (
           <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
@@ -386,16 +398,9 @@ const MemberRowDesktop: React.FC<MemberRowProps> = React.memo(({
       </td>
 
       <td className="py-3 px-4 text-slate-300">
-        {canViewSensitive ? (
-          <>
-            <div>{member.phone || '—'}</div>
-            <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{member.email}</div>
-          </>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-            <Lock className="w-3 h-3" />
-            <span>{language === 'ur' ? 'محفوظ' : 'Protected'}</span>
-          </span>
+        <div className="font-mono tabular-nums">{member.phone || '—'}</div>
+        {canViewSensitive && (
+          <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{member.email}</div>
         )}
       </td>
 
@@ -644,7 +649,8 @@ export const MemberDirectory: React.FC = () => {
         (member.tabbarEnglish && member.tabbarEnglish.toLowerCase().includes(q)) ||
         (member.tabbarUrdu && member.tabbarUrdu.toLowerCase().includes(q)) ||
         (resolvedTab && (resolvedTab.englishName.toLowerCase().includes(q) || resolvedTab.urduName.toLowerCase().includes(q))) ||
-        (canSeeMemberPII && member.cnic && member.cnic.includes(searchTerm)) ||
+        (member.phone && member.phone.includes(searchTerm)) ||
+        (canViewUserCnic(currentUser, member) && member.cnic && member.cnic.includes(searchTerm)) ||
         (canSeeMemberPII && member.email.toLowerCase().includes(q)) ||
         mDistrict.toLowerCase().includes(q) ||
         mProvince.toLowerCase().includes(q) ||
@@ -950,6 +956,7 @@ export const MemberDirectory: React.FC = () => {
               language={language}
               isFocused={focusedMemberId === member.id}
               canViewSensitive={isPrivilegedViewer || member.id === currentUser.id}
+              canViewCnic={canViewUserCnic(currentUser, member)}
               canAssignRole={currentIsFounder && !isFounderUser(member)}
               canApprove={canApproveMembers}
               onInspect={setInspectedUserProfile}
@@ -997,6 +1004,7 @@ export const MemberDirectory: React.FC = () => {
                     language={language}
                     isFocused={focusedMemberId === member.id}
                     canViewSensitive={isPrivilegedViewer || member.id === currentUser.id}
+                    canViewCnic={canViewUserCnic(currentUser, member)}
                     canAssignRole={currentIsFounder && !isFounderUser(member)}
                     canApprove={canApproveMembers}
                     onInspect={setInspectedUserProfile}

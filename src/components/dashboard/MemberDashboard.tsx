@@ -716,7 +716,7 @@ export const MemberDashboard: React.FC = () => {
       {isPaymentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 pb-[100px] sm:pb-6 my-auto max-h-[92dvh] overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">

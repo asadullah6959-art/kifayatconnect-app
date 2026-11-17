@@ -23,6 +23,7 @@ import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
 import { translate } from '../../data/translations';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { canAccessRouteTab, isFounderIdentity } from '../../utils/permissions';
 
 export const SuperAdminDashboard: React.FC = () => {
   const {
@@ -42,6 +43,7 @@ export const SuperAdminDashboard: React.FC = () => {
     language
   } = useApp();
 
+  const isFounder = isFounderIdentity(currentUser);
   const vis = appSettings.dashboardVisibility || {
     showKpiGrid: true,
     showQuickActions: true,
@@ -50,6 +52,7 @@ export const SuperAdminDashboard: React.FC = () => {
     showOfficeBearersWidget: true,
     showAnnouncementsFeed: true
   };
+  const showOfficeBearers = vis.showOfficeBearersWidget && canAccessRouteTab(currentUser, 'office_bearers');
 
   const totalMembers = users.filter(u => u.role === 'MEMBER').length;
   const activeMembers = users.filter(u => u.role === 'MEMBER' && u.membershipStatus === 'ACTIVE').length;
@@ -133,20 +136,24 @@ export const SuperAdminDashboard: React.FC = () => {
     : (githubRelease?.tagName || `v${INSTALLED_APP_VERSION}`);
 
   const apolloActions = [
-    {
-      label: translate(language, 'actionMasterPanel'),
-      sub: language === 'ur' ? 'پن کنسول 👑' : 'PIN Console 👑',
-      icon: Settings,
-      accent: 'from-[#3A2A0A] to-[#141B2D] border-[#F5D061]/55 text-[#F5D061]',
-      onClick: () => setActiveTab('manage_app')
-    },
-    {
-      label: translate(language, 'actionManageRoles'),
-      sub: language === 'ur' ? `${totalSuperAdmins + totalAdmins + totalCoAdmins} عملہ` : `${totalSuperAdmins + totalAdmins + totalCoAdmins} Staff`,
-      icon: Crown,
-      accent: 'from-[#131C31] to-[#0F172A] border-[#38BDF8]/40 text-[#38BDF8]',
-      onClick: () => setActiveTab('staff')
-    },
+    ...(isFounder
+      ? [
+          {
+            label: translate(language, 'actionMasterPanel'),
+            sub: language === 'ur' ? 'پن کنسول 👑' : 'PIN Console 👑',
+            icon: Settings,
+            accent: 'from-[#3A2A0A] to-[#141B2D] border-[#F5D061]/55 text-[#F5D061]',
+            onClick: () => setActiveTab('manage_app')
+          },
+          {
+            label: translate(language, 'actionManageRoles'),
+            sub: language === 'ur' ? `${totalSuperAdmins + totalAdmins + totalCoAdmins} عملہ` : `${totalSuperAdmins + totalAdmins + totalCoAdmins} Staff`,
+            icon: Crown,
+            accent: 'from-[#131C31] to-[#0F172A] border-[#38BDF8]/40 text-[#38BDF8]',
+            onClick: () => setActiveTab('staff')
+          }
+        ]
+      : []),
     {
       label: translate(language, 'actionVerifyPayments'),
       sub: language === 'ur'
@@ -200,14 +207,16 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('manage_app')}
-            className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
-          >
-            <Settings className="w-4 h-4" />
-            <span>{translate(language, 'navMasterControl')} 👑</span>
-          </button>
+          {isFounder && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('manage_app')}
+              className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
+            >
+              <Settings className="w-4 h-4" />
+              <span>{translate(language, 'navMasterControl')} 👑</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -268,8 +277,8 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div
-            onClick={() => setActiveTab('staff')}
-            className="p-3.5 kc-obsidian-card rounded-2xl hover:border-[#F5D061]/65 kc-pressable cursor-pointer"
+            onClick={() => isFounder && setActiveTab('staff')}
+            className={`p-3.5 kc-obsidian-card rounded-2xl ${isFounder ? 'hover:border-[#F5D061]/65 kc-pressable cursor-pointer' : ''}`}
           >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-semibold uppercase tracking-wider">{translate(language, 'roleSuperAdmin')}</span>
@@ -284,8 +293,8 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div
-            onClick={() => setActiveTab('staff')}
-            className="p-3.5 kc-obsidian-card rounded-2xl hover:border-[#F5D061]/65 kc-pressable cursor-pointer"
+            onClick={() => isFounder && setActiveTab('staff')}
+            className={`p-3.5 kc-obsidian-card rounded-2xl ${isFounder ? 'hover:border-[#F5D061]/65 kc-pressable cursor-pointer' : ''}`}
           >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-semibold uppercase tracking-wider">{translate(language, 'roleAdmin')}</span>
@@ -302,8 +311,8 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div
-            onClick={() => setActiveTab('staff')}
-            className="p-3.5 kc-obsidian-card rounded-2xl hover:border-[#F5D061]/65 kc-pressable cursor-pointer"
+            onClick={() => isFounder && setActiveTab('staff')}
+            className={`p-3.5 kc-obsidian-card rounded-2xl ${isFounder ? 'hover:border-[#F5D061]/65 kc-pressable cursor-pointer' : ''}`}
           >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-semibold uppercase tracking-wider">{translate(language, 'roleCoAdmin')}</span>
@@ -416,24 +425,26 @@ export const SuperAdminDashboard: React.FC = () => {
                 <span>{translate(language, 'checkUpdatesBtn')}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('manage_app')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#090D16] hover:bg-[#141B2D] text-slate-200 text-xs font-medium border border-[#D4AF37]/30 kc-pressable cursor-pointer"
-              >
-                <span>{translate(language, 'navMasterControl')}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              {isFounder && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manage_app')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#090D16] hover:bg-[#141B2D] text-slate-200 text-xs font-medium border border-[#D4AF37]/30 kc-pressable cursor-pointer"
+                >
+                  <span>{translate(language, 'navMasterControl')}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Main Grid: District Governance Matrix & Office-Bearers */}
-      {(vis.showDistrictMatrix || vis.showOfficeBearersWidget) && (
+      {(vis.showDistrictMatrix || showOfficeBearers) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {vis.showDistrictMatrix && (
-            <div className={`${vis.showOfficeBearersWidget ? 'lg:col-span-2' : 'lg:col-span-3'} kc-obsidian-card rounded-2xl p-5`}>
+            <div className={`${showOfficeBearers ? 'lg:col-span-2' : 'lg:col-span-3'} kc-obsidian-card rounded-2xl p-5`}>
               <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -502,7 +513,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {vis.showOfficeBearersWidget && (
+          {showOfficeBearers && (
             <div className={`${vis.showDistrictMatrix ? '' : 'lg:col-span-3'} kc-obsidian-card rounded-2xl p-5 flex flex-col justify-between`}>
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">

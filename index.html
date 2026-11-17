@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark" style="background-color:#090D16;">
+<html lang="en" class="dark" style="background-color:#070D14;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -9,7 +9,7 @@
     <meta property="og:description" content="Together for a Better Tomorrow — Community Governance and Welfare Management for Pakistan." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#090D16" />
+    <meta name="theme-color" content="#070D14" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-touch-fullscreen" content="yes" />
@@ -30,7 +30,7 @@
         width: 100%;
         min-height: 100vh;
         min-height: 100dvh;
-        background-color: #090D16;
+        background-color: #070D14;
         color: #F8FAFC;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -43,13 +43,13 @@
         align-items: center;
         justify-content: center;
         padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
-        background: radial-gradient(circle at 50% 22%, rgba(56, 189, 248, 0.14) 0%, #0F172A 48%, #090D16 100%);
+        background: radial-gradient(circle at 50% 22%, rgba(56, 189, 248, 0.12) 0%, #0D1624 48%, #070D14 100%);
         font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
         text-align: center;
       }
     </style>
   </head>
-  <body class="bg-[#090D16] text-[#F8FAFC] antialiased selection:bg-[#38BDF8] selection:text-[#090D16]">
+  <body class="bg-[#070D14] text-[#F8FAFC] antialiased selection:bg-[#38BDF8] selection:text-[#070D14]">
     <div id="root">
       <!-- Instant (<50ms) Fintech Dark Obsidian Slate & Royal Gold Shell before JS mounts -->
       <div class="kc-boot-shell" aria-label="Kifayat Connect">
@@ -71,6 +71,15 @@
             }
           });
           window.addEventListener('load', function () {
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                keys.forEach(function (k) {
+                  if (k.indexOf('kifayat-connect') === 0 && k !== 'kifayat-connect-v5.0.0') {
+                    caches.delete(k).catch(function () {});
+                  }
+                });
+              }).catch(function () {});
+            }
             navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
               try { reg.update(); } catch (e) {}
               document.addEventListener('visibilitychange', function () {

@@ -20,6 +20,7 @@ import { PWAInstallButton } from './PWAInstallButton';
 import { BrandEmblem3D } from './BrandEmblem3D';
 import { RoleBadge } from './RoleBadge';
 import { translate } from '../../data/translations';
+import { canAccessRouteTab } from '../../utils/permissions';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -82,19 +83,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'office_bearers',
       label: translate(language, 'navOfficeBearers'),
       icon: Award,
-      visible: true
+      visible: canAccessRouteTab(currentUser, 'office_bearers')
     },
     {
       id: 'members',
       label: translate(language, 'navMembers'),
       icon: Users,
-      visible: true
+      visible: canAccessRouteTab(currentUser, 'members')
     },
     {
       id: 'approvals',
       label: translate(language, 'navApprovals'),
       icon: CheckSquare,
-      visible: currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN',
+      visible: canAccessRouteTab(currentUser, 'approvals'),
       badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : null,
       badgeColor: 'bg-[#F5D061] text-[#0A0D12] font-bold'
     },
@@ -102,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'funds',
       label: translate(language, 'navFunds'),
       icon: Coins,
-      visible: true,
+      visible: canAccessRouteTab(currentUser, 'funds'),
       badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : null,
       badgeColor: 'bg-emerald-600 text-white'
     },
@@ -116,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'complaints',
       label: translate(language, 'navComplaints'),
       icon: MessageSquareWarning,
-      visible: true,
+      visible: canAccessRouteTab(currentUser, 'complaints'),
       badge: openComplaintsCount > 0 ? openComplaintsCount : null,
       badgeColor: 'bg-rose-500 text-white'
     },
@@ -124,19 +125,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'announcements',
       label: translate(language, 'navAnnouncements'),
       icon: Megaphone,
-      visible: true
+      visible: canAccessRouteTab(currentUser, 'announcements')
     },
     {
       id: 'staff',
       label: translate(language, 'navStaff'),
       icon: ShieldCheck,
-      visible: currentUser.role === 'SUPER_ADMIN'
+      visible: canAccessRouteTab(currentUser, 'staff')
     },
     {
       id: 'manage_app',
       label: `${translate(language, 'navMasterControl')} 👑`,
       icon: Crown,
-      visible: currentUser.role === 'SUPER_ADMIN',
+      visible: canAccessRouteTab(currentUser, 'manage_app'),
       badge: language === 'ur' ? 'وی آئی پی' : 'VIP',
       badgeColor: 'bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/40'
     },
@@ -144,13 +145,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'reports',
       label: translate(language, 'navReports'),
       icon: FileText,
-      visible: true
+      visible: canAccessRouteTab(currentUser, 'reports')
     },
     {
       id: 'audit',
       label: translate(language, 'navAudit'),
       icon: Clock,
-      visible: currentUser.role !== 'MEMBER' || Boolean(currentUser.isAuditOfficer)
+      visible: canAccessRouteTab(currentUser, 'audit')
     }
   ];
 
@@ -159,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     : (appSettings.appName || translate('en', 'appTitleShort'));
 
   return (
-    <div className="w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#090D16] overflow-hidden overscroll-none touch-pan-y">
+    <div className="w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#070D14] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
         <div className="md:hidden flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#131C31] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">

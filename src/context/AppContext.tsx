@@ -107,6 +107,7 @@ import {
 import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
 import { shareKifayatForIphone } from '../utils/iphoneShare';
+import { isFounderIdentity, isChatModerator } from '../utils/permissions';
 
 const STORAGE_KEYS = {
   USERS: 'kifayat_users_v3',
@@ -202,8 +203,7 @@ function addIdsToStorageSet(key: string, ids: string[]): Set<string> {
 }
 
 export function isFounderUser(user?: User | null): boolean {
-  if (!user) return false;
-  return Boolean(user.isFounder || user.email?.trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase());
+  return isFounderIdentity(user);
 }
 
 function normalizeUserRecord(u: User): User {
@@ -338,6 +338,10 @@ function mergeAppSettings(raw: Partial<AppSettings> | null | undefined): AppSett
   return {
     ...INITIAL_APP_SETTINGS,
     ...raw,
+    chatLockMessages: Boolean(raw.chatLockMessages),
+    chatLockVoiceNotes: Boolean(raw.chatLockVoiceNotes),
+    chatLockFullRoom: Boolean(raw.chatLockFullRoom),
+    chatMemberControls: { ...(raw.chatMemberControls || {}) },
     dashboardVisibility: {
       ...INITIAL_APP_SETTINGS.dashboardVisibility!,
       ...(raw.dashboardVisibility || {})
@@ -539,6 +543,15 @@ interface AppContextType {
     liveChatCustomBgUrl?: string;
     founderBubbleColor?: string;
   }) => { success: boolean; error?: string };
+  updateChatRoomModeration: (data: {
+    chatLockMessages?: boolean;
+    chatLockVoiceNotes?: boolean;
+    chatLockFullRoom?: boolean;
+  }) => { success: boolean; error?: string };
+  updateMemberChatControl: (
+    userId: string,
+    control: { lockMessages?: boolean; lockVoice?: boolean; removeFromRoom?: boolean }
+  ) => { success: boolean; error?: string };
 
   // App Updates Module & GitHub Releases
   appUpdates: AppUpdate[];
@@ -603,7 +616,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<string, string>> = {
   OBSIDIAN_GOLD: {
-    '--kc-bg': '#090D16',
+    '--kc-bg': '#070D14',
     '--kc-surface': '#131C31',
     '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
     '--kc-border': 'rgba(148, 163, 184, 0.18)',
@@ -611,7 +624,7 @@ const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<
     '--kc-emerald': '#0EA5E9'
   },
   EMERALD_GOLD: {
-    '--kc-bg': '#090D16',
+    '--kc-bg': '#070D14',
     '--kc-surface': '#131C31',
     '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
     '--kc-border': 'rgba(56, 189, 248, 0.24)',
@@ -619,7 +632,7 @@ const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<
     '--kc-emerald': '#38BDF8'
   },
   MIDNIGHT_ROYAL: {
-    '--kc-bg': '#0A0F1D',
+    '--kc-bg': '#070D14',
     '--kc-surface': '#131C31',
     '--kc-surface-elevated': '#1E293B',
     '--kc-border': 'rgba(148, 163, 184, 0.2)',
@@ -627,7 +640,7 @@ const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<
     '--kc-emerald': '#0EA5E9'
   },
   IMPERIAL_ONYX: {
-    '--kc-bg': '#090D16',
+    '--kc-bg': '#070D14',
     '--kc-surface': '#0F172A',
     '--kc-surface-elevated': '#1E293B',
     '--kc-border': 'rgba(212, 175, 55, 0.28)',
@@ -748,6 +761,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUserId}`) : new Set<string>()
   );
   const localRecentSentMsgsRef = useRef<Map<string, number>>(new Map());
+  const locallyReadNotifIdsRef = useRef<Set<string>>(new Set());
+  const pinActionDebounceRef = useRef<number>(0);
 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
   const [inspectedUserProfile, setInspectedUserProfile] = useState<User | null>(null);
@@ -928,14 +943,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [users, applications, payments, complaints, announcements, offlineChatQueue.length, flushOfflineChatQueue]);
 
-  // Initial GitHub Release fetch
+  // Deferred GitHub Release fetch so initial startup renders cleanly in <1s
   const refreshGitHubRelease = useCallback(async (force = false) => {
     const status = await fetchLatestGitHubRelease(force);
     setGithubRelease(status);
   }, []);
 
   useEffect(() => {
-    refreshGitHubRelease(false);
+    const id = window.setTimeout(() => {
+      refreshGitHubRelease(false);
+    }, 850);
+    return () => window.clearTimeout(id);
   }, [refreshGitHubRelease]);
 
   // Persist active user session cleanly in kifayat_current_user (ONLY cleared on explicit Logout or resetAllData)
@@ -1080,12 +1098,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [appUpdates]
   );
 
-  // Test Firestore connection on boot and bridge local logged-in user into Firebase Auth if needed
+  // Deferred Firestore health probe + Firebase Auth bridge for fast startup
   useEffect(() => {
-    testFirestoreConnection().catch(() => {});
+    const id = window.setTimeout(() => {
+      testFirestoreConnection().catch(() => {});
+    }, 600);
     if (currentUserId && !auth.currentUser) {
       ensureFirebaseAuthSession().catch(() => null);
     }
+    return () => window.clearTimeout(id);
   }, [currentUserId]);
 
   // Helper to push all local users to cloud & merge remote directory
@@ -1186,15 +1207,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'notifications',
       (remote) => {
         if (!remote) return;
-        const normalizedNotifs: AppNotification[] = remote.map(n => ({
-          ...n,
-          timestamp: toIsoTimestamp(n.timestamp || n.createdAt, new Date().toISOString()),
-          read: Boolean(n.read)
-        }));
+        const normalizedNotifs: AppNotification[] = remote.map(n => {
+          const markedRead = Boolean(n.read || n.isRead || locallyReadNotifIdsRef.current.has(n.id));
+          return {
+            ...n,
+            timestamp: toIsoTimestamp(n.timestamp || n.createdAt, new Date().toISOString()),
+            read: markedRead,
+            isRead: markedRead
+          };
+        });
         setNotifications(prev => {
           const map = new Map<string, AppNotification>();
           prev.forEach(n => map.set(n.id, n));
-          normalizedNotifs.forEach(n => map.set(n.id, n));
+          normalizedNotifs.forEach(n => {
+            const existing = map.get(n.id);
+            const finalRead = Boolean(n.read || n.isRead || existing?.read || existing?.isRead);
+            map.set(n.id, { ...n, read: finalRead, isRead: finalRead });
+          });
           return Array.from(map.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
         });
       }
@@ -1232,32 +1261,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (remote && remote.length > 0) setAnnouncements(remote);
     });
 
-    const unsubUpdates = subscribeToFirestoreCollection<AppUpdate>('app_updates', (remote) => {
-      if (remote && remote.length > 0) setAppUpdates(remote);
-    });
-
-    const unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
-      if (remote && remote.length > 0) setOfficeBearers(remote);
-    });
-
     const unsubSettings = subscribeToFirestoreCollection<AppSettings & { id?: string }>('app_settings', (remote) => {
       if (remote && remote.length > 0) {
         setAppSettings(prev => mergeAppSettings({ ...prev, ...remote[0] }));
       }
     });
 
-    const unsubAuditLogs = subscribeToFirestoreCollection<AuditLog>('audit_logs', (remote) => {
-      if (remote && remote.length > 0) {
-        setAuditLogs(prev => {
-          const map = new Map<string, AuditLog>();
-          prev.forEach(a => map.set(a.id, a));
-          remote.forEach(a => map.set(a.id, a));
-          return Array.from(map.values()).sort((a, b) =>
-            toIsoTimestamp(b.timestamp, '').localeCompare(toIsoTimestamp(a.timestamp, ''))
-          );
-        });
-      }
-    });
+    let unsubUpdates = () => {};
+    let unsubOB = () => {};
+    let unsubAuditLogs = () => {};
+    const deferredListenersTimer = window.setTimeout(() => {
+      unsubUpdates = subscribeToFirestoreCollection<AppUpdate>('app_updates', (remote) => {
+        if (remote && remote.length > 0) setAppUpdates(remote);
+      });
+
+      unsubOB = subscribeToFirestoreCollection<OfficeBearer>('office_bearers', (remote) => {
+        if (remote && remote.length > 0) setOfficeBearers(remote);
+      });
+
+      unsubAuditLogs = subscribeToFirestoreCollection<AuditLog>('audit_logs', (remote) => {
+        if (remote && remote.length > 0) {
+          setAuditLogs(prev => {
+            const map = new Map<string, AuditLog>();
+            prev.forEach(a => map.set(a.id, a));
+            remote.forEach(a => map.set(a.id, a));
+            return Array.from(map.values()).sort((a, b) =>
+              toIsoTimestamp(b.timestamp, '').localeCompare(toIsoTimestamp(a.timestamp, ''))
+            );
+          });
+        }
+      });
+    }, 450);
 
     const unsubChats = subscribeToFirestoreCollection<ChatConversation>(
       'chats',
@@ -1403,6 +1437,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     return () => {
+      window.clearTimeout(deferredListenersTimer);
       unsubUsers();
       unsubNotifications();
       unsubApps();
@@ -2013,6 +2048,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
       read: false,
+      isRead: false,
       ...data
     };
     setNotifications(prev => [newNotif, ...prev]);
@@ -2020,33 +2056,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationAsRead = useCallback((id: string) => {
-    setNotifications(prev =>
-      prev.map(n => {
+    locallyReadNotifIdsRef.current.add(id);
+    setNotifications(prev => {
+      const next = prev.map(n => {
         if (n.id === id) {
-          const updated = { ...n, read: true };
+          const updated: AppNotification = { ...n, read: true, isRead: true };
           saveNotificationToFirestore(updated).catch(() => {});
           return updated;
         }
         return n;
-      })
-    );
+      });
+      safeSetItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const markAllNotificationsAsRead = useCallback(() => {
-    setNotifications(prev =>
-      prev.map(n => {
-        if (!n.read) {
-          const updated = { ...n, read: true };
+    setNotifications(prev => {
+      let hasChanges = false;
+      const next = prev.map(n => {
+        if (!n.read || !n.isRead) {
+          hasChanges = true;
+          locallyReadNotifIdsRef.current.add(n.id);
+          const updated: AppNotification = { ...n, read: true, isRead: true };
           saveNotificationToFirestore(updated).catch(() => {});
           return updated;
         }
         return n;
-      })
-    );
+      });
+      if (hasChanges) {
+        safeSetItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(next));
+      }
+      return hasChanges ? next : prev;
+    });
   }, []);
 
   const clearAllNotifications = useCallback(() => {
-    setNotifications([]);
+    setNotifications(prev => {
+      prev.forEach(n => {
+        locallyReadNotifIdsRef.current.add(n.id);
+        if (!n.read || !n.isRead) {
+          saveNotificationToFirestore({ ...n, read: true, isRead: true }).catch(() => {});
+        }
+      });
+      safeSetItem(STORAGE_KEYS.NOTIFICATIONS, '[]');
+      return [];
+    });
   }, []);
 
   const userNotifications = useMemo(() => {
@@ -2078,7 +2133,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [currentUser, notifications]);
 
   const unreadNotificationsCount = useMemo(
-    () => userNotifications.filter(n => !n.read).length,
+    () => userNotifications.filter(n => !n.read && !n.isRead).length,
     [userNotifications]
   );
 
@@ -3865,10 +3920,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const isFounder = isFounderUser(currentUser);
+    const isModerator = isChatModerator(currentUser);
     const canUploadGallery = isFounder || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
-    if (currentUser.isMutedInChat && !isFounder) {
-      return { success: false, error: 'You are currently muted in Community Chat by an administrator.' };
+    const memberControl = appSettings.chatMemberControls?.[currentUser.id];
+    const isVoicePayload = Boolean(payload.voiceNote);
+
+    if (!isFounder) {
+      if (currentUser.isMutedInChat) {
+        return { success: false, error: 'You are currently muted in Community Chat by an administrator.' };
+      }
+      if (!isModerator && appSettings.chatLockFullRoom) {
+        return { success: false, error: 'Full Community Room is currently locked by leadership.' };
+      }
+      if (!isModerator && appSettings.chatLockMessages && !isVoicePayload) {
+        return { success: false, error: 'Text messages are currently locked by leadership.' };
+      }
+      if (!isModerator && appSettings.chatLockVoiceNotes && isVoicePayload) {
+        return { success: false, error: 'Voice notes are currently locked by leadership.' };
+      }
+      if (memberControl?.lockMessages && !isVoicePayload) {
+        return { success: false, error: 'Your text messages in this room have been locked by leadership.' };
+      }
+      if (memberControl?.lockVoice && isVoicePayload) {
+        return { success: false, error: 'Your voice notes in this room have been locked by leadership.' };
+      }
     }
+
     if (payload.attachment && !canUploadGallery) {
       return { success: false, error: 'Gallery photo & GIF uploads are restricted to Super Admins and Admins.' };
     }
@@ -3963,26 +4040,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, error: 'Only the Founder can pin messages to top.' };
     }
+    const now = Date.now();
+    if (now - pinActionDebounceRef.current < 500) {
+      return { success: false };
+    }
+    pinActionDebounceRef.current = now;
+
     const target = communityMessages.find(m => m.id === messageId);
     if (!target) return { success: false, error: 'Message not found.' };
     const nextPinned = !target.isPinned;
 
     const changed: ChatMessage[] = [];
-    setCommunityMessages(prev =>
-      prev.map(m => {
-        if (m.id === messageId) {
-          const u = { ...m, isPinned: nextPinned, pinnedBy: nextPinned ? currentUser.name : undefined };
-          changed.push(u);
-          return u;
-        }
-        if (nextPinned && m.isPinned) {
-          const u = { ...m, isPinned: false, pinnedBy: undefined };
-          changed.push(u);
-          return u;
-        }
-        return m;
-      })
-    );
+    const nextMessages = communityMessages.map(m => {
+      if (m.id === messageId) {
+        const u: ChatMessage = { ...m, isPinned: nextPinned, pinnedBy: nextPinned ? currentUser.name : undefined };
+        changed.push(u);
+        return u;
+      }
+      if (nextPinned && m.isPinned) {
+        const u: ChatMessage = { ...m, isPinned: false, pinnedBy: undefined };
+        changed.push(u);
+        return u;
+      }
+      return m;
+    });
+
+    setCommunityMessages(nextMessages);
     changed.forEach(u => saveCommunityMessageToFirestore(u).catch(() => {}));
     return { success: true };
   };
@@ -4140,6 +4223,95 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setAppSettings(updated);
     saveAppSettingsToFirestore(updated).catch(() => {});
+    return { success: true };
+  };
+
+  const updateChatRoomModeration = (data: {
+    chatLockMessages?: boolean;
+    chatLockVoiceNotes?: boolean;
+    chatLockFullRoom?: boolean;
+  }): { success: boolean; error?: string } => {
+    if (!currentUser || !isChatModerator(currentUser)) {
+      return { success: false, error: 'Only Founder, Super Admins, Admins, and Co-Admins can lock room controls.' };
+    }
+    const updated = mergeAppSettings({
+      ...appSettings,
+      chatLockMessages: data.chatLockMessages !== undefined ? data.chatLockMessages : appSettings.chatLockMessages,
+      chatLockVoiceNotes: data.chatLockVoiceNotes !== undefined ? data.chatLockVoiceNotes : appSettings.chatLockVoiceNotes,
+      chatLockFullRoom: data.chatLockFullRoom !== undefined ? data.chatLockFullRoom : appSettings.chatLockFullRoom,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.name
+    });
+    setAppSettings(updated);
+    saveAppSettingsToFirestore(updated).catch(() => {});
+    logAudit(
+      'CHAT_ROOM_MODERATION',
+      'SECURITY',
+      'Community Room',
+      `${currentUser.name} updated room locks (Full: ${Boolean(updated.chatLockFullRoom)}, Text: ${Boolean(updated.chatLockMessages)}, Voice: ${Boolean(updated.chatLockVoiceNotes)}).`
+    );
+    return { success: true };
+  };
+
+  const updateMemberChatControl = (
+    userId: string,
+    control: { lockMessages?: boolean; lockVoice?: boolean; removeFromRoom?: boolean }
+  ): { success: boolean; error?: string } => {
+    if (!currentUser || !isChatModerator(currentUser)) {
+      return { success: false, error: 'Insufficient authority to moderate room members.' };
+    }
+    const target = users.find(u => u.id === userId);
+    if (!target) return { success: false, error: 'Member not found.' };
+
+    // STRICT FOUNDER IMMUNITY: KC-ADM-001 can NEVER be muted, locked, or removed
+    if (isFounderUser(target)) {
+      return { success: false, error: 'Founder Protection: Founder (KC-ADM-001) is 100% immune and cannot be muted, locked, or removed.' };
+    }
+    if (target.role === 'SUPER_ADMIN' && !isFounderUser(currentUser)) {
+      return { success: false, error: 'Only the Founder can moderate Additional Super Admins.' };
+    }
+
+    const currentControls = { ...(appSettings.chatMemberControls || {}) };
+    const existingEntry = currentControls[userId] || {};
+    const nextEntry = {
+      lockMessages: control.removeFromRoom
+        ? true
+        : (control.lockMessages !== undefined ? control.lockMessages : Boolean(existingEntry.lockMessages)),
+      lockVoice: control.removeFromRoom
+        ? true
+        : (control.lockVoice !== undefined ? control.lockVoice : Boolean(existingEntry.lockVoice))
+    };
+
+    if (!nextEntry.lockMessages && !nextEntry.lockVoice) {
+      delete currentControls[userId];
+    } else {
+      currentControls[userId] = nextEntry;
+    }
+
+    const updatedSettings = mergeAppSettings({
+      ...appSettings,
+      chatMemberControls: currentControls,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.name
+    });
+    setAppSettings(updatedSettings);
+    saveAppSettingsToFirestore(updatedSettings).catch(() => {});
+
+    if (control.removeFromRoom !== undefined) {
+      const updatedUser = normalizeUserRecord({
+        ...target,
+        isMutedInChat: control.removeFromRoom
+      });
+      setUsers(prev => prev.map(u => (u.id === userId ? updatedUser : u)));
+      saveUserToFirestore(updatedUser).catch(() => {});
+    }
+
+    logAudit(
+      'CHAT_MEMBER_CONTROL',
+      'SECURITY',
+      target.name,
+      `${currentUser.name} updated chat control for ${target.name} (lockMessages=${nextEntry.lockMessages}, lockVoice=${nextEntry.lockVoice}, removed=${Boolean(control.removeFromRoom)}).`
+    );
     return { success: true };
   };
 
@@ -4345,6 +4517,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteDirectMessageForEveryone,
         muteChatUser,
         updateLiveChatAppearance,
+        updateChatRoomModeration,
+        updateMemberChatControl,
         appUpdates,
         latestPublishedUpdate,
         githubRelease,
