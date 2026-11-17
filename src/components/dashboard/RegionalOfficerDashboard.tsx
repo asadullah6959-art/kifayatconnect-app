@@ -31,11 +31,11 @@ export const RegionalOfficerDashboard: React.FC = () => {
     language 
   } = useApp();
 
-  // Strict District & Regional Scoping:
-  const locFallback = mapLegacyRegionToHierarchy(currentUser.region);
-  const assignedDistrict = currentUser.district || locFallback.district;
-  const assignedProvince = currentUser.stateProvince || locFallback.stateProvince;
-  const assignedRegion = currentUser.region;
+  // Strict District & Regional Scoping (the officer record may not be resolved yet):
+  const locFallback = mapLegacyRegionToHierarchy(currentUser?.region);
+  const assignedDistrict = currentUser?.district || locFallback.district;
+  const assignedProvince = currentUser?.stateProvince || locFallback.stateProvince;
+  const assignedRegion = currentUser?.region;
 
   const regionalMembers = users.filter(u => {
     if (u.role !== 'MEMBER') return false;
@@ -116,7 +116,7 @@ export const RegionalOfficerDashboard: React.FC = () => {
             <span>{assignedDistrict} – District Officer Dashboard</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Presiding Officer: {currentUser.name} · Direct oversight of member verifications and welfare execution for {assignedDistrict}, {assignedProvince}.
+            Presiding Officer: {currentUser?.name} · Direct oversight of member verifications and welfare execution for {assignedDistrict}, {assignedProvince}.
           </p>
         </div>
 
