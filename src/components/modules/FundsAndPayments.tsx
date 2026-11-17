@@ -134,14 +134,17 @@ export const FundsAndPayments: React.FC = () => {
 
   // Latest approved payment = this member's official Raseed Wasooli.
   // Its serial is the SAME number minted for the Rukniyat Form at approval.
-  const myRaseedTx: any = payments
-    .filter((p: any) => p.userId === currentUser.id && p.status === 'VERIFIED')
-    .filter((p: any) => Boolean(p.serialNumber || p.receiptNumber))
-    .sort((a: any, b: any) =>
-      String(b.verifiedAt || b.createdAt || '').localeCompare(String(a.verifiedAt || a.createdAt || ''))
-    )[0];
+  const myUserId = currentUser?.id;
+  const myRaseedTx: any = myUserId
+    ? payments
+        .filter((p: any) => p.userId === myUserId && p.status === 'VERIFIED')
+        .filter((p: any) => Boolean(p.serialNumber || p.receiptNumber))
+        .sort((a: any, b: any) =>
+          String(b.verifiedAt || b.createdAt || '').localeCompare(String(a.verifiedAt || a.createdAt || ''))
+        )[0]
+    : undefined;
 
-  const myRaseedData: RaseedWasooliData | null = myRaseedTx
+  const myRaseedData: RaseedWasooliData | null = currentUser && myRaseedTx
     ? {
         serialNumber: String(myRaseedTx.serialNumber || myRaseedTx.receiptNumber || ''),
         date: String(myRaseedTx.verifiedAt || myRaseedTx.createdAt || new Date().toISOString()).slice(0, 10),
