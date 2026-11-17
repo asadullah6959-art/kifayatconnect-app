@@ -3402,6 +3402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       targetScope: scope,
       targetStateProvince: data.targetStateProvince,
       targetDistrict: data.targetDistrict,
+      targetRegion: data.targetRegion,
       publishedBy: currentUser.name,
       publisherRole: currentUser.role,
       publishedAt: new Date().toISOString(),
