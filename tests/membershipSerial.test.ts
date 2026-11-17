@@ -86,7 +86,9 @@ test('approval reuses the submission serial and never mints a second number', ()
   assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: '' }));
   assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: null }));
   assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: 'Rs. 4200' }));
-  assert.ok(serialReuseBlocker({ status: 'PENDING_DISTRICT_REVIEW', existingSerial: '4201' }));
+  // A submission that already holds its serial keeps it through approval.
+  assert.equal(serialReuseBlocker({ status: 'PENDING_DISTRICT_REVIEW', existingSerial: '4201' }), null);
+  assert.ok(serialReuseBlocker({ status: 'REJECTED', existingSerial: '4201' }));
 });
 
 test('only Founder / Super Admin may void a receipt', () => {
