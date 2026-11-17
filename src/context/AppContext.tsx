@@ -3252,7 +3252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // The official serial is minted ONCE, only on approval, and is printed
     // identically on the Rukniyat Form (رکنیت نمبر) and the Raseed Wasooli (رسید نمبر).
     // Pending or rejected applications never hold a serial.
-    let issuedSerial = issuedSerial || '';
+    let issuedSerial: string = tx.serialNumber || tx.receiptNumber || '';
     if (approved && tx.status !== 'VERIFIED') {
       const minted = await mintMembershipSerial(issuedSerial);
       issuedSerial = minted.serial;
