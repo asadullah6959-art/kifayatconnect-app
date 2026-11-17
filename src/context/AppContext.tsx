@@ -567,6 +567,7 @@ interface AppContextType {
     targetScope?: 'ALL' | 'PROVINCE' | 'DISTRICT';
     targetStateProvince?: string;
     targetDistrict?: string;
+    targetRegion?: string;
     urgency: 'NORMAL' | 'URGENT';
     isPinned: boolean;
     expiresAt?: string;
@@ -3381,6 +3382,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     targetScope?: 'ALL' | 'PROVINCE' | 'DISTRICT';
     targetStateProvince?: string;
     targetDistrict?: string;
+    targetRegion?: string;
     urgency: 'NORMAL' | 'URGENT';
     isPinned: boolean;
     expiresAt?: string;
