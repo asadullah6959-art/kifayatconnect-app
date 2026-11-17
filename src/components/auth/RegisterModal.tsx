@@ -39,6 +39,11 @@ import {
   getTabbarById,
   transliterateTabbarToUrdu
 } from '../../data/tabbars';
+import {
+  formatCnicDisplay,
+  isValid13DigitCnic,
+  getCnicLockAlertMessage
+} from '../../utils/cnic';
 
 import { User } from '../../types';
 
@@ -100,6 +105,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       : ''
   );
   const [tabbarError, setTabbarError] = useState('');
+  const [cnicError, setCnicError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(() => completeProfileUser?.avatarUrl || completeProfileUser?.photoUrl || '');
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
@@ -257,7 +263,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTabbarError('');
-    if (!applicantName.trim() || !cnic.trim()) return;
+    setCnicError('');
+    if (!applicantName.trim()) return;
+    if (!isValid13DigitCnic(cnic)) {
+      setCnicError(getCnicLockAlertMessage(language));
+      return;
+    }
 
     const selectedClan = getTabbarById(tabbarSelection);
     let finalTabbarId = '';
@@ -643,17 +654,36 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </div>
 
               <div>
-                <label className="font-semibold text-slate-300 block mb-1">
-                  {language === 'ur' ? 'قومی شناختی کارڈ نمبر (CNIC) *' : 'National ID (CNIC) *'}
-                </label>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <label className="font-semibold text-slate-300">
+                    {language === 'ur' ? 'قومی شناختی کارڈ نمبر (13 ہندسے لازمی) *' : '13-Digit National ID (CNIC) *'}
+                  </label>
+                  {isValid13DigitCnic(cnic) && (
+                    <span className="text-[10px] text-emerald-400 font-bold">
+                      {language === 'ur' ? 'درست ✓' : 'Valid ✓'}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
+                  inputMode="numeric"
                   required
                   placeholder="35201-1234567-1"
                   value={cnic}
-                  onChange={(e) => setCnic(e.target.value)}
-                  className="w-full px-3 py-2 font-mono border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061]"
+                  onChange={(e) => {
+                    setCnic(formatCnicDisplay(e.target.value));
+                    setCnicError('');
+                  }}
+                  className={`w-full px-3 py-2 font-mono border rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061] ${
+                    cnicError ? 'border-rose-500/70' : isValid13DigitCnic(cnic) ? 'border-emerald-500/60' : 'border-[#D4AF37]/30'
+                  }`}
                 />
+                {cnicError && (
+                  <p className="text-[11px] text-rose-400 font-semibold mt-1 flex items-start gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{cnicError}</span>
+                  </p>
+                )}
               </div>
             </div>
 

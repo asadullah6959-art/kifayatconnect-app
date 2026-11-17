@@ -38,6 +38,8 @@ import { NotificationsSlideOver } from './components/common/NotificationsSlideOv
 import { AppUpdateModal } from './components/common/AppUpdateModal';
 import { MemberProfileModal } from './components/modules/MemberProfileModal';
 import { IphoneSafariInstallBanner } from './components/common/IphoneSafariInstallBanner';
+import { RukniyatFormModal } from './components/modules/RukniyatFormModal';
+import { MemberTutorialModal } from './components/common/MemberTutorialModal';
 
 import {
   LayoutDashboard,
@@ -411,6 +413,9 @@ const MainLayout: React.FC = () => {
           onClose={() => setSelectedCardUser(null)}
         />
       )}
+
+      <RukniyatFormModal />
+      <MemberTutorialModal />
 
       {/* Floating Golden Chat Bubble when Live Chat is Minimized */}
       {liveChatDisplayMode === 'MINIMIZED' && activeTab !== 'chat' && (

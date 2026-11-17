@@ -52,6 +52,7 @@ import {
 } from '../../utils/imageCompression';
 import { uploadMediaToFirebaseStorage, isUserActuallyOnline } from '../../services/firebase';
 import { RoleBadge } from '../common/RoleBadge';
+import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
@@ -227,7 +228,7 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
         </button>
 
-        <div className="flex-1 flex items-end gap-0.5 h-7 min-w-[110px]" aria-hidden="true">
+        <div className="flex-1 flex items-end gap-0.5 h-7 min-w-0" aria-hidden="true">
           {bars.map((heightPct, idx) => {
             const barRatio = (idx + 1) / bars.length;
             const active = isPlaying ? true : barRatio <= progressRatio;
@@ -1138,283 +1139,292 @@ const ChatModuleContent: React.FC = () => {
           MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM (PORTAL)
           ============================================================ */}
       {chatMode === 'COMMUNITY' && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] w-screen h-[100dvh] flex flex-col overflow-hidden bg-[#090D16] overscroll-none touch-pan-y">
+        <div className="fixed inset-0 z-[9999] w-full max-w-[100vw] h-[100dvh] flex flex-col overflow-hidden bg-[#090D16] overscroll-none touch-pan-y">
           {/* Live Scenic GPU-Only SVG/CSS Wallpaper Background */}
           <ScenicChatBackground
             themeId={activeThemeId}
             customBgUrl={appSettings.liveChatCustomBgUrl}
           />
 
-          {/* Full-Screen Top Bar with Status Bar Safe Clearance */}
-          <div className="relative z-40 px-3 sm:px-5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2.5 border-b border-slate-400/20 bg-gradient-to-b from-[#131C31]/95 via-[#0F172A]/95 to-[#090D16]/95 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center font-black text-sm shrink-0 shadow-[0_4px_12px_rgba(212,175,55,0.3)] border border-[#FEF08A]/70">
-                🌐
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h2 className="text-xs sm:text-sm font-extrabold text-[#F8FAFC] truncate">
-                    {translate(language, 'communityRoomTab')}
-                  </h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 tabular-nums">
+          {/* Single-Row Slim Top Header with Circular Unity Emblem (Top-Left) & Compact 32x32 Menu/Close Buttons (Top-Right) */}
+          <div
+            dir="ltr"
+            className="relative z-40 px-3 sm:px-5 pt-[calc(env(safe-area-inset-top,8px)+6px)] pb-2 border-b border-slate-400/20 bg-gradient-to-b from-[#131C31]/95 via-[#0F172A]/95 to-[#090D16]/95 flex flex-nowrap items-center justify-between gap-2 shrink-0 shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <BrandEmblem3D size="sm" className="shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xs sm:text-sm font-extrabold text-[#F8FAFC] truncate leading-tight">
+                  {translate(language, 'communityRoomTab')}
+                </h2>
+                <div className="flex items-center gap-1.5 min-w-0 mt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 tabular-nums whitespace-nowrap shrink-0">
                     🟢 {onlineMembersCount} {translate(language, 'online')} · {users.length} {language === 'ur' ? 'ممبران' : 'Members'}
                   </span>
+                  <span className="hidden sm:inline text-[10px] text-[#F5D061]/95 truncate">
+                    {activeThemeId === 'CUSTOM'
+                      ? (language === 'ur' ? 'بانی کی منتخب کردہ لائیو اسکرین تھیم' : 'Founder Custom Scenic Wallpaper')
+                      : (() => {
+                          const found = SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId);
+                          return found ? (language === 'ur' ? found.labelUr : found.label) : (language === 'ur' ? 'شاہی سیاہ اور سنہرا' : 'Obsidian & Royal Gold');
+                        })()}
+                  </span>
                 </div>
-                <p className="text-[10px] text-[#F5D061]/95 truncate">
-                  {activeThemeId === 'CUSTOM'
-                    ? (language === 'ur' ? 'بانی کی منتخب کردہ لائیو اسکرین تھیم' : 'Founder Custom Scenic Wallpaper')
-                    : (() => {
-                        const found = SCENIC_THEME_PRESETS.find(t => t.id === activeThemeId);
-                        return found ? (language === 'ur' ? found.labelUr : found.label) : (language === 'ur' ? 'شاہی سیاہ اور سنہرا' : 'Obsidian & Royal Gold');
-                      })()}
-                </p>
               </div>
             </div>
 
-            <div className="relative flex items-center gap-1.5 shrink-0">
-              {isChatMenuOpen && (
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => {
-                    setIsChatMenuOpen(false);
-                    setIsMoreSubmenuOpen(false);
-                  }}
-                />
-              )}
-
-              {/* WhatsApp-style Vertical 3-Dot (⋮) Room Menu */}
-              <div className="relative z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsChatMenuOpen(prev => {
-                      const next = !prev;
-                      if (!next) setIsMoreSubmenuOpen(false);
-                      return next;
-                    });
-                  }}
-                  title={language === 'ur' ? 'روم مینو' : 'Room Menu'}
-                  aria-label="Room Menu"
-                  aria-expanded={isChatMenuOpen}
-                  className="min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#D4AF37]/45 text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
-                >
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-
-                {isChatMenuOpen && (
-                  <div
-                    className={`absolute top-full mt-2 w-64 rounded-2xl bg-[#0F172A]/98 border border-[#D4AF37]/45 shadow-[0_18px_48px_rgba(0,0,0,0.85)] overflow-hidden py-1.5 z-50 ${
-                      language === 'ur' ? 'left-0' : 'right-0'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsChatMenuOpen(false);
-                        setIsMoreSubmenuOpen(false);
-                        setChatMode('DIRECT');
-                      }}
-                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4 text-[#38BDF8] shrink-0" />
-                      <span>{language === 'ur' ? 'براہ راست پیغامات' : 'Direct Messages'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsChatMenuOpen(false);
-                        setIsMoreSubmenuOpen(false);
-                        setIsPinnedModalOpen(true);
-                      }}
-                      className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <Pin className="w-4 h-4 text-[#F5D061] shrink-0" />
-                        <span>{language === 'ur' ? 'پن شدہ پیغامات' : 'Pinned Messages'}</span>
-                      </span>
-                      {pinnedMessages.length > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#F5D061] text-[#090D16] text-[10px] font-black tabular-nums">
-                          {pinnedMessages.length}
-                        </span>
-                      )}
-                    </button>
-
-                    {isLeadership && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsChatMenuOpen(false);
-                          setIsMoreSubmenuOpen(false);
-                          setIsThemeModalOpen(true);
-                        }}
-                        className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
-                      >
-                        <Palette className="w-4 h-4 text-[#38BDF8] shrink-0" />
-                        <span>{language === 'ur' ? 'چیٹ تھیم' : 'Chat Theme'}</span>
-                      </button>
-                    )}
-
-                    {isFounder && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsChatMenuOpen(false);
-                            setIsMoreSubmenuOpen(false);
-                            setIsBubbleColorModalOpen(true);
-                          }}
-                          className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
-                        >
-                          <Crown className="w-4 h-4 text-[#F5D061] shrink-0" />
-                          <span>{language === 'ur' ? 'میرا ببل اسٹائل' : 'My Bubble'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsChatMenuOpen(false);
-                            setIsMoreSubmenuOpen(false);
-                            setIsClearOldModalOpen(true);
-                          }}
-                          className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-rose-300 hover:bg-rose-950/50 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-                          <span>{language === 'ur' ? 'پرانے پیغامات صاف کریں' : 'Clear Chat'}</span>
-                        </button>
-                      </>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsChatMenuOpen(false);
-                        setIsMoreSubmenuOpen(false);
-                        minimizeLiveChat();
-                      }}
-                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
-                    >
-                      <Minus className="w-4 h-4 text-[#F5D061] shrink-0" />
-                      <span>{language === 'ur' ? 'روم چھوٹا کریں' : 'Minimize Room'}</span>
-                    </button>
-
-                    {canModerateRoom && (
-                      <div className="mt-1 pt-1 border-t border-slate-700/70">
-                        <button
-                          type="button"
-                          onClick={() => setIsMoreSubmenuOpen(prev => !prev)}
-                          className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-[#F5D061] shrink-0" />
-                            <span>{language === 'ur' ? 'مزید کنٹرولز' : 'More'}</span>
-                          </span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${isMoreSubmenuOpen ? 'rotate-90' : ''}`} />
-                        </button>
-
-                        {isMoreSubmenuOpen && (
-                          <div className="bg-[#090D16]/95 border-t border-slate-800 py-1 space-y-0.5">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                runDebouncedAction(() => {
-                                  const res = updateChatRoomModeration({ chatLockMessages: !isGlobalTextLocked });
-                                  if (!res.success && res.error) setChatError(res.error);
-                                })
-                              }
-                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
-                            >
-                              <span className="flex items-center gap-2">
-                                {isGlobalTextLocked ? (
-                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                ) : (
-                                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                )}
-                                <span>{language === 'ur' ? 'پیغامات لاک کریں' : 'Lock Messages'}</span>
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalTextLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                {isGlobalTextLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                runDebouncedAction(() => {
-                                  const res = updateChatRoomModeration({ chatLockVoiceNotes: !isGlobalVoiceLocked });
-                                  if (!res.success && res.error) setChatError(res.error);
-                                })
-                              }
-                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
-                            >
-                              <span className="flex items-center gap-2">
-                                {isGlobalVoiceLocked ? (
-                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                ) : (
-                                  <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                )}
-                                <span>{language === 'ur' ? 'وائس نوٹس لاک کریں' : 'Lock Voice Notes'}</span>
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalVoiceLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                {isGlobalVoiceLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                runDebouncedAction(() => {
-                                  const res = updateChatRoomModeration({ chatLockFullRoom: !isGlobalFullLocked });
-                                  if (!res.success && res.error) setChatError(res.error);
-                                })
-                              }
-                              className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
-                            >
-                              <span className="flex items-center gap-2">
-                                {isGlobalFullLocked ? (
-                                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                ) : (
-                                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                )}
-                                <span>{language === 'ur' ? 'پورا روم لاک کریں' : 'Lock Full Room'}</span>
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isGlobalFullLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                {isGlobalFullLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsChatMenuOpen(false);
-                                setIsMoreSubmenuOpen(false);
-                                setIsRoomMembersModalOpen(true);
-                              }}
-                              className="w-full px-4 py-2 flex items-center gap-2 text-[11px] font-extrabold text-[#38BDF8] hover:bg-[#1E293B] cursor-pointer"
-                            >
-                              <Users className="w-3.5 h-3.5 shrink-0" />
-                              <span>{language === 'ur' ? 'روم ممبران کنٹرول' : 'Room Members Control'}</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Hide / Close (✕) Completely */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* WhatsApp-style Vertical 3-Dot (⋮) Room Menu Button (32x32) */}
               <button
                 type="button"
-                onClick={closeAndHideLiveChat}
+                onClick={() => {
+                  setIsChatMenuOpen(prev => {
+                    const next = !prev;
+                    if (!next) setIsMoreSubmenuOpen(false);
+                    return next;
+                  });
+                }}
+                title={language === 'ur' ? 'روم مینو' : 'Room Menu'}
+                aria-label="Room Menu"
+                aria-expanded={isChatMenuOpen}
+                className="w-8 h-8 min-w-[32px] min-h-[32px] inline-flex items-center justify-center rounded-lg bg-[#131C31] hover:bg-[#1E293B] border border-[#D4AF37]/45 text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+
+              {/* Hide / Close (✕) Completely (32x32) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsChatMenuOpen(false);
+                  setIsMoreSubmenuOpen(false);
+                  closeAndHideLiveChat();
+                }}
                 title={language === 'ur' ? 'لائیو چیٹ بند کریں' : 'Close & Hide Live Chat'}
                 aria-label="Close and Hide Live Chat"
-                className="relative z-50 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] inline-flex items-center justify-center rounded-xl bg-[#131C31] hover:bg-rose-950/85 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0 kc-pressable"
+                className="w-8 h-8 min-w-[32px] min-h-[32px] inline-flex items-center justify-center rounded-lg bg-[#131C31] hover:bg-rose-950/85 border border-rose-500/45 text-rose-300 hover:text-white font-extrabold cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
+
+          {/* Floating Top-Right Anchored Three-Dots (⋮) Popover Menu (Never Shifts Layout or Clips Off-Screen) */}
+          {isChatMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-[9998] bg-black/30"
+                onClick={() => {
+                  setIsChatMenuOpen(false);
+                  setIsMoreSubmenuOpen(false);
+                }}
+              />
+              <div
+                dir="ltr"
+                style={{
+                  top: 'calc(env(safe-area-inset-top, 0px) + 56px)',
+                  right: '12px',
+                  width: '240px',
+                  maxWidth: 'calc(100vw - 24px)',
+                  zIndex: 9999,
+                }}
+                className="fixed rounded-2xl bg-[#0F172A]/98 border border-[#D4AF37]/50 shadow-[0_18px_48px_rgba(0,0,0,0.9)] overflow-y-auto max-h-[calc(100dvh-76px)] py-1.5 backdrop-blur-md"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChatMenuOpen(false);
+                    setIsMoreSubmenuOpen(false);
+                    setChatMode('DIRECT');
+                  }}
+                  className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 text-[#38BDF8] shrink-0" />
+                  <span className="truncate">{language === 'ur' ? 'براہ راست پیغامات' : 'Direct Messages'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChatMenuOpen(false);
+                    setIsMoreSubmenuOpen(false);
+                    setIsPinnedModalOpen(true);
+                  }}
+                  className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                >
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <Pin className="w-4 h-4 text-[#F5D061] shrink-0" />
+                    <span className="truncate">{language === 'ur' ? 'پن شدہ پیغامات' : 'Pinned Messages'}</span>
+                  </span>
+                  {pinnedMessages.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#F5D061] text-[#090D16] text-[10px] font-black tabular-nums shrink-0">
+                      {pinnedMessages.length}
+                    </span>
+                  )}
+                </button>
+
+                {isLeadership && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChatMenuOpen(false);
+                      setIsMoreSubmenuOpen(false);
+                      setIsThemeModalOpen(true);
+                    }}
+                    className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                  >
+                    <Palette className="w-4 h-4 text-[#38BDF8] shrink-0" />
+                    <span className="truncate">{language === 'ur' ? 'چیٹ تھیم' : 'Chat Theme'}</span>
+                  </button>
+                )}
+
+                {isFounder && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChatMenuOpen(false);
+                        setIsMoreSubmenuOpen(false);
+                        setIsBubbleColorModalOpen(true);
+                      }}
+                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
+                    >
+                      <Crown className="w-4 h-4 text-[#F5D061] shrink-0" />
+                      <span className="truncate">{language === 'ur' ? 'میرا ببل اسٹائل' : 'My Bubble'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChatMenuOpen(false);
+                        setIsMoreSubmenuOpen(false);
+                        setIsClearOldModalOpen(true);
+                      }}
+                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-rose-300 hover:bg-rose-950/50 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span className="truncate">{language === 'ur' ? 'پرانے پیغامات صاف کریں' : 'Clear Chat'}</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChatMenuOpen(false);
+                    setIsMoreSubmenuOpen(false);
+                    minimizeLiveChat();
+                  }}
+                  className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                >
+                  <Minus className="w-4 h-4 text-[#F5D061] shrink-0" />
+                  <span className="truncate">{language === 'ur' ? 'روم چھوٹا کریں' : 'Minimize Room'}</span>
+                </button>
+
+                {canModerateRoom && (
+                  <div className="mt-1 pt-1 border-t border-slate-700/70">
+                    <button
+                      type="button"
+                      onClick={() => setIsMoreSubmenuOpen(prev => !prev)}
+                      className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-[#F5D061] hover:bg-[#1E293B] cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Shield className="w-4 h-4 text-[#F5D061] shrink-0" />
+                        <span className="truncate">{language === 'ur' ? 'مزید کنٹرولز' : 'More'}</span>
+                      </span>
+                      <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isMoreSubmenuOpen ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {isMoreSubmenuOpen && (
+                      <div className="bg-[#090D16]/95 border-t border-slate-800 py-1 space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runDebouncedAction(() => {
+                              const res = updateChatRoomModeration({ chatLockMessages: !isGlobalTextLocked });
+                              if (!res.success && res.error) setChatError(res.error);
+                            })
+                          }
+                          className="w-full px-3.5 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            {isGlobalTextLocked ? (
+                              <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            ) : (
+                              <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            )}
+                            <span className="truncate">{language === 'ur' ? 'پیغامات لاک کریں' : 'Lock Messages'}</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold shrink-0 ${isGlobalTextLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                            {isGlobalTextLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runDebouncedAction(() => {
+                              const res = updateChatRoomModeration({ chatLockVoiceNotes: !isGlobalVoiceLocked });
+                              if (!res.success && res.error) setChatError(res.error);
+                            })
+                          }
+                          className="w-full px-3.5 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            {isGlobalVoiceLocked ? (
+                              <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            ) : (
+                              <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            )}
+                            <span className="truncate">{language === 'ur' ? 'وائس نوٹس لاک کریں' : 'Lock Voice Notes'}</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold shrink-0 ${isGlobalVoiceLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                            {isGlobalVoiceLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runDebouncedAction(() => {
+                              const res = updateChatRoomModeration({ chatLockFullRoom: !isGlobalFullLocked });
+                              if (!res.success && res.error) setChatError(res.error);
+                            })
+                          }
+                          className="w-full px-3.5 py-2 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200 hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            {isGlobalFullLocked ? (
+                              <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            ) : (
+                              <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            )}
+                            <span className="truncate">{language === 'ur' ? 'پورا روم لاک کریں' : 'Lock Full Room'}</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold shrink-0 ${isGlobalFullLocked ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                            {isGlobalFullLocked ? (language === 'ur' ? 'بند' : 'ON') : (language === 'ur' ? 'کھلا' : 'OFF')}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsChatMenuOpen(false);
+                            setIsMoreSubmenuOpen(false);
+                            setIsRoomMembersModalOpen(true);
+                          }}
+                          className="w-full px-3.5 py-2 flex items-center gap-2 text-[11px] font-extrabold text-[#38BDF8] hover:bg-[#1E293B] cursor-pointer"
+                        >
+                          <Users className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{language === 'ur' ? 'روم ممبران کنٹرول' : 'Room Members Control'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Offline Queue & Error Banners inside Full-Screen Chat */}
           {(!isOnline || queuedMessageCount > 0) && (
@@ -1484,7 +1494,7 @@ const ChatModuleContent: React.FC = () => {
           )}
 
           {/* Community Feed (Transparent over Scenic Wallpaper) */}
-          <div className="relative z-10 flex-1 min-h-0 overflow-y-auto bg-transparent p-3 sm:p-5 space-y-3.5">
+          <div className="relative z-10 flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden bg-transparent px-2.5 py-3 sm:p-5 space-y-3.5">
             {visibleCommunityMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div className="w-14 h-14 rounded-2xl bg-[#111622] border border-[#D4AF37]/40 flex items-center justify-center mb-3">
@@ -1564,7 +1574,7 @@ const ChatModuleContent: React.FC = () => {
                       ref={(el) => {
                         communityMessageRefs.current[msg.id] = el;
                       }}
-                      className={`flex items-start gap-2.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                      className={`flex items-start gap-2 w-full min-w-0 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                       {/* Sender Avatar (clicks to inspect profile) */}
                       <button
@@ -1604,8 +1614,8 @@ const ChatModuleContent: React.FC = () => {
                       </button>
 
                       {/* Message Bubble */}
-                      <div className={`flex flex-col max-w-[84%] sm:max-w-[74%] ${isMine ? 'items-end' : 'items-start'}`}>
-                        <div className={`rounded-2xl border px-3.5 py-2.5 text-xs text-[#F8FAFC] space-y-2 ${bubbleContainerClass}`}>
+                      <div className={`flex flex-col min-w-0 max-w-[calc(100%-2.75rem)] sm:max-w-[74%] ${isMine ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-full min-w-0 rounded-2xl border px-3 py-2.5 text-xs text-[#F8FAFC] space-y-2 ${bubbleContainerClass}`}>
                           {/* Wrapped Header: Name + RoleBadge + TabbarBadge */}
                           <div className="flex flex-wrap items-center gap-1.5">
                             {msgIsFounder && (
@@ -1681,7 +1691,7 @@ const ChatModuleContent: React.FC = () => {
 
                         {/* Text Content */}
                         {msg.text && !msg.islamicGifId && !msg.voiceNote && (
-                          <p className="leading-relaxed whitespace-pre-wrap break-words text-slate-100">
+                          <p className="leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-slate-100">
                             {msg.text}
                           </p>
                         )}
@@ -1735,7 +1745,7 @@ const ChatModuleContent: React.FC = () => {
                       </div>
 
                       {/* Message Moderation & Reply Actions */}
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1 px-1 text-[10px]">
+                      <div className={`flex flex-wrap items-center gap-1.5 mt-1 px-0.5 text-[10px] max-w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <button
                           type="button"
                           onClick={() =>

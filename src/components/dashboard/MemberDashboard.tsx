@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Coins,
@@ -15,9 +15,12 @@ import {
   XCircle,
   MessageSquare,
   MessageSquareWarning,
-  Users
+  Users,
+  FileCheck2,
+  HelpCircle,
+  AlertTriangle
 } from 'lucide-react';
-import { FundCategory, PaymentMethod, ComplaintCategory } from '../../types';
+import { FundCategory, FundTier, PaymentMethod, ComplaintCategory } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
 import { compressImageFile } from '../../utils/imageCompression';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
@@ -29,13 +32,22 @@ import { DastoorPaymentCalculator } from '../common/DastoorPaymentCalculator';
 import {
   DASTOOR_MONTHLY_RATE,
   calculateDastoorPeriod,
+  calculateSalanaPeriod,
   isFaizKhelUser,
 } from '../../utils/dastoor';
+import {
+  formatCnicDisplay,
+  isValid13DigitCnic,
+  getCnicLockAlertMessage,
+  normalizeCnicDigits,
+} from '../../utils/cnic';
+import { resolveReceiptFundTierLabel } from '../../utils/receiptExport';
 import { translate } from '../../data/translations';
 
 export const MemberDashboard: React.FC = () => {
   const {
     currentUser,
+    applications,
     payments,
     complaints,
     announcements,
@@ -46,25 +58,41 @@ export const MemberDashboard: React.FC = () => {
     setSelectedCardUser,
     setActiveTab,
     openCompleteProfileModal,
+    openRukniyatForm,
+    openTutorial,
     language
   } = useApp();
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<'DASTOOR' | 'OTHER'>('DASTOOR');
-  const [monthsCount, setMonthsCount] = useState<number>(1);
+  const [fundTier, setFundTier] = useState<FundTier>('MAHANA');
+  const [monthsCount, setMonthsCount] = useState<number>(2);
+  const [yearsCount, setYearsCount] = useState<number>(1);
   const [startMonth, setStartMonth] = useState<number>(() => new Date().getMonth());
   const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
   const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
+  const [payerCnic, setPayerCnic] = useState<string>(() =>
+    currentUser?.cnic ? formatCnicDisplay(currentUser.cnic) : ''
+  );
+  const [unit, setUnit] = useState<string>('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
   const [payReference, setPayReference] = useState('');
   const [payNote, setPayNote] = useState('');
   const [receiptImageUrl, setReceiptImageUrl] = useState('');
   const [receiptImageName, setReceiptImageName] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentSubmittedSuccess, setPaymentSubmittedSuccess] = useState(false);
+  const lastActionTsRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (currentUser?.cnic && !payerCnic) {
+      setPayerCnic(formatCnicDisplay(currentUser.cnic));
+    }
+  }, [currentUser?.cnic, payerCnic]);
 
   const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
   const [cmpCategory, setCmpCategory] = useState<ComplaintCategory>('Membership Card');
@@ -127,57 +155,121 @@ export const MemberDashboard: React.FC = () => {
     }
   };
 
-  const dastoorPeriod = calculateDastoorPeriod(startMonth, startYear, monthsCount);
-  const effectivePayAmount =
-    paymentMode === 'DASTOOR' ? dastoorPeriod.totalAmount : Math.round(Number(customPayAmount) || 0);
-  const isPayAmountValid =
-    paymentMode === 'DASTOOR'
-      ? dastoorPeriod.monthsCount >= 1 && dastoorPeriod.totalAmount > 0
-      : Boolean(customPayAmount.trim()) && Number.isFinite(Number(customPayAmount)) && Number(customPayAmount) > 0;
+  const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(2, monthsCount)));
+  const salanaPeriod = calculateSalanaPeriod(startMonth, startYear, Math.max(1, yearsCount));
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const effectivePayAmount =
+    fundTier === 'MAHANA'
+      ? mahanaPeriod.totalAmount
+      : fundTier === 'SALANA'
+      ? salanaPeriod.totalAmount
+      : Math.round(Number(customPayAmount) || 0);
+
+  const isCnicValid = isValid13DigitCnic(payerCnic);
+  const isPayAmountValid =
+    fundTier === 'MAHANA'
+      ? monthsCount >= 2 && monthsCount <= 11 && mahanaPeriod.totalAmount > 0
+      : fundTier === 'SALANA'
+      ? yearsCount >= 1 && salanaPeriod.totalAmount > 0
+      : Boolean(customPayAmount.trim()) && Number.isFinite(Number(customPayAmount)) && Number(customPayAmount) > 0;
+  const canSubmitPayment = isPayAmountValid && isCnicValid;
+
+  const currentUserCnicDigits = normalizeCnicDigits(currentUser.cnic);
+  const ownRukniyatApp = applications.find(
+    a =>
+      (a.email && currentUser.email && a.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (currentUserCnicDigits.length === 13 && normalizeCnicDigits(a.cnic) === currentUserCnicDigits) ||
+      (currentUser.membershipId && a.generatedMembershipId === currentUser.membershipId)
+  );
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = Date.now();
+    if (now - lastActionTsRef.current < 500 || isSubmittingPayment) return;
+    lastActionTsRef.current = now;
+
+    if (!isCnicValid) {
+      setPaymentError(getCnicLockAlertMessage(language));
+      return;
+    }
     if (!isPayAmountValid || effectivePayAmount <= 0) return;
 
-    const cleanRef =
-      payReference.trim() ||
-      `${payMethod.replace(/\s+/g, '').substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+    setPaymentError(null);
+    setIsSubmittingPayment(true);
+    try {
+      const cleanRef =
+        payReference.trim() ||
+        `${payMethod.replace(/\s+/g, '').substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
-    submitPayment({
-      amount: effectivePayAmount,
-      fundCategory: paymentMode === 'DASTOOR' ? 'Monthly Contribution' : payFund,
-      paymentMethod: payMethod,
-      referenceNumber: cleanRef,
-      proofNote: payNote.trim() || undefined,
-      receiptImageUrl: receiptImageUrl || undefined,
-      receiptImageName: receiptImageName || undefined,
-      paymentMode,
-      ...(paymentMode === 'DASTOOR'
-        ? {
-            monthsCount: dastoorPeriod.monthsCount,
-            ratePerMonth: DASTOOR_MONTHLY_RATE,
-            startMonth: dastoorPeriod.startMonth,
-            startYear: dastoorPeriod.startYear,
-            periodLabelEn: dastoorPeriod.periodLabelEn,
-            periodLabelUr: dastoorPeriod.periodLabelUr,
-          }
-        : {}),
-    });
+      const resolvedCategory: FundCategory =
+        fundTier === 'MAHANA'
+          ? 'Monthly Contribution'
+          : fundTier === 'SALANA'
+          ? 'Annual Welfare Fund'
+          : payFund || 'Emergency Relief';
 
-    setPaymentSubmittedSuccess(true);
-    setTimeout(() => {
-      setPaymentSubmittedSuccess(false);
-      setIsPaymentModalOpen(false);
-      setPaymentMode('DASTOOR');
-      setMonthsCount(1);
-      setStartMonth(new Date().getMonth());
-      setStartYear(new Date().getFullYear());
-      setCustomPayAmount('');
-      setPayReference('');
-      setPayNote('');
-      setReceiptImageUrl('');
-      setReceiptImageName('');
-    }, 1500);
+      const res = await submitPayment({
+        amount: effectivePayAmount,
+        fundCategory: resolvedCategory,
+        fundTier,
+        yearsCount: fundTier === 'SALANA' ? yearsCount : undefined,
+        unit: unit.trim() || undefined,
+        payerCnic: formatCnicDisplay(payerCnic),
+        paymentMethod: payMethod,
+        referenceNumber: cleanRef,
+        proofNote: payNote.trim() || undefined,
+        receiptImageUrl: receiptImageUrl || undefined,
+        receiptImageName: receiptImageName || undefined,
+        paymentMode: fundTier === 'HANGAMI' ? 'OTHER' : 'DASTOOR',
+        ...(fundTier === 'MAHANA'
+          ? {
+              monthsCount: mahanaPeriod.monthsCount,
+              ratePerMonth: DASTOOR_MONTHLY_RATE,
+              startMonth: mahanaPeriod.startMonth,
+              startYear: mahanaPeriod.startYear,
+              periodLabelEn: mahanaPeriod.periodLabelEn,
+              periodLabelUr: mahanaPeriod.periodLabelUr,
+            }
+          : fundTier === 'SALANA'
+          ? {
+              monthsCount: salanaPeriod.monthsCount,
+              ratePerMonth: DASTOOR_MONTHLY_RATE,
+              startMonth: salanaPeriod.startMonth,
+              startYear: salanaPeriod.startYear,
+              periodLabelEn: salanaPeriod.periodLabelEn,
+              periodLabelUr: salanaPeriod.periodLabelUr,
+            }
+          : {
+              periodLabelEn: 'ہنگامی فنڈ / Hangami Fund',
+              periodLabelUr: 'ہنگامی فنڈ / Hangami Fund',
+            }),
+      });
+
+      if (!res.success) {
+        setPaymentError(res.error || getCnicLockAlertMessage(language));
+        return;
+      }
+
+      setPaymentSubmittedSuccess(true);
+      setTimeout(() => {
+        setPaymentSubmittedSuccess(false);
+        setIsPaymentModalOpen(false);
+        setFundTier('MAHANA');
+        setMonthsCount(2);
+        setYearsCount(1);
+        setStartMonth(new Date().getMonth());
+        setStartYear(new Date().getFullYear());
+        setCustomPayAmount('');
+        setUnit('');
+        setPayReference('');
+        setPayNote('');
+        setReceiptImageUrl('');
+        setReceiptImageName('');
+        setPaymentError(null);
+      }, 1500);
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   const handleComplaintSubmit = (e: React.FormEvent) => {
@@ -227,6 +319,24 @@ export const MemberDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
+            onClick={() => openTutorial()}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/45 text-[#38BDF8] text-xs font-bold rounded-xl kc-pressable cursor-pointer"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>{language === 'ur' ? 'ایپ گائیڈ' : 'App Guide'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openRukniyatForm(ownRukniyatApp || null)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#022C22] hover:bg-[#064E3B] border border-[#D4AF37]/60 text-[#FEF08A] text-xs font-extrabold rounded-xl kc-pressable cursor-pointer"
+          >
+            <FileCheck2 className="w-4 h-4 text-[#FDE047]" />
+            <span>{language === 'ur' ? 'رکنیت فارم (Rukniyat Form)' : 'Rukniyat Form (رکنیت فارم)'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setSelectedCardUser(currentUser)}
             className="flex items-center gap-1.5 px-3.5 py-2 kc-obsidian-card hover:border-[#F5D061]/70 text-white text-xs font-bold rounded-xl kc-pressable cursor-pointer"
           >
@@ -253,11 +363,57 @@ export const MemberDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Rukniyat Form Status Banner / Quick Entry */}
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#022C22]/85 via-[#0F172A] to-[#131C31] border border-[#D4AF37]/45 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-[#070D14] border border-[#D4AF37]/60 flex items-center justify-center shrink-0">
+            <FileCheck2 className="w-5 h-5 text-[#FDE047]" />
+          </div>
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-xs sm:text-sm font-extrabold text-[#FEF08A]">
+                {language === 'ur'
+                  ? 'رکنیت فارم (سوئی خیل قومی اتحاد)'
+                  : 'Official Rukniyat Form (رکنیت فارم)'}
+              </h3>
+              {ownRukniyatApp?.serialNumber && (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#070D14] border border-[#D4AF37]/50 text-[#FDE047]">
+                  {ownRukniyatApp.serialNumber}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-300">
+              {ownRukniyatApp
+                ? ownRukniyatApp.status === 'ACTIVE'
+                  ? (language === 'ur'
+                      ? 'مبارک ہو! آپ کا رکنیت فارم مہر اور دستخط کے ساتھ منظور ہو چکا ہے۔'
+                      : 'Approved & Verified with Official Mohar Stamp.')
+                  : (language === 'ur'
+                      ? 'آپ کا رکنیت فارم جمع ہو چکا ہے اور ایڈمن منظوری کے لیے زیرِ التواء ہے۔'
+                      : 'Submitted · Pending Admin Approval.')
+                : (language === 'ur'
+                    ? '13 ہندسوں کے شناختی کارڈ اور عہد نامہ کے ساتھ اپنا دو لسانی رکنیت فارم مکمل کریں۔'
+                    : 'Submit your bilingual Rukniyat Form with mandatory 13-digit CNIC & oath signature.')}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => openRukniyatForm(ownRukniyatApp || null)}
+          className="kc-pressable kc-gold-button px-4 py-2 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer self-start sm:self-center"
+        >
+          {ownRukniyatApp
+            ? (language === 'ur' ? 'فارم و مہر دیکھیں' : 'View Form & Mohar')
+            : (language === 'ur' ? 'رکنیت فارم پُر کریں' : 'Fill Rukniyat Form')}
+        </button>
+      </div>
+
       {requiresProfileCompletion && (
         <ProfileCompletionGate featureName={language === 'ur' ? 'ادائیگی، لائیو چیٹ اور شکایات' : 'payments, Live Chat & complaints'} />
       )}
 
-      {/* Apollo Telenor-style Quick Action Cards */}
+      {/* Quick Action Cards */}
       {vis.showQuickActions && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {allowPayments && (
@@ -553,10 +709,10 @@ export const MemberDashboard: React.FC = () => {
             <tbody className="divide-y divide-[#D4AF37]/10">
               {ownPayments.map(tx => (
                 <tr key={tx.id} className="hover:bg-[#1A233A]/55 transition-colors">
-                  <td className="py-2.5 px-3 font-mono font-bold text-white">{tx.receiptNumber}</td>
+                  <td className="py-2.5 px-3 font-mono font-bold text-[#F5D061]">{tx.serialNumber || tx.receiptNumber}</td>
                   <td className="py-2.5 px-3 font-mono tabular-nums text-slate-400">{tx.date}</td>
                   <td className="py-2.5 px-3 text-emerald-300 font-medium">
-                    <div>{tx.fundCategory}</div>
+                    <div>{language === 'ur' ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}</div>
                     {(tx.periodLabelUr || tx.periodLabelEn) && (
                       <div className="text-[10px] text-[#F5D061] font-semibold">
                         {language === 'ur' ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
@@ -740,10 +896,12 @@ export const MemberDashboard: React.FC = () => {
                 <DastoorPaymentCalculator
                   compact
                   language={language}
-                  paymentMode={paymentMode}
-                  onPaymentModeChange={setPaymentMode}
+                  fundTier={fundTier}
+                  onFundTierChange={setFundTier}
                   monthsCount={monthsCount}
                   onMonthsCountChange={setMonthsCount}
+                  yearsCount={yearsCount}
+                  onYearsCountChange={setYearsCount}
                   startMonth={startMonth}
                   onStartMonthChange={setStartMonth}
                   startYear={startYear}
@@ -752,6 +910,10 @@ export const MemberDashboard: React.FC = () => {
                   onCustomAmountChange={setCustomPayAmount}
                   fundCategory={payFund}
                   onFundCategoryChange={setPayFund}
+                  payerCnic={payerCnic}
+                  onPayerCnicChange={setPayerCnic}
+                  unit={unit}
+                  onUnitChange={setUnit}
                   contactHelpline={appSettings.contactHelpline}
                 />
 
@@ -820,17 +982,28 @@ export const MemberDashboard: React.FC = () => {
                   />
                 </div>
 
+                {paymentError && (
+                  <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>{paymentError}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
                   <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                     {translate(language, 'cancel')}
                   </button>
                   <button
                     type="submit"
-                    disabled={!isPayAmountValid || isCompressing}
+                    disabled={!canSubmitPayment || isCompressing || isSubmittingPayment}
                     className="flex items-center gap-1.5 px-4 py-2 kc-gold-button disabled:opacity-45 text-xs font-extrabold rounded-xl cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{translate(language, 'actionPayFunds')} (PKR {effectivePayAmount.toLocaleString()})</span>
+                    <span>
+                      {isSubmittingPayment
+                        ? (language === 'ur' ? 'جمع ہو رہا ہے...' : 'Submitting...')
+                        : `${translate(language, 'actionPayFunds')} (PKR ${effectivePayAmount.toLocaleString()})`}
+                    </span>
                   </button>
                 </div>
               </form>

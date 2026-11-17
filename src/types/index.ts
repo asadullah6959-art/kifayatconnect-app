@@ -48,6 +48,8 @@ export type FundCategory =
   | 'Emergency Relief' 
   | 'Zakat & Sadqah';
 
+export type FundTier = 'MAHANA' | 'SALANA' | 'HANGAMI';
+
 export type PaymentMethod = 
   | 'EasyPaisa' 
   | 'JazzCash' 
@@ -142,9 +144,12 @@ export interface User {
 export interface PaymentTransaction {
   id: string;
   receiptNumber: string;
+  serialNumber?: string;
   userId: string;
   userName: string;
   userMembershipId: string;
+  payerCnic?: string;
+  unit?: string;
   userTabbarId?: string;
   userTabbarEnglish?: string;
   userTabbarUrdu?: string;
@@ -155,8 +160,10 @@ export interface PaymentTransaction {
   cityTown?: string;
   unionCouncil?: string;
   amount: number;
+  fundTier?: FundTier;
   paymentMode?: 'DASTOOR' | 'OTHER';
   monthsCount?: number;
+  yearsCount?: number;
   ratePerMonth?: number;
   startMonth?: number;
   startYear?: number;
@@ -173,15 +180,29 @@ export interface PaymentTransaction {
   proofNote?: string;
   receiptImageUrl?: string;
   receiptImageName?: string;
+  isOldPaperRecord?: boolean;
+  oldReceiptSerialNo?: string;
+  oldMembershipNo?: string;
   userRegion?: string; // Legacy fallback
 }
 
 export interface MembershipApplication {
   id: string;
+  serialNumber?: string;
   applicantName: string;
+  fatherName?: string;
   email: string;
   phone: string;
   cnic: string;
+  education?: string;
+  experience?: string;
+  profession?: string;
+  maritalStatus?: string;
+  currentArea?: string;
+  ancestralArea?: string;
+  dob?: string;
+  age?: string;
+  unit?: string;
   country: string;
   stateProvince: string;
   district: string;
@@ -189,9 +210,22 @@ export interface MembershipApplication {
   cityTown: string;
   unionCouncil: string;
   address: string;
+  permanentAddress?: string;
   tabbarId?: string;
   tabbarUrdu?: string;
   tabbarEnglish?: string;
+  subBranch?: string;
+  tabarRepName?: string;
+  tabarRepSignature?: string;
+  applicantPhotoUrl?: string;
+  applicantSignature?: string;
+  monthlyPledgeAmount?: number;
+  formFeeAmount?: number;
+  officeSecretarySignature?: string;
+  presidentSignature?: string;
+  isRukniyatForm?: boolean;
+  isOldPaperRecord?: boolean;
+  paperFormPhotoUrl?: string;
   submittedAt: string;
   status: MembershipStatus;
   isOldMemberVerification: boolean;

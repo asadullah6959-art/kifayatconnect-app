@@ -14,7 +14,9 @@ import {
   MessageSquare,
   Award,
   Crown,
-  X
+  X,
+  FileCheck2,
+  HelpCircle
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 import { BrandEmblem3D } from './BrandEmblem3D';
@@ -39,7 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     chats,
     language,
     appSettings,
-    setSelectedCardUser
+    setSelectedCardUser,
+    openRukniyatForm,
+    openTutorial
   } = useApp();
 
   if (!currentUser) return null;
@@ -111,6 +115,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       id: 'digital-card',
       label: translate(language, 'viewDigitalId'),
       icon: IdCard,
+      visible: true
+    },
+    {
+      id: 'rukn-form',
+      label: translate(language, 'navRukniyatForm'),
+      icon: FileCheck2,
+      visible: true
+    },
+    {
+      id: 'member-guide',
+      label: translate(language, 'navMemberGuide'),
+      icon: HelpCircle,
       visible: true
     },
     {
@@ -218,6 +234,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
               onClick={() => {
                 if (item.id === 'digital-card') {
                   setSelectedCardUser(currentUser);
+                } else if (item.id === 'rukn-form') {
+                  openRukniyatForm();
+                } else if (item.id === 'member-guide') {
+                  openTutorial();
                 } else {
                   setActiveTab(item.id);
                 }

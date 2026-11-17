@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   CheckSquare, 
@@ -14,7 +14,9 @@ import {
   Paperclip,
   FileText,
   FileCheck,
-  Eye
+  Eye,
+  FilePlus2,
+  FileCheck2
 } from 'lucide-react';
 import { MembershipApplication } from '../../types';
 import { 
@@ -25,6 +27,7 @@ import {
   mapLegacyRegionToHierarchy 
 } from '../../data/locationData';
 import { DocumentUploadModal } from './DocumentUploadModal';
+import { OldPaperRecordModal } from './OldPaperRecordModal';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { TabbarBadge } from '../common/TabbarBadge';
 
@@ -35,6 +38,7 @@ export const ApprovalWorkflow: React.FC = () => {
     recommendApplication, 
     finalApproveApplication, 
     rejectApplication,
+    openRukniyatForm,
     language 
   } = useApp();
   const isUr = language === 'ur';
@@ -48,6 +52,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
   const [filterProvince, setFilterProvince] = useState<string>('ALL');
   const [filterDistrict, setFilterDistrict] = useState<string>('ALL');
+  const [isOldPaperModalOpen, setIsOldPaperModalOpen] = useState(false);
 
   // Recommendation interaction state (District Admin)
   const [reviewingApp, setReviewingApp] = useState<MembershipApplication | null>(null);
@@ -57,6 +62,7 @@ export const ApprovalWorkflow: React.FC = () => {
   // Final Approval interaction state (Super Admin)
   const [finalApprovingApp, setFinalApprovingApp] = useState<MembershipApplication | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [isSubmittingDecision, setIsSubmittingDecision] = useState(false);
 
   // Supporting Documents Dossier modal state
   const [activeDocAppId, setActiveDocAppId] = useState<string | null>(null);
@@ -66,6 +72,7 @@ export const ApprovalWorkflow: React.FC = () => {
   const [bulkAction, setBulkAction] = useState<'APPROVE' | 'REJECT' | null>(null);
   const [bulkRemarks, setBulkRemarks] = useState('');
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+  const lastActionTsRef = useRef<number>(0);
 
   if (!currentUser) return null;
 
@@ -140,20 +147,34 @@ export const ApprovalWorkflow: React.FC = () => {
   };
 
   const handleRegionalSubmit = () => {
+    const now = Date.now();
+    if (now - lastActionTsRef.current < 500 || isSubmittingDecision) return;
+    lastActionTsRef.current = now;
     if (!reviewingApp || !regionalNotes.trim()) return;
     recommendApplication(reviewingApp.id, recommendationChoice, regionalNotes.trim());
     setReviewingApp(null);
     setRegionalNotes('');
   };
 
-  const handleSuperAdminFinalSubmit = () => {
+  const handleSuperAdminFinalSubmit = async () => {
+    const now = Date.now();
+    if (now - lastActionTsRef.current < 500 || isSubmittingDecision) return;
+    lastActionTsRef.current = now;
     if (!finalApprovingApp) return;
-    finalApproveApplication(finalApprovingApp.id, adminNotes.trim() || undefined);
-    setFinalApprovingApp(null);
-    setAdminNotes('');
+    setIsSubmittingDecision(true);
+    try {
+      await finalApproveApplication(finalApprovingApp.id, adminNotes.trim() || undefined);
+      setFinalApprovingApp(null);
+      setAdminNotes('');
+    } finally {
+      setIsSubmittingDecision(false);
+    }
   };
 
   const handleBulkSubmit = async () => {
+    const now = Date.now();
+    if (now - lastActionTsRef.current < 500 || isProcessingBulk) return;
+    lastActionTsRef.current = now;
     if (!bulkAction || selectedIds.length === 0) return;
     setIsProcessingBulk(true);
 
@@ -234,26 +255,43 @@ export const ApprovalWorkflow: React.FC = () => {
           </p>
         </div>
 
-        {/* Workflow Diagram Banner */}
-        <div className="hidden lg:flex items-center gap-2 bg-[#111726] p-2.5 rounded-xl border border-[#D4AF37]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
-          <div className="flex items-center gap-1.5 font-medium text-slate-200">
-            <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">1</span>
-            <span>{isUr ? 'رجسٹریشن' : 'Registration'}</span>
-          </div>
-          <span className="text-[#D4AF37]/60">→</span>
-          <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-[#F5D061] font-bold' : 'text-slate-300'}`}>
-            <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">2</span>
-            <span>{isUr ? 'ضلعی تصدیق' : 'District Verify'}</span>
-          </div>
-          <span className="text-[#D4AF37]/60">→</span>
-          <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-[#38BDF8] font-bold' : 'text-slate-300'}`}>
-            <span className="w-5 h-5 rounded-full bg-[#131C31] border border-[#38BDF8]/45 text-[#38BDF8] flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
-            <span>{isUr ? 'سپر ایڈمن دستخط' : 'Super Admin Sign'}</span>
-          </div>
-          <span className="text-[#D4AF37]/60">→</span>
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-slate-200 flex items-center justify-center text-[10px] font-bold tabular-nums">4</span>
-            <span>{isUr ? 'آئی ڈی کارڈ جاری' : 'ID Card Issued'}</span>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsOldPaperModalOpen(true)}
+              className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#064E3B]/80 hover:bg-[#065F46] text-[#FEF08A] border border-[#D4AF37]/60 text-xs font-bold rounded-xl cursor-pointer"
+            >
+              <FilePlus2 className="w-4 h-4 text-[#FDE047]" />
+              <span>
+                {isUr
+                  ? '+ پرانا دستی ریکارڈ شامل کریں'
+                  : '+ Add Old / By-Hand Record (پرانا دستی ریکارڈ شامل کریں)'}
+              </span>
+            </button>
+          )}
+
+          {/* Workflow Diagram Banner */}
+          <div className="hidden lg:flex items-center gap-2 bg-[#111726] p-2.5 rounded-xl border border-[#D4AF37]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
+            <div className="flex items-center gap-1.5 font-medium text-slate-200">
+              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">1</span>
+              <span>{isUr ? 'رجسٹریشن' : 'Registration'}</span>
+            </div>
+            <span className="text-[#D4AF37]/60">→</span>
+            <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-[#F5D061] font-bold' : 'text-slate-300'}`}>
+              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">2</span>
+              <span>{isUr ? 'ضلعی تصدیق' : 'District Verify'}</span>
+            </div>
+            <span className="text-[#D4AF37]/60">→</span>
+            <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-[#38BDF8] font-bold' : 'text-slate-300'}`}>
+              <span className="w-5 h-5 rounded-full bg-[#131C31] border border-[#38BDF8]/45 text-[#38BDF8] flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
+              <span>{isUr ? 'سپر ایڈمن دستخط' : 'Super Admin Sign'}</span>
+            </div>
+            <span className="text-[#D4AF37]/60">→</span>
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-slate-200 flex items-center justify-center text-[10px] font-bold tabular-nums">4</span>
+              <span>{isUr ? 'آئی ڈی کارڈ جاری' : 'ID Card Issued'}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -430,6 +468,11 @@ export const ApprovalWorkflow: React.FC = () => {
                         <h3 className="font-bold text-base text-white">
                           {app.applicantName}
                         </h3>
+                        {app.serialNumber && (
+                          <span className="text-[10px] font-mono font-extrabold text-[#FDE047] bg-[#070D14] px-2 py-0.5 rounded-lg border border-[#D4AF37]/50">
+                            {app.serialNumber}
+                          </span>
+                        )}
                         <TabbarBadge
                           tabbarId={app.tabbarId}
                           tabbarEnglish={app.tabbarEnglish}
@@ -584,6 +627,15 @@ export const ApprovalWorkflow: React.FC = () => {
 
                     {/* Action Buttons depending on role & status */}
                     <div className="pt-2 flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openRukniyatForm(app)}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-[#022C22]/80 hover:bg-[#064E3B] text-[#FEF08A] border border-[#D4AF37]/50 cursor-pointer kc-pressable"
+                      >
+                        <FileCheck2 className="w-3.5 h-3.5 text-[#FDE047]" />
+                        <span>{isUr ? 'مکمل رکنیت فارم / مہر دیکھیں' : 'View Full Rukniyat Form / Mohar'}</span>
+                      </button>
+
                       {/* District Admin Action (Stage 1) */}
                       {isDistrictAdmin && ((app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW') && (
                         <button
@@ -600,10 +652,15 @@ export const ApprovalWorkflow: React.FC = () => {
                       )}
 
                       {/* Super Admin Action (Stage 2) */}
-                      {isSuperAdmin && ((app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT') && (
+                      {isSuperAdmin && ((app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT' || (app.status as any) === 'PENDING_REGIONAL_REVIEW' || (app.status as any) === 'PENDING_DISTRICT_REVIEW') && (
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => rejectApplication(app.id, isUr ? 'مرکزی قواعد و ضوابط پر پورا نہیں اترتی۔' : 'Does not satisfy central bylaws criteria.')}
+                            onClick={() => {
+                              const now = Date.now();
+                              if (now - lastActionTsRef.current < 500) return;
+                              lastActionTsRef.current = now;
+                              rejectApplication(app.id, isUr ? 'مرکزی قواعد و ضوابط پر پورا نہیں اترتی۔' : 'Does not satisfy central bylaws criteria.');
+                            }}
                             className="px-3.5 py-2 text-xs font-semibold text-rose-300 bg-rose-950/60 hover:bg-rose-900/70 rounded-xl border border-rose-500/40 cursor-pointer kc-pressable"
                           >
                             {isUr ? 'درخواست مسترد کریں' : 'Reject Application'}
@@ -1025,6 +1082,13 @@ export const ApprovalWorkflow: React.FC = () => {
           />
         );
       })()}
+
+      {isSuperAdmin && (
+        <OldPaperRecordModal
+          isOpen={isOldPaperModalOpen}
+          onClose={() => setIsOldPaperModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

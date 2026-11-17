@@ -2,6 +2,10 @@ import type { User } from '../types';
 import { resolveUserTabbar } from '../data/tabbars';
 
 export const DASTOOR_MONTHLY_RATE = 100;
+export const SALANA_ANNUAL_RATE = 1200;
+
+export const MAHANA_QUICK_MONTHS = [2, 3, 4, 6, 9, 11] as const;
+export const SALANA_QUICK_YEARS = [1, 2, 3, 5, 10] as const;
 
 export interface DastoorPreset {
   months: number;
@@ -11,11 +15,11 @@ export interface DastoorPreset {
 }
 
 export const DASTOOR_QUICK_PRESETS: DastoorPreset[] = [
-  { months: 1, amount: 100, labelEn: '1 Month', labelUr: '۱ مہینہ' },
+  { months: 2, amount: 200, labelEn: '2 Months', labelUr: '۲ مہینے' },
   { months: 3, amount: 300, labelEn: '3 Months', labelUr: '۳ مہینے' },
   { months: 6, amount: 600, labelEn: '6 Months', labelUr: '۶ مہینے' },
-  { months: 12, amount: 1200, labelEn: '1 Year (12M)', labelUr: '۱ سال (۱۲ مہینے)' },
-  { months: 60, amount: 6000, labelEn: '5 Years (60M)', labelUr: '۵ سال (۶۰ مہینے)' },
+  { months: 9, amount: 900, labelEn: '9 Months', labelUr: '۹ مہینے' },
+  { months: 11, amount: 1100, labelEn: '11 Months', labelUr: '۱۱ مہینے' },
 ];
 
 export interface MonthOption {
@@ -89,6 +93,50 @@ export function calculateDastoorPeriod(
   return {
     monthsCount: safeMonths,
     totalAmount: safeMonths * DASTOOR_MONTHLY_RATE,
+    startMonth: safeStartMonth,
+    startYear,
+    endMonth,
+    endYear,
+    periodLabelEn,
+    periodLabelUr,
+  };
+}
+
+export interface SalanaPeriodResult {
+  yearsCount: number;
+  monthsCount: number;
+  totalAmount: number;
+  startMonth: number;
+  startYear: number;
+  endMonth: number;
+  endYear: number;
+  periodLabelEn: string;
+  periodLabelUr: string;
+}
+
+export function calculateSalanaPeriod(
+  startMonthIndex: number,
+  startYear: number,
+  rawYearsCount: number
+): SalanaPeriodResult {
+  const safeYears = Math.max(1, Math.min(50, Math.floor(rawYearsCount || 1)));
+  const monthsCount = safeYears * 12;
+  const safeStartMonth = ((Math.floor(startMonthIndex) % 12) + 12) % 12;
+  const totalStartMonths = startYear * 12 + safeStartMonth;
+  const totalEndMonths = totalStartMonths + monthsCount - 1;
+  const endYear = Math.floor(totalEndMonths / 12);
+  const endMonth = totalEndMonths % 12;
+
+  const startOpt = MONTH_OPTIONS[safeStartMonth];
+  const endOpt = MONTH_OPTIONS[endMonth];
+
+  const periodLabelEn = `${safeYears} ${safeYears === 1 ? 'Year' : 'Years'} (${monthsCount}M): ${startOpt.shortEn} ${startYear} – ${endOpt.shortEn} ${endYear}`;
+  const periodLabelUr = `${toUrduDigits(safeYears)} ${safeYears === 1 ? 'سال' : 'سال'} (${toUrduDigits(monthsCount)} مہینے): ${startOpt.fullUr} ${toUrduDigits(startYear)} تا ${endOpt.fullUr} ${toUrduDigits(endYear)}`;
+
+  return {
+    yearsCount: safeYears,
+    monthsCount,
+    totalAmount: safeYears * SALANA_ANNUAL_RATE,
     startMonth: safeStartMonth,
     startYear,
     endMonth,

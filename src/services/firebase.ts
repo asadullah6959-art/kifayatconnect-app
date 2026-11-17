@@ -29,6 +29,7 @@ import {
   query,
   where,
   orderBy,
+  runTransaction,
   serverTimestamp,
   Unsubscribe
 } from 'firebase/firestore';
@@ -1414,6 +1415,60 @@ export async function fetchAllUsersFromFirestore(): Promise<User[]> {
   } catch (err) {
     console.warn('Firestore users directory fetch warning:', err);
     return [];
+  }
+}
+
+export async function generateAtomicSerialNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterDocId = `serial_kc_${year}`;
+  const localKey = `kc_local_serial_counter_${year}`;
+  const formatSerial = (num: number): string => `KC-${year}-${String(num).padStart(4, '0')}`;
+
+  try {
+    await tryEnsureSessionBestEffort();
+    const counterRef = doc(db, 'counters', counterDocId);
+    const txPromise = runTransaction(db, async (tx) => {
+      const snap = await tx.get(counterRef);
+      const nowIso = new Date().toISOString();
+      if (!snap.exists()) {
+        const seq = 1;
+        const serial = formatSerial(seq);
+        tx.set(counterRef, {
+          id: counterDocId,
+          year,
+          nextNumber: 2,
+          lastSerial: serial,
+          updatedAt: nowIso
+        });
+        return { seq, serial };
+      }
+      const data = snap.data() as { nextNumber?: number };
+      const currentNext = Number(data?.nextNumber);
+      const seq = Number.isFinite(currentNext) && currentNext >= 2 ? Math.floor(currentNext) : 2;
+      const serial = formatSerial(seq);
+      tx.update(counterRef, {
+        nextNumber: seq + 1,
+        lastSerial: serial,
+        updatedAt: nowIso
+      });
+      return { seq, serial };
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Counter transaction timeout')), 5500);
+    });
+
+    const result = await Promise.race([txPromise, timeoutPromise]);
+    const localStored = Number(safeGetItem(localKey) || '1');
+    const nextLocal = Math.max(Number.isFinite(localStored) ? localStored : 1, result.seq + 1);
+    safeSetItem(localKey, String(nextLocal));
+    return result.serial;
+  } catch (err) {
+    console.warn('Atomic Firestore counter fallback to local monotonic sequence:', err);
+    const rawLocal = Number(safeGetItem(localKey) || '1');
+    const seq = Number.isFinite(rawLocal) && rawLocal >= 1 ? Math.floor(rawLocal) : 1;
+    safeSetItem(localKey, String(seq + 1));
+    return formatSerial(seq);
   }
 }
 

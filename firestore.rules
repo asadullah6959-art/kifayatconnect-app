@@ -253,5 +253,27 @@ service cloud.firestore {
       allow create, update: if isValidId(notificationId) && isValidNotification(incoming());
       allow delete: if true;
     }
+
+    // 12. Atomic Monotonic Serial Number Counters (KC-YYYY-XXXX)
+    function isValidCounter(data) {
+      return data.keys().hasAll(['id', 'year', 'nextNumber']) &&
+        data.keys().hasOnly(['id', 'year', 'nextNumber', 'lastSerial', 'updatedAt']) &&
+        data.id is string && isValidId(data.id) &&
+        data.year is number && data.year >= 2024 && data.year <= 2100 &&
+        data.nextNumber is number && data.nextNumber >= 2 && data.nextNumber <= 9999999 &&
+        (!('lastSerial' in data) || (data.lastSerial is string && data.lastSerial.size() <= 40)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    match /counters/{counterId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isValidId(counterId) && isValidCounter(incoming()) && incoming().nextNumber == 2;
+      allow update: if isValidId(counterId) && isValidCounter(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().year == existing().year &&
+        incoming().nextNumber == existing().nextNumber + 1;
+      allow delete: if false;
+    }
   }
 }

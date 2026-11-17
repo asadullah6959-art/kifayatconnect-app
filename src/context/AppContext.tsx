@@ -12,6 +12,7 @@ import {
   RolePermissions,
   MembershipApplication, 
   PaymentTransaction, 
+  FundTier,
   Complaint, 
   Announcement,
   AnnouncementType,
@@ -61,6 +62,7 @@ import {
   fetchAllUsersFromFirestore,
   saveApplicationToFirestore,
   savePaymentToFirestore,
+  generateAtomicSerialNumber,
   saveComplaintToFirestore,
   saveAnnouncementToFirestore,
   deleteAnnouncementFromFirestore,
@@ -108,6 +110,7 @@ import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
 import { shareKifayatForIphone } from '../utils/iphoneShare';
 import { isFounderIdentity, isChatModerator } from '../utils/permissions';
+import { isValid13DigitCnic, formatCnicDisplay, getCnicLockAlertMessage, normalizeCnicDigits } from '../utils/cnic';
 
 const STORAGE_KEYS = {
   USERS: 'kifayat_users_v3',
@@ -404,6 +407,15 @@ interface AppContextType {
   openCompleteProfileModal: () => void;
   closeCompleteProfileModal: () => void;
 
+  // Rukniyat Form Modal & Member Tutorial Modal Triggers
+  isRukniyatFormOpen: boolean;
+  inspectedRukniyatApp: MembershipApplication | null;
+  openRukniyatForm: (inspectApp?: MembershipApplication | null) => void;
+  closeRukniyatForm: () => void;
+  isTutorialOpen: boolean;
+  openTutorial: () => void;
+  closeTutorial: () => void;
+
   // Live Chat Window Display Mode (Full / Minimized Bubble / Hidden)
   liveChatDisplayMode: 'FULL' | 'MINIMIZED' | 'HIDDEN';
   unreadCommunityCount: number;
@@ -424,8 +436,71 @@ interface AppContextType {
 
   // Workflows
   recommendApplication: (appId: string, recommendation: 'APPROVE' | 'REJECT', remarks: string) => void;
-  finalApproveApplication: (appId: string, remarks?: string) => void;
+  finalApproveApplication: (
+    appId: string,
+    remarks?: string,
+    officeData?: {
+      formFeeAmount?: number;
+      officeSecretarySignature?: string;
+      presidentSignature?: string;
+    }
+  ) => Promise<void> | void;
   rejectApplication: (appId: string, remarks: string) => void;
+  submitRukniyatForm: (payload: {
+    applicantName: string;
+    fatherName: string;
+    phone: string;
+    email?: string;
+    education?: string;
+    experience?: string;
+    profession?: string;
+    maritalStatus?: string;
+    currentArea?: string;
+    ancestralArea?: string;
+    dob?: string;
+    age?: string;
+    cnic: string;
+    unit?: string;
+    country?: string;
+    stateProvince: string;
+    district: string;
+    tehsil?: string;
+    cityTown?: string;
+    unionCouncil?: string;
+    tabbarId?: string;
+    tabbarUrdu?: string;
+    tabbarEnglish?: string;
+    subBranch?: string;
+    tabarRepName?: string;
+    tabarRepSignature?: string;
+    address: string;
+    permanentAddress?: string;
+    applicantPhotoUrl?: string;
+    applicantSignature?: string;
+    monthlyPledgeAmount?: number;
+    isOldMemberVerification?: boolean;
+    oldMembershipNo?: string;
+  }) => Promise<{ success: boolean; serialNumber?: string; application?: MembershipApplication; error?: string }>;
+  createOldPaperRecord: (data: {
+    oldMembershipNo?: string;
+    oldReceiptSerialNo?: string;
+    date: string;
+    applicantName: string;
+    fatherName?: string;
+    cnic: string;
+    tabbarId?: string;
+    tabbarUrdu?: string;
+    tabbarEnglish?: string;
+    amount: number;
+    fundTier?: FundTier;
+    unit?: string;
+    phone?: string;
+    email?: string;
+    stateProvince?: string;
+    district?: string;
+    address?: string;
+    paperFormPhotoUrl?: string;
+  }) => Promise<{ success: boolean; serialNumber?: string; error?: string }>;
   attachDocumentToApplication: (appId: string, doc: { 
     name: string; 
     type: SupportingDocumentType; 
@@ -459,6 +534,10 @@ interface AppContextType {
   submitPayment: (data: {
     amount: number;
     fundCategory: any;
+    fundTier?: FundTier;
+    yearsCount?: number;
+    unit?: string;
+    payerCnic?: string;
     paymentMethod: any;
     referenceNumber: string;
     proofNote?: string;
@@ -471,7 +550,7 @@ interface AppContextType {
     startYear?: number;
     periodLabelEn?: string;
     periodLabelUr?: string;
-  }) => void;
+  }) => Promise<{ success: boolean; transaction?: PaymentTransaction; error?: string }>;
   verifyPayment: (txId: string, approved: boolean, reason?: string) => void;
   submitComplaint: (data: {
     category: any;
@@ -774,11 +853,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(0);
   const lastSeenCommunityIdsRef = useRef<Set<string> | null>(null);
   const [isCompleteProfileModalOpen, setIsCompleteProfileModalOpen] = useState<boolean>(false);
+  const [isRukniyatFormOpen, setIsRukniyatFormOpen] = useState<boolean>(false);
+  const [inspectedRukniyatApp, setInspectedRukniyatApp] = useState<MembershipApplication | null>(null);
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
   const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null);
   const [memberDirectoryFilter, setMemberDirectoryFilter] = useState<'ALL' | 'PENDING_APPROVAL'>('ALL');
 
   const openCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(true), []);
   const closeCompleteProfileModal = useCallback(() => setIsCompleteProfileModalOpen(false), []);
+  const openRukniyatForm = useCallback((inspectApp?: MembershipApplication | null) => {
+    setInspectedRukniyatApp(inspectApp || null);
+    setIsRukniyatFormOpen(true);
+  }, []);
+  const closeRukniyatForm = useCallback(() => {
+    setIsRukniyatFormOpen(false);
+    setInspectedRukniyatApp(null);
+  }, []);
+  const openTutorial = useCallback(() => setIsTutorialOpen(true), []);
+  const closeTutorial = useCallback(() => {
+    if (currentUserId) {
+      safeSetItem(`kc_tutorial_seen_${currentUserId}`, 'true');
+    }
+    setIsTutorialOpen(false);
+  }, [currentUserId]);
+
+  // Auto-open Member Tutorial once for newly signed-in Members (dismissible in 1 click)
+  useEffect(() => {
+    if (!currentUserState) return;
+    if (currentUserState.role !== 'MEMBER') return;
+    if (!currentUserState.profileCompleted) return;
+    const seenKey = `kc_tutorial_seen_${currentUserState.id}`;
+    if (!safeGetItem(seenKey)) {
+      const id = window.setTimeout(() => {
+        setIsTutorialOpen(true);
+      }, 650);
+      return () => window.clearTimeout(id);
+    }
+  }, [currentUserState]);
 
   const setActiveTab = useCallback((tab: string) => {
     if (tab !== 'chat') {
@@ -2240,20 +2351,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Workflow 2: Super Admin Final Approval
-  const finalApproveApplication = (appId: string, remarks?: string) => {
-    if (!currentUser) return;
+  // Workflow 2: Super Admin Final Approval (with Atomic Matching Serial & Official Notification)
+  const finalApproveApplication = async (
+    appId: string,
+    remarks?: string,
+    officeData?: {
+      formFeeAmount?: number;
+      officeSecretarySignature?: string;
+      presidentSignature?: string;
+    }
+  ) => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
     const targetApp = applications.find(a => a.id === appId);
     if (!targetApp) return;
 
-    const newMembershipId = `KC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const matchedSerial =
+      targetApp.serialNumber ||
+      targetApp.generatedMembershipId ||
+      (await generateAtomicSerialNumber());
 
     const updatedApp: MembershipApplication = {
       ...targetApp,
+      serialNumber: matchedSerial,
       status: 'ACTIVE',
       superAdminRemarks: remarks || 'Final approval granted under Kifayat Connect bylaws.',
       superAdminApprovedAt: new Date().toISOString(),
-      generatedMembershipId: newMembershipId
+      generatedMembershipId: matchedSerial,
+      formFeeAmount: officeData?.formFeeAmount ?? targetApp.formFeeAmount,
+      officeSecretarySignature: officeData?.officeSecretarySignature || targetApp.officeSecretarySignature,
+      presidentSignature: officeData?.presidentSignature || targetApp.presidentSignature
     };
 
     setApplications(prev => prev.map(app => app.id === appId ? updatedApp : app));
@@ -2262,9 +2388,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 3);
 
-    const existingMember = users.find(u => u.email.toLowerCase() === targetApp.email.toLowerCase());
+    const normEmail = (targetApp.email || '').trim().toLowerCase();
+    const normAppCnic = normalizeCnicDigits(targetApp.cnic);
+    const existingMember = users.find(u =>
+      (normEmail && u.email?.trim().toLowerCase() === normEmail) ||
+      (normAppCnic.length === 13 && normalizeCnicDigits(u.cnic) === normAppCnic)
+    );
+    let targetNotifUserId = existingMember?.id;
+
     if (existingMember) {
-      const updatedMember: User = {
+      const updatedMember: User = normalizeUserRecord({
         ...existingMember,
         name: targetApp.applicantName || existingMember.name,
         phone: targetApp.phone || existingMember.phone,
@@ -2276,43 +2409,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cityTown: targetApp.cityTown || existingMember.cityTown,
         unionCouncil: targetApp.unionCouncil || existingMember.unionCouncil,
         address: targetApp.address || existingMember.address,
-        membershipId: existingMember.membershipId || newMembershipId,
+        tabbarId: targetApp.tabbarId || existingMember.tabbarId,
+        tabbarUrdu: targetApp.tabbarUrdu || existingMember.tabbarUrdu,
+        tabbarEnglish: targetApp.tabbarEnglish || existingMember.tabbarEnglish,
+        monthlyPledge: targetApp.monthlyPledgeAmount || existingMember.monthlyPledge,
+        membershipId: matchedSerial,
+        memberId: matchedSerial,
         membershipStatus: 'ACTIVE',
         verificationStatus: 'VERIFIED',
+        approvalStatus: 'approved',
+        status: 'approved',
+        approvedBy: currentUser.name,
+        approvedAt: new Date().toISOString(),
         validUntil: exp.toISOString().split('T')[0]
-      };
+      });
       setUsers(prev => prev.map(u => u.id === existingMember.id ? updatedMember : u));
       saveUserToFirestore(updatedMember).catch(() => {});
     } else {
-      const newMemberUser: User = {
-        id: `usr_${Date.now()}`,
+      const newMemberId = `usr_${Date.now()}`;
+      targetNotifUserId = newMemberId;
+      const newMemberUser: User = normalizeUserRecord({
+        id: newMemberId,
         name: targetApp.applicantName,
-        email: targetApp.email,
+        email: normEmail || `${matchedSerial.toLowerCase()}@member.kifayatconnect.org`,
         phone: targetApp.phone,
         role: 'MEMBER',
         isFounder: false,
-        hasPassword: hasLocalPasswordCredential(targetApp.email),
-        country: targetApp.country,
+        hasPassword: hasLocalPasswordCredential(normEmail),
+        profileCompleted: true,
+        approvalStatus: 'approved',
+        status: 'approved',
+        approvedBy: currentUser.name,
+        approvedAt: new Date().toISOString(),
+        country: targetApp.country || 'Pakistan',
         stateProvince: targetApp.stateProvince,
         district: targetApp.district,
         tehsil: targetApp.tehsil,
         cityTown: targetApp.cityTown,
         unionCouncil: targetApp.unionCouncil,
-        membershipId: newMembershipId,
+        tabbarId: targetApp.tabbarId,
+        tabbarUrdu: targetApp.tabbarUrdu,
+        tabbarEnglish: targetApp.tabbarEnglish,
+        membershipId: matchedSerial,
+        memberId: matchedSerial,
         membershipStatus: 'ACTIVE',
         verificationStatus: 'VERIFIED',
+        avatarUrl: targetApp.applicantPhotoUrl,
+        photoUrl: targetApp.applicantPhotoUrl,
         cnic: targetApp.cnic,
         address: targetApp.address,
         joinDate: new Date().toISOString().split('T')[0],
         validUntil: exp.toISOString().split('T')[0],
-        monthlyPledge: 0,
-        annualPledge: 0,
+        monthlyPledge: targetApp.monthlyPledgeAmount || 100,
+        annualPledge: (targetApp.monthlyPledgeAmount || 100) * 12,
         totalContributed: 0,
         isStaff: false,
         notes: targetApp.isOldMemberVerification 
-          ? `Verified legacy member. Old ID: ${targetApp.oldMembershipNo}` 
-          : 'Newly verified member via two-stage governance pipeline.'
-      };
+          ? `Verified legacy member. Old ID: ${targetApp.oldMembershipNo || matchedSerial}` 
+          : 'Verified member via Rukniyat & governance pipeline.'
+      });
       setUsers(prev => [newMemberUser, ...prev]);
       saveUserToFirestore(newMemberUser).catch(() => {});
     }
@@ -2320,17 +2475,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit(
       'FINAL_MEMBERSHIP_APPROVAL_GRANTED',
       'MEMBERSHIP',
-      newMembershipId,
-      `Super Admin ${currentUser.name} issued permanent membership ID ${newMembershipId} for ${targetApp.applicantName}.`,
+      matchedSerial,
+      `Super Admin ${currentUser.name} approved Rukniyat Serial ${matchedSerial} for ${targetApp.applicantName}.`,
       targetApp.district,
       targetApp.stateProvince
     );
 
     addNotification({
       type: 'MEMBERSHIP_APPROVED',
-      title: 'Membership Approved & ID Issued',
-      message: `Congratulations ${targetApp.applicantName}! Your membership is active. Membership ID: ${newMembershipId}.`,
-      targetUserId: existingMember?.id,
+      title: `Approved! Official Raseed & Rukniyat Unlocked (${matchedSerial})`,
+      message: '✅ Mubarak ho! Aapki payment / rukniyat approve ho gayi hai. Ab aap apni official Raseed (Receipt) le sakte hain aur download kar sakte hain.',
+      targetUserId: targetNotifUserId,
       linkTab: 'dashboard',
       entityId: appId
     });
@@ -2698,9 +2853,299 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const submitPayment = (data: {
+  const submitRukniyatForm: AppContextType['submitRukniyatForm'] = async (payload) => {
+    if (!isValid13DigitCnic(payload.cnic)) {
+      return { success: false, error: getCnicLockAlertMessage(language) };
+    }
+    const formattedCnic = formatCnicDisplay(payload.cnic);
+    const serialNumber = await generateAtomicSerialNumber();
+    const resolvedTabbar = resolveUserTabbar({
+      tabbarId: payload.tabbarId,
+      tabbarUrdu: payload.tabbarUrdu,
+      tabbarEnglish: payload.tabbarEnglish
+    });
+    const normEmail = (payload.email || currentUser?.email || '').trim().toLowerCase();
+
+    const newApp: MembershipApplication = {
+      id: `app_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      serialNumber,
+      applicantName: payload.applicantName.trim(),
+      fatherName: payload.fatherName.trim(),
+      email: normEmail,
+      phone: payload.phone.trim(),
+      cnic: formattedCnic,
+      education: payload.education?.trim(),
+      experience: payload.experience?.trim(),
+      profession: payload.profession?.trim(),
+      maritalStatus: payload.maritalStatus?.trim(),
+      currentArea: payload.currentArea?.trim(),
+      ancestralArea: payload.ancestralArea?.trim(),
+      dob: payload.dob,
+      age: payload.age?.trim(),
+      unit: payload.unit?.trim() || payload.district,
+      country: payload.country || 'Pakistan',
+      stateProvince: payload.stateProvince,
+      district: payload.district,
+      tehsil: payload.tehsil || payload.district,
+      cityTown: payload.cityTown || payload.district,
+      unionCouncil: payload.unionCouncil || '',
+      address: payload.address.trim(),
+      permanentAddress: payload.permanentAddress?.trim(),
+      tabbarId: resolvedTabbar?.id || payload.tabbarId,
+      tabbarUrdu: resolvedTabbar?.urduName || payload.tabbarUrdu,
+      tabbarEnglish: resolvedTabbar?.englishName || payload.tabbarEnglish,
+      subBranch: payload.subBranch?.trim(),
+      tabarRepName: payload.tabarRepName?.trim(),
+      tabarRepSignature: payload.tabarRepSignature?.trim(),
+      applicantPhotoUrl: payload.applicantPhotoUrl,
+      applicantSignature: payload.applicantSignature,
+      monthlyPledgeAmount: payload.monthlyPledgeAmount,
+      isRukniyatForm: true,
+      submittedAt: new Date().toISOString(),
+      status: 'PENDING_DISTRICT_REVIEW',
+      isOldMemberVerification: Boolean(payload.isOldMemberVerification),
+      oldMembershipNo: payload.oldMembershipNo?.trim()
+    };
+
+    setApplications(prev => [newApp, ...prev]);
+    ensureFirebaseAuthSession().then(() => saveApplicationToFirestore(newApp)).catch(() => {});
+
+    // Safely fill missing CNIC / Tabar on signed-in applicant without altering approval/role state
+    if (currentUser) {
+      const updatedSelf = normalizeUserRecord({
+        ...currentUser,
+        cnic: isValid13DigitCnic(currentUser.cnic) ? currentUser.cnic : formattedCnic,
+        phone: currentUser.phone || payload.phone.trim(),
+        tabbarId: currentUser.tabbarId || newApp.tabbarId,
+        tabbarUrdu: currentUser.tabbarUrdu || newApp.tabbarUrdu,
+        tabbarEnglish: currentUser.tabbarEnglish || newApp.tabbarEnglish,
+        monthlyPledge: payload.monthlyPledgeAmount || currentUser.monthlyPledge,
+        membershipId: currentUser.membershipId || serialNumber,
+        profileCompleted: true
+      });
+      setCurrentUserState(updatedSelf);
+      persistCurrentUserToStorage(updatedSelf);
+      setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedSelf : u)));
+      saveUserToFirestore(updatedSelf, { isOnline: true }).catch(() => {});
+    }
+
+    logAudit(
+      'RUKNIYAT_FORM_SUBMITTED',
+      'MEMBERSHIP',
+      serialNumber,
+      `Rukniyat Form ${serialNumber} submitted by ${newApp.applicantName} (${newApp.district}).`,
+      newApp.district,
+      newApp.stateProvince
+    );
+
+    addNotification({
+      type: 'MEMBERSHIP_PENDING_DISTRICT',
+      title: `New Rukniyat Form (${serialNumber})`,
+      message: `${newApp.applicantName} (${newApp.district}) submitted Rukniyat Form #${serialNumber} awaiting approval.`,
+      targetRole: 'SUPER_ADMIN',
+      linkTab: 'approvals',
+      entityId: newApp.id
+    });
+
+    addNotification({
+      type: 'MEMBERSHIP_PENDING_DISTRICT',
+      title: `Rukniyat Form Review (${serialNumber})`,
+      message: `${newApp.applicantName} (${newApp.district}) submitted Rukniyat Form #${serialNumber}.`,
+      targetRole: 'ADMIN',
+      targetDistrict: newApp.district,
+      linkTab: 'approvals',
+      entityId: newApp.id
+    });
+
+    return { success: true, serialNumber, application: newApp };
+  };
+
+  const createOldPaperRecord: AppContextType['createOldPaperRecord'] = async (data) => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Only Founder or Super Admin can digitize old by-hand paper records.' };
+    }
+    if (!isValid13DigitCnic(data.cnic)) {
+      return { success: false, error: getCnicLockAlertMessage(language) };
+    }
+
+    const formattedCnic = formatCnicDisplay(data.cnic);
+    const normDigits = normalizeCnicDigits(formattedCnic);
+    const serialNumber =
+      (data.oldReceiptSerialNo && data.oldReceiptSerialNo.trim()) ||
+      (await generateAtomicSerialNumber());
+    const resolvedTabbar = resolveUserTabbar({
+      tabbarId: data.tabbarId,
+      tabbarUrdu: data.tabbarUrdu,
+      tabbarEnglish: data.tabbarEnglish
+    });
+    const recordDate = data.date || new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+    const prov = data.stateProvince || currentUser.stateProvince || 'Khyber Pakhtunkhwa';
+    const dist = data.district || data.unit || currentUser.district || 'Mardan';
+    const normEmail = (data.email || '').trim().toLowerCase();
+
+    const matchedUser = users.find(u =>
+      (normDigits.length === 13 && normalizeCnicDigits(u.cnic) === normDigits) ||
+      (normEmail && u.email?.trim().toLowerCase() === normEmail) ||
+      (data.oldMembershipNo && u.membershipId?.toLowerCase() === data.oldMembershipNo.trim().toLowerCase())
+    );
+
+    const membershipCode = (data.oldMembershipNo && data.oldMembershipNo.trim()) || matchedUser?.membershipId || serialNumber;
+    let targetUserId = matchedUser?.id;
+
+    if (matchedUser) {
+      const safeUpdatedUser = normalizeUserRecord({
+        ...matchedUser,
+        cnic: isValid13DigitCnic(matchedUser.cnic) ? matchedUser.cnic : formattedCnic,
+        phone: matchedUser.phone || data.phone || '',
+        address: matchedUser.address || data.address || '',
+        tabbarId: matchedUser.tabbarId || resolvedTabbar?.id || data.tabbarId,
+        tabbarUrdu: matchedUser.tabbarUrdu || resolvedTabbar?.urduName || data.tabbarUrdu,
+        tabbarEnglish: matchedUser.tabbarEnglish || resolvedTabbar?.englishName || data.tabbarEnglish,
+        totalContributed: (matchedUser.totalContributed || 0) + (data.amount > 0 ? data.amount : 0)
+      });
+      setUsers(prev => prev.map(u => (u.id === matchedUser.id ? safeUpdatedUser : u)));
+      saveUserToFirestore(safeUpdatedUser).catch(() => {});
+    } else {
+      targetUserId = `usr_old_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const exp = new Date();
+      exp.setFullYear(exp.getFullYear() + 3);
+      const historicalMember = normalizeUserRecord({
+        id: targetUserId,
+        name: data.applicantName.trim(),
+        email: normEmail || `${membershipCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@archive.kifayatconnect.org`,
+        phone: (data.phone || '').trim(),
+        role: 'MEMBER',
+        isFounder: false,
+        profileCompleted: true,
+        approvalStatus: 'approved',
+        status: 'approved',
+        approvedBy: currentUser.name,
+        approvedAt: nowIso,
+        country: 'Pakistan',
+        stateProvince: prov,
+        district: dist,
+        tehsil: dist,
+        cityTown: dist,
+        unionCouncil: '',
+        tabbarId: resolvedTabbar?.id || data.tabbarId,
+        tabbarUrdu: resolvedTabbar?.urduName || data.tabbarUrdu,
+        tabbarEnglish: resolvedTabbar?.englishName || data.tabbarEnglish,
+        membershipId: membershipCode,
+        memberId: membershipCode,
+        membershipStatus: 'ACTIVE',
+        verificationStatus: 'VERIFIED',
+        cnic: formattedCnic,
+        address: (data.address || '').trim() || dist,
+        joinDate: recordDate,
+        validUntil: exp.toISOString().split('T')[0],
+        monthlyPledge: 100,
+        annualPledge: 1200,
+        totalContributed: data.amount > 0 ? data.amount : 0,
+        isStaff: false,
+        notes: `Digitized from Old Paper Form by ${currentUser.name}`
+      });
+      setUsers(prev => [historicalMember, ...prev]);
+      saveUserToFirestore(historicalMember).catch(() => {});
+    }
+
+    const oldApp: MembershipApplication = {
+      id: `app_old_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      serialNumber,
+      applicantName: data.applicantName.trim(),
+      fatherName: data.fatherName?.trim(),
+      email: normEmail || matchedUser?.email || '',
+      phone: (data.phone || matchedUser?.phone || '').trim(),
+      cnic: formattedCnic,
+      unit: data.unit?.trim() || dist,
+      country: 'Pakistan',
+      stateProvince: prov,
+      district: dist,
+      tehsil: dist,
+      cityTown: dist,
+      unionCouncil: '',
+      address: (data.address || matchedUser?.address || dist).trim(),
+      tabbarId: resolvedTabbar?.id || data.tabbarId,
+      tabbarUrdu: resolvedTabbar?.urduName || data.tabbarUrdu,
+      tabbarEnglish: resolvedTabbar?.englishName || data.tabbarEnglish,
+      submittedAt: nowIso,
+      status: 'ACTIVE',
+      isOldMemberVerification: true,
+      isOldPaperRecord: true,
+      isRukniyatForm: true,
+      oldMembershipNo: membershipCode,
+      generatedMembershipId: membershipCode,
+      paperFormPhotoUrl: data.paperFormPhotoUrl,
+      superAdminRemarks: `Historical by-hand record digitized & approved by ${currentUser.name}`,
+      superAdminApprovedAt: nowIso
+    };
+    setApplications(prev => [oldApp, ...prev]);
+    saveApplicationToFirestore(oldApp).catch(() => {});
+
+    if (data.amount > 0) {
+      const fundTier: FundTier = data.fundTier || 'MAHANA';
+      const oldTx: PaymentTransaction = {
+        id: `tx_old_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        receiptNumber: serialNumber,
+        serialNumber,
+        userId: targetUserId!,
+        userName: data.applicantName.trim(),
+        userMembershipId: membershipCode,
+        payerCnic: formattedCnic,
+        unit: data.unit?.trim() || dist,
+        userTabbarId: resolvedTabbar?.id || data.tabbarId,
+        userTabbarUrdu: resolvedTabbar?.urduName || data.tabbarUrdu,
+        userTabbarEnglish: resolvedTabbar?.englishName || data.tabbarEnglish,
+        country: 'Pakistan',
+        stateProvince: prov,
+        district: dist,
+        tehsil: dist,
+        cityTown: dist,
+        unionCouncil: '',
+        amount: data.amount,
+        fundTier,
+        paymentMode: fundTier === 'HANGAMI' ? 'OTHER' : 'DASTOOR',
+        fundCategory:
+          fundTier === 'SALANA'
+            ? 'Annual Welfare Fund'
+            : fundTier === 'HANGAMI'
+            ? 'Emergency Relief'
+            : 'Monthly Contribution',
+        paymentMethod: 'Cash',
+        referenceNumber: `PAPER-${serialNumber}`,
+        date: recordDate,
+        status: 'VERIFIED',
+        verifiedBy: `${currentUser.name} (By-Hand Archive)`,
+        verifiedAt: nowIso,
+        proofNote: `Old Paper Receipt #${serialNumber} (Old Member ID: ${membershipCode})`,
+        receiptImageUrl: data.paperFormPhotoUrl,
+        isOldPaperRecord: true,
+        oldReceiptSerialNo: serialNumber,
+        oldMembershipNo: membershipCode
+      };
+      setPayments(prev => [oldTx, ...prev]);
+      savePaymentToFirestore(oldTx).catch(() => {});
+    }
+
+    logAudit(
+      'OLD_PAPER_RECORD_DIGITIZED',
+      'MEMBERSHIP',
+      serialNumber,
+      `${currentUser.name} digitized old by-hand record (${serialNumber}) for ${data.applicantName} (Amount: PKR ${data.amount}).`,
+      dist,
+      prov
+    );
+
+    return { success: true, serialNumber };
+  };
+
+  const submitPayment = async (data: {
     amount: number;
     fundCategory: any;
+    fundTier?: FundTier;
+    yearsCount?: number;
+    unit?: string;
+    payerCnic?: string;
     paymentMethod: any;
     referenceNumber: string;
     proofNote?: string;
@@ -2713,14 +3158,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     startYear?: number;
     periodLabelEn?: string;
     periodLabelUr?: string;
-  }) => {
-    if (!currentUser) return;
+  }): Promise<{ success: boolean; transaction?: PaymentTransaction; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'Authentication required.' };
+    }
+    const candidateCnic = (data.payerCnic || currentUser.cnic || '').trim();
+    if (!isValid13DigitCnic(candidateCnic)) {
+      return { success: false, error: getCnicLockAlertMessage(language) };
+    }
+
+    const formattedCnic = formatCnicDisplay(candidateCnic);
+    if (!isValid13DigitCnic(currentUser.cnic)) {
+      const syncedUser = normalizeUserRecord({
+        ...currentUser,
+        cnic: formattedCnic
+      });
+      setCurrentUserState(syncedUser);
+      persistCurrentUserToStorage(syncedUser);
+      setUsers(prev => prev.map(u => (u.id === currentUser.id ? syncedUser : u)));
+      saveUserToFirestore(syncedUser, { isOnline: true }).catch(() => {});
+    }
+
+    const atomicSerial = await generateAtomicSerialNumber();
+
     const newTx: PaymentTransaction = {
-      id: `tx_${Date.now()}`,
-      receiptNumber: `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      receiptNumber: atomicSerial,
+      serialNumber: atomicSerial,
       userId: currentUser.id,
       userName: currentUser.name,
-      userMembershipId: currentUser.membershipId || 'KC-PENDING',
+      userMembershipId: currentUser.membershipId || atomicSerial,
+      payerCnic: formattedCnic,
+      unit: data.unit?.trim() || currentUser.district || 'Central Unit',
       userTabbarId: currentUser.tabbarId,
       userTabbarEnglish: currentUser.tabbarEnglish,
       userTabbarUrdu: currentUser.tabbarUrdu,
@@ -2731,8 +3200,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cityTown: currentUser.cityTown,
       unionCouncil: currentUser.unionCouncil,
       amount: data.amount,
+      fundTier: data.fundTier,
       paymentMode: data.paymentMode,
       monthsCount: data.monthsCount,
+      yearsCount: data.yearsCount,
       ratePerMonth: data.ratePerMonth,
       startMonth: data.startMonth,
       startYear: data.startYear,
@@ -2755,29 +3226,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'PAYMENT_SUBMITTED_FOR_VERIFICATION',
       'FINANCIAL',
       newTx.receiptNumber,
-      `Member ${currentUser.name} submitted payment of PKR ${data.amount.toLocaleString()} via ${data.paymentMethod}. Ref: ${data.referenceNumber}`,
+      `Member ${currentUser.name} submitted payment of PKR ${data.amount.toLocaleString()} (${data.fundTier || data.fundCategory}) via ${data.paymentMethod}. Serial: ${atomicSerial}.`,
       currentUser.district,
       currentUser.stateProvince
     );
 
     addNotification({
       type: 'PAYMENT_PENDING',
-      title: 'New Contribution Awaiting Verification',
-      message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} (${data.paymentMethod}) for approval.`,
-      targetRole: 'ADMIN',
-      targetDistrict: currentUser.district,
+      title: `New Contribution (${atomicSerial}) Awaiting Approval`,
+      message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} (${data.paymentMethod}) — Serial ${atomicSerial}.`,
+      targetRole: 'SUPER_ADMIN',
       linkTab: 'funds',
       entityId: newTx.id
     });
+
+    return { success: true, transaction: newTx };
   };
 
   const verifyPayment = (txId: string, approved: boolean, reason?: string) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
     const tx = payments.find(p => p.id === txId);
     if (!tx) return;
 
     const updatedTx: PaymentTransaction = {
       ...tx,
+      serialNumber: tx.serialNumber || tx.receiptNumber,
       status: approved ? 'VERIFIED' : 'REJECTED',
       verifiedBy: `${currentUser.name} (${currentUser.role})`,
       verifiedAt: new Date().toISOString(),
@@ -2804,17 +3277,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit(
       approved ? 'PAYMENT_RECEIPT_VERIFIED' : 'PAYMENT_RECEIPT_REJECTED',
       'FINANCIAL',
-      tx.receiptNumber,
-      `${currentUser.name} marked receipt ${tx.receiptNumber} as ${approved ? 'APPROVED' : 'REJECTED'}. Amount: PKR ${tx.amount.toLocaleString()}`,
+      tx.serialNumber || tx.receiptNumber,
+      `${currentUser.name} marked receipt ${tx.serialNumber || tx.receiptNumber} as ${approved ? 'APPROVED' : 'REJECTED'}. Amount: PKR ${tx.amount.toLocaleString()}`,
       tx.district,
       tx.stateProvince
     );
 
     addNotification({
       type: approved ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED',
-      title: approved ? 'Payment Approved & Receipt Issued' : 'Payment Declined',
+      title: approved ? `Approved! Official Raseed Unlocked (${tx.serialNumber || tx.receiptNumber})` : 'Payment Declined',
       message: approved 
-        ? `Your payment of PKR ${tx.amount.toLocaleString()} is approved. Receipt ${tx.receiptNumber} is ready.`
+        ? '✅ Mubarak ho! Aapki payment / rukniyat approve ho gayi hai. Ab aap apni official Raseed (Receipt) le sakte hain aur download kar sakte hain.'
         : `Your payment of PKR ${tx.amount.toLocaleString()} was declined. Reason: ${reason || 'Verification mismatch'}`,
       targetUserId: tx.userId,
       linkTab: 'funds',
@@ -4455,6 +4928,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isCompleteProfileModalOpen,
         openCompleteProfileModal,
         closeCompleteProfileModal,
+        isRukniyatFormOpen,
+        inspectedRukniyatApp,
+        openRukniyatForm,
+        closeRukniyatForm,
+        isTutorialOpen,
+        openTutorial,
+        closeTutorial,
         liveChatDisplayMode,
         unreadCommunityCount,
         preferredChatMode,
@@ -4470,6 +4950,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recommendApplication,
         finalApproveApplication,
         rejectApplication,
+        submitRukniyatForm,
+        createOldPaperRecord,
         attachDocumentToApplication,
         removeDocumentFromApplication,
         verifyApplicationDocument,

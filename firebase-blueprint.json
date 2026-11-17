@@ -71,17 +71,36 @@
         "oldMembershipNo": { "type": "string", "maxLength": 50 },
         "tabbarId": { "type": "string", "maxLength": 64 },
         "tabbarUrdu": { "type": "string", "maxLength": 120 },
-        "tabbarEnglish": { "type": "string", "maxLength": 120 }
+        "tabbarEnglish": { "type": "string", "maxLength": 120 },
+        "serialNumber": { "type": "string", "maxLength": 50 },
+        "unit": { "type": "string", "maxLength": 100 },
+        "fatherName": { "type": "string", "maxLength": 120 },
+        "education": { "type": "string", "maxLength": 120 },
+        "experience": { "type": "string", "maxLength": 160 },
+        "profession": { "type": "string", "maxLength": 120 },
+        "maritalStatus": { "type": "string", "maxLength": 40 },
+        "currentArea": { "type": "string", "maxLength": 160 },
+        "ancestralArea": { "type": "string", "maxLength": 160 },
+        "dob": { "type": "string", "maxLength": 30 },
+        "age": { "type": "string", "maxLength": 20 },
+        "subBranch": { "type": "string", "maxLength": 120 },
+        "tabarRepName": { "type": "string", "maxLength": 120 },
+        "permanentAddress": { "type": "string", "maxLength": 300 },
+        "monthlyPledgeAmount": { "type": "number" },
+        "formFeeAmount": { "type": "number" },
+        "isRukniyatForm": { "type": "boolean" },
+        "isOldPaperRecord": { "type": "boolean" }
       },
       "required": ["id", "applicantName", "email", "phone", "cnic", "address", "submittedAt", "status", "isOldMemberVerification"]
     },
     "PaymentTransaction": {
       "title": "PaymentTransaction",
-      "description": "Contribution receipts and audit ledger records verified by Finance Officers",
+      "description": "Contribution receipts and audit ledger records verified by leadership",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "receiptNumber": { "type": "string", "maxLength": 50 },
+        "serialNumber": { "type": "string", "maxLength": 50 },
         "userId": { "type": "string", "maxLength": 128 },
         "userName": { "type": "string", "maxLength": 120 },
         "userTabbarId": { "type": "string", "maxLength": 64 },
@@ -89,7 +108,9 @@
         "userTabbarUrdu": { "type": "string", "maxLength": 120 },
         "amount": { "type": "number" },
         "paymentMode": { "type": "string", "enum": ["DASTOOR", "OTHER"] },
+        "fundTier": { "type": "string", "enum": ["MAHANA", "SALANA", "HANGAMI"] },
         "monthsCount": { "type": "number" },
+        "yearsCount": { "type": "number" },
         "ratePerMonth": { "type": "number" },
         "startMonth": { "type": "number" },
         "startYear": { "type": "number" },
@@ -99,9 +120,27 @@
         "paymentMethod": { "type": "string", "maxLength": 50 },
         "referenceNumber": { "type": "string", "maxLength": 80 },
         "date": { "type": "string", "maxLength": 30 },
-        "status": { "type": "string", "enum": ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"] }
+        "status": { "type": "string", "enum": ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"] },
+        "unit": { "type": "string", "maxLength": 100 },
+        "payerCnic": { "type": "string", "maxLength": 30 },
+        "isOldPaperRecord": { "type": "boolean" },
+        "oldReceiptSerialNo": { "type": "string", "maxLength": 50 },
+        "oldMembershipNo": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "receiptNumber", "userId", "userName", "amount", "fundCategory", "paymentMethod", "referenceNumber", "date", "status"]
+    },
+    "SerialCounter": {
+      "title": "SerialCounter",
+      "description": "Atomic sequential serial number generator counter per year",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "year": { "type": "number" },
+        "nextNumber": { "type": "number" },
+        "lastSerial": { "type": "string", "maxLength": 40 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "year", "nextNumber"]
     },
     "Complaint": {
       "title": "Complaint",
@@ -238,6 +277,10 @@
     "/payments/{paymentId}": {
       "schema": { "$ref": "#/entities/PaymentTransaction" },
       "description": "Financial ledger of contributions and verified receipts"
+    },
+    "/counters/{counterId}": {
+      "schema": { "$ref": "#/entities/SerialCounter" },
+      "description": "Atomic sequential serial number counters"
     },
     "/complaints/{complaintId}": {
       "schema": { "$ref": "#/entities/Complaint" },

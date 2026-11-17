@@ -14,7 +14,9 @@ import {
   Crown,
   Menu,
   X,
-  Share2
+  Share2,
+  FileCheck2,
+  HelpCircle
 } from 'lucide-react';
 import { GlobalSearchBar } from './GlobalSearchBar';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -52,7 +54,9 @@ export const Header: React.FC<HeaderProps> = ({
     logoutFirebaseAuth,
     appSettings,
     isOnline,
-    triggerShareForIphone
+    triggerShareForIphone,
+    openRukniyatForm,
+    openTutorial
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -363,6 +367,32 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <IdCard className="w-3.5 h-3.5 shrink-0" />
                 <span>{translate(language, 'viewDigitalId')}</span>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  openRukniyatForm();
+                  setShowProfileMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-emerald-300 text-start cursor-pointer font-semibold"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
+                <span>{translate(language, 'navRukniyatForm')}</span>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  openTutorial();
+                  setShowProfileMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#38BDF8] text-start cursor-pointer font-semibold"
+              >
+                <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{translate(language, 'navMemberGuide')}</span>
               </button>
 
               <button

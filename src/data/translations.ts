@@ -89,6 +89,11 @@ export const TRANSLATIONS = {
     liveChatBtn: 'Live Chat',
     viewRecoveryShield: 'View Recovery Shield',
     reviewApproveBtn: 'Review & Approve',
+    navRukniyatForm: 'Rukniyat Form (رکنیت فارم)',
+    navMemberGuide: 'App Guide (ایپ گائیڈ)',
+    mahanaFund: 'Mahana Fund (Monthly)',
+    salanaFund: 'Salana Fund (Annual)',
+    hangamiFund: 'ہنگامی فنڈ / Hangami Fund',
 
     // Tabbar & Profile Fields
     tabbarLabel: 'Tabbar / Branch / Clan (ٹبر / شاخ / ذات)',
@@ -306,6 +311,11 @@ export const TRANSLATIONS = {
     liveChatBtn: 'لائیو چیٹ',
     viewRecoveryShield: 'ریکوری شیلڈ دیکھیں',
     reviewApproveBtn: 'جائزہ اور منظوری',
+    navRukniyatForm: 'رکنیت فارم (Rukniyat Form)',
+    navMemberGuide: 'ایپ گائیڈ (App Guide)',
+    mahanaFund: 'ماہانہ فنڈ',
+    salanaFund: 'سالانہ فنڈ',
+    hangamiFund: 'ہنگامی فنڈ / Hangami Fund',
 
     // Tabbar & Profile Fields
     tabbarLabel: 'ٹبر / شاخ / ذات (Tabbar)',
