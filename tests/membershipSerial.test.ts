@@ -8,6 +8,7 @@ import {
   isValidSerial,
   serialsMatch,
   serialMintBlocker,
+  serialReuseBlocker,
   canVoidReceipt,
   isSerialEligibleStatus,
 } from '../src/utils/membershipSerial.ts';
@@ -61,22 +62,31 @@ test('form and receipt must carry the identical serial', () => {
   assert.equal(serialsMatch('', ''), false);
 });
 
-test('only an approved application may mint a serial', () => {
+test('the serial is minted at submission, not only at approval', () => {
+  assert.equal(isSerialEligibleStatus('PENDING_DISTRICT_REVIEW'), true);
+  assert.equal(isSerialEligibleStatus('PENDING_REGIONAL_REVIEW'), true);
   assert.equal(isSerialEligibleStatus('ACTIVE'), true);
-  assert.equal(isSerialEligibleStatus('PENDING_DISTRICT_REVIEW'), false);
-  assert.equal(isSerialEligibleStatus('PENDING_REGIONAL_REVIEW'), false);
   assert.equal(isSerialEligibleStatus('REJECTED'), false);
   assert.equal(isSerialEligibleStatus('SUSPENDED'), false);
 
-  assert.ok(serialMintBlocker({ status: 'PENDING_DISTRICT_REVIEW' }));
-  assert.ok(serialMintBlocker({ status: 'REJECTED' }));
+  assert.equal(serialMintBlocker({ status: 'PENDING_DISTRICT_REVIEW' }), null);
   assert.equal(serialMintBlocker({ status: 'ACTIVE' }), null);
+  assert.ok(serialMintBlocker({ status: 'REJECTED' }));
 });
 
 test('an already issued serial is never replaced', () => {
+  assert.ok(serialMintBlocker({ status: 'PENDING_DISTRICT_REVIEW', existingSerial: '4201' }));
   assert.ok(serialMintBlocker({ status: 'ACTIVE', existingSerial: '4201' }));
   assert.equal(serialMintBlocker({ status: 'ACTIVE', existingSerial: '' }), null);
   assert.equal(serialMintBlocker({ status: 'ACTIVE', existingSerial: null }), null);
+});
+
+test('approval reuses the submission serial and never mints a second number', () => {
+  assert.equal(serialReuseBlocker({ status: 'ACTIVE', existingSerial: '4201' }), null);
+  assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: '' }));
+  assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: null }));
+  assert.ok(serialReuseBlocker({ status: 'ACTIVE', existingSerial: 'Rs. 4200' }));
+  assert.ok(serialReuseBlocker({ status: 'PENDING_DISTRICT_REVIEW', existingSerial: '4201' }));
 });
 
 test('only Founder / Super Admin may void a receipt', () => {

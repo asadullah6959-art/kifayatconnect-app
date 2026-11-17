@@ -11,8 +11,8 @@ import { isValid13DigitCnic, normalizeCnicDigits } from '../../utils/cnic';
  * signature areas are reproduced. Kifayat Connect is only the application that
  * hosts this document — its branding never replaces the organisation's.
  *
- * رکنیت نمبر is NEVER typed by the applicant: it is minted by the system only
- * after approval and is the SAME number printed on the Raseed Wasooli.
+ * رکنیت نمبر is NEVER typed by the applicant: the system mints it when the form is
+ * submitted and prints it here, and the Raseed Wasooli reuses the same number.
  */
 
 export type DocLanguage = 'ur' | 'en';
@@ -183,7 +183,7 @@ const LABELS: Record<DocLanguage, Labels> = {
     president: 'صدر',
     presidentEn: 'President',
     stamp: 'مہر سوئی خیل قومی اتحاد',
-    serialPending: 'منظوری کے بعد جاری ہوگا',
+    serialPending: 'جمع کرانے پر خودکار جاری ہوگا',
     cnicError: '۱۳ ہندسوں کا شناختی کارڈ نمبر لازمی ہے۔',
   },
   en: {
@@ -238,7 +238,7 @@ const LABELS: Record<DocLanguage, Labels> = {
     president: 'صدر',
     presidentEn: 'President',
     stamp: 'SQI Official Seal',
-    serialPending: 'Issued after approval',
+    serialPending: 'Issued automatically on submission',
     cnicError: 'A 13-digit CNIC is mandatory.',
   },
 };
@@ -304,7 +304,7 @@ export interface RukniyatFormDocumentProps {
   onChange?: (patch: Partial<RukniyatFormValues>) => void;
   language?: DocLanguage;
   editable?: boolean;
-  /** Membership serial — minted only after approval, identical to the receipt. */
+  /** Membership serial — minted at submission, identical to the receipt. */
   serialNumber?: string | null;
   className?: string;
 }

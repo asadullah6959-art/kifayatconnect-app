@@ -2,9 +2,9 @@
  * Membership serial minting — one atomic counter, one number per member.
  *
  * The counter lives in Firestore at counters/membership_serial and starts at
- * 4201. A serial is minted only when an authorised officer approves an
- * application, and the minted value is written to the application so the
- * Rukniyat Form and the Raseed Wasooli print the identical number.
+ * 4201. A serial is minted the moment the member submits the Rukniyat Form and is
+ * written to the record, so the form prints its رکنیت نمبر immediately and the
+ * Raseed Wasooli reuses that identical number when an officer approves it.
  *
  * If Firestore is unreachable the same monotonic series is continued from a
  * local counter so the UI never blocks and numbers are never reused downward.
@@ -49,9 +49,10 @@ export interface MintedSerial {
 }
 
 /**
- * Mint the next membership serial.
+ * Mint the next membership serial at submission.
  * Passing an already issued serial returns it unchanged — a number is never
- * replaced, so form and receipt can never diverge.
+ * replaced, so the approval step that passes the stored serial reuses it and the
+ * form and receipt can never diverge.
  */
 export async function mintMembershipSerial(existingSerial?: string | number | null): Promise<MintedSerial> {
   const already = parseSerial(existingSerial);

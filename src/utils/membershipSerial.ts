@@ -3,11 +3,11 @@
  *
  * Rules (Founder decision, do not change):
  *  - The first issued serial is 4201 and the series increments by one.
- *  - A serial is minted ONLY when an authorised officer approves the application.
- *    Pending and rejected applications never hold a serial.
- *  - The Rukniyat Form (رکنیت نمبر) and the Raseed Wasooli (رسید نمبر) always
- *    print the SAME number for the same member.
- *  - A serial is never reused or decremented, including concurrent approvals.
+ *  - A serial is minted ONCE, at the moment the member submits the Rukniyat Form,
+ *    so the form prints its own رکنیت نمبر straight away.
+ *  - Approval never mints a second number: the Raseed Wasooli reuses the serial
+ *    already stored on the submission, so both documents print the SAME number.
+ *  - A serial is never reused, replaced or decremented, including concurrency.
  *  - The serial is an identifier, never a currency amount. 4200 in the original
  *    paper receipt is a reference serial, NOT Rs. 4,200.
  */
@@ -28,8 +28,16 @@ export interface SerialAllocation {
   nextState: { nextNumber: number; lastSerial: string };
 }
 
-/** Statuses that may hold a serial. Everything else must remain serial-less. */
-const SERIAL_ELIGIBLE_STATUSES: MembershipStatus[] = ['ACTIVE'];
+/**
+ * Statuses that may hold a serial. A submission is numbered immediately, so both
+ * review states are eligible alongside an approved membership. Rejected and
+ * suspended records are never given a fresh number.
+ */
+const SERIAL_ELIGIBLE_STATUSES: MembershipStatus[] = [
+  'PENDING_DISTRICT_REVIEW',
+  'PENDING_REGIONAL_REVIEW',
+  'ACTIVE',
+];
 
 export function isSerialEligibleStatus(status: MembershipStatus | string | undefined): boolean {
   return SERIAL_ELIGIBLE_STATUSES.includes(status as MembershipStatus);
@@ -85,18 +93,36 @@ export function serialsMatch(
 }
 
 /**
- * Guard for the approval step: returns the reason approval cannot mint a serial,
- * or null when it may proceed.
+ * Guard for the submission step, where the serial is minted.
+ * Returns the reason no serial may be issued, or null when it may proceed.
  */
 export function serialMintBlocker(input: {
   status: MembershipStatus | string | undefined;
   existingSerial?: string | number | null;
 }): string | null {
   if (!isSerialEligibleStatus(input.status)) {
-    return `Application status "${input.status}" cannot receive a membership serial. Only an approved (ACTIVE) application can.`;
+    return `Application status "${input.status}" cannot receive a membership serial. Submit the Rukniyat Form first.`;
   }
   if (input.existingSerial !== undefined && input.existingSerial !== null && input.existingSerial !== '') {
     return `Serial ${input.existingSerial} is already issued for this application and must never be replaced.`;
+  }
+  return null;
+}
+
+/**
+ * Guard for the approval step. Approval must reuse the serial already printed on
+ * the form; only a legacy submission that predates submission-time numbering may
+ * mint one here.
+ */
+export function serialReuseBlocker(input: {
+  status: MembershipStatus | string | undefined;
+  existingSerial?: string | number | null;
+}): string | null {
+  if (!isSerialEligibleStatus(input.status)) {
+    return `Application status "${input.status}" cannot be approved with a membership serial.`;
+  }
+  if (!isValidSerial(input.existingSerial)) {
+    return 'This submission has no serial yet (legacy record); approval must mint one before the receipt is issued.';
   }
   return null;
 }
