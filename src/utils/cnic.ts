@@ -4,7 +4,10 @@ export function normalizeCnicDigits(raw?: string | null): string {
 }
 
 export function isValid13DigitCnic(raw?: string | null): boolean {
-  return normalizeCnicDigits(raw).length === 13;
+  if (!raw) return false;
+  // Count the real digits instead of truncating: a 14-digit typo must be rejected,
+  // never silently trimmed into a "valid" 13-digit number.
+  return String(raw).replace(/\D/g, '').length === 13;
 }
 
 export function formatCnicDisplay(raw?: string | null): string {

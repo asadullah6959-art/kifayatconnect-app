@@ -1,0 +1,490 @@
+/* ------------------------------------------------------------------
+   Official document styles — Rukniyat Form & Raseed Wasooli
+   A4 print geometry, Nastaliq typography, screen preview cards.
+   These rules never alter the app's Midnight Fintech Dark theme:
+   they only apply inside .sqi-doc / .sqi-print-area.
+------------------------------------------------------------------- */
+
+.sqi-doc {
+  --sqi-ink: #1a1206;
+  --sqi-line: #8a6a2f;
+  --sqi-gold: #b8912f;
+  --sqi-paper: #fdfbf4;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', 'Segoe UI', serif;
+  background: var(--sqi-paper);
+  color: var(--sqi-ink);
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 10mm 9mm;
+  box-sizing: border-box;
+  font-size: 11.5pt;
+  line-height: 2.05;
+  position: relative;
+}
+
+.sqi-doc[dir='ltr'] {
+  font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+  line-height: 1.55;
+  font-size: 10.5pt;
+}
+
+.sqi-doc * {
+  box-sizing: border-box;
+}
+
+.sqi-doc__frame {
+  border: 2.2px solid var(--sqi-line);
+  padding: 4mm 5mm 5mm;
+  min-height: 275mm;
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(184, 145, 47, 0.06), transparent 24%),
+    var(--sqi-paper);
+}
+
+.sqi-doc__frame::after {
+  content: '';
+  position: absolute;
+  inset: 2.2mm;
+  border: 0.8px solid rgba(138, 106, 47, 0.55);
+  pointer-events: none;
+}
+
+/* ---------------- Header ---------------- */
+.sqi-head {
+  display: grid;
+  grid-template-columns: 26mm 1fr 30mm;
+  align-items: start;
+  gap: 3mm;
+  padding-bottom: 2.5mm;
+  border-bottom: 1.6px solid var(--sqi-line);
+}
+
+.sqi-head__org {
+  text-align: center;
+}
+
+.sqi-head__org-ur {
+  font-size: 20pt;
+  font-weight: 700;
+  color: #5c3d0b;
+  line-height: 1.7;
+}
+
+.sqi-head__org-en {
+  font-size: 12.5pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #6b4a12;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.35;
+}
+
+.sqi-head__motto {
+  margin-top: 1mm;
+  font-size: 10pt;
+  color: #7a5a1d;
+  letter-spacing: 0.02em;
+}
+
+.sqi-head__motto span {
+  margin: 0 1.2mm;
+}
+
+.sqi-emblem {
+  width: 24mm;
+  height: 24mm;
+}
+
+.sqi-photo {
+  width: 28mm;
+  height: 34mm;
+  border: 1.4px solid var(--sqi-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 8pt;
+  line-height: 1.5;
+  color: #8a6a2f;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sqi-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sqi-title {
+  text-align: center;
+  margin: 2.5mm 0 3mm;
+}
+
+.sqi-title__ur {
+  font-size: 17pt;
+  font-weight: 700;
+  color: #4a3108;
+  line-height: 1.9;
+}
+
+.sqi-title__en {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 10pt;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #7a5a1d;
+}
+
+/* ---------------- Meta row ---------------- */
+.sqi-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3mm;
+  margin-bottom: 3mm;
+}
+
+/* ---------------- Fields ---------------- */
+.sqi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1mm 6mm;
+}
+
+.sqi-row {
+  display: grid;
+  grid-template-columns: 46mm 1fr;
+  align-items: end;
+  gap: 2mm;
+  min-height: 9mm;
+  border-bottom: 0.9px dotted rgba(138, 106, 47, 0.75);
+  padding-bottom: 0.6mm;
+}
+
+.sqi-row--wide {
+  grid-column: 1 / -1;
+}
+
+.sqi-row__label {
+  font-size: 10.5pt;
+  color: #3b2a0c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sqi-row__en {
+  display: block;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 7pt;
+  letter-spacing: 0.04em;
+  color: #96762f;
+  line-height: 1.2;
+}
+
+.sqi-row__value {
+  font-size: 11pt;
+  min-height: 6.5mm;
+  padding: 0 1mm;
+  word-break: break-word;
+  line-height: 1.9;
+}
+
+.sqi-input {
+  width: 100%;
+  border: 0;
+  border-bottom: 0.9px solid transparent;
+  background: rgba(184, 145, 47, 0.07);
+  font: inherit;
+  font-size: 11pt;
+  color: var(--sqi-ink);
+  padding: 0.8mm 1mm;
+  line-height: 1.9;
+  outline: none;
+  border-radius: 2px;
+}
+
+.sqi-input:focus {
+  background: rgba(184, 145, 47, 0.16);
+  border-bottom-color: var(--sqi-gold);
+}
+
+.sqi-input--rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.sqi-input--num {
+  direction: ltr;
+  text-align: left;
+  letter-spacing: 0.08em;
+  font-family: 'Courier New', monospace;
+}
+
+.sqi-input[readonly] {
+  background: rgba(184, 145, 47, 0.12);
+  font-weight: 700;
+}
+
+.sqi-error {
+  color: #a4262c;
+  font-size: 8pt;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  margin-top: 0.5mm;
+}
+
+/* ---------------- Sections ---------------- */
+.sqi-section {
+  margin-top: 4mm;
+  border: 1.3px solid var(--sqi-line);
+  padding: 2.5mm 3mm;
+}
+
+.sqi-section__title {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #4a3108;
+  border-bottom: 0.9px solid rgba(138, 106, 47, 0.6);
+  padding-bottom: 1mm;
+  margin-bottom: 1.5mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 3mm;
+}
+
+.sqi-section__title-en {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #96762f;
+  font-weight: 600;
+}
+
+.sqi-oath {
+  font-size: 10.5pt;
+  line-height: 2.15;
+  text-align: justify;
+}
+
+.sqi-oath[dir='ltr'] {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.7;
+}
+
+/* ---------------- Signatures ---------------- */
+.sqi-signs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+  margin-top: 5mm;
+}
+
+.sqi-sign {
+  text-align: center;
+  min-height: 20mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sqi-sign__line {
+  border-top: 1.1px solid var(--sqi-ink);
+  margin-bottom: 1.2mm;
+  padding-top: 1.2mm;
+  font-size: 9.5pt;
+  line-height: 1.6;
+}
+
+.sqi-sign__en {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 7pt;
+  color: #96762f;
+  letter-spacing: 0.05em;
+}
+
+.sqi-sign__value {
+  font-size: 10pt;
+  min-height: 6mm;
+  color: #4a3108;
+}
+
+/* ---------------- Stamp ---------------- */
+.sqi-stamp {
+  width: 34mm;
+  height: 34mm;
+  border: 1.6px dashed var(--sqi-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #96762f;
+  font-size: 7.5pt;
+  line-height: 1.5;
+  transform: rotate(-8deg);
+  margin: 0 auto;
+}
+
+.sqi-stamp--verified {
+  border: 2px solid #1f6b3a;
+  color: #1f6b3a;
+  transform: rotate(-6deg);
+}
+
+.sqi-serial-badge {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 12pt;
+  letter-spacing: 0.14em;
+  color: #4a3108;
+  background: rgba(184, 145, 47, 0.14);
+  border: 1px solid var(--sqi-line);
+  padding: 0.4mm 2mm;
+  direction: ltr;
+  display: inline-block;
+}
+
+.sqi-serial-badge--empty {
+  color: #96762f;
+  border-style: dashed;
+  font-size: 9pt;
+  letter-spacing: 0.04em;
+}
+
+/* ---------------- Receipt specifics ---------------- */
+.sqi-doc--receipt .sqi-doc__frame {
+  min-height: 150mm;
+}
+
+.sqi-receipt__amount-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3mm;
+  margin: 3mm 0;
+}
+
+.sqi-receipt__amount {
+  border: 1.6px solid var(--sqi-line);
+  padding: 2mm 3mm;
+  background: rgba(184, 145, 47, 0.08);
+}
+
+.sqi-receipt__amount-label {
+  font-size: 9pt;
+  color: #7a5a1d;
+}
+
+.sqi-receipt__amount-value {
+  font-family: 'Courier New', monospace;
+  font-size: 15pt;
+  font-weight: 700;
+  color: #3b2a0c;
+  direction: ltr;
+  text-align: left;
+}
+
+.sqi-receipt__words {
+  font-size: 10pt;
+  border-bottom: 0.9px dotted var(--sqi-line);
+  padding-bottom: 0.5mm;
+  min-height: 8mm;
+}
+
+.sqi-void {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60pt;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: rgba(164, 38, 44, 0.28);
+  transform: rotate(-22deg);
+  pointer-events: none;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.sqi-receipt-row--voided .sqi-row__value,
+.sqi-receipt-row--voided .sqi-input {
+  text-decoration: line-through;
+  color: #a4262c;
+}
+
+/* ---------------- Screen wrapper ---------------- */
+.sqi-preview-shell {
+  background: #0b1420;
+  padding: 4mm;
+  overflow: auto;
+  max-height: 74vh;
+  border-radius: 10px;
+  border: 1px solid rgba(184, 145, 47, 0.35);
+}
+
+.sqi-preview-shell .sqi-doc {
+  transform-origin: top center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* ---------------- Print ---------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .sqi-print-area,
+  .sqi-print-area * {
+    visibility: visible !important;
+  }
+
+  .sqi-print-area {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .sqi-doc {
+    width: 198mm !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .sqi-doc__frame {
+    min-height: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  .sqi-no-print {
+    display: none !important;
+  }
+
+  .sqi-input {
+    background: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+}
