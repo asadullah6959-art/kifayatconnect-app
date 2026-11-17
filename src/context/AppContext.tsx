@@ -106,6 +106,7 @@ import {
   FirebaseUser,
   ROOT_SUPER_ADMIN_EMAIL
 } from '../services/firebase';
+import { mintMembershipSerial, attachSerialToApplication } from '../services/membershipSerialService';
 import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
 import { shareKifayatForIphone } from '../utils/iphoneShare';
@@ -3243,14 +3244,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, transaction: newTx };
   };
 
-  const verifyPayment = (txId: string, approved: boolean, reason?: string) => {
+  const verifyPayment = async (txId: string, approved: boolean, reason?: string) => {
     if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
     const tx = payments.find(p => p.id === txId);
     if (!tx) return;
 
+    // The official serial is minted ONCE, only on approval, and is printed
+    // identically on the Rukniyat Form (رکنیت نمبر) and the Raseed Wasooli (رسید نمبر).
+    // Pending or rejected applications never hold a serial.
+    let issuedSerial = issuedSerial || '';
+    if (approved && tx.status !== 'VERIFIED') {
+      const minted = await mintMembershipSerial(issuedSerial);
+      issuedSerial = minted.serial;
+      await attachSerialToApplication(tx.id, issuedSerial, {
+        approvedBy: `${currentUser.name} (${currentUser.role})`,
+        amount: tx.amount
+      });
+    }
+
     const updatedTx: PaymentTransaction = {
       ...tx,
-      serialNumber: tx.serialNumber || tx.receiptNumber,
+      serialNumber: issuedSerial || tx.serialNumber,
+      receiptNumber: issuedSerial || tx.receiptNumber,
       status: approved ? 'VERIFIED' : 'REJECTED',
       verifiedBy: `${currentUser.name} (${currentUser.role})`,
       verifiedAt: new Date().toISOString(),
@@ -3277,15 +3292,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit(
       approved ? 'PAYMENT_RECEIPT_VERIFIED' : 'PAYMENT_RECEIPT_REJECTED',
       'FINANCIAL',
-      tx.serialNumber || tx.receiptNumber,
-      `${currentUser.name} marked receipt ${tx.serialNumber || tx.receiptNumber} as ${approved ? 'APPROVED' : 'REJECTED'}. Amount: PKR ${tx.amount.toLocaleString()}`,
+      issuedSerial,
+      `${currentUser.name} marked receipt ${issuedSerial} as ${approved ? 'APPROVED' : 'REJECTED'}. Amount: PKR ${tx.amount.toLocaleString()}`,
       tx.district,
       tx.stateProvince
     );
 
     addNotification({
       type: approved ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED',
-      title: approved ? `Approved! Official Raseed Unlocked (${tx.serialNumber || tx.receiptNumber})` : 'Payment Declined',
+      title: approved ? `Approved! Official Raseed Unlocked (${issuedSerial})` : 'Payment Declined',
       message: approved 
         ? '✅ Mubarak ho! Aapki payment / rukniyat approve ho gayi hai. Ab aap apni official Raseed (Receipt) le sakte hain aur download kar sakte hain.'
         : `Your payment of PKR ${tx.amount.toLocaleString()} was declined. Reason: ${reason || 'Verification mismatch'}`,
