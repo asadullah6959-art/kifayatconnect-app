@@ -43,6 +43,9 @@ import {
   isValid13DigitCnic,
   getCnicLockAlertMessage,
 } from '../../utils/cnic';
+import { RukniyatFundSystem } from './RukniyatFundSystem';
+import { RaseedWasooliModal } from '../documents/RaseedWasooliModal';
+import type { RaseedWasooliData } from '../documents/RaseedWasooliDocument';
 import { resolveReceiptFundTierLabel } from '../../utils/receiptExport';
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; labelUr: string; hint: string; hintUr: string }> = [
@@ -90,6 +93,7 @@ export const FundsAndPayments: React.FC = () => {
   );
 
   // 3-Step Payment Submission Modal (3-Tier Fund Calculator + Mandatory 13-Digit CNIC)
+  const [raseedOpen, setRaseedOpen] = useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isOldPaperModalOpen, setIsOldPaperModalOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -127,6 +131,35 @@ export const FundsAndPayments: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [downloadToast, setDownloadToast] = useState(false);
 
+
+  // Latest approved payment = this member's official Raseed Wasooli.
+  // Its serial is the SAME number minted for the Rukniyat Form at approval.
+  const myRaseedTx: any = payments
+    .filter((p: any) => p.userId === currentUser.id && p.status === 'VERIFIED')
+    .filter((p: any) => Boolean(p.serialNumber || p.receiptNumber))
+    .sort((a: any, b: any) =>
+      String(b.verifiedAt || b.createdAt || '').localeCompare(String(a.verifiedAt || a.createdAt || ''))
+    )[0];
+
+  const myRaseedData: RaseedWasooliData | null = myRaseedTx
+    ? {
+        serialNumber: String(myRaseedTx.serialNumber || myRaseedTx.receiptNumber || ''),
+        date: String(myRaseedTx.verifiedAt || myRaseedTx.createdAt || new Date().toISOString()).slice(0, 10),
+        unit: String(myRaseedTx.unit || (currentUser as any).tabbarEnglish || ''),
+        memberName: currentUser.name || '',
+        fatherName: String((currentUser as any).fatherName || ''),
+        cnic: currentUser.cnic ? formatCnicDisplay(currentUser.cnic) : '',
+        amount: Number(myRaseedTx.amount) || 0,
+        purposeEn: String(myRaseedTx.periodLabelEn || `${myRaseedTx.fundCategory || 'Membership'} contribution`),
+        purposeUr: String(myRaseedTx.periodLabelUr || 'رکنیت فنڈ'),
+        periodLabelEn: myRaseedTx.periodLabelEn,
+        periodLabelUr: myRaseedTx.periodLabelUr,
+        paymentMethod: String(myRaseedTx.paymentMethod || ''),
+        referenceNumber: String(myRaseedTx.referenceNumber || ''),
+        collectorName: String(myRaseedTx.verifiedBy || ''),
+        isVoid: myRaseedTx.isVoid === true,
+      }
+    : null;
   if (!currentUser) return null;
 
   const visibleTransactions = payments.filter(p => {
@@ -421,6 +454,16 @@ export const FundsAndPayments: React.FC = () => {
               </span>
             </button>
           )}
+
+          {myRaseedData ? (
+            <button
+              onClick={() => setRaseedOpen(true)}
+              className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#F5D061]" />
+              <span>{isUr ? 'میری رسید وصولی' : 'My Raseed'}</span>
+            </button>
+          ) : null}
 
           <button
             onClick={handleExportCSV}
@@ -822,292 +865,22 @@ export const FundsAndPayments: React.FC = () => {
         </div>
       </div>
 
-      {/* 3-Step Payment Submission Modal */}
-      {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div
-            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 pb-[100px] sm:pb-6 my-auto max-h-[92dvh] overflow-y-auto"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
-                  {isUr ? `مرحلہ ${step} از 3` : `Step ${step} of 3`}
-                </span>
-                <h3 className="text-base font-bold text-white">
-                  {isUr ? 'فلاحی حصہ جمع کروائیں' : 'Submit Welfare Contribution'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={resetPaymentModal}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-[#F5D061] transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Rukniyat Form + Fund System — replaces the old payment wizard.
+          Wallet cards, KPI strip and ledger above are unchanged. */}
+      <RukniyatFundSystem
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+      />
 
-            {/* Step Indicator */}
-            <div className="grid grid-cols-3 gap-2 my-4">
-              {[
-                { num: 1, label: isUr ? 'رقم' : 'Amount' },
-                { num: 2, label: isUr ? 'طریقہ' : 'Method' },
-                { num: 3, label: isUr ? 'رسید' : 'Receipt' }
-              ].map(item => (
-                <div
-                  key={item.num}
-                  className={`py-1.5 px-2 rounded-lg text-center text-[11px] font-bold border ${
-                    step === item.num
-                      ? 'bg-[#D4AF37]/20 text-[#F5D061] border-[#D4AF37]'
-                      : step > item.num
-                      ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45'
-                      : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/20'
-                  }`}
-                >
-                  {item.num}. {item.label}
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleFinalSubmit} className="space-y-4">
-              {step === 1 && (
-                <div className="space-y-4">
-                  <DastoorPaymentCalculator
-                    language={language}
-                    fundTier={fundTier}
-                    onFundTierChange={setFundTier}
-                    monthsCount={monthsCount}
-                    onMonthsCountChange={setMonthsCount}
-                    yearsCount={yearsCount}
-                    onYearsCountChange={setYearsCount}
-                    startMonth={startMonth}
-                    onStartMonthChange={setStartMonth}
-                    startYear={startYear}
-                    onStartYearChange={setStartYear}
-                    customAmount={payAmount}
-                    onCustomAmountChange={setPayAmount}
-                    fundCategory={payFund}
-                    onFundCategoryChange={setPayFund}
-                    payerCnic={payerCnic}
-                    onPayerCnicChange={setPayerCnic}
-                    unit={unit}
-                    onUnitChange={setUnit}
-                    contactHelpline={appSettings.contactHelpline}
-                    actionSlot={
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          disabled={!canProceedStep1}
-                          onClick={() => setStep(2)}
-                          className="kc-pressable kc-gold-button w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 disabled:opacity-45 font-extrabold text-xs rounded-xl cursor-pointer"
-                        >
-                          <span>{isUr ? 'اگلا مرحلہ: ادائیگی کا طریقہ' : 'Next: Payment Method'}</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    }
-                  />
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-2">
-                      {isUr ? 'ادائیگی کا طریقہ منتخب کریں' : 'Select Payment Method'}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {PAYMENT_METHODS.map(m => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setPayMethod(m.id)}
-                          className={`kc-pressable p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                            payMethod === m.id
-                              ? 'bg-[#D4AF37]/15 border-[#F5D061] text-[#F5D061]'
-                              : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/55'
-                          }`}
-                        >
-                          <div className="text-xs font-bold">{isUr ? m.labelUr : m.label}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">{isUr ? m.hintUr : m.hint}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-1">
-                      {isUr ? 'ٹرانزیکشن آئی ڈی / حوالہ نمبر' : 'Transaction ID / Reference Number'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={isUr ? 'مثال: TID-84920192 (نقد کے لیے خالی چھوڑ دیں)' : 'e.g. TID-84920192 (auto-generated for Cash if blank)'}
-                      value={payRef}
-                      onChange={(e) => setPayRef(e.target.value)}
-                      className="kc-luxury-input w-full text-xs font-mono px-3 py-2.5 rounded-xl"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-1">
-                      {isUr ? 'اختیاری نوٹ' : 'Optional Note'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={isUr ? 'مثال: اپریل کا فلاحی حصہ' : 'e.g. April welfare contribution'}
-                      value={payNotes}
-                      onChange={(e) => setPayNotes(e.target.value)}
-                      className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>{isUr ? 'واپس' : 'Back'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 font-extrabold text-xs rounded-xl cursor-pointer"
-                    >
-                      <span>{isUr ? 'اگلا مرحلہ: رسید اپ لوڈ کریں' : 'Next: Upload Receipt'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
-                    <div className="min-w-0">
-                      <span className="text-slate-400 block truncate">
-                        {fundTier === 'MAHANA'
-                          ? (isUr ? 'ماہانہ فنڈ' : 'Mahana Fund')
-                          : fundTier === 'SALANA'
-                          ? (isUr ? 'سالانہ فنڈ' : 'Salana Fund')
-                          : 'ہنگامی فنڈ / Hangami Fund'}{' '}
-                        · {localizeMethod(payMethod)}
-                      </span>
-                      <span className="font-mono tabular-nums font-bold text-[#F5D061]">
-                        PKR {Math.round(numericPayAmount || 0).toLocaleString()}
-                        {fundTier === 'MAHANA' && (
-                          <span className="text-emerald-300 font-sans ml-1.5">
-                            ({isUr ? mahanaPeriod.periodLabelUr : mahanaPeriod.periodLabelEn})
-                          </span>
-                        )}
-                        {fundTier === 'SALANA' && (
-                          <span className="text-emerald-300 font-sans ml-1.5">
-                            ({isUr ? salanaPeriod.periodLabelUr : salanaPeriod.periodLabelEn})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/35 font-bold shrink-0">
-                      {isUr ? 'ایڈمن منظوری زیرِ التواء' : 'Pending Admin Approval'}
-                    </span>
-                  </div>
-
-                  {submitError && (
-                    <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <span>{submitError}</span>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-200 block mb-1.5">
-                      {isUr ? 'ادائیگی کا اسکرین شاٹ / رسید کی تصویر اپ لوڈ کریں (گیلری یا کیمرہ)' : 'Upload Payment Screenshot / Receipt Photo (Gallery or Camera)'}
-                    </label>
-
-                    <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D4AF37]/45 hover:border-[#F5D061] bg-[#090D16] cursor-pointer transition-colors">
-                      <Upload className="w-6 h-6 text-[#F5D061] mb-1.5" />
-                      <span className="text-xs font-bold text-white">
-                        {isCompressing
-                          ? (isUr ? 'تصویر بہتر بنائی جا رہی ہے...' : 'Optimizing image...')
-                          : receiptImageUrl
-                          ? (isUr ? 'رسید کی تصویر تبدیل کریں' : 'Change Receipt Photo')
-                          : (isUr ? 'رسید منتخب کرنے یا تصویر لینے کے لیے ٹیپ کریں' : 'Tap to Select or Capture Receipt')}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">
-                        {isUr ? '10MB تک سپورٹ · موبائل کے لیے خودکار کمپریشن' : 'Supports up to 10MB · Auto-compressed for mobile'}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleReceiptFileChange}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {uploadError && (
-                      <p className="text-xs text-rose-400 font-medium mt-1.5">{uploadError}</p>
-                    )}
-
-                    {receiptImageUrl && (
-                      <div className="mt-3 p-2.5 rounded-xl kc-emerald-panel flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <img
-                            src={receiptImageUrl}
-                            alt="Receipt preview"
-                            className="w-14 h-14 rounded-lg object-cover border border-[#D4AF37]/40 shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-white block truncate">
-                              {receiptImageName || 'receipt.jpg'}
-                            </span>
-                            <span className="text-[10px] text-emerald-300 font-semibold">
-                              {isUr ? 'کمپریس شدہ اور تیار ہے' : 'Compressed & Ready'}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReceiptImageUrl('');
-                            setReceiptImageName('');
-                          }}
-                          className="p-1.5 text-slate-300 hover:text-rose-400 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-[#D4AF37]/20">
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>{isUr ? 'واپس' : 'Back'}</span>
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isCompressing || !canProceedStep1 || isSubmittingPayment}
-                      className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 disabled:opacity-50 text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>
-                        {isSubmittingPayment
-                          ? (isUr ? 'جمع ہو رہا ہے...' : 'Submitting...')
-                          : (isUr ? 'منظوری کے لیے جمع کروائیں' : 'Submit for Approval')}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Official Raseed Wasooli — exists only after approval */}
+      {myRaseedData ? (
+        <RaseedWasooliModal
+          isOpen={raseedOpen}
+          data={myRaseedData}
+          onClose={() => setRaseedOpen(false)}
+          defaultLanguage={isUr ? 'ur' : 'en'}
+        />
+      ) : null}
 
       {isSuperAdmin && (
         <OldPaperRecordModal
