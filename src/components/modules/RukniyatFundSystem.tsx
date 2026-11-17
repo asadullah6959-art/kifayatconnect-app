@@ -32,16 +32,16 @@ import {
   type FundPlan,
   type MemberFormType,
 } from '../../utils/fundPricing';
-import { isValid13DigitCnic, normalizeCnicDigits, formatCnicDisplay } from '../../utils/cnic';
+import { isValid13DigitCnic, normalizeCnicDigits, formatCnicDisplay, getCnicLockAlertMessage } from '../../utils/cnic';
 import type { FundCategory, PaymentMethod } from '../../types';
 
 /**
  * Rukniyat + Fund submission — replaces the old payment wizard.
  *
- * The applicant fills the official Rukniyat Form and chooses a fund. No serial
- * number is generated or typed here: the رکنیت نمبر stays empty ("منظوری کے بعد")
- * until an authorised officer approves the application, and that same number is
- * then printed on the Raseed Wasooli.
+ * The applicant fills the official Rukniyat Form and chooses a fund. The رکنیت نمبر
+ * is never typed by hand: it is minted automatically the moment the form is
+ * submitted, printed on the form straight away, and the Raseed Wasooli reuses that
+ * identical number when an authorised officer approves the application.
  */
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; en: string; ur: string }> = [
@@ -72,6 +72,8 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  /** Serial minted by this submission — the receipt reuses the same value. */
+  const [issuedSerial, setIssuedSerial] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +116,12 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const handleSubmit = async () => {
     setError(null);
+    // Hard gate: a 13-digit CNIC is mandatory. Nothing is submitted without it, and
+    // the reason is shown in both languages so the requirement is unambiguous.
+    if (!isValid13DigitCnic(values.cnic)) {
+      setError(`${getCnicLockAlertMessage('ur')} — ${getCnicLockAlertMessage('en')}`);
+      return;
+    }
     if (validationErrors.length > 0) {
       setError(validationErrors[0]);
       return;
@@ -151,6 +159,8 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
         setError(result?.error || (isUr ? 'درخواست جمع نہیں ہو سکی' : 'Could not submit the application'));
         return;
       }
+      // The serial is minted by this submission; the receipt reuses this exact value.
+      setIssuedSerial(result.transaction?.serialNumber || result.transaction?.receiptNumber || null);
       setSubmitted(true);
     } catch (err: any) {
       setError(err?.message || (isUr ? 'درخواست جمع نہیں ہو سکی' : 'Could not submit the application'));
@@ -171,8 +181,8 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5">
               {isUr
-                ? 'فارم بھریں اور فنڈ منتخب کریں۔ رکنیت نمبر منظوری کے بعد خودکار جاری ہوگا۔'
-                : 'Fill the form and choose a fund. The membership number is issued automatically after approval.'}
+                ? 'فارم بھریں اور فنڈ منتخب کریں۔ رکنیت نمبر جمع کرانے پر خودکار جاری ہوتا ہے اور منظوری کے بعد اسی نمبر سے رسید بنتی ہے۔'
+                : 'Fill the form and choose a fund. The membership number is issued automatically on submission and the receipt reuses it after approval.'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -211,9 +221,22 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
               {isUr
-                ? `آپ کی درخواست ${formatPkr(quote.totalAmount)} کے ساتھ جمع ہو گئی ہے۔ منظوری کے بعد وہی رکنیت نمبر جاری ہوگا جو رسید وصولی پر بھی پرنٹ ہوگا۔`
-                : `Your application for ${formatPkr(quote.totalAmount)} was submitted. After approval, the single membership number issued will also print on the Raseed Wasooli.`}
+                ? `آپ کی درخواست ${formatPkr(quote.totalAmount)} کے ساتھ جمع ہو گئی ہے۔ رکنیت نمبر ابھی جاری ہو چکا ہے اور منظوری کے بعد اسی نمبر کے ساتھ رسید وصولی جاری ہوگی۔`
+                : `Your application for ${formatPkr(quote.totalAmount)} was submitted. The membership number is already issued; after approval the Raseed Wasooli is issued with that same number.`}
             </p>
+            {issuedSerial ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#D4AF37]/50 bg-[#0B1220]/70 px-3 py-2">
+                <span className="text-[11px] text-slate-300">
+                  {isUr ? 'رکنیت نمبر / رسید نمبر' : 'Membership No. / Receipt No.'}
+                </span>
+                <span className="sqi-serial-badge">{issuedSerial}</span>
+                <span className="text-[10px] text-slate-400">
+                  {isUr
+                    ? 'یہی نمبر فارم اور رسید وصولی دونوں پر پرنٹ ہوگا۔'
+                    : 'This same number prints on both the form and the Raseed Wasooli.'}
+                </span>
+              </div>
+            ) : null}
             <div className="flex gap-2 pt-1">
               <button
                 type="button"
@@ -241,6 +264,7 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
               onChange={(patch: Partial<RukniyatFormValues>) => setValues(prev => ({ ...prev, ...patch }))}
               language={docLang}
               editable={!submitted}
+              serialNumber={issuedSerial}
             />
           </div>
 
@@ -420,8 +444,8 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
               </div>
               <p className="text-[10px] text-slate-500 leading-relaxed pt-1">
                 {isUr
-                  ? 'رکنیت نمبر رقم نہیں ہے — وہ منظوری کے بعد الگ سے جاری ہوگا۔'
-                  : 'The membership number is not money — it is issued separately after approval.'}
+                  ? 'رکنیت نمبر رقم نہیں ہے — وہ جمع کرانے پر الگ سے جاری ہوتا ہے۔'
+                  : 'The membership number is not money — it is issued separately on submission.'}
               </p>
             </div>
 

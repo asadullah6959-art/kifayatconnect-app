@@ -106,7 +106,7 @@ import {
   FirebaseUser,
   ROOT_SUPER_ADMIN_EMAIL
 } from '../services/firebase';
-import { mintMembershipSerial, attachSerialToApplication } from '../services/membershipSerialService';
+import { mintMembershipSerial } from '../services/membershipSerialService';
 import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
 import { shareKifayatForIphone } from '../utils/iphoneShare';
@@ -3249,17 +3249,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const tx = payments.find(p => p.id === txId);
     if (!tx) return;
 
-    // The official serial is minted ONCE, only on approval, and is printed
-    // identically on the Rukniyat Form (رکنیت نمبر) and the Raseed Wasooli (رسید نمبر).
-    // Pending or rejected applications never hold a serial.
+    // The official serial was minted ONCE, when the Rukniyat Form was submitted.
+    // Approval must reuse it unchanged so the form (رکنیت نمبر) and the receipt
+    // (رسید نمبر) print the identical number. mintMembershipSerial returns an already
+    // issued serial untouched; only a legacy submission with no serial mints one here.
     let issuedSerial: string = tx.serialNumber || tx.receiptNumber || '';
     if (approved && tx.status !== 'VERIFIED') {
       const minted = await mintMembershipSerial(issuedSerial);
       issuedSerial = minted.serial;
-      await attachSerialToApplication(tx.id, issuedSerial, {
-        approvedBy: `${currentUser.name} (${currentUser.role})`,
-        amount: tx.amount
-      });
     }
 
     const updatedTx: PaymentTransaction = {
