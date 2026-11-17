@@ -1,7 +1,7 @@
 FROM node:26-alpine AS build
 RUN apk upgrade --no-cache
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN npm install
 COPY . .
 # The build needs dev dependencies; they are removed before the copy below.
