@@ -141,6 +141,16 @@ test('a model that nests its answer under "fields" is still mapped', () => {
   assert.equal(nested.patch.unit, 'Swat');
 });
 
+test('an Urdu district that matches nothing is reported instead of blanking the district select', () => {
+  const { patch, detected } = buildFormPatch({ district: 'کندیاں' });
+  assert.equal(patch.unit, undefined, 'an unmatched Urdu value must not enter the English select');
+  assert.equal(detected.districtRaw, 'کندیاں', 'the written value is still shown for confirmation');
+
+  // A district the model already returned in English is kept as written.
+  const latin = buildFormPatch({ district: 'Somewheristan' });
+  assert.equal(latin.patch.unit, 'Somewheristan');
+});
+
 test('unreadable photos still return an empty patch instead of an error', () => {
   const empty = buildFormPatch({});
   assert.equal(empty.filledCount, 0);

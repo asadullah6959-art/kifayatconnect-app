@@ -398,9 +398,12 @@ export function buildFormPatch(raw: unknown): {
     if (hit) {
       patch.unit = hit.name;
       detected.districtMatched = hit.name;
-    } else {
+    } else if (!/[\u0600-\u06ff]/.test(districtRaw)) {
+      // Unknown but Latin: keep what was written so the office can confirm it.
       patch.unit = districtRaw;
     }
+    // Urdu text that matches no district stays in detected.districtRaw for the
+    // chips: writing it into the English district select would blank that box.
   }
 
   const date = normalizeDateValue(readField(source, FIELD_ALIASES.date));
@@ -473,9 +476,12 @@ Use EXACTLY these keys (English key, then the same value under the Urdu key). Us
 Rules:
 - "cnic": 13 digits only, no dashes.
 - "date": YYYY-MM-DD.
+- "tabar": the ENGLISH clan name (e.g. "Faiz Khel", "Rousa Khel"). If the paper writes it in Urdu, give the English name as well as the Urdu one.
+- "district": the ENGLISH name of the Pakistani district (e.g. "Kohat", "Swat"). If the paper writes it in Urdu, transliterate it to that English district name — the app matches the district list, so an Urdu-only value cannot be placed.
 - "serialNo": the membership/receipt number PRINTED on the paper. It is an identifier, never a money amount.
 - "amount": money in PKR only, digits only, no currency symbol. Empty if no amount is written.
-- Handwriting may be faded, tilted or in dim light: read it as best you can and keep going.`;
+- Handwriting may be faded, tilted or in dim light: read it as best you can and keep going.
+- Return every key even when the value is unknown. A photo you can only partly read is still useful — never refuse the image.`;
 
 function resolveApiKey(): string {
   try {
