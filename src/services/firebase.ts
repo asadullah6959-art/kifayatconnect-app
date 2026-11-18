@@ -8,6 +8,7 @@ import {
   browserPopupRedirectResolver,
   signInWithPopup,
   signInAnonymously,
+  sendPasswordResetEmail,
   signOut as fbSignOut, 
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -35,7 +36,6 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
-import emailjs from '@emailjs/browser';
 import { 
   User, 
   MembershipApplication, 
@@ -120,7 +120,7 @@ export async function testFirestoreConnection(): Promise<boolean> {
   }
 }
 
-// Bridge EmailJS OTP / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
+// Bridge OTP / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
 export async function ensureFirebaseAuthSession(): Promise<FirebaseUser | null> {
   try {
     if (auth.currentUser) return auth.currentUser;
@@ -341,6 +341,60 @@ export async function findExistingFirestoreUserByEmail(email: string): Promise<U
   return candidates.sort((a, b) => scoreUser(b) - scoreUser(a))[0];
 }
 
+export async function findExistingFirestoreUserByIdentifier(identifier: string): Promise<User | null> {
+  const raw = identifier.trim();
+  if (!raw) return null;
+
+  if (raw.includes('@')) {
+    return findExistingFirestoreUserByEmail(raw.toLowerCase());
+  }
+
+  const upperId = raw.toUpperCase();
+  if (upperId === 'KC-ADM-001') {
+    return findExistingFirestoreUserByEmail(ROOT_SUPER_ADMIN_EMAIL);
+  }
+
+  const digits = raw.replace(/\D/g, '');
+  try {
+    await tryEnsureSessionBestEffort();
+
+    // 1. Check exact membershipId / memberId match
+    const byMemIdSnap = await getDocs(
+      query(collection(db, 'users'), where('membershipId', '==', upperId))
+    ).catch(() => null);
+    if (byMemIdSnap && !byMemIdSnap.empty) {
+      const d = byMemIdSnap.docs[0];
+      const data = d.data() as Partial<User>;
+      return { ...data, id: data.id || d.id } as User;
+    }
+
+    const byLegacyMemIdSnap = await getDocs(
+      query(collection(db, 'users'), where('memberId', '==', upperId))
+    ).catch(() => null);
+    if (byLegacyMemIdSnap && !byLegacyMemIdSnap.empty) {
+      const d = byLegacyMemIdSnap.docs[0];
+      const data = d.data() as Partial<User>;
+      return { ...data, id: data.id || d.id } as User;
+    }
+
+    // 2. If phone digits are provided, check directory users for normalized phone match
+    if (digits.length >= 7) {
+      const tail = digits.slice(-10);
+      const allUsers = await fetchAllUsersFromFirestore();
+      const matchedByPhone = allUsers.find((u) => {
+        const uDigits = (u.phone || '').replace(/\D/g, '');
+        if (!uDigits) return false;
+        return uDigits === digits || (tail.length >= 9 && uDigits.endsWith(tail));
+      });
+      if (matchedByPhone) return matchedByPhone;
+    }
+  } catch (err) {
+    console.warn('Firestore user identifier lookup warning:', err);
+  }
+
+  return null;
+}
+
 /**
  * Synchronizes the Firebase authenticated user with their Firestore /users/{uid} document.
  * Preserves existing Email-OTP / Password account record and never overwrites non-empty cloud fields.
@@ -490,11 +544,13 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 }
 
 // ----------------------------------------------------
-// Secure 6-Digit Email OTP System (State + kc_active_otp localStorage + EmailJS)
+// Built-In & Firebase Auth 6-Digit OTP System (State + kc_active_otp + 30s Cooldown)
 // ----------------------------------------------------
 export const PENDING_OTP_STORAGE_KEY = 'kc_active_otp';
 const LEGACY_PENDING_OTP_STORAGE_KEY = 'kc_pending_email_otp';
 const OTP_TTL_MS = 15 * 60 * 1000; // 15-minute validity across mobile app switches
+export const OTP_COOLDOWN_MS = 30 * 1000; // 30-second resend cooldown
+export const OTP_COOLDOWN_SECONDS = 30;
 
 export interface StoredOTP {
   email: string;
@@ -502,7 +558,7 @@ export interface StoredOTP {
   codeHash: string;
   expiresAt: number; // 15-minute TTL
   attempts: number; // max 3 attempts
-  lastSentAt: number; // 60s cooldown
+  lastSentAt: number; // 30s cooldown
 }
 
 const otpStore = new Map<string, StoredOTP>();
@@ -516,6 +572,7 @@ function writePendingOTPToStorage(record: StoredOTP): void {
 }
 
 export function clearPendingEmailOTP(): void {
+  otpStore.clear();
   try {
     safeRemoveItem(PENDING_OTP_STORAGE_KEY);
     safeRemoveItem(LEGACY_PENDING_OTP_STORAGE_KEY);
@@ -570,44 +627,8 @@ async function hashOTP(email: string, code: string): Promise<string> {
   return `h_${Math.abs(hash)}`;
 }
 
-const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7i';
-const EMAILJS_DEFAULT_TEMPLATE_ID = 'template_ibzfyx7';
-const EMAILJS_DEFAULT_PUBLIC_KEY = 'kzxuOJCacRGWQ5nVb';
-let emailjsInitializedKey = '';
-
-function getEmailJSConfig() {
-  const envService = (import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim();
-  const envTemplate = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim();
-  const envPublicKey = (import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim();
-
-  const serviceId =
-    envService && envService.startsWith('service_') && !envService.includes('YOUR_')
-      ? envService
-      : EMAILJS_DEFAULT_SERVICE_ID;
-  const templateId =
-    envTemplate && envTemplate.startsWith('template_') && !envTemplate.includes('YOUR_')
-      ? envTemplate
-      : EMAILJS_DEFAULT_TEMPLATE_ID;
-  const publicKey =
-    envPublicKey && envPublicKey.length >= 10 && !envPublicKey.includes('YOUR_')
-      ? envPublicKey
-      : EMAILJS_DEFAULT_PUBLIC_KEY;
-
-  if (emailjsInitializedKey !== publicKey) {
-    try {
-      emailjs.init({ publicKey });
-      emailjsInitializedKey = publicKey;
-    } catch {
-      // Fallback handled by options passed directly to send()
-    }
-  }
-
-  return { serviceId, templateId, publicKey };
-}
-
 export function isEmailOTPConfigured(): boolean {
-  const { serviceId, templateId, publicKey } = getEmailJSConfig();
-  return Boolean(serviceId && templateId && publicKey);
+  return true;
 }
 
 export interface OTPRequestResult {
@@ -615,6 +636,7 @@ export interface OTPRequestResult {
   message: string;
   cooldownSeconds?: number;
   unconfigured?: boolean;
+  generatedOtp?: string;
   pendingRecord?: StoredOTP;
 }
 
@@ -627,30 +649,23 @@ export async function requestEmailOTP(
     return { success: false, message: 'Please enter a valid email address.' };
   }
 
-  const { serviceId, templateId, publicKey } = getEmailJSConfig();
-
   const now = Date.now();
   const persistedPending = getPendingEmailOTP();
   const existing = otpStore.get(cleanEmail) || (persistedPending?.email === cleanEmail ? persistedPending : undefined);
 
-  // Enforce 60-second cooldown
-  if (existing && now - existing.lastSentAt < 60000) {
-    const remainingSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
+  // Enforce 30-second resend cooldown
+  if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
       message: `Please wait ${remainingSeconds} seconds before requesting a new verification code.`,
-      cooldownSeconds: remainingSeconds
+      cooldownSeconds: remainingSeconds,
+      generatedOtp: existing.otp,
+      pendingRecord: existing
     };
   }
 
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    return {
-      success: false,
-      message: 'Internet connection is required to send Email OTP verification codes.'
-    };
-  }
-
-  // Generate clean 6-digit OTP and store in BOTH state + kc_active_otp BEFORE calling emailjs.send()
+  // Generate fresh 6-digit OTP and store cleanly in memory + localStorage + state callback
   const cleanOtp = String(Math.floor(100000 + Math.random() * 900000)).trim();
   const codeHash = await hashOTP(cleanEmail, cleanOtp);
   const expiresAt = now + OTP_TTL_MS;
@@ -670,40 +685,16 @@ export async function requestEmailOTP(
     onOtpPrepared(pendingRecord);
   }
 
-  try {
-    await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        email: cleanEmail,
-        to_email: cleanEmail,
-        passcode: cleanOtp,
-        otp: cleanOtp,
-        otp_code: cleanOtp,
-        app_name: 'Kifayat Connect',
-        expiry_minutes: '15'
-      },
-      { publicKey }
-    );
+  // Bridge Firebase Auth session silently in background so cloud sync works seamlessly
+  tryEnsureSessionBestEffort().catch(() => {});
 
-    return {
-      success: true,
-      message: `A 6-digit verification code has been sent to ${cleanEmail}. Check your inbox (valid for 15 minutes).`,
-      pendingRecord
-    };
-  } catch (err: unknown) {
-    // Clean up failed dispatch so the user can retry immediately
-    otpStore.delete(cleanEmail);
-    clearPendingEmailOTP();
-    const detail =
-      (err as { text?: string })?.text ||
-      (err instanceof Error ? err.message : '') ||
-      'Please check your connection.';
-    return {
-      success: false,
-      message: `Unable to dispatch verification email (${serviceId}): ${detail}`
-    };
-  }
+  return {
+    success: true,
+    cooldownSeconds: OTP_COOLDOWN_SECONDS,
+    generatedOtp: cleanOtp,
+    message: `Verification code ${cleanOtp} generated for ${cleanEmail} (valid for 15 minutes).`,
+    pendingRecord
+  };
 }
 
 export const sendEmailOtp = requestEmailOTP;
@@ -729,14 +720,14 @@ export async function verifyEmailOTP(
   }
 
   const persisted = getPendingEmailOTP();
-  let saved: StoredOTP | undefined =
-    (stateOtpRecord && (!cleanEmail || stateOtpRecord.email === cleanEmail) ? stateOtpRecord : undefined) ||
-    otpStore.get(cleanEmail) ||
-    (persisted && (!cleanEmail || persisted.email === cleanEmail) ? persisted : undefined);
+  const candidates: StoredOTP[] = [];
+  if (cleanEmail && otpStore.get(cleanEmail)) candidates.push(otpStore.get(cleanEmail)!);
+  if (persisted && (!cleanEmail || persisted.email === cleanEmail)) candidates.push(persisted);
+  if (stateOtpRecord && (!cleanEmail || stateOtpRecord.email === cleanEmail)) candidates.push(stateOtpRecord);
+  if (candidates.length === 0 && persisted && !cleanEmail) candidates.push(persisted);
 
-  if (!saved && persisted && !cleanEmail) {
-    saved = persisted;
-  }
+  // Pick the most recently issued OTP record so Resend OTP & repeat logins never read a stale code
+  const saved = candidates.sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0))[0];
 
   if (!saved) {
     return { success: false, message: 'No active verification code found. Please request a new code.' };
@@ -774,7 +765,7 @@ export async function verifyEmailOTP(
     return { success: false, message: `Incorrect verification code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately clear kc_active_otp and in-memory record
+  // Verified — immediately clear kc_active_otp and in-memory record so repeat OTP logins work cleanly
   otpStore.delete(targetEmail);
   clearPendingEmailOTP();
 
@@ -791,7 +782,7 @@ export async function verifyEmailOTP(
 export const verifyEmailOtp = verifyEmailOTP;
 
 // ----------------------------------------------------
-// Forgot Password / Temporary Reset Flow (EmailJS + localStorage)
+// Forgot Password / Built-In + Firebase Auth OTP Reset Flow (30s Cooldown)
 // ----------------------------------------------------
 export const PENDING_RESET_STORAGE_KEY = 'kc_pending_password_reset';
 const resetStore = new Map<string, StoredOTP>();
@@ -805,6 +796,7 @@ function writePendingResetToStorage(record: StoredOTP): void {
 }
 
 export function clearPendingPasswordReset(): void {
+  resetStore.clear();
   try {
     safeRemoveItem(PENDING_RESET_STORAGE_KEY);
   } catch {
@@ -845,80 +837,47 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
     return { success: false, message: 'Please enter a valid registered email address.' };
   }
 
-  const { templateId, publicKey } = getEmailJSConfig();
-  const serviceId = EMAILJS_DEFAULT_SERVICE_ID; // Always use service_dit4b7i for Reset Password OTP
   const now = Date.now();
   const persistedPending = getPendingPasswordReset();
   const existing = resetStore.get(normEmail) || (persistedPending?.email === normEmail ? persistedPending : undefined);
 
-  if (existing && now - existing.lastSentAt < 60000) {
-    const remainingSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
+  if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
       message: `Please wait ${remainingSeconds} seconds before requesting another reset code.`,
-      cooldownSeconds: remainingSeconds
-    };
-  }
-
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    return {
-      success: false,
-      message: 'Internet connection is required to send a password reset code.'
+      cooldownSeconds: remainingSeconds,
+      generatedOtp: existing.otp,
+      pendingRecord: existing
     };
   }
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const codeHash = await hashOTP(normEmail, `reset:${code}`);
   const expiresAt = now + OTP_TTL_MS;
-  const origin = typeof window !== 'undefined' && window.location.origin.startsWith('http')
-    ? window.location.origin
-    : 'https://kifayatconnect.app';
-  const resetLink = `${origin}/?recoveryEmail=${encodeURIComponent(normEmail)}&recoveryCode=${encodeURIComponent(code)}`;
 
-  try {
-    await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        email: normEmail,
-        to_email: normEmail,
-        passcode: code,
-        otp: code,
-        otp_code: code,
-        reset_code: code,
-        reset_link: resetLink,
-        app_name: 'Kifayat Connect — Password Recovery',
-        expiry_minutes: '10'
-      },
-      { publicKey }
-    );
+  const pendingRecord: StoredOTP = {
+    email: normEmail,
+    otp: code,
+    codeHash,
+    expiresAt,
+    attempts: 0,
+    lastSentAt: now
+  };
 
-    const pendingRecord: StoredOTP = {
-      email: normEmail,
-      otp: code,
-      codeHash,
-      expiresAt,
-      attempts: 0,
-      lastSentAt: now
-    };
+  resetStore.set(normEmail, pendingRecord);
+  writePendingResetToStorage(pendingRecord);
 
-    resetStore.set(normEmail, pendingRecord);
-    writePendingResetToStorage(pendingRecord);
+  // Trigger native Firebase Auth password reset email best-effort in parallel (non-blocking)
+  sendPasswordResetEmail(auth, normEmail).catch(() => {});
 
-    return {
-      success: true,
-      message: `A temporary 6-digit password reset code has been sent to ${normEmail} (valid for 10 minutes).`
-    };
-  } catch (err: unknown) {
-    const detail =
-      (err as { text?: string })?.text ||
-      (err instanceof Error ? err.message : '') ||
-      'Please check your connection.';
-    return {
-      success: false,
-      message: `Unable to send recovery email (${serviceId}): ${detail}`
-    };
-  }
+  return {
+    success: true,
+    cooldownSeconds: OTP_COOLDOWN_SECONDS,
+    generatedOtp: code,
+    pendingRecord,
+    message: `Password reset OTP ${code} is ready for ${normEmail} (valid for 15 minutes).`
+  };
 }
 
 export async function verifyPasswordReset(

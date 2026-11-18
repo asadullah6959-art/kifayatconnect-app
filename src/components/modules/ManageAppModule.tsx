@@ -270,6 +270,32 @@ export const ManageAppModule: React.FC = () => {
 
   const isUr = language === 'ur';
 
+  const pendingApprovalsCount = useMemo(
+    () => users.filter(u => !isFounderUser(u) && resolveUserApprovalStatus(u) === 'pending').length,
+    [users]
+  );
+
+  const superAdminsList = useMemo(() => users.filter(u => u.role === 'SUPER_ADMIN'), [users]);
+  const promotableUsers = useMemo(
+    () => users.filter(u => u.role !== 'SUPER_ADMIN' && !u.isSuspended),
+    [users]
+  );
+  const filteredMembers = useMemo(() => {
+    const q = memberSearch.toLowerCase();
+    return users.filter(u => {
+      if (memberApprovalFilter === 'PENDING') {
+        if (isFounderUser(u) || resolveUserApprovalStatus(u) !== 'pending') return false;
+      }
+      if (!memberSearch.trim()) return true;
+      return (
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.district && u.district.toLowerCase().includes(q)) ||
+        (u.membershipId && u.membershipId.toLowerCase().includes(q))
+      );
+    });
+  }, [users, memberSearch, memberApprovalFilter]);
+
   if (!currentUser) return null;
 
   if (!isSuperAdmin) {
@@ -745,32 +771,6 @@ export const ManageAppModule: React.FC = () => {
     { id: 'FEATURES', label: isUr ? '9. فیچر کنٹرول' : '9. Feature Toggles', icon: ToggleLeft },
     { id: 'APK_LOCATIONS', label: isUr ? '10. APK، مقامات و لاگز' : '10. APK, Locations & Logs', icon: Smartphone }
   ];
-
-  const pendingApprovalsCount = useMemo(
-    () => users.filter(u => !isFounderUser(u) && resolveUserApprovalStatus(u) === 'pending').length,
-    [users]
-  );
-
-  const superAdminsList = useMemo(() => users.filter(u => u.role === 'SUPER_ADMIN'), [users]);
-  const promotableUsers = useMemo(
-    () => users.filter(u => u.role !== 'SUPER_ADMIN' && !u.isSuspended),
-    [users]
-  );
-  const filteredMembers = useMemo(() => {
-    const q = memberSearch.toLowerCase();
-    return users.filter(u => {
-      if (memberApprovalFilter === 'PENDING') {
-        if (isFounderUser(u) || resolveUserApprovalStatus(u) !== 'pending') return false;
-      }
-      if (!memberSearch.trim()) return true;
-      return (
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.district && u.district.toLowerCase().includes(q)) ||
-        (u.membershipId && u.membershipId.toLowerCase().includes(q))
-      );
-    });
-  }, [users, memberSearch, memberApprovalFilter]);
 
   const permLabels: Array<{ key: keyof RolePermissions; label: string }> = [
     { key: 'canManageUsers', label: isUr ? 'صارفین کا انتظام' : 'Manage Users' },
