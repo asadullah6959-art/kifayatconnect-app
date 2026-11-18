@@ -283,8 +283,8 @@ export const ManageAppModule: React.FC = () => {
         </h2>
         <p className="text-xs text-slate-400 mt-1">
           {isUr
-            ? 'ماسٹر کنٹرول پینل (👑) صرف تصدیق شدہ سپر ایڈمنز کے لیے مخصوص ہے۔'
-            : 'The Master Control Panel (👑) is strictly reserved for verified Super Admins.'}
+            ? 'ماسٹر کنٹرول پینل (👑) صرف بانی (KC-ADM-001) کے لیے مخصوص ہے۔'
+            : 'The Master Control Panel (👑) is strictly reserved for the Founder (KC-ADM-001).'}
         </p>
       </div>
     );
@@ -382,7 +382,7 @@ export const ManageAppModule: React.FC = () => {
       setPinMode('ENTER');
       setResetOtpInput('');
       setNewResetPin('');
-      showNotice('success', isUr ? 'ای میل او ٹی پی کے ذریعے ماسٹر پن تبدیل کر دیا گیا۔' : 'Master Control PIN reset via Email OTP.');
+      showNotice('success', isUr ? 'ماسٹر کنٹرول پن تبدیل کر دیا گیا۔' : 'Master Control PIN updated successfully.');
     } finally {
       setPinBusy(false);
     }
@@ -522,13 +522,12 @@ export const ManageAppModule: React.FC = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                {translate(language, 'otpCodeLabel')}
+                {isUr ? 'تصدیقی کوڈ (لنک کھولنے پر اختیاری)' : 'Verification code (optional once the link is opened)'}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
-                required
                 value={resetOtpInput}
                 onChange={(e) => setResetOtpInput(e.target.value.replace(/\D/g, ''))}
                 placeholder="123456"

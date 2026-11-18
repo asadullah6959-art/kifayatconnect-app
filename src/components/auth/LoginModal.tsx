@@ -19,6 +19,7 @@ import {
   getPendingEmailOTP,
   getPendingPasswordReset,
   isNativeMobileRuntime,
+  OTP_RESEND_COOLDOWN_SECONDS,
   requestPasswordReset
 } from '../../services/firebase';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
@@ -202,7 +203,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
       const res = await requestOTP(otpEmail.trim());
       if (res.success) {
         setOtpSent(true);
-        setOtpCooldown(res.cooldownSeconds || 60);
+        setOtpCooldown(res.cooldownSeconds || OTP_RESEND_COOLDOWN_SECONDS);
         setOtpSuccess(res.message);
       } else {
         setOtpError(res.message);
@@ -279,7 +280,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
       const res = await requestPasswordReset(resetEmail.trim());
       if (res.success) {
         setResetSent(true);
-        setResetCooldown(res.cooldownSeconds || 60);
+        setResetCooldown(res.cooldownSeconds || OTP_RESEND_COOLDOWN_SECONDS);
         setResetSuccess(res.message);
       } else {
         setResetError(res.message);
