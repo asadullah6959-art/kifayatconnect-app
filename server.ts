@@ -26,27 +26,36 @@ async function startServer() {
     if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
       res.status(503).json({
         success: false,
-        code: 'SCAN_UNAVAILABLE',
-        error: 'AI paper scan is not configured on this server. Please use manual entry.',
+        code: 'SCAN_NOT_CONFIGURED',
+        error: 'The AI scanner needs GEMINI_API_KEY in Settings → Environment variables.',
       });
       return;
     }
 
-    const body = req.body as { imageDataUrl?: string };
-    const rawDataUrl = typeof body?.imageDataUrl === 'string' ? body.imageDataUrl.trim() : '';
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(rawDataUrl);
+    const body = req.body as { imageDataUrl?: string; mimeType?: string; data?: string; hint?: string };
+    let mimeType = 'image/jpeg';
+    let base64Data = '';
 
-    if (!match) {
+    if (typeof body?.data === 'string' && body.data.trim()) {
+      // Pre-enhanced JPEG sent by the client scanner (canvas pass already applied).
+      mimeType = (body.mimeType || 'image/jpeg').trim() || 'image/jpeg';
+      base64Data = body.data.trim().replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
+    } else if (typeof body?.imageDataUrl === 'string') {
+      const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(body.imageDataUrl.trim());
+      if (match) {
+        mimeType = match[1];
+        base64Data = match[2];
+      }
+    }
+
+    if (!base64Data) {
       res.status(400).json({
         success: false,
         code: 'INVALID_IMAGE',
-        error: 'Please upload a valid JPG, PNG, or WEBP paper form photo.',
+        error: 'The photo could not be prepared for scanning. Please try taking it again.',
       });
       return;
     }
-
-    const mimeType = match[1];
-    const base64Data = match[2];
 
     try {
       const ai = new GoogleGenAI({
@@ -61,10 +70,14 @@ async function startServer() {
         'For date, prefer YYYY-MM-DD if clear, otherwise keep the visible date string.',
         'For amount, return numeric PKR value (0 if not present). For tabar, identify clan/family name if visible (e.g., Faiz Khel, Swati Khel, Rousa Khel, etc.).',
         'Leave any unreadable or missing fields as empty strings (or 0 for amount). Do not invent data.',
+        'Return a single JSON object using these keys, repeating each value under its Urdu key as well:',
+        'name, نام, fatherName, ولد, contactNumber, رابطہ نمبر, cnic, شناختی کارڈ نمبر, tabar, مرکزی خاندان, subBranch, ذیلی شاخ,',
+        'representative, نمائندہ, district, یونٹ, date, تاریخ, serialNo, رکنیت نمبر, amount, مبلغ, currentAddress, موجودہ پتہ, permanentAddress, مستقل پتہ.',
+        'Use 13 digits with no dashes for cnic, YYYY-MM-DD for date, digits only for amount, and put the printed membership/receipt number in serialNo.',
       ].join(' ');
 
       const response = await ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: 'gemini-2.5-flash',
         contents: [
           {
             role: 'user',
@@ -106,6 +119,7 @@ async function startServer() {
 
       res.json({
         success: true,
+        text: rawText,
         fields: {
           oldMembershipNo: String(parsed.oldMembershipNo || '').trim(),
           oldReceiptSerialNo: String(parsed.oldReceiptSerialNo || '').trim(),
@@ -125,8 +139,8 @@ async function startServer() {
       console.warn('Paper form scan failed:', err);
       res.status(502).json({
         success: false,
-        code: 'SCAN_FAILED',
-        error: 'Could not read paper form automatically. You can enter all fields manually below.',
+        code: 'SCAN_ERROR',
+        error: 'The scanner did not answer just now. Your photo is kept — please try again.',
       });
     }
   });

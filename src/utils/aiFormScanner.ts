@@ -259,7 +259,7 @@ const FIELD_ALIASES: Record<string, string[]> = {
   clanRep: ['representative', 'clanrepresentative', 'representativename', 'نمائندہ', 'نمائندہ خاندان'],
   district: ['district', 'unit', 'districtname', 'یونٹ', 'ضلع', 'یونٹضلع'],
   date: ['date', 'formdate', 'تاریخ'],
-  serialNo: ['serialno', 'serial', 'serialnumber', 'membershipno', 'membershipnumber', 'receiptno', 'receiptnumber', 'رکنیت نمبر', 'رسید نمبر', 'سیریل نمبر'],
+  serialNo: ['serialno', 'serial', 'serialnumber', 'membershipno', 'membershipnumber', 'receiptno', 'receiptnumber', 'oldmembershipno', 'oldreceiptserialno', 'رکنیت نمبر', 'رسید نمبر', 'سیریل نمبر'],
   amount: ['amount', 'paidamount', 'payment', 'paymentamount', 'fund', 'مبلغ', 'رقم', 'مبلغرقم'],
   currentAddress: ['currentaddress', 'presentaddress', 'موجودہ پتہ', 'حالیہ پتہ'],
   permanentAddress: ['permanentaddress', 'address', 'مستقل پتہ', 'پتہ'],
@@ -523,7 +523,7 @@ async function callGeminiDirect(
 async function callGeminiProxy(mimeType: string, base64: string, hint: string): Promise<string> {
   let response: Response;
   try {
-    response = await fetch('/api/scan-form', {
+    response = await fetch('/api/scan-paper-form', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mimeType, data: base64, hint }),
