@@ -83,7 +83,14 @@ test('amount is a plain PKR number and never the paper serial', () => {
 
 test('clan names resolve from the 11-clan list in both scripts', () => {
   assert.ok(matchClan('Faiz Khel'), 'Faiz Khel should match a clan');
-  assert.ok(matchClan('روزا خیل'), 'روزا خیل should match a clan');
+
+  // OCR output varies between the hamza and plain-alef spellings of the same clan.
+  const hamza = matchClan('رؤسا خیل');
+  const plain = matchClan('روسا خیل');
+  assert.ok(hamza, 'رؤسا خیل should match a clan');
+  assert.ok(plain, 'روسا خیل should match the same clan');
+  assert.equal(plain?.englishName, hamza?.englishName);
+
   assert.equal(matchClan('Not A Clan At All'), null);
 });
 

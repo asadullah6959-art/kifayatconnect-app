@@ -39,7 +39,7 @@ export interface EnhancedPhoto {
 
 export interface ScanDetected {
   serialNo: string;
-  amount: string;
+  amount: number | null;
   clanRaw: string;
   clanMatched: string;
   districtRaw: string;
@@ -170,7 +170,14 @@ function normalizeLatin(value: string): string {
 
 function normalizeUrdu(value: string): string {
   return (value || '')
-    .replace(/[\u200b-\u200f\u064b-\u0652]/g, '')
+    .replace(/[\u200b-\u200f\u064b-\u0652\u0670\u0640]/g, '')
+    // Fold hamza/alef variants so رؤسا خیل and روسا خیل resolve to the same clan.
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ی')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/ة/g, 'ہ')
     .replace(/[^\u0600-\u06ff]/g, '');
 }
 
@@ -325,7 +332,7 @@ export function buildFormPatch(raw: unknown): {
 } {
   const empty = {
     patch: {} as Partial<RukniyatFormValues>,
-    detected: { serialNo: '', amount: '', clanRaw: '', clanMatched: '', districtRaw: '', districtMatched: '' } as ScanDetected,
+    detected: { serialNo: '', amount: null, clanRaw: '', clanMatched: '', districtRaw: '', districtMatched: '' } as ScanDetected,
     filledCount: 0,
   };
   if (!raw || typeof raw !== 'object') return empty;
@@ -335,7 +342,7 @@ export function buildFormPatch(raw: unknown): {
   const source: Record<string, unknown> = nested && typeof nested === 'object' ? { ...root, ...nested } : root;
 
   const patch: Partial<RukniyatFormValues> = {};
-  const detected: ScanDetected = { serialNo: '', amount: '', clanRaw: '', clanMatched: '', districtRaw: '', districtMatched: '' };
+  const detected: ScanDetected = { serialNo: '', amount: null, clanRaw: '', clanMatched: '', districtRaw: '', districtMatched: '' };
 
   const name = readField(source, FIELD_ALIASES.applicantName);
   if (name) patch.applicantName = name;
@@ -395,7 +402,8 @@ export function buildFormPatch(raw: unknown): {
   if (date) patch.formDate = date;
 
   detected.serialNo = readField(source, FIELD_ALIASES.serialNo);
-  detected.amount = normalizeAmountValue(readField(source, FIELD_ALIASES.amount));
+  const amountText = normalizeAmountValue(readField(source, FIELD_ALIASES.amount));
+  detected.amount = amountText ? Number(amountText) : null;
 
   const currentAddress = readField(source, FIELD_ALIASES.currentAddress);
   if (currentAddress) patch.currentAddress = currentAddress;
