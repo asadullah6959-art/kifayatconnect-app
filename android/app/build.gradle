@@ -1,14 +1,77 @@
 apply plugin: 'com.android.application'
 
+// ===========================================================================
+// IN-PLACE UPDATE CONTRACT — read before changing anything below.
+//
+// Android decides how to handle a new APK using three values:
+//
+//  1. applicationId  — the app's identity. It is permanently
+//                      "com.kifayatconnect.app". Changing it makes the APK
+//                      install as a SECOND app instead of upgrading this one.
+//  2. versionCode    — must strictly increase on every build. Android refuses
+//                      to install an APK whose versionCode is not greater than
+//                      the installed one (INSTALL_FAILED_VERSION_DOWNGRADE).
+//  3. signing key    — must never change. A different key is rejected as a
+//                      signature conflict, which is what forces users to
+//                      uninstall and lose local data.
+//
+// All three are enforced here so a normal build always installs as an Update.
+// ===========================================================================
+
+def kcEnv = { String name -> System.getenv(name)?.trim() }
+
+// versionCode = 1000 + (runNumber * 10) + attempt
+//   * strictly increases across builds AND across re-runs of the same build
+//     (attempt increments on every re-run, so a re-run can never repeat a code)
+//   * starts above the legacy "runNumber + 100" codes (101, 102, ...) so it
+//     upgrades cleanly over APKs already installed from earlier builds
+//   * stays far below Android's 2100000000 ceiling for ~200 million builds
+// A caller may override with -PkcVersionCode / KC_VERSION_CODE; anything that
+// is not a plain integer is ignored rather than silently producing a bad code.
+def kcRunNumber = kcEnv('GITHUB_RUN_NUMBER')
+def kcRunAttempt = kcEnv('GITHUB_RUN_ATTEMPT')
+def kcRunNumberValue = (kcRunNumber?.isInteger() ? kcRunNumber.toInteger() : 1)
+def kcRunAttemptValue = (kcRunAttempt?.isInteger() ? kcRunAttempt.toInteger() : 1)
+
+def kcVersionCodeRaw = null
+if (project.hasProperty('kcVersionCode')) {
+    kcVersionCodeRaw = project.property('kcVersionCode').toString().trim()
+} else if (kcEnv('KC_VERSION_CODE')) {
+    kcVersionCodeRaw = kcEnv('KC_VERSION_CODE')
+}
+if (kcVersionCodeRaw == null || !kcVersionCodeRaw.isInteger()) {
+    kcVersionCodeRaw = (1000 + (kcRunNumberValue * 10) + Math.min(kcRunAttemptValue, 9)).toString()
+}
+def kcVersionCodeValue = kcVersionCodeRaw.toInteger()
+
+def kcVersionNameValue = null
+if (project.hasProperty('kcVersionName')) {
+    kcVersionNameValue = project.property('kcVersionName').toString().trim()
+} else if (kcEnv('KC_VERSION_NAME')) {
+    kcVersionNameValue = kcEnv('KC_VERSION_NAME')
+}
+if (!kcVersionNameValue) {
+    kcVersionNameValue = (kcRunAttemptValue > 1) ? "1.0.${kcRunNumberValue}.${kcRunAttemptValue}" : "1.0.${kcRunNumberValue}"
+}
+
+// One keystore, forever. Overridable only through the environment so the
+// keystore can later move to repository secrets without touching this file.
+def kcKeystoreFile = file('kifayat-release.jks')
+def kcKeystorePassword = kcEnv('KC_KEYSTORE_PASSWORD') ?: 'kifayat2026'
+def kcKeyAliasName = kcEnv('KC_KEY_ALIAS') ?: 'kifayatconnect'
+def kcKeyPasswordValue = kcEnv('KC_KEY_PASSWORD') ?: kcKeystorePassword
+
 android {
     namespace = "com.kifayatconnect.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
+        // LOCKED. Never change this value: it is the identity Android uses to
+        // match an update to the installed app.
         applicationId "com.kifayatconnect.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode = ((System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 1) + 100)
-        versionName = "1.0.${versionCode}"
+        versionCode = kcVersionCodeValue
+        versionName = kcVersionNameValue
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,23 +79,20 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // A single signing configuration for every build type. Signing debug builds
+    // with the release key is deliberate: an APK built either way then upgrades
+    // over an already installed Kifayat Connect instead of conflicting with it.
     signingConfigs {
-        debug {
-            storeFile file("kifayat-release.jks")
-            storePassword "kifayat2026"
-            keyAlias "kifayatconnect"
-            keyPassword "kifayat2026"
-        }
         release {
-            storeFile file("kifayat-release.jks")
-            storePassword "kifayat2026"
-            keyAlias "kifayatconnect"
-            keyPassword "kifayat2026"
+            storeFile kcKeystoreFile
+            storePassword kcKeystorePassword
+            keyAlias kcKeyAliasName
+            keyPassword kcKeyPasswordValue
         }
     }
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         release {
             signingConfig signingConfigs.release
@@ -41,6 +101,27 @@ android {
         }
     }
 }
+
+// Fail before compiling if the permanent key is missing. Silently falling back
+// to a throwaway debug key would produce an APK that every existing user has to
+// uninstall to install, which is exactly what this configuration prevents.
+tasks.register('verifyReleaseKeystore') {
+    description = 'Verifies the permanent release keystore is present before signing.'
+    doLast {
+        if (!kcKeystoreFile.exists()) {
+            throw new GradleException(
+                "Missing release keystore: ${kcKeystoreFile}.\n" +
+                "Restore the committed android/app/kifayat-release.jks. Generating a new key " +
+                "would change the app signature and force every installed user to uninstall."
+            )
+        }
+        logger.lifecycle("Kifayat Connect release: applicationId=com.kifayatconnect.app " +
+            "versionCode=${kcVersionCodeValue} versionName=${kcVersionNameValue} " +
+            "keystore=${kcKeystoreFile.name} alias=${kcKeyAliasName}")
+    }
+}
+
+tasks.named('preBuild').configure { dependsOn 'verifyReleaseKeystore' }
 
 repositories {
     flatDir{

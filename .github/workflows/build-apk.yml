@@ -8,6 +8,25 @@ on:
 permissions:
   contents: write
 
+# Never cancel a run that is already signing/publishing: each run owns exactly
+# one versionCode, and a half-published release is worse than a queued build.
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # ---- Permanent app identity and signing (must never change) ----
+  APPLICATION_ID: com.kifayatconnect.app
+  KC_KEYSTORE_FILE: android/app/kifayat-release.jks
+  KC_KEY_ALIAS: kifayatconnect
+  # Committed keystore password. Set the repository secret KC_KEYSTORE_PASSWORD
+  # (same value) to take precedence if you later rotate it.
+  KC_KEYSTORE_PASSWORD: ${{ secrets.KC_KEYSTORE_PASSWORD || 'kifayat2026' }}
+  # SHA-256 of the signing certificate inside that keystore, colons removed.
+  # If a build ever produces a different key, in-place updates break, so the
+  # build stops instead of publishing an APK that forces an uninstall.
+  KC_EXPECTED_CERT_SHA256: "2b6a0bf76e0e07944b2b29b0a1c7a07abce78d7bc440230578b3f76907132dcc"
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -27,28 +46,64 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Ensure Permanent Android Keystore
+      # A random or regenerated keystore is the single most common cause of
+      # "app not installed" on update, so this step never creates one.
+      - name: Verify permanent release keystore
         run: |
-          if [ ! -f android/app/kifayat-release.jks ]; then
-            mkdir -p android/app
-            keytool -genkeypair -v \
-              -keystore android/app/kifayat-release.jks \
-              -storepass kifayat2026 \
-              -keypass kifayat2026 \
-              -alias kifayatconnect \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Kifayat Connect, OU=Mobile Engineering, O=Kifayat Connect, L=Islamabad, ST=ICT, C=PK"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add android/app/kifayat-release.jks
-            git commit -m "chore(android): commit permanent release keystore [skip ci]"
-            git pull --rebase origin "${{ github.ref_name }}" || true
-            git push origin "HEAD:${{ github.ref_name }}"
-          else
-            echo "Permanent keystore android/app/kifayat-release.jks already exists; reusing it."
+          set -euo pipefail
+          if [ ! -f "$KC_KEYSTORE_FILE" ]; then
+            echo "::error file=$KC_KEYSTORE_FILE::Release keystore is missing. Generating a new one would change the app signature and force every installed user to uninstall. Restore the committed keystore."
+            exit 1
           fi
+          ACTUAL=$(keytool -list -v -keystore "$KC_KEYSTORE_FILE" \
+                     -storepass "$KC_KEYSTORE_PASSWORD" -alias "$KC_KEY_ALIAS" \
+                   | grep -i 'SHA256:' | head -1 \
+                   | sed 's/.*SHA256: *//' | tr -d ' :[:space:]' | tr 'A-F' 'a-f')
+          if [ -z "$ACTUAL" ]; then
+            echo "::error::Could not read the signing certificate. Check the keystore password and alias."
+            exit 1
+          fi
+          if [ "$ACTUAL" != "$KC_EXPECTED_CERT_SHA256" ]; then
+            echo "::error::Signing certificate mismatch. Expected $KC_EXPECTED_CERT_SHA256 but found $ACTUAL. Publishing this APK would force users to uninstall."
+            exit 1
+          fi
+          echo "Signing certificate verified: $ACTUAL"
+
+      # versionCode = 1000 + runNumber*10 + attempt
+      #   strictly increases across builds and across re-runs of the same build,
+      #   stays above legacy runNumber+100 codes, and keeps the release tag
+      #   unique per attempt so a re-run never collides with an existing tag.
+      - name: Compute monotonic version
+        id: ver
+        run: |
+          set -euo pipefail
+          RUN="${{ github.run_number }}"
+          ATTEMPT="${{ github.run_attempt }}"
+          [ -n "$ATTEMPT" ] || ATTEMPT=1
+          BUMP="$ATTEMPT"
+          if [ "$BUMP" -gt 9 ]; then BUMP=9; fi
+          CODE=$((1000 + RUN * 10 + BUMP))
+          if [ "$ATTEMPT" -gt 1 ]; then NAME="1.0.${RUN}.${ATTEMPT}"; else NAME="1.0.${RUN}"; fi
+          echo "version_code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "version_name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Building $APPLICATION_ID versionName=$NAME versionCode=$CODE"
+
+      - name: Assert package id is locked
+        run: |
+          set -euo pipefail
+          FOUND=$(sed -n 's/^[[:space:]]*applicationId[[:space:]]*"\?\([^"[:space:]]*\)"\?.*/\1/p' android/app/build.gradle | head -1)
+          if [ "$FOUND" != "$APPLICATION_ID" ]; then
+            echo "::error file=android/app/build.gradle::applicationId is '$FOUND' but must stay '$APPLICATION_ID'; changing it installs a second app instead of updating."
+            exit 1
+          fi
+          if [ -f capacitor.config.json ]; then
+            CAP=$(node -e "console.log(require('./capacitor.config.json').appId || '')")
+            if [ "$CAP" != "$APPLICATION_ID" ]; then
+              echo "::error file=capacitor.config.json::appId is '$CAP' but must stay '$APPLICATION_ID'."
+              exit 1
+            fi
+          fi
+          echo "Package id locked to $APPLICATION_ID"
 
       - name: Install dependencies and build web app
         run: |
@@ -110,29 +165,65 @@ jobs:
             rm -rf /tmp/kc_android_preserve
           fi
           npx cap sync android
+          # cap add/sync can rewrite the app module; confirm the locked identity
+          # and the permanent keystore survived before compiling.
+          grep -q "applicationId \"$APPLICATION_ID\"" android/app/build.gradle || {
+            echo "::error::applicationId was altered during cap sync; refusing to build."
+            exit 1
+          }
+          [ -f "$KC_KEYSTORE_FILE" ] || {
+            echo "::error::Keystore missing after cap sync; refusing to build."
+            exit 1
+          }
 
-      - name: Build & Rename Signed Release APK
+      - name: Build & verify signed release APK
         env:
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          KC_VERSION_CODE: ${{ steps.ver.outputs.version_code }}
+          KC_VERSION_NAME: ${{ steps.ver.outputs.version_name }}
         run: |
+          set -euo pipefail
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --no-daemon \
+            -PkcVersionCode="$KC_VERSION_CODE" \
+            -PkcVersionName="$KC_VERSION_NAME"
           cd ..
-          mv android/app/build/outputs/apk/release/app-release.apk "KifayatConnect-v1.0.${{ github.run_number }}.apk"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK" ]; then
+            echo "::error::Release APK was not produced."
+            exit 1
+          fi
+          SIGNER=$(ls ${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "$SIGNER" ] && [ -x "$SIGNER" ]; then
+            DIGEST=$("$SIGNER" verify --print-certs "$APK" | grep -i 'SHA-256 digest' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+            if [ -n "$DIGEST" ] && [ "$DIGEST" != "$KC_EXPECTED_CERT_SHA256" ]; then
+              echo "::error::The built APK is signed by $DIGEST, not the pinned release key. Users would be forced to uninstall."
+              exit 1
+            fi
+            echo "APK signature verified against the pinned release key."
+          else
+            echo "apksigner unavailable on this runner; the certificate was verified against the keystore before the build."
+          fi
+          mv "$APK" "KifayatConnect-${KC_VERSION_NAME}.apk"
+          echo "Produced KifayatConnect-${KC_VERSION_NAME}.apk (versionCode $KC_VERSION_CODE)"
 
-      - name: Upload APK Artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KifayatConnect-v1.0.${{ github.run_number }}
-          path: KifayatConnect-v1.0.${{ github.run_number }}.apk
+          name: KifayatConnect-${{ steps.ver.outputs.version_name }}
+          path: KifayatConnect-${{ steps.ver.outputs.version_name }}.apk
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Kifayat Connect v1.0.${{ github.run_number }}
+          tag_name: v${{ steps.ver.outputs.version_name }}
+          name: Kifayat Connect v${{ steps.ver.outputs.version_name }}
           body: |
-            Automated Android APK release for Kifayat Connect (v1.0.${{ github.run_number }}).
+            Automated signed Android APK for Kifayat Connect (v${{ steps.ver.outputs.version_name }}).
+
+            - Package id: `com.kifayatconnect.app` (unchanged)
+            - versionCode: `${{ steps.ver.outputs.version_code }}` — installs as an update over any earlier version
+            - Signed with the permanent release key, so no uninstall is needed
+
             Built from commit ${{ github.sha }}.
-          files: KifayatConnect-v1.0.${{ github.run_number }}.apk
+          files: KifayatConnect-${{ steps.ver.outputs.version_name }}.apk
