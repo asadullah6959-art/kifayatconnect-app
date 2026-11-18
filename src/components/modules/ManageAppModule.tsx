@@ -135,8 +135,10 @@ export const ManageAppModule: React.FC = () => {
     language
   } = useApp();
 
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const currentIsFounder = isFounderUser(currentUser);
+  // Master Control is reserved for the Founder (KC-ADM-001) only. Additional super
+  // admins, co-admins, admins and members must never reach this module.
+  const isSuperAdmin = currentIsFounder;
 
   // PIN Protection Gate
   const hasConfiguredPin = Boolean(appSettings.masterPinHash);
