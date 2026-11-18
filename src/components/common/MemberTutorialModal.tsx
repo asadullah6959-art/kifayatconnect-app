@@ -45,9 +45,9 @@ export const MemberTutorialModal: React.FC = () => {
       titleEn: 'Choose Mahana, Salana, or Hangami Fund',
       titleUr: 'ماہانہ، سالانہ یا ہنگامی فنڈ منتخب کریں',
       descEn:
-        'Select Mahana Fund (2–11 months @ Rs. 100/month), Salana Fund (yearly @ Rs. 1,200/year), or ہنگامی فنڈ / Hangami Fund (any custom emergency relief amount). 13-digit CNIC is required.',
+        'Select Mahana Fund (1–11 months @ Rs. 100/month), Salana Fund (yearly @ Rs. 1,200/year), or ہنگامی فنڈ / Hangami Fund (any custom emergency relief amount). 13-digit CNIC is required.',
       descUr:
-        'ماہانہ فنڈ (۲ تا ۱۱ ماہ، ۱۰۰ روپے فی ماہ)، سالانہ فنڈ (۱۲۰۰ روپے فی سال)، یا ہنگامی فنڈ (مرضی کی رقم) منتخب کر کے ادائیگی کا ثبوت جمع کروائیں۔',
+        'ماہانہ فنڈ (۱ تا ۱۱ ماہ، ۱۰۰ روپے فی ماہ)، سالانہ فنڈ (۱۲۰۰ روپے فی سال)، یا ہنگامی فنڈ (مرضی کی رقم) منتخب کر کے ادائیگی کا ثبوت جمع کروائیں۔',
       actionLabelEn: 'Go to Funds & Payments',
       actionLabelUr: 'فنڈز سیکشن کھولیں',
       onAction: () => {

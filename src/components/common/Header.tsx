@@ -14,7 +14,6 @@ import {
   Crown,
   Menu,
   X,
-  Share2,
   FileCheck2,
   HelpCircle
 } from 'lucide-react';
@@ -54,7 +53,6 @@ export const Header: React.FC<HeaderProps> = ({
     logoutFirebaseAuth,
     appSettings,
     isOnline,
-    triggerShareForIphone,
     openRukniyatForm,
     openTutorial
   } = useApp();
@@ -419,21 +417,6 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
                 <span>+ {translate(language, 'registerBtn')}</span>
-              </button>
-
-              <button
-                type="button"
-                role="menuitem"
-                onClick={async () => {
-                  setShowProfileMenu(false);
-                  await triggerShareForIphone();
-                }}
-                className="mx-2 my-1 w-[calc(100%-16px)] flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#131C31] via-[#1E293B] to-[#0F172A] border border-[#38BDF8]/50 hover:border-[#FDE047] text-[#38BDF8] hover:text-[#FDE047] text-start cursor-pointer font-bold shadow-[0_4px_12px_rgba(14,165,233,0.22)] kc-pressable"
-              >
-                <Share2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
-                <span className="leading-snug">
-                  {language === 'ur' ? 'آئی فون کے لیے ایپ لنک شیئر کریں' : 'Share App for iPhone (iOS Link)'}
-                </span>
               </button>
 
               {isFounderIdentity(currentUser) && (

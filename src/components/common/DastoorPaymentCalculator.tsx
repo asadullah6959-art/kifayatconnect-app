@@ -145,6 +145,8 @@ interface DastoorPaymentCalculatorProps {
   onMonthsCountChange: (months: number) => void;
   yearsCount: number;
   onYearsCountChange: (years: number) => void;
+  startDay?: number;
+  onStartDayChange?: (day: number) => void;
   startMonth: number;
   onStartMonthChange: (monthIndex: number) => void;
   startYear: number;
@@ -170,6 +172,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
   onMonthsCountChange,
   yearsCount,
   onYearsCountChange,
+  startDay,
+  onStartDayChange,
   startMonth,
   onStartMonthChange,
   startYear,
@@ -188,21 +192,39 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 }) => {
   const isUr = language === 'ur';
   const currentYear = new Date().getFullYear();
+  const [localStartDay, setLocalStartDay] = useState<number>(() => startDay || new Date().getDate());
+  const effectiveStartDay = startDay ?? localStartDay;
+  const handleStartDaySelect = (d: number) => {
+    setLocalStartDay(d);
+    if (onStartDayChange) onStartDayChange(d);
+  };
 
   const [customMonthsDraft, setCustomMonthsDraft] = useState(String(monthsCount));
   const [customYearsDraft, setCustomYearsDraft] = useState(String(yearsCount));
 
   useEffect(() => {
-    setCustomMonthsDraft(String(Math.min(11, Math.max(2, monthsCount || 2))));
+    setCustomMonthsDraft(String(Math.min(11, Math.max(1, monthsCount || 1))));
   }, [monthsCount]);
 
   useEffect(() => {
     setCustomYearsDraft(String(Math.max(1, yearsCount || 1)));
   }, [yearsCount]);
 
+  const dayOptions = useMemo(() => {
+    const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const d = i + 1;
+      return {
+        value: String(d),
+        label: isUr ? toUrduDigits(String(d).padStart(2, '0')) : String(d).padStart(2, '0'),
+      };
+    });
+  }, [startYear, startMonth, isUr]);
+
   const yearOptions = useMemo(() => {
     const years: Array<{ value: string; label: string }> = [];
-    for (let y = currentYear - 1; y <= currentYear + 6; y++) {
+    const minYear = Math.min(2025, currentYear - 1);
+    for (let y = minYear; y <= currentYear + 6; y++) {
       years.push({
         value: String(y),
         label: isUr ? toUrduDigits(y) : String(y),
@@ -211,7 +233,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
     return years;
   }, [currentYear, isUr]);
 
-  const safeMahanaMonths = Math.min(11, Math.max(2, Math.floor(monthsCount || 2)));
+  const safeMahanaMonths = Math.min(11, Math.max(1, Math.floor(monthsCount || 1)));
   const mahanaPeriod = useMemo(
     () => calculateDastoorPeriod(startMonth, startYear, safeMahanaMonths),
     [startMonth, startYear, safeMahanaMonths]
@@ -232,6 +254,52 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 
   const cnicValid = isValid13DigitCnic(payerCnic);
 
+  const renderStartingDatePicker = () => (
+    <div className="grid grid-cols-3 gap-2">
+      <div>
+        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+          {isUr ? 'تاریخ (دن)' : 'Day (1–31)'}
+        </label>
+        <LuxurySelect
+          compact
+          value={String(Math.min(effectiveStartDay, dayOptions.length))}
+          onChange={(v) => handleStartDaySelect(Number(v))}
+          label={isUr ? 'دن' : 'Day'}
+          options={dayOptions}
+        />
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+          {isUr ? 'مہینہ' : 'Month'}
+        </label>
+        <LuxurySelect
+          compact
+          value={String(startMonth)}
+          onChange={(v) => onStartMonthChange(Number(v))}
+          label={isUr ? 'مہینہ' : 'Month'}
+          options={MONTH_OPTIONS.map((m) => ({
+            value: String(m.index),
+            label: isUr ? `${m.fullUr} (${m.shortEn})` : `${m.shortEn} (${m.fullUr})`,
+          }))}
+        />
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+          {isUr ? 'سال' : 'Year'}
+        </label>
+        <LuxurySelect
+          compact
+          value={String(startYear)}
+          onChange={(v) => onStartYearChange(Number(v))}
+          label={isUr ? 'سال' : 'Year'}
+          options={yearOptions}
+        />
+      </div>
+    </div>
+  );
+
   const localizeFund = (cat: FundCategory) => {
     if (!isUr) return cat;
     if (cat === 'Monthly Contribution') return 'ماہانہ فنڈ / چندہ';
@@ -250,8 +318,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           onClick={() => {
             onFundTierChange('MAHANA');
             onFundCategoryChange('Monthly Contribution');
-            if (monthsCount < 2 || monthsCount > 11) {
-              onMonthsCountChange(2);
+            if (monthsCount < 1 || monthsCount > 11) {
+              onMonthsCountChange(1);
             }
           }}
           className={`kc-pressable py-2 px-2 rounded-lg text-[10px] sm:text-xs font-extrabold transition-colors cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1 ${
@@ -300,12 +368,12 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
         </button>
       </div>
 
-      {/* TIER 1: MAHANA FUND (2 to 11 Months @ Rs. 100/Month) */}
+      {/* TIER 1: MAHANA FUND (1 to 11 Months @ Rs. 100/Month) */}
       {fundTier === 'MAHANA' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px]">
             <span className="font-bold text-[#94A3B8]">
-              {isUr ? 'ماہانہ فنڈ ریٹ (۲ تا ۱۱ مہینے):' : 'Mahana Fund Rate (2–11 Months):'}
+              {isUr ? 'ماہانہ فنڈ ریٹ (۱ تا ۱۱ مہینے):' : 'Mahana Fund Rate (1–11 Months):'}
             </span>
             <span className="font-mono font-extrabold text-[#38BDF8] tabular-nums">
               {isUr
@@ -316,9 +384,9 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
 
           <div>
             <label className="text-[11px] font-bold text-[#F5D061] block mb-1.5 uppercase tracking-wider">
-              {isUr ? 'مدت منتخب کریں (۲ تا ۱۱ مہینے)' : 'Select Months (2 to 11 Months)'}
+              {isUr ? 'مدت منتخب کریں (۱ تا ۱۱ مہینے)' : 'Select Months (1 to 11 Months)'}
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {MAHANA_QUICK_MONTHS.map((m) => {
                 const isSelected = safeMahanaMonths === m;
                 const amt = m * DASTOOR_MONTHLY_RATE;
@@ -337,7 +405,9 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     }`}
                   >
                     <div className="text-[11px] font-extrabold leading-tight">
-                      {isUr ? `${toUrduDigits(m)} مہینے` : `${m} Months`}
+                      {isUr
+                        ? `${toUrduDigits(m)} ${m === 1 ? 'مہینہ' : 'مہینے'}`
+                        : `${m} ${m === 1 ? 'Month' : 'Months'}`}
                     </div>
                     <div
                       className={`text-[11px] font-mono tabular-nums font-black mt-0.5 ${
@@ -350,10 +420,10 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                 );
               })}
 
-              {/* Custom Months Draft (2..11 allowed) */}
+              {/* Custom Months Draft (1..11 allowed) */}
               <div className="p-2 rounded-xl border border-slate-400/20 bg-[#0F172A] flex flex-col justify-between">
                 <label className="text-[10px] font-bold text-[#94A3B8] block leading-tight">
-                  {isUr ? 'مہینے درج کریں (2–11)' : 'Custom (2–11M)'}
+                  {isUr ? 'مہینے درج کریں (1–11)' : 'Custom (1–11M)'}
                 </label>
                 <input
                   type="text"
@@ -364,56 +434,27 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     setCustomMonthsDraft(raw);
                     if (raw === '') return;
                     const parsed = parseInt(raw, 10);
-                    if (Number.isFinite(parsed) && parsed >= 2 && parsed <= 11) {
+                    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 11) {
                       onMonthsCountChange(parsed);
                     }
                   }}
                   onBlur={() => {
                     const parsed = parseInt(customMonthsDraft, 10);
                     const valid =
-                      Number.isFinite(parsed) && parsed >= 2
+                      Number.isFinite(parsed) && parsed >= 1
                         ? Math.min(11, parsed)
-                        : 2;
+                        : 1;
                     setCustomMonthsDraft(String(valid));
                     onMonthsCountChange(valid);
                   }}
-                  placeholder="2–11"
+                  placeholder="1–11"
                   className="mt-1 w-full bg-[#131C31] border border-slate-400/25 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#38BDF8]"
                 />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                {isUr ? 'شروع ہونے والا مہینہ' : 'Starting Month'}
-              </label>
-              <LuxurySelect
-                compact
-                value={String(startMonth)}
-                onChange={(v) => onStartMonthChange(Number(v))}
-                label={isUr ? 'شروع ہونے والا مہینہ' : 'Starting Month'}
-                options={MONTH_OPTIONS.map((m) => ({
-                  value: String(m.index),
-                  label: isUr ? `${m.fullUr} (${m.shortEn})` : `${m.fullEn} (${m.fullUr})`,
-                }))}
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                {isUr ? 'شروع ہونے والا سال' : 'Starting Year'}
-              </label>
-              <LuxurySelect
-                compact
-                value={String(startYear)}
-                onChange={(v) => onStartYearChange(Number(v))}
-                label={isUr ? 'شروع ہونے والا سال' : 'Starting Year'}
-                options={yearOptions}
-              />
-            </div>
-          </div>
+          {renderStartingDatePicker()}
 
           <div
             className="rounded-xl p-3 border border-[#38BDF8]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
@@ -536,36 +577,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                {isUr ? 'شروع ہونے والا مہینہ' : 'Starting Month'}
-              </label>
-              <LuxurySelect
-                compact
-                value={String(startMonth)}
-                onChange={(v) => onStartMonthChange(Number(v))}
-                label={isUr ? 'شروع ہونے والا مہینہ' : 'Starting Month'}
-                options={MONTH_OPTIONS.map((m) => ({
-                  value: String(m.index),
-                  label: isUr ? `${m.fullUr} (${m.shortEn})` : `${m.fullEn} (${m.fullUr})`,
-                }))}
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                {isUr ? 'شروع ہونے والا سال' : 'Starting Year'}
-              </label>
-              <LuxurySelect
-                compact
-                value={String(startYear)}
-                onChange={(v) => onStartYearChange(Number(v))}
-                label={isUr ? 'شروع ہونے والا سال' : 'Starting Year'}
-                options={yearOptions}
-              />
-            </div>
-          </div>
+          {renderStartingDatePicker()}
 
           <div
             className="rounded-xl p-3 border border-[#D4AF37]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
@@ -661,6 +673,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               className="kc-luxury-input w-full text-sm font-mono tabular-nums font-bold px-3.5 py-2.5 rounded-xl"
             />
           </div>
+
+          {renderStartingDatePicker()}
         </div>
       )}
 

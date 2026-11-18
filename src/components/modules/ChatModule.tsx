@@ -40,7 +40,11 @@ import {
   Users,
   UserX,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  ArrowDown,
+  Copy,
+  Forward,
+  Camera
 } from 'lucide-react';
 import { isFounderIdentity, isChatModerator } from '../../utils/permissions';
 import { useSpeechDictation, appendDictatedText } from '../../hooks/useSpeechDictation';
@@ -64,15 +68,91 @@ import {
   ChatReplySnapshot,
   ChatVoiceNote,
   CommunityScenicThemeId,
-  User
+  User,
+  UserRole
 } from '../../types';
 import { ScenicChatBackground, SCENIC_THEME_PRESETS } from './chat/ScenicChatBackground';
 import { IslamicGifCard, ISLAMIC_GIFS } from './chat/IslamicGifCard';
 
 const FOUNDER_EMAIL = 'asadullah6959@gmail.com';
 const MAX_VOICE_SECONDS = 60;
+const PLAYBACK_SPEEDS = [1, 1.5, 2] as const;
 const QUICK_REACTIONS = ['❤️', '👍', '🤲', '✨'];
 const QUICK_EMOJIS = ['❤️', '👍', '🤲', '✨', '👑', '🕌', '🇵🇰', '😊'];
+
+function getRoleHierarchyRank(role?: UserRole, isFounder?: boolean): number {
+  if (isFounder) return 5;
+  if (role === 'SUPER_ADMIN') return 4;
+  if (role === 'ADMIN') return 3;
+  if (role === 'CO_ADMIN') return 2;
+  return 1;
+}
+
+function renderDeletedPlaceholderText(msg: ChatMessage, language: AppLanguage): string {
+  if (msg.deletedByFounder) {
+    return language === 'ur'
+      ? '🚫 یہ پیغام بانی (Founder) نے حذف کر دیا'
+      : '🚫 This message was deleted by Founder';
+  }
+  if (msg.deletedByRole === 'SUPER_ADMIN') {
+    return language === 'ur'
+      ? '🚫 یہ پیغام سپر ایڈمن نے حذف کر دیا'
+      : '🚫 This message was deleted by Super Admin';
+  }
+  if (msg.deletedByRole === 'ADMIN') {
+    return language === 'ur'
+      ? '🚫 یہ پیغام ایڈمن نے حذف کر دیا'
+      : '🚫 This message was deleted by Admin';
+  }
+  if (msg.deletedByRole === 'CO_ADMIN') {
+    return language === 'ur'
+      ? '🚫 یہ پیغام کو-ایڈمن نے حذف کر دیا'
+      : '🚫 This message was deleted by Co-Admin';
+  }
+  return language === 'ur'
+    ? '🚫 یہ پیغام حذف کر دیا گیا'
+    : '🚫 This message was deleted';
+}
+
+const LINK_OR_PHONE_REGEX = /(https?:\/\/[^\s<]+|www\.[^\s<]+|(?:\+92|0092|03)\d{2}[\s-]?\d{7})/gi;
+
+function renderLinkedText(text: string): React.ReactNode {
+  if (!text) return null;
+  const parts = text.split(LINK_OR_PHONE_REGEX);
+  if (parts.length <= 1) return text;
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (/^(https?:\/\/|www\.)/i.test(part)) {
+      const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+      return (
+        <a
+          key={idx}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-[#38BDF8] underline decoration-[#38BDF8]/60 hover:text-[#F5D061] break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+    if (/^(?:\+92|0092|03)\d{2}[\s-]?\d{7}$/.test(part)) {
+      const cleanTel = part.replace(/[\s-]/g, '');
+      return (
+        <a
+          key={idx}
+          href={`tel:${cleanTel}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-[#F5D061] underline decoration-[#F5D061]/60 hover:text-white whitespace-nowrap"
+        >
+          {part}
+        </a>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
 
 function getCalendarDayKey(isoOrTs?: string): string {
   const d = isoOrTs ? new Date(isoOrTs) : new Date();
@@ -160,7 +240,15 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSec, setCurrentSec] = useState(0);
+  const [speedIdx, setSpeedIdx] = useState(0);
   const [playError, setPlayError] = useState<string | null>(null);
+  const playbackRate = PLAYBACK_SPEEDS[speedIdx];
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate]);
 
   useEffect(() => {
     return () => {
@@ -181,6 +269,7 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
       if (!audioRef.current) {
         const audio = new Audio(voiceNote.url);
         audio.preload = 'metadata';
+        audio.playbackRate = playbackRate;
         (audio as unknown as { playsInline?: boolean }).playsInline = true;
         audio.onended = () => {
           setIsPlaying(false);
@@ -200,6 +289,7 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
+        audioRef.current.playbackRate = playbackRate;
         await audioRef.current.play();
         setIsPlaying(true);
       }
@@ -218,11 +308,11 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
 
   return (
     <div className="rounded-xl bg-[#0F172A]/90 border border-[#38BDF8]/30 px-2.5 py-2 space-y-1 shadow-[inset_0_1px_0_rgba(56,189,248,0.12)]">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={togglePlay}
-          className="relative z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full kc-gold-button flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+          className="relative z-50 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full kc-gold-button flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
           aria-label={isPlaying ? 'Pause voice note' : 'Play voice note'}
         >
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
@@ -251,9 +341,19 @@ const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({ voiceNote }) => {
           })}
         </div>
 
-        <span className="text-[11px] font-mono font-bold text-[#F5D061] shrink-0 tabular-nums">
-          {formatDuration(isPlaying ? currentSec : totalSec)}
-        </span>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className="text-[11px] font-mono font-bold text-[#F5D061] tabular-nums">
+            {formatDuration(isPlaying ? currentSec : totalSec)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setSpeedIdx(prev => (prev + 1) % PLAYBACK_SPEEDS.length)}
+            className="px-1.5 py-0.5 rounded-md bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/40 text-[9px] font-mono font-extrabold text-[#38BDF8] cursor-pointer"
+            title="Playback Speed"
+          >
+            {playbackRate}x
+          </button>
+        </div>
       </div>
       {playError && <p className="text-[10px] text-rose-300">{playError}</p>}
     </div>
@@ -292,7 +392,9 @@ const ChatModuleContent: React.FC = () => {
     setActiveChatUser,
     setInspectedUserProfile,
     isOnline,
-    language
+    language,
+    typingUsers,
+    reportTypingStatus
   } = useApp();
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
 
@@ -302,6 +404,7 @@ const ChatModuleContent: React.FC = () => {
   // Direct Chat States
   const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
+  const [directReplyingTo, setDirectReplyingTo] = useState<ChatReplySnapshot | null>(null);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; type: 'IMAGE' | 'DOCUMENT' } | null>(null);
   const [selectedUserFilterRole, setSelectedUserFilterRole] = useState<'ALL' | 'SUPER_ADMIN' | 'ADMIN' | 'CO_ADMIN' | 'MEMBER'>('ALL');
@@ -317,6 +420,33 @@ const ChatModuleContent: React.FC = () => {
   const [isBubbleColorModalOpen, setIsBubbleColorModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isCompressingMedia, setIsCompressingMedia] = useState(false);
+
+  // In-chat Search, Forward, Copy Toast, Scroll-to-Bottom & Swipe-to-Reply States
+  const [isCommunitySearchOpen, setIsCommunitySearchOpen] = useState(false);
+  const [communitySearchQuery, setCommunitySearchQuery] = useState('');
+  const [isDirectSearchOpen, setIsDirectSearchOpen] = useState(false);
+  const [directSearchQuery, setDirectSearchQuery] = useState('');
+  const [forwardingMessage, setForwardingMessage] = useState<ChatMessage | null>(null);
+  const [forwardSearch, setForwardSearch] = useState('');
+  const [copiedToast, setCopiedToast] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+  const [showCommScrollBottom, setShowCommScrollBottom] = useState(false);
+  const [showDirectScrollBottom, setShowDirectScrollBottom] = useState(false);
+  const [swipingMsgId, setSwipingMsgId] = useState<string | null>(null);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const swipeTouchRef = useRef<{
+    id: string;
+    startX: number;
+    startY: number;
+    senderName: string;
+    text: string;
+    isVoiceNote: boolean;
+    scope: 'COMMUNITY' | 'DIRECT';
+    horizontalLocked: boolean | null;
+  } | null>(null);
+  const lastTypingSentRef = useRef<{ chatId: string; at: number }>({ chatId: '', at: 0 });
+  const typingClearTimerRef = useRef<number | null>(null);
 
   // Delete Message & Founder Clear Old Messages Modals
   const [deleteModalTarget, setDeleteModalTarget] = useState<{
@@ -340,14 +470,15 @@ const ChatModuleContent: React.FC = () => {
     fn();
   };
 
-  // Presence heartbeat refresh tick (every 10s)
+  // Presence & typing freshness tick (every 2s while typing present, else 10s)
   const [presenceNowMs, setPresenceNowMs] = useState(() => Date.now());
   useEffect(() => {
+    const intervalMs = typingUsers.length > 0 ? 2000 : 10000;
     const id = window.setInterval(() => {
       setPresenceNowMs(Date.now());
-    }, 10000);
+    }, intervalMs);
     return () => window.clearInterval(id);
-  }, []);
+  }, [typingUsers.length]);
 
   // Voice Recorder & Step-2 Preview Draft States (WhatsApp Flow: Record -> Stop -> Preview -> Send)
   const [isRecording, setIsRecording] = useState(false);
@@ -355,6 +486,7 @@ const ChatModuleContent: React.FC = () => {
   const [draftVoiceNote, setDraftVoiceNote] = useState<ChatVoiceNote | null>(null);
   const [isDraftPlaying, setIsDraftPlaying] = useState(false);
   const [draftPlaySec, setDraftPlaySec] = useState(0);
+  const [draftSpeedIdx, setDraftSpeedIdx] = useState(0);
   const draftAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -464,7 +596,10 @@ const ChatModuleContent: React.FC = () => {
 
   const communityEndRef = useRef<HTMLDivElement | null>(null);
   const directEndRef = useRef<HTMLDivElement | null>(null);
+  const communityFeedRef = useRef<HTMLDivElement | null>(null);
+  const directFeedRef = useRef<HTMLDivElement | null>(null);
   const communityMessageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const directMessageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     if (preferredChatMode === 'DIRECT' && activeChatUser) {
@@ -570,6 +705,49 @@ const ChatModuleContent: React.FC = () => {
     }
   }, [chatMode, activeChatId, currentDirectMessages.length]);
 
+  const emitTyping = (chatId: string, active: boolean) => {
+    if (!chatId) return;
+    if (typingClearTimerRef.current) {
+      window.clearTimeout(typingClearTimerRef.current);
+      typingClearTimerRef.current = null;
+    }
+    if (!active) {
+      lastTypingSentRef.current = { chatId: '', at: 0 };
+      reportTypingStatus(chatId, false);
+      return;
+    }
+    const now = Date.now();
+    if (lastTypingSentRef.current.chatId !== chatId || now - lastTypingSentRef.current.at > 2500) {
+      lastTypingSentRef.current = { chatId, at: now };
+      reportTypingStatus(chatId, true);
+    }
+    typingClearTimerRef.current = window.setTimeout(() => {
+      reportTypingStatus(chatId, false);
+    }, 4200);
+  };
+
+  const handleCopyMessageText = (text: string) => {
+    if (!text) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedToast(language === 'ur' ? 'پیغام کاپی ہو گیا' : 'Message copied');
+      window.setTimeout(() => setCopiedToast(null), 1800);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
   const handleSendDirectMessage = (e: React.FormEvent) => {
     e.preventDefault();
     setChatError(null);
@@ -582,7 +760,8 @@ const ChatModuleContent: React.FC = () => {
     const res = sendChatMessage(
       activeRecipient.id,
       messageText.trim() || (attachmentPreview ? `Shared ${attachmentPreview.type === 'IMAGE' ? 'an image' : 'a document'}: ${attachmentPreview.name}` : ''),
-      attachmentPreview || undefined
+      attachmentPreview || undefined,
+      directReplyingTo ? { replyTo: directReplyingTo } : undefined
     );
 
     if (!res.success) {
@@ -590,8 +769,10 @@ const ChatModuleContent: React.FC = () => {
       return;
     }
 
+    emitTyping(activeChatId, false);
     setMessageText('');
     setAttachmentPreview(null);
+    setDirectReplyingTo(null);
   };
 
   const handleDirectImageAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -650,7 +831,7 @@ const ChatModuleContent: React.FC = () => {
   };
 
   // Live Community Room Handlers
-  const pinnedMessages = communityMessages.filter(m => m.isPinned && !m.isDeleted);
+  const pinnedMessages = communityMessages.filter(m => m.isPinned && !m.isDeleted && !m.isDeletedForEveryone);
   const pinnedMessage = pinnedMessages[pinnedMessages.length - 1];
 
   const handleSendCommunityMessage = (e?: React.FormEvent) => {
@@ -685,6 +866,7 @@ const ChatModuleContent: React.FC = () => {
       return;
     }
 
+    emitTyping('community_global_room', false);
     setCommunityText('');
     setReplyingTo(null);
     setCommunityAttachment(null);
@@ -787,6 +969,13 @@ const ChatModuleContent: React.FC = () => {
     setDraftVoiceNote(null);
   };
 
+  const draftPlaybackSpeed = PLAYBACK_SPEEDS[draftSpeedIdx];
+  useEffect(() => {
+    if (draftAudioRef.current) {
+      draftAudioRef.current.playbackRate = draftPlaybackSpeed;
+    }
+  }, [draftPlaybackSpeed]);
+
   const toggleDraftVoicePlay = async () => {
     if (!draftVoiceNote) return;
     setChatError(null);
@@ -794,6 +983,7 @@ const ChatModuleContent: React.FC = () => {
       if (!draftAudioRef.current) {
         const audio = new Audio(draftVoiceNote.url);
         audio.preload = 'metadata';
+        audio.playbackRate = draftPlaybackSpeed;
         (audio as unknown as { playsInline?: boolean }).playsInline = true;
         audio.onended = () => {
           setIsDraftPlaying(false);
@@ -812,6 +1002,7 @@ const ChatModuleContent: React.FC = () => {
         draftAudioRef.current.pause();
         setIsDraftPlaying(false);
       } else {
+        draftAudioRef.current.playbackRate = draftPlaybackSpeed;
         await draftAudioRef.current.play();
         setIsDraftPlaying(true);
       }
@@ -997,15 +1188,130 @@ const ChatModuleContent: React.FC = () => {
     }
   };
 
-  const scrollToMessageId = (id: string) => {
+  const scrollToMessageId = (id: string, scope: 'COMMUNITY' | 'DIRECT' = 'COMMUNITY') => {
     try {
-      const el = communityMessageRefs.current[id];
+      const el =
+        scope === 'DIRECT'
+          ? directMessageRefs.current[id]
+          : communityMessageRefs.current[id];
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedMessageId(id);
+        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = window.setTimeout(() => {
+          setHighlightedMessageId(null);
+        }, 1800);
       }
     } catch {
       // ignore
     }
+  };
+
+  const handleBubbleTouchStart = (
+    e: React.TouchEvent,
+    msg: ChatMessage,
+    scope: 'COMMUNITY' | 'DIRECT'
+  ) => {
+    if (msg.isDeletedForEveryone || msg.isDeleted) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    swipeTouchRef.current = {
+      id: msg.id,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      senderName: msg.senderName,
+      text: msg.text,
+      isVoiceNote: Boolean(msg.voiceNote),
+      scope,
+      horizontalLocked: null
+    };
+  };
+
+  const handleBubbleTouchMove = (e: React.TouchEvent) => {
+    const st = swipeTouchRef.current;
+    if (!st) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const dx = touch.clientX - st.startX;
+    const dy = touch.clientY - st.startY;
+    if (st.horizontalLocked === null) {
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        st.horizontalLocked = Math.abs(dx) > Math.abs(dy) * 1.25 && dx > 0;
+      }
+    }
+    if (st.horizontalLocked && dx > 0) {
+      setSwipingMsgId(st.id);
+      setSwipeOffsetX(Math.min(56, dx));
+    }
+  };
+
+  const handleBubbleTouchEnd = () => {
+    const st = swipeTouchRef.current;
+    if (st && st.horizontalLocked && swipeOffsetX >= 40) {
+      const snap: ChatReplySnapshot = {
+        id: st.id,
+        senderName: st.senderName,
+        text: st.text,
+        isVoiceNote: st.isVoiceNote
+      };
+      if (st.scope === 'DIRECT') {
+        setDirectReplyingTo(snap);
+        directTextareaRef.current?.focus();
+      } else {
+        setReplyingTo(snap);
+        communityTextareaRef.current?.focus();
+      }
+    }
+    swipeTouchRef.current = null;
+    setSwipingMsgId(null);
+    setSwipeOffsetX(0);
+  };
+
+  const handleForwardToTarget = (target: 'COMMUNITY' | User) => {
+    if (!forwardingMessage) return;
+    const fwdLabel = forwardingMessage.senderName || (language === 'ur' ? 'ممبر' : 'Member');
+    const attachmentPayload = forwardingMessage.attachmentUrl
+      ? {
+          url: forwardingMessage.attachmentUrl,
+          name: forwardingMessage.attachmentName || 'forwarded-file',
+          type: (forwardingMessage.attachmentType || 'IMAGE') as 'IMAGE' | 'DOCUMENT'
+        }
+      : undefined;
+
+    if (target === 'COMMUNITY') {
+      const res = sendCommunityMessage({
+        text: forwardingMessage.text,
+        attachment: attachmentPayload,
+        voiceNote: forwardingMessage.voiceNote,
+        islamicGifId: forwardingMessage.islamicGifId,
+        forwardedFrom: fwdLabel
+      });
+      if (!res.success) {
+        setChatError(res.error || (language === 'ur' ? 'فارورڈ کرنے میں ناکامی ہوئی۔' : 'Unable to forward message.'));
+      } else {
+        setCopiedToast(language === 'ur' ? 'کمیونٹی روم میں فارورڈ کر دیا گیا' : 'Forwarded to Community Room');
+        window.setTimeout(() => setCopiedToast(null), 2000);
+      }
+    } else {
+      const res = sendChatMessage(
+        target.id,
+        forwardingMessage.text || (attachmentPayload ? `Shared ${attachmentPayload.name}` : forwardingMessage.voiceNote ? 'Voice Note' : ''),
+        attachmentPayload,
+        {
+          forwardedFrom: fwdLabel,
+          voiceNote: forwardingMessage.voiceNote,
+          islamicGifId: forwardingMessage.islamicGifId
+        }
+      );
+      if (!res.success) {
+        setChatError(res.error || (language === 'ur' ? 'فارورڈ کرنے میں ناکامی ہوئی۔' : 'Unable to forward message.'));
+      } else {
+        setCopiedToast(language === 'ur' ? `${target.name} کو فارورڈ کر دیا گیا` : `Forwarded to ${target.name}`);
+        window.setTimeout(() => setCopiedToast(null), 2000);
+      }
+    }
+    setForwardingMessage(null);
+    setForwardSearch('');
   };
 
   const renderDeliveryTick = (msg: ChatMessage) => {
@@ -1043,10 +1349,27 @@ const ChatModuleContent: React.FC = () => {
     isUserActuallyOnline(u, presenceNowMs)
   ).length;
 
-  const visibleCommunityMessages = communityMessages.filter(m => !m.isDeleted);
+  const baseCommunityMessages = communityMessages.filter(m => !(m.isDeleted && !m.isDeletedForEveryone));
+  const commSearchNorm = communitySearchQuery.trim().toLowerCase();
+  const visibleCommunityMessages = commSearchNorm
+    ? baseCommunityMessages.filter(m =>
+        !m.isDeletedForEveryone &&
+        !m.isDeleted &&
+        ((m.text && m.text.toLowerCase().includes(commSearchNorm)) ||
+          m.senderName.toLowerCase().includes(commSearchNorm))
+      )
+    : baseCommunityMessages;
+
+  const activeCommunityTypers = typingUsers.filter(
+    t => t.chatId === 'community_global_room' && t.userId !== currentUser.id && presenceNowMs - t.updatedAt < 6500
+  );
+  const activeDirectTypers = activeChatId
+    ? typingUsers.filter(t => t.chatId === activeChatId && t.userId !== currentUser.id && presenceNowMs - t.updatedAt < 6500)
+    : [];
+  const actorRank = getRoleHierarchyRank(currentUser.role, isFounder);
 
   return (
-    <div className="space-y-4 max-w-full">
+    <div className="space-y-4 w-full max-w-full overflow-x-hidden box-border">
       {/* Header + Dual Mode Switcher (shown in Direct Messages view) */}
       {chatMode === 'DIRECT' && (
         <>
@@ -1241,6 +1564,23 @@ const ChatModuleContent: React.FC = () => {
                 >
                   <MessageSquare className="w-4 h-4 text-[#38BDF8] shrink-0" />
                   <span className="truncate">{language === 'ur' ? 'براہ راست پیغامات' : 'Direct Messages'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChatMenuOpen(false);
+                    setIsMoreSubmenuOpen(false);
+                    setIsCommunitySearchOpen(prev => {
+                      const next = !prev;
+                      if (!next) setCommunitySearchQuery('');
+                      return next;
+                    });
+                  }}
+                  className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left text-xs font-bold text-slate-100 hover:bg-[#1E293B] cursor-pointer"
+                >
+                  <Search className="w-4 h-4 text-[#F5D061] shrink-0" />
+                  <span className="truncate">{language === 'ur' ? 'پیغام تلاش کریں' : 'Search Messages'}</span>
                 </button>
 
                 <button
@@ -1493,21 +1833,64 @@ const ChatModuleContent: React.FC = () => {
             </div>
           )}
 
-          {/* Community Feed (Transparent over Scenic Wallpaper) */}
-          <div className="relative z-10 flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden bg-transparent px-2.5 py-3 sm:p-5 space-y-3.5">
+          {/* In-Chat Search Bar (Community Room) */}
+          {isCommunitySearchOpen && (
+            <div className="relative z-20 px-3 py-2 bg-[#0F172A]/95 border-b border-[#D4AF37]/30 flex items-center gap-2 shrink-0">
+              <Search className="w-4 h-4 text-[#F5D061] shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                value={communitySearchQuery}
+                onChange={(e) => setCommunitySearchQuery(e.target.value)}
+                placeholder={language === 'ur' ? 'پیغام یا نام تلاش کریں...' : 'Search messages or sender...'}
+                className="flex-1 min-w-0 bg-[#090D16] border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+              />
+              {commSearchNorm && (
+                <span className="text-[10px] font-mono font-bold text-[#38BDF8] shrink-0 tabular-nums">
+                  {visibleCommunityMessages.length}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCommunitySearchOpen(false);
+                  setCommunitySearchQuery('');
+                }}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Community Feed (Transparent over Scenic Wallpaper) + Floating Scroll-to-Bottom Button */}
+          <div className="relative z-10 flex-1 min-h-0 w-full flex flex-col">
+            <div
+              ref={communityFeedRef}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+                setShowCommScrollBottom(distFromBottom > 140);
+              }}
+              className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden bg-transparent px-2.5 py-3 sm:p-5 space-y-3.5"
+            >
             {visibleCommunityMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div className="w-14 h-14 rounded-2xl bg-[#111622] border border-[#D4AF37]/40 flex items-center justify-center mb-3">
                   <Globe className="w-7 h-7 text-[#F5D061]" />
                 </div>
                 <p className="text-sm font-bold text-white">
-                  {language === 'ur' ? 'لائیو کمیونٹی روم میں خوش آمدید' : 'Welcome to the Live Community Room'}
+                  {commSearchNorm
+                    ? (language === 'ur' ? 'کوئی مماثل پیغام نہیں ملا' : 'No matching messages found')
+                    : (language === 'ur' ? 'لائیو کمیونٹی روم میں خوش آمدید' : 'Welcome to the Live Community Room')}
                 </p>
-                <p className="text-xs text-slate-300 max-w-sm mt-1">
-                  {language === 'ur'
-                    ? 'سلام دعا، 60 سیکنڈ کا وائس نوٹ یا خوبصورت اسلامی کارڈ نیچے سے بھیجیں۔'
-                    : 'Share greetings, send 60s voice notes, or send an animated Islamic card below.'}
-                </p>
+                {!commSearchNorm && (
+                  <p className="text-xs text-slate-300 max-w-sm mt-1">
+                    {language === 'ur'
+                      ? 'سلام دعا، 60 سیکنڈ کا وائس نوٹ یا خوبصورت اسلامی کارڈ نیچے سے بھیجیں۔'
+                      : 'Share greetings, send 60s voice notes, or send an animated Islamic card below.'}
+                  </p>
+                )}
               </div>
             ) : (
               visibleCommunityMessages.map((msg, idx) => {
@@ -1524,13 +1907,11 @@ const ChatModuleContent: React.FC = () => {
                   ? isUserActuallyOnline(authorRecord, presenceNowMs)
                   : false;
 
+                const isPermanentlyDeleted = Boolean(msg.isDeletedForEveryone || msg.isDeleted);
+                const targetRank = getRoleHierarchyRank(authorRecord?.role || msg.senderRole, msgIsFounder);
                 const canDeleteForEveryone = Boolean(
-                  isFounder ||
-                    (!msgIsFounder &&
-                      (currentUser.role === 'SUPER_ADMIN' ||
-                        currentUser.role === 'ADMIN' ||
-                        currentUser.role === 'CO_ADMIN' ||
-                        isMine))
+                  !isPermanentlyDeleted &&
+                    (isFounder || (!msgIsFounder && (isMine || (actorRank >= 2 && actorRank >= targetRank))))
                 );
 
                 const canMuteThisAuthor =
@@ -1551,7 +1932,9 @@ const ChatModuleContent: React.FC = () => {
                 });
                 const msgIsFaizKhel = msgResolvedTabbar?.id === 'faiz_khel';
 
-                const bubbleContainerClass = msgIsFounder
+                const bubbleContainerClass = isPermanentlyDeleted
+                  ? 'bg-[#0D1320]/90 border-slate-700/60 text-slate-400'
+                  : msgIsFounder
                   ? getFounderBubbleStyle(msg.senderBubbleColor || appSettings.founderBubbleColor)
                   : msg.isHighlighted
                   ? 'bg-gradient-to-br from-[#231D0B] to-[#131C31] border-[#F5D061] shadow-[0_0_16px_rgba(212,175,55,0.2)]'
@@ -1560,6 +1943,9 @@ const ChatModuleContent: React.FC = () => {
                   : isMine
                   ? 'bg-gradient-to-br from-[#131C31] to-[#1E293B] border-[#38BDF8]/40 text-[#F8FAFC]'
                   : 'bg-[#131C31]/95 border-slate-400/20 text-[#F8FAFC]';
+
+                const isHighlightedTarget = highlightedMessageId === msg.id;
+                const swipeDelta = swipingMsgId === msg.id ? swipeOffsetX : 0;
 
                 return (
                   <React.Fragment key={msg.id}>
@@ -1571,10 +1957,20 @@ const ChatModuleContent: React.FC = () => {
                       </div>
                     )}
                     <div
+                      data-msg-id={msg.id}
                       ref={(el) => {
                         communityMessageRefs.current[msg.id] = el;
                       }}
-                      className={`flex items-start gap-2 w-full min-w-0 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                      onTouchStart={(e) => handleBubbleTouchStart(e, msg, 'COMMUNITY')}
+                      onTouchMove={handleBubbleTouchMove}
+                      onTouchEnd={handleBubbleTouchEnd}
+                      onTouchCancel={handleBubbleTouchEnd}
+                      style={{
+                        transform: swipeDelta > 0 ? `translate3d(${swipeDelta}px, 0, 0)` : undefined
+                      }}
+                      className={`flex items-start gap-2 w-full min-w-0 transition-transform duration-150 ${
+                        isMine ? 'flex-row-reverse' : 'flex-row'
+                      } ${isHighlightedTarget ? 'rounded-2xl ring-2 ring-[#F5D061] bg-[#F5D061]/10 p-1' : ''}`}
                     >
                       {/* Sender Avatar (clicks to inspect profile) */}
                       <button
@@ -1663,11 +2059,33 @@ const ChatModuleContent: React.FC = () => {
                             )}
                           </div>
 
+                        {isPermanentlyDeleted ? (
+                          <div className="space-y-1.5 py-0.5">
+                            <p className="text-xs italic text-slate-400 leading-relaxed">
+                              {renderDeletedPlaceholderText(msg, language)}
+                            </p>
+                            <div className="flex items-center justify-end text-[10px] font-mono text-slate-500">
+                              <span>
+                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                        <>
+                        {msg.forwardedFrom && (
+                          <div className="inline-flex items-center gap-1 text-[10px] italic font-semibold text-[#F5D061]/90">
+                            <Forward className="w-3 h-3 shrink-0" />
+                            <span>
+                              {language === 'ur' ? `فارورڈ از ${msg.forwardedFrom}` : `Forwarded from ${msg.forwardedFrom}`}
+                            </span>
+                          </div>
+                        )}
+
                         {/* Replied-to Quote */}
                         {msg.replyTo && (
                           <button
                             type="button"
-                            onClick={() => scrollToMessageId(msg.replyTo!.id)}
+                            onClick={() => scrollToMessageId(msg.replyTo!.id, 'COMMUNITY')}
                             className="w-full text-left px-2.5 py-1.5 rounded-lg bg-black/35 border-l-2 border-[#F5D061] text-[11px] cursor-pointer"
                           >
                             <span className="font-bold text-[#F5D061] block truncate">
@@ -1689,10 +2107,10 @@ const ChatModuleContent: React.FC = () => {
                           <VoiceNotePlayer voiceNote={msg.voiceNote} />
                         )}
 
-                        {/* Text Content */}
+                        {/* Text Content with auto-linked URLs & Phone numbers */}
                         {msg.text && !msg.islamicGifId && !msg.voiceNote && (
                           <p className="leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-slate-100">
-                            {msg.text}
+                            {renderLinkedText(msg.text)}
                           </p>
                         )}
 
@@ -1742,61 +2160,90 @@ const ChatModuleContent: React.FC = () => {
                             {isMine && renderDeliveryTick(msg)}
                           </div>
                         </div>
+                        </>
+                        )}
                       </div>
 
-                      {/* Message Moderation & Reply Actions */}
+                      {/* Message Moderation, Reply, Copy, Forward & Delete Actions */}
                       <div className={`flex flex-wrap items-center gap-1.5 mt-1 px-0.5 text-[10px] max-w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setReplyingTo({
-                              id: msg.id,
-                              senderName: msg.senderName,
-                              text: msg.text,
-                              isVoiceNote: Boolean(msg.voiceNote)
-                            })
-                          }
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
-                        >
-                          <Reply className="w-3 h-3" />
-                          <span>{language === 'ur' ? 'جواب' : 'Reply'}</span>
-                        </button>
-
-                        {isFounder && (
+                        {!isPermanentlyDeleted && (
                           <>
                             <button
                               type="button"
-                              onClick={() => toggleHighlightCommunityMessage(msg.id)}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer ${
-                                msg.isHighlighted
-                                  ? 'bg-[#F5D061]/20 border-[#F5D061] text-[#F5D061] font-bold'
-                                  : 'bg-[#111622]/90 border-slate-700/80 text-slate-300 hover:text-[#F5D061]'
-                              }`}
+                              onClick={() =>
+                                setReplyingTo({
+                                  id: msg.id,
+                                  senderName: msg.senderName,
+                                  text: msg.text,
+                                  isVoiceNote: Boolean(msg.voiceNote)
+                                })
+                              }
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
                             >
-                              <Sparkles className="w-3 h-3" />
-                              <span>
-                                {msg.isHighlighted
-                                  ? (language === 'ur' ? 'نمایاں ختم' : 'Unhighlight')
-                                  : (language === 'ur' ? 'نمایاں کریں' : 'Highlight')}
-                              </span>
+                              <Reply className="w-3 h-3" />
+                              <span>{language === 'ur' ? 'جواب' : 'Reply'}</span>
                             </button>
+
+                            {msg.text && !msg.islamicGifId && !msg.voiceNote && (
+                              <button
+                                type="button"
+                                onClick={() => handleCopyMessageText(msg.text)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-slate-700/80 text-slate-300 hover:text-[#38BDF8] cursor-pointer"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>{language === 'ur' ? 'کاپی' : 'Copy'}</span>
+                              </button>
+                            )}
 
                             <button
                               type="button"
-                              onClick={() => runDebouncedAction(() => togglePinCommunityMessage(msg.id))}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer ${
-                                msg.isPinned
-                                  ? 'bg-[#F5D061] border-[#F5D061] text-[#0A0D12] font-bold'
-                                  : 'bg-[#111622]/90 border-slate-700/80 text-slate-300 hover:text-[#F5D061]'
-                              }`}
+                              onClick={() => {
+                                setForwardSearch('');
+                                setForwardingMessage(msg);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
                             >
-                              <Pin className="w-3 h-3" />
-                              <span>
-                                {msg.isPinned
-                                  ? (language === 'ur' ? 'ان پن' : 'Unpin')
-                                  : (language === 'ur' ? 'پن کریں' : 'Pin')}
-                              </span>
+                              <Forward className="w-3 h-3" />
+                              <span>{language === 'ur' ? 'فارورڈ' : 'Forward'}</span>
                             </button>
+
+                            {isFounder && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleHighlightCommunityMessage(msg.id)}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer ${
+                                    msg.isHighlighted
+                                      ? 'bg-[#F5D061]/20 border-[#F5D061] text-[#F5D061] font-bold'
+                                      : 'bg-[#111622]/90 border-slate-700/80 text-slate-300 hover:text-[#F5D061]'
+                                  }`}
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>
+                                    {msg.isHighlighted
+                                      ? (language === 'ur' ? 'نمایاں ختم' : 'Unhighlight')
+                                      : (language === 'ur' ? 'نمایاں کریں' : 'Highlight')}
+                                  </span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => runDebouncedAction(() => togglePinCommunityMessage(msg.id))}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer ${
+                                    msg.isPinned
+                                      ? 'bg-[#F5D061] border-[#F5D061] text-[#0A0D12] font-bold'
+                                      : 'bg-[#111622]/90 border-slate-700/80 text-slate-300 hover:text-[#F5D061]'
+                                  }`}
+                                >
+                                  <Pin className="w-3 h-3" />
+                                  <span>
+                                    {msg.isPinned
+                                      ? (language === 'ur' ? 'ان پن' : 'Unpin')
+                                      : (language === 'ur' ? 'پن کریں' : 'Pin')}
+                                  </span>
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
 
@@ -1812,10 +2259,10 @@ const ChatModuleContent: React.FC = () => {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-rose-500/35 text-rose-300 hover:bg-rose-950/60 cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
-                          <span>{translate(language, 'deleteLabel')}</span>
+                          <span>{isPermanentlyDeleted ? (language === 'ur' ? 'میرے لیے ہٹائیں' : 'Clear') : translate(language, 'deleteLabel')}</span>
                         </button>
 
-                        {canMuteThisAuthor && authorRecord && (
+                        {!isPermanentlyDeleted && canMuteThisAuthor && authorRecord && (
                           <button
                             type="button"
                             onClick={() => {
@@ -1844,7 +2291,46 @@ const ChatModuleContent: React.FC = () => {
               })
             )}
             <div ref={communityEndRef} />
+            </div>
+
+            {showCommScrollBottom && (
+              <button
+                type="button"
+                onClick={() => communityEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                aria-label="Scroll to latest messages"
+                className="absolute right-3 bottom-3 z-30 w-10 h-10 rounded-full kc-gold-button shadow-xl flex items-center justify-center cursor-pointer kc-pressable"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </button>
+            )}
           </div>
+
+          {/* Live Typing Indicator Banner (Community Room) */}
+          {activeCommunityTypers.length > 0 && (
+            <div className="relative z-10 px-3.5 py-1.5 bg-[#0F172A]/90 border-t border-[#38BDF8]/20 text-[11px] font-semibold text-[#38BDF8] flex items-center gap-2 shrink-0">
+              <span className="inline-flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" style={{ animationDelay: '0.15s' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" style={{ animationDelay: '0.3s' }} />
+              </span>
+              <span className="truncate">
+                {activeCommunityTypers.length === 1
+                  ? (language === 'ur'
+                      ? `${activeCommunityTypers[0].userName} لکھ رہے ہیں...`
+                      : `${activeCommunityTypers[0].userName} is typing...`)
+                  : (language === 'ur'
+                      ? `${activeCommunityTypers[0].userName} اور ${activeCommunityTypers.length - 1} دیگر لکھ رہے ہیں...`
+                      : `${activeCommunityTypers[0].userName} & ${activeCommunityTypers.length - 1} other typing...`)}
+              </span>
+            </div>
+          )}
+
+          {/* Copy / Forward Confirmation Toast */}
+          {copiedToast && (
+            <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[10005] px-3.5 py-1.5 rounded-full bg-[#090D16]/95 border border-[#F5D061]/60 text-xs font-bold text-[#F5D061] shadow-xl">
+              {copiedToast}
+            </div>
+          )}
 
           {/* Drawers & Previews above Composer */}
           {showIslamicGifDrawer && !isUserMutedInCommunity && (
@@ -2103,7 +2589,13 @@ const ChatModuleContent: React.FC = () => {
                     })}
                   </div>
                   <div className="flex items-center justify-between text-[10px] font-mono text-[#F5D061] tabular-nums">
-                    <span>{language === 'ur' ? 'وائس نوٹ تیار ہے' : 'Ready to send'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setDraftSpeedIdx(prev => (prev + 1) % PLAYBACK_SPEEDS.length)}
+                      className="px-1.5 py-0.5 rounded bg-[#131C31] border border-[#38BDF8]/40 text-[#38BDF8] font-extrabold cursor-pointer"
+                    >
+                      {draftPlaybackSpeed}x
+                    </button>
                     <span>{formatDuration(isDraftPlaying ? draftPlaySec : draftVoiceNote.durationSec)}</span>
                   </div>
                 </div>
@@ -2123,20 +2615,9 @@ const ChatModuleContent: React.FC = () => {
             <div
               className="relative z-40 shrink-0 bg-gradient-to-b from-[#131C31]/95 to-[#090D16] border-t border-slate-400/25 shadow-[0_-8px_24px_rgba(0,0,0,0.65)]"
               style={{
-                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 24px)'
+                paddingBottom: isKeyboardOpen ? '12px' : 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
               }}
             >
-              {typeof window !== 'undefined' &&
-                !(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() && (
-                <div className="px-3 py-1 bg-[#0F172A]/95 border-b border-slate-400/15 text-[10px] text-[#38BDF8]/90 flex items-center gap-1.5">
-                  <Mic className="w-3 h-3 shrink-0 text-[#38BDF8]" />
-                  <span className="truncate">
-                    {language === 'ur'
-                      ? 'وائس ریکارڈنگ کے لیے انسٹال شدہ اینڈرائیڈ APK اور مائیک کی اجازت درکار ہے۔'
-                      : 'Voice recording requires the installed Android APK with Mic permission.'}
-                  </span>
-                </div>
-              )}
               {(roomTextLockedForMe || roomVoiceLockedForMe) && (
                 <div className="px-3 py-1.5 bg-amber-950/85 border-b border-[#D4AF37]/30 text-[11px] font-bold text-[#FDE047] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 shrink-0" />
@@ -2151,72 +2632,11 @@ const ChatModuleContent: React.FC = () => {
               )}
               <form
                 onSubmit={handleSendCommunityMessage}
-                className="p-2.5 sm:p-3.5 pb-0 flex flex-wrap sm:flex-nowrap items-end gap-1.5 sm:gap-2"
+                className="p-2 sm:p-3 pb-0 flex flex-col gap-1.5 w-full max-w-full box-border"
               >
-                {/* Utility Icons Row on <640px, Inline on >=640px */}
-                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={roomTextLockedForMe}
-                      onClick={() => {
-                        setShowEmojiStrip(s => !s);
-                        setShowIslamicGifDrawer(false);
-                      }}
-                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] hover:text-[#38BDF8] disabled:opacity-40 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
-                      title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
-                      aria-label={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
-                    >
-                      <Smile className="w-5 h-5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={roomTextLockedForMe}
-                      onClick={() => {
-                        setShowIslamicGifDrawer(d => !d);
-                        setShowEmojiStrip(false);
-                      }}
-                      className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#F5D061] border border-slate-400/25 disabled:opacity-40 text-base font-bold flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
-                      title={translate(language, 'islamicGifs')}
-                      aria-label={translate(language, 'islamicGifs')}
-                    >
-                      ☪️
-                    </button>
-
-                    {/* Phone Gallery Photo / GIF Upload (Super Admins & Admins Only) */}
-                    {canUploadGallery && !roomTextLockedForMe && (
-                      <label
-                        className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] text-[#38BDF8] border border-[#38BDF8]/35 hover:bg-[#1E293B] flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
-                        title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
-                      >
-                        <ImageIcon className="w-5 h-5" />
-                        <input
-                          type="file"
-                          accept="image/*,.gif"
-                          onChange={handleGalleryMediaUpload}
-                          disabled={isCompressingMedia}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
-
-                  {communityText.length >= 4000 && (
-                    <span className="sm:hidden text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40">
-                      {communityText.length.toLocaleString()} / 5,000
-                    </span>
-                  )}
-                </div>
-
-                {/* Main Input Bar: Auto-Expanding 5,000-Char Textarea + Single Mic + Send */}
-                <div className="flex-1 w-full sm:w-auto flex items-end gap-1.5 sm:gap-2 min-w-0">
-                  <div className="flex-1 min-w-[140px] flex flex-col">
-                    {communityText.length >= 4000 && (
-                      <span className="hidden sm:inline-block self-end mb-1 text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40">
-                        {communityText.length.toLocaleString()} / 5,000
-                      </span>
-                    )}
+                {/* ROW 1 (TOP): Wide Message Input + Mic + Send Button */}
+                <div className="w-full flex items-end gap-1.5 min-w-0">
+                  <div className="flex-1 min-w-0 flex flex-col">
                     <textarea
                       ref={communityTextareaRef}
                       rows={1}
@@ -2224,7 +2644,12 @@ const ChatModuleContent: React.FC = () => {
                       dir="auto"
                       disabled={roomTextLockedForMe}
                       value={communityText}
-                      onChange={(e) => setCommunityText(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCommunityText(val);
+                        emitTyping('community_global_room', Boolean(val.trim()));
+                      }}
+                      onBlur={() => emitTyping('community_global_room', false)}
                       onKeyDown={(e) => {
                         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                           e.preventDefault();
@@ -2239,7 +2664,7 @@ const ChatModuleContent: React.FC = () => {
                           : translate(language, 'chatTypeMessage')
                       }
                       style={{ fontSize: '16px', maxHeight: '120px' }}
-                      className="w-full min-h-[48px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 disabled:opacity-50 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
+                      className="w-full min-h-[44px] resize-none overflow-y-auto px-3.5 py-2.5 text-[16px] leading-[1.35] rounded-xl border border-slate-400/25 bg-[#0F172A] text-[#F8FAFC] placeholder:text-[#94A3B8]/70 disabled:opacity-50 focus:outline-hidden focus:border-[#38BDF8] shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)]"
                     />
                   </div>
 
@@ -2247,7 +2672,7 @@ const ChatModuleContent: React.FC = () => {
                     type="button"
                     disabled={roomVoiceLockedForMe}
                     onClick={startVoiceRecording}
-                    className="relative z-50 min-w-[48px] min-h-[48px] w-12 h-12 rounded-xl bg-[#0F172A] border border-[#38BDF8]/35 text-[#38BDF8] hover:bg-[#1E293B] disabled:opacity-40 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
+                    className="relative z-50 min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl bg-[#0F172A] border border-[#38BDF8]/35 text-[#38BDF8] hover:bg-[#1E293B] disabled:opacity-40 flex items-center justify-center shrink-0 cursor-pointer kc-pressable"
                     title={translate(language, 'voiceNoteHold')}
                     aria-label={translate(language, 'voiceNoteHold')}
                   >
@@ -2257,12 +2682,88 @@ const ChatModuleContent: React.FC = () => {
                   <button
                     type="submit"
                     disabled={roomTextLockedForMe || isCompressingMedia || (!communityText.trim() && !communityAttachment)}
-                    className="relative z-50 min-w-[48px] min-h-[48px] h-12 px-3.5 flex items-center justify-center gap-1.5 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer kc-pressable"
+                    className="relative z-50 min-w-[44px] min-h-[44px] h-11 px-3.5 flex items-center justify-center gap-1.5 kc-gold-button disabled:opacity-40 font-extrabold text-xs rounded-xl shrink-0 cursor-pointer kc-pressable"
                     aria-label={translate(language, 'chatSend')}
                   >
                     <Send className="w-4 h-4 shrink-0" />
                     <span className="hidden sm:inline">{translate(language, 'chatSend')}</span>
                   </button>
+                </div>
+
+                {/* ROW 2 (DIRECTLY BELOW): Emoji, Islamic Cards, Camera, Photo Gallery & Char Counter */}
+                <div className="w-full flex items-center justify-between gap-2 px-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={roomTextLockedForMe}
+                      onClick={() => {
+                        setShowEmojiStrip(s => !s);
+                        setShowIslamicGifDrawer(false);
+                      }}
+                      className="h-9 px-2.5 rounded-lg bg-[#0F172A] hover:bg-[#1E293B] border border-slate-400/25 text-[#F8FAFC] hover:text-[#38BDF8] disabled:opacity-40 inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer kc-pressable"
+                      title={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
+                      aria-label={language === 'ur' ? 'ایموجی' : 'Quick Emojis'}
+                    >
+                      <Smile className="w-4 h-4 text-[#F5D061]" />
+                      <span className="hidden xs:inline">{language === 'ur' ? 'ایموجی' : 'Emoji'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={roomTextLockedForMe}
+                      onClick={() => {
+                        setShowIslamicGifDrawer(d => !d);
+                        setShowEmojiStrip(false);
+                      }}
+                      className="h-9 px-2.5 rounded-lg bg-[#0F172A] hover:bg-[#1E293B] text-[#F5D061] border border-slate-400/25 disabled:opacity-40 inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer kc-pressable"
+                      title={translate(language, 'islamicGifs')}
+                      aria-label={translate(language, 'islamicGifs')}
+                    >
+                      <span className="text-sm leading-none">☪️</span>
+                      <span className="hidden xs:inline">{language === 'ur' ? 'اسلامی کارڈ' : 'Islamic'}</span>
+                    </button>
+
+                    {canUploadGallery && !roomTextLockedForMe && (
+                      <>
+                        <label
+                          className="h-9 px-2.5 rounded-lg bg-[#0F172A] text-[#F5D061] border border-[#D4AF37]/40 hover:bg-[#1E293B] inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer kc-pressable"
+                          title={language === 'ur' ? 'کیمرہ سے تصویر کھینچیں' : 'Take Photo with Camera'}
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span className="hidden sm:inline">{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleGalleryMediaUpload}
+                            disabled={isCompressingMedia}
+                            className="hidden"
+                          />
+                        </label>
+
+                        <label
+                          className="h-9 px-2.5 rounded-lg bg-[#0F172A] text-[#38BDF8] border border-[#38BDF8]/35 hover:bg-[#1E293B] inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer kc-pressable"
+                          title={language === 'ur' ? 'فون گیلری تصویر / GIF اپ لوڈ کریں' : 'Gallery Photo / GIF Upload (Up to 10MB)'}
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          <span className="hidden sm:inline">{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
+                          <input
+                            type="file"
+                            accept="image/*,.gif"
+                            onChange={handleGalleryMediaUpload}
+                            disabled={isCompressingMedia}
+                            className="hidden"
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+
+                  {communityText.length >= 4000 && (
+                    <span className="text-[10px] font-mono font-bold text-[#F5D061] tabular-nums px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#D4AF37]/40 shrink-0">
+                      {communityText.length.toLocaleString()} / 5,000
+                    </span>
+                  )}
                 </div>
               </form>
             </div>
@@ -2407,10 +2908,10 @@ const ChatModuleContent: React.FC = () => {
           </div>
 
           {/* Right Side: Direct Message Thread Viewport */}
-          <div className={`${mobileShowThread && activeRecipient ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-[#111622] h-full min-w-0`}>
+          <div className={`${mobileShowThread && activeRecipient ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-[#111622] h-full min-w-0 max-w-full overflow-x-hidden`}>
             {activeRecipient ? (
               <>
-                <div className="p-3 border-b border-[#D4AF37]/20 flex items-center justify-between gap-2 bg-[#0A0D12]/60">
+                <div className="p-3 border-b border-[#D4AF37]/20 flex items-center justify-between gap-2 bg-[#0A0D12]/60 shrink-0">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
                       type="button"
@@ -2473,47 +2974,122 @@ const ChatModuleContent: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setInspectedUserProfile(activeRecipient)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#D4AF37]/30 bg-[#161D2C] hover:bg-slate-800 text-slate-200 text-xs font-medium shrink-0 cursor-pointer"
-                  >
-                    <UserIcon className="w-3.5 h-3.5 text-[#F5D061]" />
-                    <span className="hidden sm:inline">{language === 'ur' ? 'پروفائل' : 'Profile'}</span>
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDirectSearchOpen(prev => {
+                          const next = !prev;
+                          if (!next) setDirectSearchQuery('');
+                          return next;
+                        });
+                      }}
+                      className="p-1.5 rounded-xl border border-[#D4AF37]/30 bg-[#161D2C] hover:bg-slate-800 text-[#F5D061] cursor-pointer"
+                      title={language === 'ur' ? 'تلاش کریں' : 'Search Chat'}
+                      aria-label="Search Direct Chat"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectedUserProfile(activeRecipient)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#D4AF37]/30 bg-[#161D2C] hover:bg-slate-800 text-slate-200 text-xs font-medium shrink-0 cursor-pointer"
+                    >
+                      <UserIcon className="w-3.5 h-3.5 text-[#F5D061]" />
+                      <span className="hidden sm:inline">{language === 'ur' ? 'پروفائل' : 'Profile'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[#0A0D12]/40">
-                  {currentDirectMessages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
-                      <MessageSquare className="w-10 h-10 text-[#D4AF37]/40 mb-2" />
-                      <p className="text-xs font-semibold text-slate-300">
-                        {language === 'ur'
-                          ? `${activeRecipient.name} کے ساتھ ابھی کوئی پیغام نہیں ہے۔`
-                          : `No messages with ${activeRecipient.name} yet.`}
-                      </p>
-                      <p className="text-[11px] text-slate-500 max-w-xs mt-1">
-                        {language === 'ur'
-                          ? 'نیچے سے براہ راست پیغام بھیجیں — آف لائن ہونے پر بھی پیغام محفوظ ہو کر خودکار پہنچ جائے گا۔'
-                          : 'Send a direct message below — even offline, your message queues and syncs automatically.'}
-                      </p>
-                    </div>
-                  ) : (
-                    currentDirectMessages.map((msg, idx) => {
+                {isDirectSearchOpen && (
+                  <div className="px-3 py-2 bg-[#090D16] border-b border-[#D4AF37]/25 flex items-center gap-2 shrink-0">
+                    <Search className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={directSearchQuery}
+                      onChange={(e) => setDirectSearchQuery(e.target.value)}
+                      placeholder={language === 'ur' ? 'اس گفتگو میں تلاش کریں...' : 'Search in this conversation...'}
+                      className="flex-1 min-w-0 bg-[#111622] border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDirectSearchOpen(false);
+                        setDirectSearchQuery('');
+                      }}
+                      className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="relative flex-1 min-h-0 flex flex-col bg-[#0A0D12]/40">
+                  <div
+                    ref={directFeedRef}
+                    onScroll={(e) => {
+                      const el = e.currentTarget;
+                      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+                      setShowDirectScrollBottom(distFromBottom > 140);
+                    }}
+                    className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3"
+                  >
+                  {(() => {
+                    const dmQ = directSearchQuery.trim().toLowerCase();
+                    const filteredDirect = dmQ
+                      ? currentDirectMessages.filter(
+                          m => !m.isDeletedForEveryone && !m.isDeleted && m.text && m.text.toLowerCase().includes(dmQ)
+                        )
+                      : currentDirectMessages;
+
+                    if (filteredDirect.length === 0) {
+                      return (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                          <MessageSquare className="w-10 h-10 text-[#D4AF37]/40 mb-2" />
+                          <p className="text-xs font-semibold text-slate-300">
+                            {dmQ
+                              ? (language === 'ur' ? 'کوئی مماثل پیغام نہیں ملا۔' : 'No matching messages found.')
+                              : language === 'ur'
+                              ? `${activeRecipient.name} کے ساتھ ابھی کوئی پیغام نہیں ہے۔`
+                              : `No messages with ${activeRecipient.name} yet.`}
+                          </p>
+                          {!dmQ && (
+                            <p className="text-[11px] text-slate-500 max-w-xs mt-1">
+                              {language === 'ur'
+                                ? 'نیچے سے براہ راست پیغام بھیجیں — آف لائن ہونے پر بھی پیغام محفوظ ہو کر خودکار پہنچ جائے گا۔'
+                                : 'Send a direct message below — even offline, your message queues and syncs automatically.'}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return filteredDirect.map((msg, idx) => {
                       const isMine = msg.senderId === currentUser.id;
                       const recipientIsFounder = Boolean(
                         activeRecipient.isFounder ||
                         activeRecipient.email.trim().toLowerCase() === FOUNDER_EMAIL.toLowerCase()
                       );
                       const msgFromFounder = isMine ? isFounder : recipientIsFounder;
-                      const canDeleteDirectForEveryone = isFounder || (!msgFromFounder && isMine);
+                      const isPermanentlyDeleted = Boolean(msg.isDeletedForEveryone || msg.isDeleted);
+                      const targetRank = getRoleHierarchyRank(
+                        isMine ? currentUser.role : activeRecipient.role,
+                        msgFromFounder
+                      );
+                      const canDeleteDirectForEveryone = Boolean(
+                        !isPermanentlyDeleted &&
+                          (isFounder || (!msgFromFounder && (isMine || (actorRank >= 2 && actorRank >= targetRank))))
+                      );
                       const dayKey = getCalendarDayKey(msg.timestamp);
-                      const prevDayKey = idx > 0 ? getCalendarDayKey(currentDirectMessages[idx - 1].timestamp) : null;
+                      const prevDayKey = idx > 0 ? getCalendarDayKey(filteredDirect[idx - 1].timestamp) : null;
                       const showDateDivider = idx === 0 || dayKey !== prevDayKey;
 
                       const directSenderIsFaizKhel = isMine
                         ? isFaizKhelUser(currentUser)
                         : isFaizKhelUser(activeRecipient);
+                      const isHighlightedTarget = highlightedMessageId === msg.id;
+                      const swipeDelta = swipingMsgId === msg.id ? swipeOffsetX : 0;
 
                       return (
                         <React.Fragment key={msg.id}>
@@ -2524,10 +3100,27 @@ const ChatModuleContent: React.FC = () => {
                               </span>
                             </div>
                           )}
-                          <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                          <div
+                            data-msg-id={msg.id}
+                            ref={(el) => {
+                              directMessageRefs.current[msg.id] = el;
+                            }}
+                            onTouchStart={(e) => handleBubbleTouchStart(e, msg, 'DIRECT')}
+                            onTouchMove={handleBubbleTouchMove}
+                            onTouchEnd={handleBubbleTouchEnd}
+                            onTouchCancel={handleBubbleTouchEnd}
+                            style={{
+                              transform: swipeDelta > 0 ? `translate3d(${swipeDelta}px, 0, 0)` : undefined
+                            }}
+                            className={`flex flex-col transition-transform duration-150 ${
+                              isMine ? 'items-end' : 'items-start'
+                            } ${isHighlightedTarget ? 'rounded-2xl ring-2 ring-[#F5D061] bg-[#F5D061]/10 p-1' : ''}`}
+                          >
                             <div
-                              className={`max-w-[85%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
-                                directSenderIsFaizKhel
+                              className={`max-w-[86%] sm:max-w-md rounded-2xl px-3.5 py-2.5 text-xs shadow-sm space-y-1.5 ${
+                                isPermanentlyDeleted
+                                  ? 'bg-[#0D1320]/90 text-slate-400 border border-slate-700/60'
+                                  : directSenderIsFaizKhel
                                   ? `bg-gradient-to-br from-[#2B1F06] via-[#42300A] to-[#1C1404] text-[#F8FAFC] border-[1.5px] border-[#FDE047] shadow-[0_4px_18px_rgba(253,224,71,0.24)] ${
                                       isMine ? 'rounded-br-none' : 'rounded-bl-none'
                                     }`
@@ -2572,47 +3165,175 @@ const ChatModuleContent: React.FC = () => {
                                 </div>
                               </div>
 
-                              <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                              {isPermanentlyDeleted ? (
+                                <p className="italic text-slate-400 leading-relaxed">
+                                  {renderDeletedPlaceholderText(msg, language)}
+                                </p>
+                              ) : (
+                                <>
+                                  {msg.forwardedFrom && (
+                                    <div className="inline-flex items-center gap-1 text-[10px] italic font-semibold text-[#F5D061]/90">
+                                      <Forward className="w-3 h-3 shrink-0" />
+                                      <span>
+                                        {language === 'ur' ? `فارورڈ از ${msg.forwardedFrom}` : `Forwarded from ${msg.forwardedFrom}`}
+                                      </span>
+                                    </div>
+                                  )}
 
-                              {msg.attachmentUrl && (
-                                <div className="pt-1.5 border-t border-white/15">
-                                  {msg.attachmentType === 'IMAGE' ? (
+                                  {msg.replyTo && (
                                     <button
                                       type="button"
-                                      onClick={() => setPreviewImageUrl(msg.attachmentUrl!)}
-                                      className="block cursor-pointer"
+                                      onClick={() => scrollToMessageId(msg.replyTo!.id, 'DIRECT')}
+                                      className="w-full text-left px-2.5 py-1.5 rounded-lg bg-black/35 border-l-2 border-[#F5D061] text-[11px] cursor-pointer"
                                     >
-                                      <img
-                                        src={msg.attachmentUrl}
-                                        alt="attachment"
-                                        className="w-48 max-w-full h-32 object-cover rounded-lg border border-white/20"
-                                      />
+                                      <span className="font-bold text-[#F5D061] block truncate">
+                                        ↩️ {msg.replyTo.senderName}
+                                      </span>
+                                      <span className="text-slate-300 line-clamp-2">
+                                        {msg.replyTo.isVoiceNote ? '🎤 Voice Note' : msg.replyTo.text}
+                                      </span>
                                     </button>
-                                  ) : (
-                                    <a
-                                      href={msg.attachmentUrl}
-                                      download={msg.attachmentName || 'document'}
-                                      className="flex items-center gap-2 p-2 rounded bg-black/25 text-[11px] underline text-[#F5D061]"
-                                    >
-                                      <FileText className="w-4 h-4 shrink-0" />
-                                      <span className="truncate">{msg.attachmentName || 'Document'}</span>
-                                    </a>
                                   )}
-                                </div>
+
+                                  {msg.islamicGifId && (
+                                    <IslamicGifCard gifId={msg.islamicGifId} />
+                                  )}
+
+                                  {msg.voiceNote && (
+                                    <VoiceNotePlayer voiceNote={msg.voiceNote} />
+                                  )}
+
+                                  {msg.text && !msg.islamicGifId && !msg.voiceNote && (
+                                    <p className="leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                                      {renderLinkedText(msg.text)}
+                                    </p>
+                                  )}
+
+                                  {msg.attachmentUrl && (
+                                    <div className="pt-1.5 border-t border-white/15">
+                                      {msg.attachmentType === 'IMAGE' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewImageUrl(msg.attachmentUrl!)}
+                                          className="block cursor-pointer"
+                                        >
+                                          <img
+                                            src={msg.attachmentUrl}
+                                            alt="attachment"
+                                            className="w-48 max-w-full h-32 object-cover rounded-lg border border-white/20"
+                                          />
+                                        </button>
+                                      ) : (
+                                        <a
+                                          href={msg.attachmentUrl}
+                                          download={msg.attachmentName || 'document'}
+                                          className="flex items-center gap-2 p-2 rounded bg-black/25 text-[11px] underline text-[#F5D061]"
+                                        >
+                                          <FileText className="w-4 h-4 shrink-0" />
+                                          <span className="truncate">{msg.attachmentName || 'Document'}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
-                            {isMine && (
-                              <div className="flex items-center gap-1 mt-0.5 text-[10px] px-1">
-                                {renderDeliveryTick(msg)}
+
+                            {!isPermanentlyDeleted && (
+                              <div className={`flex flex-wrap items-center gap-1.5 mt-1 px-1 text-[10px] ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDirectReplyingTo({
+                                      id: msg.id,
+                                      senderName: msg.senderName,
+                                      text: msg.text,
+                                      isVoiceNote: Boolean(msg.voiceNote)
+                                    })
+                                  }
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#111622] border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                                >
+                                  <Reply className="w-2.5 h-2.5" />
+                                  <span>{language === 'ur' ? 'جواب' : 'Reply'}</span>
+                                </button>
+                                {msg.text && !msg.islamicGifId && !msg.voiceNote && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyMessageText(msg.text)}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#111622] border border-slate-700/80 text-slate-300 hover:text-[#38BDF8] cursor-pointer"
+                                  >
+                                    <Copy className="w-2.5 h-2.5" />
+                                    <span>{language === 'ur' ? 'کاپی' : 'Copy'}</span>
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setForwardSearch('');
+                                    setForwardingMessage(msg);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#111622] border border-slate-700/80 text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                                >
+                                  <Forward className="w-2.5 h-2.5" />
+                                  <span>{language === 'ur' ? 'فارورڈ' : 'Forward'}</span>
+                                </button>
+                                {isMine && (
+                                  <span className="inline-flex items-center gap-1">
+                                    {renderDeliveryTick(msg)}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>
                         </React.Fragment>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                   <div ref={directEndRef} />
+                  </div>
+
+                  {showDirectScrollBottom && (
+                    <button
+                      type="button"
+                      onClick={() => directEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                      aria-label="Scroll to latest messages"
+                      className="absolute right-3 bottom-3 z-20 w-9 h-9 rounded-full kc-gold-button shadow-xl flex items-center justify-center cursor-pointer kc-pressable"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+
+                {activeDirectTypers.length > 0 && (
+                  <div className="px-3.5 py-1 bg-[#090D16] border-t border-[#38BDF8]/20 text-[11px] font-semibold text-[#38BDF8] flex items-center gap-2 shrink-0">
+                    <span className="inline-flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" style={{ animationDelay: '0.15s' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-bounce" style={{ animationDelay: '0.3s' }} />
+                    </span>
+                    <span className="truncate">
+                      {language === 'ur'
+                        ? `${activeRecipient.name} لکھ رہے ہیں...`
+                        : `${activeRecipient.name} is typing...`}
+                    </span>
+                  </div>
+                )}
+
+                {directReplyingTo && (
+                  <div className="px-3.5 py-2 bg-[#161D2C] border-t border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs shrink-0">
+                    <div className="min-w-0">
+                      <span className="font-bold text-[#F5D061] block">
+                        {language === 'ur' ? `${directReplyingTo.senderName} کو جواب:` : `Replying to ${directReplyingTo.senderName}`}
+                      </span>
+                      <span className="text-slate-300 truncate block">
+                        {directReplyingTo.isVoiceNote ? (language === 'ur' ? '🎤 وائس نوٹ' : '🎤 Voice Note') : directReplyingTo.text}
+                      </span>
+                    </div>
+                    <button type="button" onClick={() => setDirectReplyingTo(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {attachmentPreview && (
                   <div className="p-2 px-4 bg-[#161D2C] border-t border-[#D4AF37]/30 flex items-center justify-between text-xs text-[#F5D061]">
@@ -2623,6 +3344,12 @@ const ChatModuleContent: React.FC = () => {
                     <button type="button" onClick={() => setAttachmentPreview(null)} className="p-1 rounded cursor-pointer">
                       <X className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+                )}
+
+                {copiedToast && (
+                  <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[10005] px-3.5 py-1.5 rounded-full bg-[#090D16]/95 border border-[#F5D061]/60 text-xs font-bold text-[#F5D061] shadow-xl">
+                    {copiedToast}
                   </div>
                 )}
 
@@ -2701,7 +3428,14 @@ const ChatModuleContent: React.FC = () => {
                       maxLength={5000}
                       dir="auto"
                       value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMessageText(val);
+                        if (activeChatId) emitTyping(activeChatId, Boolean(val.trim()));
+                      }}
+                      onBlur={() => {
+                        if (activeChatId) emitTyping(activeChatId, false);
+                      }}
                       onKeyDown={(e) => {
                         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                           e.preventDefault();
@@ -2782,11 +3516,22 @@ const ChatModuleContent: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
-                <ImageIcon className="w-6 h-6 text-[#F5D061]" />
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2.5">
+              <label className="p-3.5 rounded-xl border border-[#D4AF37]/40 hover:border-[#F5D061] flex flex-col items-center gap-1.5 text-center bg-[#0A0D12] cursor-pointer">
+                <Camera className="w-6 h-6 text-[#F5D061]" />
                 <span className="text-xs font-semibold text-white">
-                  {language === 'ur' ? 'تصویر / GIF منتخب کریں' : 'Select Photo / GIF'}
+                  {language === 'ur' ? 'کیمرہ تصویر' : 'Camera Photo'}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {language === 'ur' ? 'براہ راست تصویر کھینچیں' : 'Capture live photo'}
+                </span>
+                <input type="file" accept="image/*" capture="environment" onChange={handleDirectImageAttachment} className="hidden" />
+              </label>
+
+              <label className="p-3.5 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-1.5 text-center bg-[#0A0D12] cursor-pointer">
+                <ImageIcon className="w-6 h-6 text-[#38BDF8]" />
+                <span className="text-xs font-semibold text-white">
+                  {language === 'ur' ? 'گیلری / GIF' : 'Gallery / GIF'}
                 </span>
                 <span className="text-[10px] text-slate-400">
                   {language === 'ur' ? '10MB تک · خودکار کمپریشن' : 'Up to 10MB · Smart <750KB'}
@@ -2794,7 +3539,7 @@ const ChatModuleContent: React.FC = () => {
                 <input type="file" accept="image/*,.gif" onChange={handleDirectImageAttachment} className="hidden" />
               </label>
 
-              <label className="p-4 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-2 text-center bg-[#0A0D12] cursor-pointer">
+              <label className="p-3.5 rounded-xl border border-slate-700 hover:border-[#D4AF37] flex flex-col items-center gap-1.5 text-center bg-[#0A0D12] cursor-pointer">
                 <FileText className="w-6 h-6 text-emerald-400" />
                 <span className="text-xs font-semibold text-white">
                   {language === 'ur' ? 'دستاویز منتخب کریں' : 'Select Document'}
@@ -2804,6 +3549,100 @@ const ChatModuleContent: React.FC = () => {
                 </span>
                 <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" onChange={handleDirectDocumentAttachment} className="hidden" />
               </label>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Forward Message Picker Modal */}
+      {forwardingMessage && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[10004] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          onClick={() => setForwardingMessage(null)}
+        >
+          <div
+            className="w-full max-w-md kc-luxury-modal rounded-2xl p-5 space-y-3.5 my-auto max-h-[88dvh] flex flex-col text-xs text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
+              <div className="flex items-center gap-2">
+                <Forward className="w-4 h-4 text-[#F5D061]" />
+                <h3 className="text-sm font-extrabold text-[#F5D061]">
+                  {language === 'ur' ? 'پیغام فارورڈ کریں' : 'Forward Message'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForwardingMessage(null)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative shrink-0">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={forwardSearch}
+                onChange={(e) => setForwardSearch(e.target.value)}
+                placeholder={language === 'ur' ? 'ممبر یا روم تلاش کریں...' : 'Search member or room...'}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+              />
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+              {!roomFullLockedForMe &&
+                (!forwardingMessage.voiceNote || !roomVoiceLockedForMe) &&
+                (!forwardingMessage.attachmentUrl || canUploadGallery) && (
+                <button
+                  type="button"
+                  onClick={() => handleForwardToTarget('COMMUNITY')}
+                  className="w-full p-3 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#F5D061]/45 flex items-center justify-between gap-2 text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Globe className="w-4 h-4 text-[#F5D061] shrink-0" />
+                    <div className="min-w-0">
+                      <span className="font-extrabold text-[#F5D061] block truncate">
+                        {translate(language, 'communityRoomTab')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {language === 'ur' ? 'لائیو کمیونٹی روم میں بھیجیں' : 'Share to Live Community Room'}
+                      </span>
+                    </div>
+                  </div>
+                  <Forward className="w-4 h-4 text-[#F5D061] shrink-0" />
+                </button>
+              )}
+
+              {users
+                .filter(u => {
+                  if (u.id === currentUser.id) return false;
+                  const q = forwardSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    u.name.toLowerCase().includes(q) ||
+                    (u.membershipId && u.membershipId.toLowerCase().includes(q)) ||
+                    (u.district && u.district.toLowerCase().includes(q))
+                  );
+                })
+                .map(u => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => handleForwardToTarget(u)}
+                    className="w-full p-2.5 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-slate-700/80 flex items-center justify-between gap-2 text-left cursor-pointer"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-bold text-white block truncate">{u.name}</span>
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {u.membershipId || 'Member'} · {u.district || 'Pakistan'}
+                      </span>
+                    </div>
+                    <Forward className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
+                  </button>
+                ))}
             </div>
           </div>
         </div>,

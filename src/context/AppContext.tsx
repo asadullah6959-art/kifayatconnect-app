@@ -77,9 +77,13 @@ import {
   saveChatMessageToFirestore,
   saveCommunityMessageToFirestore,
   deleteCommunityMessageFromFirestore,
+  overwriteDeletedCommunityMessageInFirestore,
   hideCommunityMessageForUserInFirestore,
   deleteDirectMessageFromFirestore,
+  overwriteDeletedDirectMessageInFirestore,
   hideDirectMessageForUserInFirestore,
+  setTypingStatusInFirestore,
+  TypingRecord,
   saveChatConversationToFirestore,
   subscribeToFirestoreCollection,
   updateUserPresenceInFirestore,
@@ -135,6 +139,8 @@ const STORAGE_KEYS = {
   HIDDEN_COMMUNITY_MSG_IDS_PREFIX: 'kc_hidden_cmsg_ids_',
   DELETED_DIRECT_MSG_IDS: 'kc_deleted_dmsg_ids_v1',
   HIDDEN_DIRECT_MSG_IDS_PREFIX: 'kc_hidden_dmsg_ids_',
+  READ_NOTIF_IDS_PREFIX: 'kc_read_notif_ids_',
+  CLEARED_NOTIF_IDS_PREFIX: 'kc_cleared_notif_ids_',
   LANGUAGE: 'kifayat_lang_v3'
 };
 
@@ -547,7 +553,9 @@ interface AppContextType {
     monthsCount?: number;
     ratePerMonth?: number;
     startMonth?: number;
+    startDay?: number;
     startYear?: number;
+    date?: string;
     periodLabelEn?: string;
     periodLabelUr?: string;
   }) => Promise<{ success: boolean; transaction?: PaymentTransaction; error?: string }>;
@@ -598,14 +606,22 @@ interface AppContextType {
   queuedMessageCount: number;
   activeChatUser: User | null;
   setActiveChatUser: (user: User | null) => void;
-  sendChatMessage: (recipientId: string, text: string, attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }) => { success: boolean; error?: string; queued?: boolean };
+  sendChatMessage: (
+    recipientId: string,
+    text: string,
+    attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' },
+    options?: { forwardedFrom?: string; replyTo?: ChatReplySnapshot; voiceNote?: ChatVoiceNote; islamicGifId?: string }
+  ) => { success: boolean; error?: string; queued?: boolean };
   markConversationAsSeen: (chatId: string) => void;
+  typingUsers: TypingRecord[];
+  reportTypingStatus: (chatId: string, isTyping: boolean) => void;
   sendCommunityMessage: (payload: {
     text?: string;
     replyTo?: ChatReplySnapshot;
     attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' };
     voiceNote?: ChatVoiceNote;
     islamicGifId?: string;
+    forwardedFrom?: string;
   }) => { success: boolean; error?: string };
   toggleCommunityReaction: (messageId: string, emoji: string) => void;
   toggleHighlightCommunityMessage: (messageId: string) => { success: boolean; error?: string };
@@ -840,7 +856,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUserId}`) : new Set<string>()
   );
   const localRecentSentMsgsRef = useRef<Map<string, number>>(new Map());
-  const locallyReadNotifIdsRef = useRef<Set<string>>(new Set());
+  const locallyReadNotifIdsRef = useRef<Set<string>>(
+    currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.READ_NOTIF_IDS_PREFIX}${currentUserId}`) : new Set<string>()
+  );
+  const clearedNotifIdsRef = useRef<Set<string>>(
+    currentUserId ? readIdSetFromStorage(`${STORAGE_KEYS.CLEARED_NOTIF_IDS_PREFIX}${currentUserId}`) : new Set<string>()
+  );
+  const [typingUsers, setTypingUsers] = useState<TypingRecord[]>([]);
   const pinActionDebounceRef = useRef<number>(0);
 
   const [activeChatUser, setActiveChatUser] = useState<User | null>(null);
@@ -983,13 +1005,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [language]);
 
-  // Reload per-user hidden message sets when currentUserId changes
+  // Reload per-user hidden message sets and read/cleared notification sets when currentUserId changes
   useEffect(() => {
     hiddenCommunityIdsRef.current = currentUserId
       ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${currentUserId}`)
       : new Set<string>();
     hiddenDirectIdsRef.current = currentUserId
       ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_DIRECT_MSG_IDS_PREFIX}${currentUserId}`)
+      : new Set<string>();
+    locallyReadNotifIdsRef.current = currentUserId
+      ? readIdSetFromStorage(`${STORAGE_KEYS.READ_NOTIF_IDS_PREFIX}${currentUserId}`)
+      : new Set<string>();
+    clearedNotifIdsRef.current = currentUserId
+      ? readIdSetFromStorage(`${STORAGE_KEYS.CLEARED_NOTIF_IDS_PREFIX}${currentUserId}`)
       : new Set<string>();
   }, [currentUserId]);
 
@@ -1318,21 +1346,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'notifications',
       (remote) => {
         if (!remote) return;
-        const normalizedNotifs: AppNotification[] = remote.map(n => {
-          const markedRead = Boolean(n.read || n.isRead || locallyReadNotifIdsRef.current.has(n.id));
-          return {
-            ...n,
-            timestamp: toIsoTimestamp(n.timestamp || n.createdAt, new Date().toISOString()),
-            read: markedRead,
-            isRead: markedRead
-          };
-        });
+        const normalizedNotifs: AppNotification[] = remote
+          .filter(n => !clearedNotifIdsRef.current.has(n.id))
+          .map(n => {
+            const markedRead = Boolean(n.read || n.isRead || locallyReadNotifIdsRef.current.has(n.id));
+            return {
+              ...n,
+              timestamp: toIsoTimestamp(n.timestamp || n.createdAt, new Date().toISOString()),
+              read: markedRead,
+              isRead: markedRead
+            };
+          });
         setNotifications(prev => {
           const map = new Map<string, AppNotification>();
-          prev.forEach(n => map.set(n.id, n));
+          prev.forEach(n => {
+            if (!clearedNotifIdsRef.current.has(n.id)) map.set(n.id, n);
+          });
           normalizedNotifs.forEach(n => {
             const existing = map.get(n.id);
-            const finalRead = Boolean(n.read || n.isRead || existing?.read || existing?.isRead);
+            const finalRead = Boolean(
+              n.read ||
+              n.isRead ||
+              existing?.read ||
+              existing?.isRead ||
+              locallyReadNotifIdsRef.current.has(n.id)
+            );
             map.set(n.id, { ...n, read: finalRead, isRead: finalRead });
           });
           return Array.from(map.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -1442,7 +1480,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       targetMap.clear();
       (incoming || []).forEach(m => {
         if (
-          m.isDeleted ||
+          (m.isDeleted && !m.isDeletedForEveryone) ||
           deletedDirectIdsRef.current.has(m.id) ||
           hiddenDirectIdsRef.current.has(m.id) ||
           m.hiddenForUsers?.includes(activeUid)
@@ -1460,7 +1498,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dmPrimaryMap.forEach((v, k) => combined.set(k, v));
         prev.forEach(m => {
           if (
-            m.isDeleted ||
+            (m.isDeleted && !m.isDeletedForEveryone) ||
             deletedDirectIdsRef.current.has(m.id) ||
             hiddenDirectIdsRef.current.has(m.id) ||
             m.hiddenForUsers?.includes(activeUid)
@@ -1501,7 +1539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       targetMap.clear();
       (incoming || []).forEach(m => {
         if (
-          m.isDeleted ||
+          (m.isDeleted && !m.isDeletedForEveryone) ||
           deletedCommunityIdsRef.current.has(m.id) ||
           hiddenCommunityIdsRef.current.has(m.id) ||
           m.hiddenForUsers?.includes(activeUid)
@@ -1518,7 +1556,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         commPrimaryMap.forEach((v, k) => combined.set(k, v));
         prev.forEach(m => {
           if (
-            m.isDeleted ||
+            (m.isDeleted && !m.isDeletedForEveryone) ||
             deletedCommunityIdsRef.current.has(m.id) ||
             hiddenCommunityIdsRef.current.has(m.id) ||
             m.hiddenForUsers?.includes(activeUid)
@@ -1546,6 +1584,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'community_chat_messages',
       (incoming) => reconcileCommunityMessages(commLegacyMap, incoming)
     );
+    const unsubTyping = subscribeToFirestoreCollection<TypingRecord>(
+      'chat_typing',
+      (incoming) => {
+        const now = Date.now();
+        setTypingUsers((incoming || []).filter(t => now - Number(t.updatedAt || 0) < 6500));
+      }
+    );
 
     return () => {
       window.clearTimeout(deferredListenersTimer);
@@ -1565,6 +1610,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubMsgsRecv();
       unsubCommunityMsgsPrimary();
       unsubCommunityMsgsLegacy();
+      unsubTyping();
     };
   }, [activeSessionUid]);
 
@@ -2168,6 +2214,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markNotificationAsRead = useCallback((id: string) => {
     locallyReadNotifIdsRef.current.add(id);
+    if (currentUserId) {
+      addIdsToStorageSet(`${STORAGE_KEYS.READ_NOTIF_IDS_PREFIX}${currentUserId}`, [id]);
+    }
     setNotifications(prev => {
       const next = prev.map(n => {
         if (n.id === id) {
@@ -2180,32 +2229,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       safeSetItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [currentUserId]);
 
   const markAllNotificationsAsRead = useCallback(() => {
     setNotifications(prev => {
       let hasChanges = false;
+      const markedIds: string[] = [];
       const next = prev.map(n => {
         if (!n.read || !n.isRead) {
           hasChanges = true;
           locallyReadNotifIdsRef.current.add(n.id);
+          markedIds.push(n.id);
           const updated: AppNotification = { ...n, read: true, isRead: true };
           saveNotificationToFirestore(updated).catch(() => {});
           return updated;
         }
         return n;
       });
+      if (markedIds.length > 0 && currentUserId) {
+        addIdsToStorageSet(`${STORAGE_KEYS.READ_NOTIF_IDS_PREFIX}${currentUserId}`, markedIds);
+      }
       if (hasChanges) {
         safeSetItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(next));
       }
       return hasChanges ? next : prev;
     });
-  }, []);
+  }, [currentUserId]);
 
   const clearAllNotifications = useCallback(() => {
     setNotifications(prev => {
+      const idsToClear = prev.map(n => n.id);
+      if (idsToClear.length > 0) {
+        idsToClear.forEach(id => {
+          locallyReadNotifIdsRef.current.add(id);
+          clearedNotifIdsRef.current.add(id);
+        });
+        if (currentUserId) {
+          addIdsToStorageSet(`${STORAGE_KEYS.READ_NOTIF_IDS_PREFIX}${currentUserId}`, idsToClear);
+          addIdsToStorageSet(`${STORAGE_KEYS.CLEARED_NOTIF_IDS_PREFIX}${currentUserId}`, idsToClear);
+        }
+      }
       prev.forEach(n => {
-        locallyReadNotifIdsRef.current.add(n.id);
         if (!n.read || !n.isRead) {
           saveNotificationToFirestore({ ...n, read: true, isRead: true }).catch(() => {});
         }
@@ -2213,12 +2277,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       safeSetItem(STORAGE_KEYS.NOTIFICATIONS, '[]');
       return [];
     });
-  }, []);
+  }, [currentUserId]);
 
   const userNotifications = useMemo(() => {
     if (!currentUser) return [];
     return notifications.filter(n => {
-      if (n.targetUserId && n.targetUserId === currentUser.id) return true;
+      if (clearedNotifIdsRef.current.has(n.id)) return false;
+      // Strict personal targeting: never leak private / DM / personal receipt alerts to other users
+      if (n.targetUserId) {
+        return n.targetUserId === currentUser.id;
+      }
       if (n.targetRole === 'ALL' || !n.targetRole) return true;
       if (currentUser.role === 'SUPER_ADMIN') {
         if (
@@ -3155,7 +3223,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     monthsCount?: number;
     ratePerMonth?: number;
     startMonth?: number;
+    startDay?: number;
     startYear?: number;
+    date?: string;
     periodLabelEn?: string;
     periodLabelUr?: string;
   }): Promise<{ success: boolean; transaction?: PaymentTransaction; error?: string }> => {
@@ -3180,6 +3250,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const atomicSerial = await generateAtomicSerialNumber();
+    const resolvedDate =
+      data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date.trim())
+        ? data.date.trim()
+        : new Date().toISOString().split('T')[0];
 
     const newTx: PaymentTransaction = {
       id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3206,13 +3280,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       yearsCount: data.yearsCount,
       ratePerMonth: data.ratePerMonth,
       startMonth: data.startMonth,
+      startDay: data.startDay,
       startYear: data.startYear,
       periodLabelEn: data.periodLabelEn,
       periodLabelUr: data.periodLabelUr,
       fundCategory: data.fundCategory,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: resolvedDate,
       status: 'PENDING_VERIFICATION',
       proofNote: data.proofNote,
       receiptImageUrl: data.receiptImageUrl,
@@ -4250,15 +4325,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendChatMessage = (
     recipientId: string, 
     text: string, 
-    attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' }
+    attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' },
+    options?: { forwardedFrom?: string; replyTo?: ChatReplySnapshot; voiceNote?: ChatVoiceNote; islamicGifId?: string }
   ): { success: boolean; error?: string; queued?: boolean } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const recipient = users.find(u => u.id === recipientId);
-    if (!recipient || (!text.trim() && !attachment)) {
+    if (!recipient || (!text.trim() && !attachment && !options?.voiceNote && !options?.islamicGifId)) {
       return { success: false, error: 'Recipient or message cannot be empty.' };
     }
 
-    const cleanText = text.trim() || (attachment ? `📎 ${attachment.name}` : '');
+    const cleanText =
+      text.trim() ||
+      (options?.voiceNote ? `🎤 Voice Note (${options.voiceNote.durationSec}s)` : '') ||
+      (options?.islamicGifId ? '☪️ Islamic Greeting' : '') ||
+      (attachment ? `📎 ${attachment.name}` : '');
     const sortedIds = [currentUser.id, recipientId].sort();
     const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
     const deliveryStatus = isOnline ? 'DELIVERED' : 'QUEUED';
@@ -4280,7 +4360,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deliveryStatus,
       attachmentUrl: attachment?.url,
       attachmentName: attachment?.name,
-      attachmentType: attachment?.type
+      attachmentType: attachment?.type,
+      voiceNote: options?.voiceNote,
+      islamicGifId: options?.islamicGifId,
+      replyTo: options?.replyTo,
+      forwardedFrom: options?.forwardedFrom
     };
 
     localRecentSentMsgsRef.current.set(newMsg.id, Date.now());
@@ -4381,6 +4465,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [currentUser, isOnline]);
 
+  const reportTypingStatus = useCallback(
+    (chatId: string, isTyping: boolean) => {
+      if (!currentUser || !isOnline || !chatId) return;
+      setTypingStatusInFirestore(chatId, currentUser.id, currentUser.name, isTyping).catch(() => {});
+    },
+    [currentUser, isOnline]
+  );
+
   // ----------------------------------------------------
   // Ultra-Luxury Live Community Chat Room Actions
   // ----------------------------------------------------
@@ -4390,6 +4482,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     attachment?: { url: string; name: string; type: 'IMAGE' | 'DOCUMENT' };
     voiceNote?: ChatVoiceNote;
     islamicGifId?: string;
+    forwardedFrom?: string;
   }): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const isFounder = isFounderUser(currentUser);
@@ -4458,6 +4551,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       voiceNote: payload.voiceNote,
       islamicGifId: payload.islamicGifId,
       replyTo: payload.replyTo,
+      forwardedFrom: payload.forwardedFrom,
       reactions: {},
       isHighlighted: isFounder,
       highlightedBy: isFounder ? currentUser.name : undefined
@@ -4552,33 +4646,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const getRoleHierarchyRank = (role: UserRole | undefined, founderFlag?: boolean): number => {
+    if (founderFlag) return 5;
+    if (role === 'SUPER_ADMIN') return 4;
+    if (role === 'ADMIN') return 3;
+    if (role === 'CO_ADMIN') return 2;
+    return 1;
+  };
+
   const deleteCommunityMessageForEveryone = (messageId: string): { success: boolean; error?: string } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const target = communityMessages.find(m => m.id === messageId);
     if (!target) return { success: false, error: 'Message not found.' };
 
+    const actorIsFounder = isFounderUser(currentUser);
+    const actorRank = getRoleHierarchyRank(currentUser.role, actorIsFounder);
     const targetAuthor = users.find(u => u.id === target.senderId);
     const isTargetFounder = Boolean(target.senderIsFounder || isFounderUser(targetAuthor));
+    const targetRank = getRoleHierarchyRank(targetAuthor?.role || target.senderRole, isTargetFounder);
 
-    // STRICT FOUNDER PROTECTION: 100% blocked on Founder messages for non-Founder users
-    if (isTargetFounder && !isFounderUser(currentUser)) {
+    // STRICT FOUNDER PROTECTION: Only Founder can delete Founder messages
+    if (isTargetFounder && !actorIsFounder) {
       return { success: false, error: 'Founder Protection: No administrator or moderator can delete Founder messages.' };
     }
 
-    const canModerate =
-      isFounderUser(currentUser) ||
-      currentUser.role === 'SUPER_ADMIN' ||
-      currentUser.role === 'ADMIN' ||
-      currentUser.role === 'CO_ADMIN' ||
-      target.senderId === currentUser.id;
-
-    if (!canModerate) {
-      return { success: false, error: 'Insufficient permission to delete this message.' };
+    // Strict role hierarchy: Founder > Additional Super Admin > Admin > Co-Admin > Member
+    if (target.senderId !== currentUser.id) {
+      if (actorRank <= 1) {
+        return { success: false, error: 'Members can only delete their own messages.' };
+      }
+      if (actorRank < targetRank) {
+        return { success: false, error: 'Hierarchy Lock: You cannot delete a higher-ranking leader’s message.' };
+      }
     }
 
-    deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, [messageId]);
-    setCommunityMessages(prev => prev.filter(m => m.id !== messageId));
-    deleteCommunityMessageFromFirestore(messageId).catch(() => {});
+    const deletedRecord: ChatMessage = {
+      ...target,
+      text: '',
+      attachmentUrl: undefined,
+      attachmentName: undefined,
+      attachmentType: undefined,
+      voiceNote: undefined,
+      islamicGifId: undefined,
+      replyTo: undefined,
+      reactions: {},
+      isPinned: false,
+      isHighlighted: false,
+      isDeleted: false,
+      isDeletedForEveryone: true,
+      deletedByRole: currentUser.role,
+      deletedByFounder: actorIsFounder,
+      deletedAt: new Date().toISOString()
+    };
+
+    setCommunityMessages(prev => prev.map(m => (m.id === messageId ? deletedRecord : m)));
+    overwriteDeletedCommunityMessageInFirestore(deletedRecord).catch(() => {});
     return { success: true };
   };
 
@@ -4629,13 +4751,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const target = chatMessages.find(m => m.id === messageId);
     if (!target) return { success: false, error: 'Message not found.' };
-    const canDelete = isFounderUser(currentUser) || target.senderId === currentUser.id;
-    if (!canDelete) {
-      return { success: false, error: 'Only the sender or Founder can delete this message for everyone.' };
+
+    const actorIsFounder = isFounderUser(currentUser);
+    const actorRank = getRoleHierarchyRank(currentUser.role, actorIsFounder);
+    const targetAuthor = users.find(u => u.id === target.senderId);
+    const isTargetFounder = Boolean(target.senderIsFounder || isFounderUser(targetAuthor));
+    const targetRank = getRoleHierarchyRank(targetAuthor?.role || target.senderRole, isTargetFounder);
+
+    if (isTargetFounder && !actorIsFounder) {
+      return { success: false, error: 'Founder Protection: Founder messages cannot be deleted by other users.' };
     }
-    deletedDirectIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_DIRECT_MSG_IDS, [messageId]);
-    setChatMessages(prev => prev.filter(m => m.id !== messageId));
-    deleteDirectMessageFromFirestore(messageId).catch(() => {});
+
+    if (target.senderId !== currentUser.id) {
+      if (actorRank <= 1 || actorRank < targetRank) {
+        return { success: false, error: 'Only the sender or higher authority can delete this message for everyone.' };
+      }
+    }
+
+    const deletedRecord: ChatMessage = {
+      ...target,
+      text: '',
+      attachmentUrl: undefined,
+      attachmentName: undefined,
+      attachmentType: undefined,
+      voiceNote: undefined,
+      islamicGifId: undefined,
+      replyTo: undefined,
+      reactions: {},
+      isDeleted: false,
+      isDeletedForEveryone: true,
+      deletedByRole: currentUser.role,
+      deletedByFounder: actorIsFounder,
+      deletedAt: new Date().toISOString()
+    };
+
+    setChatMessages(prev => prev.map(m => (m.id === messageId ? deletedRecord : m)));
+    overwriteDeletedDirectMessageInFirestore(deletedRecord).catch(() => {});
     return { success: true };
   };
 
@@ -4987,6 +5138,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveChatUser,
         sendChatMessage,
         markConversationAsSeen,
+        typingUsers,
+        reportTypingStatus,
         sendCommunityMessage,
         toggleCommunityReaction,
         toggleHighlightCommunityMessage,

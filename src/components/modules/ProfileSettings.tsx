@@ -7,9 +7,9 @@ import {
   IdCard,
   Save,
   Camera,
+  Image as ImageIcon,
   KeyRound,
-  AlertCircle,
-  Share2
+  AlertCircle
 } from 'lucide-react';
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
 import { RoleBadge } from '../common/RoleBadge';
@@ -32,8 +32,7 @@ export const ProfileSettings: React.FC = () => {
     appSettings,
     updateUserProfile,
     setSelectedCardUser,
-    setOrChangeUserPassword,
-    triggerShareForIphone
+    setOrChangeUserPassword
   } = useApp();
 
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key, appSettings.textOverrides);
@@ -216,22 +215,6 @@ export const ProfileSettings: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => {
-              void triggerShareForIphone();
-            }}
-            className="kc-pressable flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold rounded-xl border border-[#38BDF8]/55 text-[#38BDF8] hover:text-[#FDE047] hover:border-[#FDE047] shadow-[0_6px_18px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(56,189,248,0.18)] hover:brightness-110 transition-all cursor-pointer"
-            style={{
-              background: 'linear-gradient(135deg, #131C31 0%, #1E293B 55%, #0F172A 100%)',
-            }}
-          >
-            <Share2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
-            <span>
-              {language === 'ur' ? 'آئی فون کے لیے ایپ لنک شیئر کریں' : 'Share App for iPhone (iOS Link)'}
-            </span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setSelectedCardUser(currentUser)}
             className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#131C31] hover:bg-[#1E293B] text-[#F5D061] text-xs font-bold rounded-xl border border-slate-400/20 shadow-md transition-colors cursor-pointer"
           >
@@ -296,8 +279,20 @@ export const ProfileSettings: React.FC = () => {
               <TabbarBadge user={currentUser} language={language} compact />
             </div>
             <p className="text-[11px] text-[#94A3B8]">
-              {language === 'ur' ? 'تصویر اپ لوڈ کرنے کے لیے کیمرہ دبائیں' : 'Tap the camera icon to upload a compressed profile photo'}
+              {language === 'ur' ? 'کیمرہ یا گیلری سے تصویر اپ لوڈ کریں' : 'Capture from camera or choose a photo from gallery'}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/45 text-[#FDE047] text-[11px] font-bold cursor-pointer">
+                <Camera className="w-3.5 h-3.5" />
+                <span>{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
+                <input type="file" accept="image/*" capture="user" onChange={handleAvatarUpload} className="hidden" />
+              </label>
+              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/35 text-slate-200 text-[11px] font-bold cursor-pointer">
+                <ImageIcon className="w-3.5 h-3.5 text-[#38BDF8]" />
+                <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              </label>
+            </div>
             {avatarError && <p className="text-[11px] text-rose-400 mt-1">{avatarError}</p>}
           </div>
         </div>

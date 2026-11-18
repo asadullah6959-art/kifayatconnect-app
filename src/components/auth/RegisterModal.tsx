@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Camera
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   PROVINCE_OPTIONS, 
@@ -612,14 +613,21 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg kc-gold-button text-[11px] font-bold cursor-pointer">
                     {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                    <span>
-                      {avatarUrl
-                        ? (language === 'ur' ? 'تصویر تبدیل کریں' : 'Change Photo')
-                        : (language === 'ur' ? 'تصویر اپ لوڈ کریں' : 'Upload Photo')}
-                    </span>
+                    <span>{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp"
+                      accept="image/*"
+                      capture="user"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161D2C] hover:bg-[#1E293B] border border-[#D4AF37]/40 text-[#FDE047] text-[11px] font-bold cursor-pointer">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/*"
                       onChange={handlePhotoUpload}
                       className="hidden"
                     />
@@ -628,7 +636,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     <button
                       type="button"
                       onClick={() => setAvatarUrl('')}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold cursor-pointer"
                     >
                       {language === 'ur' ? 'ہٹائیں' : 'Remove'}
                     </button>

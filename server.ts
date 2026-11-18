@@ -32,11 +32,28 @@ async function startServer() {
       return;
     }
 
-    const body = req.body as { imageDataUrl?: string };
+    const body = req.body as {
+      imageDataUrl?: string;
+      imageBase64?: string;
+      mimeType?: string;
+    };
+
+    let mimeType = '';
+    let base64Data = '';
+
     const rawDataUrl = typeof body?.imageDataUrl === 'string' ? body.imageDataUrl.trim() : '';
     const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(rawDataUrl);
+    if (match) {
+      mimeType = match[1];
+      base64Data = match[2];
+    } else if (typeof body?.imageBase64 === 'string' && body.imageBase64.trim()) {
+      base64Data = body.imageBase64.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '').trim();
+      mimeType = typeof body?.mimeType === 'string' && body.mimeType.startsWith('image/')
+        ? body.mimeType
+        : 'image/jpeg';
+    }
 
-    if (!match) {
+    if (!base64Data || !mimeType) {
       res.status(400).json({
         success: false,
         code: 'INVALID_IMAGE',
@@ -44,9 +61,6 @@ async function startServer() {
       });
       return;
     }
-
-    const mimeType = match[1];
-    const base64Data = match[2];
 
     try {
       const ai = new GoogleGenAI({
@@ -65,20 +79,17 @@ async function startServer() {
 
       const response = await ai.models.generateContent({
         model: 'gemini-4-hydrogen',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Data,
-                },
+        contents: {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
               },
-            ],
-          },
-        ],
+            },
+          ],
+        },
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -104,22 +115,25 @@ async function startServer() {
       const rawText = (response.text || '{}').trim();
       const parsed = JSON.parse(rawText) as Record<string, unknown>;
 
+      const extractedFields = {
+        oldMembershipNo: String(parsed.oldMembershipNo || '').trim(),
+        oldReceiptSerialNo: String(parsed.oldReceiptSerialNo || '').trim(),
+        date: String(parsed.date || '').trim(),
+        applicantName: String(parsed.applicantName || '').trim(),
+        fatherName: String(parsed.fatherName || '').trim(),
+        cnic: String(parsed.cnic || '').trim(),
+        tabar: String(parsed.tabar || '').trim(),
+        amount: typeof parsed.amount === 'number' && Number.isFinite(parsed.amount) ? Math.max(0, parsed.amount) : 0,
+        unit: String(parsed.unit || '').trim(),
+        phone: String(parsed.phone || '').trim(),
+        district: String(parsed.district || '').trim(),
+        address: String(parsed.address || '').trim(),
+      };
+
       res.json({
         success: true,
-        fields: {
-          oldMembershipNo: String(parsed.oldMembershipNo || '').trim(),
-          oldReceiptSerialNo: String(parsed.oldReceiptSerialNo || '').trim(),
-          date: String(parsed.date || '').trim(),
-          applicantName: String(parsed.applicantName || '').trim(),
-          fatherName: String(parsed.fatherName || '').trim(),
-          cnic: String(parsed.cnic || '').trim(),
-          tabar: String(parsed.tabar || '').trim(),
-          amount: typeof parsed.amount === 'number' && Number.isFinite(parsed.amount) ? Math.max(0, parsed.amount) : 0,
-          unit: String(parsed.unit || '').trim(),
-          phone: String(parsed.phone || '').trim(),
-          district: String(parsed.district || '').trim(),
-          address: String(parsed.address || '').trim(),
-        },
+        fields: extractedFields,
+        data: extractedFields,
       });
     } catch (err) {
       console.warn('Paper form scan failed:', err);

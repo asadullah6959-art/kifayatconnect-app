@@ -1652,6 +1652,40 @@ export async function deleteCommunityMessageFromFirestore(messageId: string): Pr
   ]);
 }
 
+export async function overwriteDeletedCommunityMessageInFirestore(msg: ChatMessage): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  const payload = {
+    id: msg.id,
+    chatId: msg.chatId || 'community_global_room',
+    roomType: 'COMMUNITY',
+    senderId: msg.senderId,
+    senderName: msg.senderName,
+    senderRole: msg.senderRole || 'MEMBER',
+    senderIsFounder: Boolean(msg.senderIsFounder),
+    timestamp: msg.timestamp || new Date().toISOString(),
+    createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
+    text: '',
+    attachmentUrl: '',
+    attachmentName: '',
+    attachmentType: null,
+    voiceNote: null,
+    islamicGifId: '',
+    replyTo: null,
+    reactions: {},
+    isPinned: false,
+    isHighlighted: false,
+    isDeleted: false,
+    isDeletedForEveryone: true,
+    deletedByRole: msg.deletedByRole || 'MEMBER',
+    deletedByFounder: Boolean(msg.deletedByFounder),
+    deletedAt: msg.deletedAt || new Date().toISOString()
+  };
+  await Promise.all([
+    setDoc(doc(db, 'community_messages', msg.id), payload, { merge: true }).catch(() => {}),
+    setDoc(doc(db, 'community_chat_messages', msg.id), payload, { merge: true }).catch(() => {})
+  ]);
+}
+
 export async function hideCommunityMessageForUserInFirestore(messageId: string, userId: string): Promise<void> {
   await tryEnsureSessionBestEffort();
   await Promise.all([
@@ -1668,12 +1702,78 @@ export async function deleteDirectMessageFromFirestore(messageId: string): Promi
   ]);
 }
 
+export async function overwriteDeletedDirectMessageInFirestore(msg: ChatMessage): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  const participants = msg.participants || [msg.senderId, msg.recipientId].sort();
+  const payload = {
+    id: msg.id,
+    chatId: msg.chatId,
+    senderId: msg.senderId,
+    recipientId: msg.recipientId,
+    participants,
+    timestamp: msg.timestamp || new Date().toISOString(),
+    createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
+    text: '',
+    attachmentUrl: '',
+    attachmentName: '',
+    attachmentType: null,
+    voiceNote: null,
+    islamicGifId: '',
+    replyTo: null,
+    reactions: {},
+    isDeleted: false,
+    isDeletedForEveryone: true,
+    deletedByRole: msg.deletedByRole || 'MEMBER',
+    deletedByFounder: Boolean(msg.deletedByFounder),
+    deletedAt: msg.deletedAt || new Date().toISOString()
+  };
+  await Promise.all([
+    setDoc(doc(db, 'direct_messages', msg.id), payload, { merge: true }).catch(() => {}),
+    setDoc(doc(db, 'chat_messages', msg.id), payload, { merge: true }).catch(() => {})
+  ]);
+}
+
 export async function hideDirectMessageForUserInFirestore(messageId: string, userId: string): Promise<void> {
   await tryEnsureSessionBestEffort();
   await Promise.all([
     updateDoc(doc(db, 'direct_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {}),
     updateDoc(doc(db, 'chat_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {})
   ]);
+}
+
+export interface TypingRecord {
+  id: string;
+  chatId: string;
+  userId: string;
+  userName: string;
+  updatedAt: number;
+}
+
+export async function setTypingStatusInFirestore(
+  chatId: string,
+  userId: string,
+  userName: string,
+  isTyping: boolean
+): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  const safeChat = chatId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60);
+  const safeUser = userId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60);
+  const typingId = `t_${safeChat}_${safeUser}`;
+  try {
+    if (!isTyping) {
+      await deleteDoc(doc(db, 'chat_typing', typingId));
+    } else {
+      await setDoc(doc(db, 'chat_typing', typingId), {
+        id: typingId,
+        chatId,
+        userId,
+        userName: userName.slice(0, 100),
+        updatedAt: Date.now()
+      });
+    }
+  } catch {
+    // Non-blocking ephemeral indicator
+  }
 }
 
 export async function saveChatConversationToFirestore(chat: ChatConversation): Promise<void> {

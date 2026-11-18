@@ -990,8 +990,8 @@ export const ManageAppModule: React.FC = () => {
             />
             <p className="text-[11px] text-[#94A3B8]">
               {isUr
-                ? 'APK کو دوبارہ بلڈ کیے بغیر آئی فون صارفین کے لیے شیئر کیا جانے والا لائیو ویب لنک یہاں محفوظ کریں۔'
-                : 'Paste your Vercel or live web URL here so every "Share App for iPhone" button shares it instantly without rebuilding the APK.'}
+                ? 'APK کو دوبارہ بلڈ کیے بغیر آئی فون صارفین کے لیے اسٹارٹ اپ اسکرین پر شیئر کیا جانے والا لائیو ویب لنک یہاں محفوظ کریں۔'
+                : 'Paste your Vercel or live web URL here so the Startup Screen iPhone link shares it instantly without rebuilding the APK.'}
             </p>
           </div>
 

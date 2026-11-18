@@ -14,7 +14,10 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  ArrowLeft
+  ArrowLeft,
+  Share2,
+  Smartphone,
+  Copy
 } from 'lucide-react';
 import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
 import {
@@ -27,6 +30,7 @@ import {
 } from '../../services/firebase';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { translate } from '../../data/translations';
+import { resolveIphoneLiveUrl, shareKifayatForIphone } from '../../utils/iphoneShare';
 
 interface AuthWelcomeGateProps {
   onOpenRegisterModal: () => void;
@@ -97,6 +101,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
+  const [startupShareFeedback, setStartupShareFeedback] = useState<string | null>(null);
 
   // Automatically restore pending OTP when returning from Gmail/email app on mobile
   useEffect(() => {
@@ -820,8 +825,8 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
         </div>
       </div>
 
-      {/* Footer Version & APK Auto-Sync Status */}
-      <div className="w-full max-w-md mx-auto text-center space-y-2 pb-2">
+      {/* Startup Share & Mobile Download Hub (Android APK + iPhone iOS Link) */}
+      <div className="w-full max-w-md mx-auto pb-4 space-y-2.5">
         {(() => {
           const overrideUrl = latestPublishedUpdate?.isPublished && latestPublishedUpdate?.apkDownloadUrl
             ? latestPublishedUpdate.apkDownloadUrl
@@ -830,26 +835,109 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
           const resolvedTag = overrideUrl && latestPublishedUpdate
             ? `v${latestPublishedUpdate.version.replace(/^v/i, '')}`
             : (githubRelease?.tagName || `v${INSTALLED_APP_VERSION}`);
+          const iphoneUrl = resolveIphoneLiveUrl(appSettings?.webAppLiveUrl);
 
-          if (resolvedApkUrl) {
-            return (
-              <a
-                href={resolvedApkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#F5D061] text-[11px] font-semibold hover:bg-[#D4AF37]/25 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>{translate(language, 'downloadApkBtn')} ({resolvedTag})</span>
-              </a>
-            );
-          }
+          const androidShareText = resolvedApkUrl
+            ? `Kifayat Connect (کفایت کنیکٹ) Android APK (${resolvedTag}) ڈاؤن لوڈ لنک:\n${resolvedApkUrl}`
+            : `Kifayat Connect (کفایت کنیکٹ) ایپ لنک:\n${iphoneUrl}`;
+          const whatsappAndroidHref = `https://wa.me/?text=${encodeURIComponent(androidShareText)}`;
+
+          const iosShareText =
+            `Kifayat Connect (کفایت کنیکٹ) — iPhone / Safari App Link:\n` +
+            `iPhone Safari mein khol kar Share (↑) → "Add to Home Screen" dabayein:\n${iphoneUrl}`;
+          const whatsappIosHref = `https://wa.me/?text=${encodeURIComponent(iosShareText)}`;
 
           return (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>v{INSTALLED_APP_VERSION} — {translate(language, 'latestVersionInstalled')}</span>
-            </span>
+            <div className="kc-obsidian-card rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="font-extrabold text-[#F5D061] flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  <span>{language === 'ur' ? 'موبائل ایپ ڈاؤن لوڈ اور شیئر' : 'Download & Share Mobile App'}</span>
+                </span>
+                <span className="font-mono text-[10px] text-emerald-400 font-bold">{resolvedTag}</span>
+              </div>
+
+              {startupShareFeedback && (
+                <div className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-400/35 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{startupShareFeedback}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Android APK Download + WhatsApp Share */}
+                <div className="flex items-stretch gap-1.5">
+                  {resolvedApkUrl ? (
+                    <a
+                      href={resolvedApkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl kc-gold-button text-[11px] font-extrabold"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{language === 'ur' ? 'Android APK ڈاؤن لوڈ' : 'Android APK'}</span>
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await shareKifayatForIphone(appSettings?.webAppLiveUrl);
+                        setStartupShareFeedback(
+                          language === 'ur'
+                            ? 'ایپ لنک کاپی ہو گیا!'
+                            : 'App link copied for Android / Web!'
+                        );
+                        setTimeout(() => setStartupShareFeedback(null), 3500);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl kc-gold-button text-[11px] font-extrabold cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{language === 'ur' ? 'Android لنک' : 'Android App'}</span>
+                    </button>
+                  )}
+                  <a
+                    href={whatsappAndroidHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={language === 'ur' ? 'واٹس ایپ پر اینڈرائیڈ لنک شیئر کریں' : 'Share Android APK on WhatsApp'}
+                    className="px-2.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-400/45 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1 shrink-0"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>WA</span>
+                  </a>
+                </div>
+
+                {/* iPhone iOS Link + WhatsApp Share */}
+                <div className="flex items-stretch gap-1.5">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await shareKifayatForIphone(appSettings?.webAppLiveUrl);
+                      setStartupShareFeedback(
+                        language === 'ur'
+                          ? 'آئی فون Safari لنک کاپی ہو گیا! واٹس ایپ پر بھیجیں۔'
+                          : 'iPhone link copied! Send on WhatsApp to iPhone users.'
+                      );
+                      setTimeout(() => setStartupShareFeedback(null), 4000);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/50 text-[#38BDF8] text-[11px] font-extrabold cursor-pointer kc-pressable"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                    <span className="truncate">{language === 'ur' ? 'iPhone لنک کاپی' : 'iPhone (iOS) Link'}</span>
+                  </button>
+                  <a
+                    href={whatsappIosHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={language === 'ur' ? 'واٹس ایپ پر آئی فون لنک شیئر کریں' : 'Share iPhone Link on WhatsApp'}
+                    className="px-2.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-400/45 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1 shrink-0"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>WA</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           );
         })()}
       </div>

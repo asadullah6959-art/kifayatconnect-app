@@ -165,6 +165,7 @@ export interface PaymentTransaction {
   monthsCount?: number;
   yearsCount?: number;
   ratePerMonth?: number;
+  startDay?: number;
   startMonth?: number;
   startYear?: number;
   periodLabelEn?: string;
@@ -491,7 +492,12 @@ export interface ChatMessage {
   isPinned?: boolean;
   pinnedBy?: string;
   isDeleted?: boolean;
+  isDeletedForEveryone?: boolean;
   deletedBy?: string;
+  deletedByRole?: UserRole;
+  deletedByFounder?: boolean;
+  deletedAt?: string;
+  forwardedFrom?: string;
   hiddenForUsers?: string[];
 }
 

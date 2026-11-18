@@ -11,11 +11,15 @@ import {
   RotateCcw,
   FileCheck2,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { TABBAR_CLANS, CUSTOM_TABBAR_ID, resolveUserTabbar, transliterateTabbarToUrdu } from '../../data/tabbars';
 import { PROVINCES_DATA } from '../../data/locationData';
+import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { LuxurySelect } from '../common/LuxurySelect';
 import { OfficialMoharStamp } from '../common/OfficialMoharStamp';
 import {
   formatCnicDisplay,
@@ -66,7 +70,12 @@ function calculateAgeFromDob(dobStr: string): string {
   return age >= 0 && age <= 120 ? String(age) : '';
 }
 
-export const RukniyatFormModal: React.FC = () => {
+interface RukniyatFormContentProps {
+  embedded?: boolean;
+  onClose?: () => void;
+}
+
+export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedded = false, onClose }) => {
   const {
     currentUser,
     language,
@@ -78,13 +87,15 @@ export const RukniyatFormModal: React.FC = () => {
   } = useApp();
 
   const [formLang, setFormLang] = useState<'ur' | 'en'>(language === 'ur' ? 'ur' : 'ur');
-  const isInspectMode = Boolean(inspectedRukniyatApp);
+  const effectiveInspected = embedded ? null : inspectedRukniyatApp;
+  const isInspectMode = Boolean(effectiveInspected);
   const canOfficeApprove = Boolean(
     isInspectMode &&
-      inspectedRukniyatApp &&
-      inspectedRukniyatApp.status !== 'ACTIVE' &&
+      effectiveInspected &&
+      effectiveInspected.status !== 'ACTIVE' &&
       currentUser?.role === 'SUPER_ADMIN'
   );
+  const handleClose = onClose || closeRukniyatForm;
 
   // Header fields
   const [formDate, setFormDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -143,52 +154,52 @@ export const RukniyatFormModal: React.FC = () => {
     return (PROVINCES_DATA[stateProvince]?.districts || []).map((d) => d.name);
   }, [stateProvince]);
 
-  // Populate fields when opening modal (new form vs inspecting submitted form)
+  // Populate fields when opening modal or mounting embedded form
   useEffect(() => {
-    if (!isRukniyatFormOpen) return;
+    if (!embedded && !isRukniyatFormOpen) return;
     setErrorMsg('');
     setSubmittedSerial(null);
     setFormLang(language === 'ur' ? 'ur' : 'ur');
 
-    if (inspectedRukniyatApp) {
-      setFormDate((inspectedRukniyatApp.submittedAt || '').split('T')[0] || new Date().toISOString().split('T')[0]);
-      setUnit(inspectedRukniyatApp.unit || inspectedRukniyatApp.district || '');
-      setApplicantPhotoUrl(inspectedRukniyatApp.applicantPhotoUrl || '');
-      setApplicantName(inspectedRukniyatApp.applicantName || '');
-      setFatherName(inspectedRukniyatApp.fatherName || '');
-      setPhone(inspectedRukniyatApp.phone || '');
-      setEmail(inspectedRukniyatApp.email || '');
-      setEducation(inspectedRukniyatApp.education || '');
-      setExperience(inspectedRukniyatApp.experience || '');
-      setProfession(inspectedRukniyatApp.profession || '');
-      setMaritalStatus(inspectedRukniyatApp.maritalStatus || 'Married');
-      setCurrentArea(inspectedRukniyatApp.currentArea || '');
-      setAncestralArea(inspectedRukniyatApp.ancestralArea || '');
-      setDob(inspectedRukniyatApp.dob || '');
-      setAge(inspectedRukniyatApp.age || '');
-      setCnic(formatCnicDisplay(inspectedRukniyatApp.cnic));
-      setSelectedTabbarId(inspectedRukniyatApp.tabbarId || CUSTOM_TABBAR_ID);
-      setCustomTabbarEnglish(inspectedRukniyatApp.tabbarEnglish || '');
-      setCustomTabbarUrdu(inspectedRukniyatApp.tabbarUrdu || '');
-      setSubBranch(inspectedRukniyatApp.subBranch || '');
-      setTabarRepName(inspectedRukniyatApp.tabarRepName || '');
-      setTabarRepSignature(inspectedRukniyatApp.tabarRepSignature || '');
-      setAddress(inspectedRukniyatApp.address || '');
-      setPermanentAddress(inspectedRukniyatApp.permanentAddress || '');
-      setStateProvince(inspectedRukniyatApp.stateProvince || 'Khyber Pakhtunkhwa');
-      setDistrict(inspectedRukniyatApp.district || 'Mardan');
-      setMonthlyPledgeAmount(String(inspectedRukniyatApp.monthlyPledgeAmount || 100));
+    if (effectiveInspected) {
+      setFormDate((effectiveInspected.submittedAt || '').split('T')[0] || new Date().toISOString().split('T')[0]);
+      setUnit(effectiveInspected.unit || effectiveInspected.district || '');
+      setApplicantPhotoUrl(effectiveInspected.applicantPhotoUrl || '');
+      setApplicantName(effectiveInspected.applicantName || '');
+      setFatherName(effectiveInspected.fatherName || '');
+      setPhone(effectiveInspected.phone || '');
+      setEmail(effectiveInspected.email || '');
+      setEducation(effectiveInspected.education || '');
+      setExperience(effectiveInspected.experience || '');
+      setProfession(effectiveInspected.profession || '');
+      setMaritalStatus(effectiveInspected.maritalStatus || 'Married');
+      setCurrentArea(effectiveInspected.currentArea || '');
+      setAncestralArea(effectiveInspected.ancestralArea || '');
+      setDob(effectiveInspected.dob || '');
+      setAge(effectiveInspected.age || '');
+      setCnic(formatCnicDisplay(effectiveInspected.cnic));
+      setSelectedTabbarId(effectiveInspected.tabbarId || CUSTOM_TABBAR_ID);
+      setCustomTabbarEnglish(effectiveInspected.tabbarEnglish || '');
+      setCustomTabbarUrdu(effectiveInspected.tabbarUrdu || '');
+      setSubBranch(effectiveInspected.subBranch || '');
+      setTabarRepName(effectiveInspected.tabarRepName || '');
+      setTabarRepSignature(effectiveInspected.tabarRepSignature || '');
+      setAddress(effectiveInspected.address || '');
+      setPermanentAddress(effectiveInspected.permanentAddress || '');
+      setStateProvince(effectiveInspected.stateProvince || 'Khyber Pakhtunkhwa');
+      setDistrict(effectiveInspected.district || 'Mardan');
+      setMonthlyPledgeAmount(String(effectiveInspected.monthlyPledgeAmount || 100));
       setTypedSignature(
-        inspectedRukniyatApp.applicantSignature && !inspectedRukniyatApp.applicantSignature.startsWith('data:')
-          ? inspectedRukniyatApp.applicantSignature
+        effectiveInspected.applicantSignature && !effectiveInspected.applicantSignature.startsWith('data:')
+          ? effectiveInspected.applicantSignature
           : ''
       );
       setDrawnSignatureDataUrl(
-        inspectedRukniyatApp.applicantSignature?.startsWith('data:') ? inspectedRukniyatApp.applicantSignature : ''
+        effectiveInspected.applicantSignature?.startsWith('data:') ? effectiveInspected.applicantSignature : ''
       );
-      setFormFeeAmount(String(inspectedRukniyatApp.formFeeAmount || 100));
-      setOfficeSecretarySignature(inspectedRukniyatApp.officeSecretarySignature || '');
-      setPresidentSignature(inspectedRukniyatApp.presidentSignature || '');
+      setFormFeeAmount(String(effectiveInspected.formFeeAmount || 100));
+      setOfficeSecretarySignature(effectiveInspected.officeSecretarySignature || '');
+      setPresidentSignature(effectiveInspected.presidentSignature || '');
     } else {
       const userTab = resolveUserTabbar(currentUser || undefined);
       setFormDate(new Date().toISOString().split('T')[0]);
@@ -224,17 +235,17 @@ export const RukniyatFormModal: React.FC = () => {
       setOfficeSecretarySignature('');
       setPresidentSignature('');
     }
-  }, [isRukniyatFormOpen, inspectedRukniyatApp, currentUser, language]);
+  }, [embedded, isRukniyatFormOpen, effectiveInspected, currentUser, language]);
 
-  if (!isRukniyatFormOpen) return null;
+  if (!embedded && !isRukniyatFormOpen) return null;
 
   const isUr = formLang === 'ur';
   const cnicDigitsCount = normalizeCnicDigits(cnic).length;
   const cnicIsValid = isValid13DigitCnic(cnic);
   const displaySerial =
     submittedSerial ||
-    inspectedRukniyatApp?.serialNumber ||
-    inspectedRukniyatApp?.generatedMembershipId ||
+    effectiveInspected?.serialNumber ||
+    effectiveInspected?.generatedMembershipId ||
     (isUr ? 'خودکار (KC-YYYY-XXXX)' : 'Auto (KC-YYYY-XXXX)');
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -397,14 +408,14 @@ export const RukniyatFormModal: React.FC = () => {
   };
 
   const handleOfficeApprove = async () => {
-    if (!inspectedRukniyatApp || !canOfficeApprove) return;
+    if (!effectiveInspected || !canOfficeApprove) return;
     const now = Date.now();
     if (now - submitCooldownRef.current < 500 || isSubmitting) return;
     submitCooldownRef.current = now;
     setIsSubmitting(true);
     try {
       await finalApproveApplication(
-        inspectedRukniyatApp.id,
+        effectiveInspected.id,
         'Rukniyat Form approved via Office Sign-Off.',
         {
           formFeeAmount: Number(formFeeAmount) || 100,
@@ -412,7 +423,7 @@ export const RukniyatFormModal: React.FC = () => {
           presidentSignature: presidentSignature.trim() || currentUser?.name
         }
       );
-      closeRukniyatForm();
+      handleClose();
     } finally {
       setIsSubmitting(false);
     }
@@ -422,22 +433,25 @@ export const RukniyatFormModal: React.FC = () => {
   const inputClass =
     'w-full px-3 py-2.5 bg-[#0A111D] border border-[#D4AF37]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FDE047] focus:ring-1 focus:ring-[#FDE047]/40 transition';
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[94dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden">
+  const outerWrapperClass = embedded
+    ? 'w-full max-w-full flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-xl overflow-hidden box-border'
+    : 'relative w-full max-w-4xl max-h-[94dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border';
+
+  const bodyWrapper = (
+      <div className={outerWrapperClass}>
         {/* Top Control Bar */}
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-[#0C1524] border-b border-[#D4AF37]/30">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FDE047] to-[#B45309] flex items-center justify-center text-[#070D14] shadow-md">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3.5 bg-[#0C1524] border-b border-[#D4AF37]/30">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FDE047] to-[#B45309] flex items-center justify-center text-[#070D14] shadow-md shrink-0">
               <Crown className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-amber-300 tracking-wide">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-extrabold text-amber-300 tracking-wide truncate">
                 {isUr ? 'رکنیت فارم — سوئی خیل قومی اتحاد' : 'RUKNIYAT FORM — SUI KHEL QAUMI ITTEHAD'}
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 truncate">
                 {isInspectMode
-                  ? `Serial: ${displaySerial} · Status: ${inspectedRukniyatApp?.status}`
+                  ? `Serial: ${displaySerial} · Status: ${effectiveInspected?.status}`
                   : isUr
                   ? 'بغیر 13 ہندسوں کے شناختی کارڈ کے رکنیت فارم جمع نہیں ہو گا'
                   : 'Mandatory 13-Digit CNIC · Atomic Serial Generation'}
@@ -445,23 +459,25 @@ export const RukniyatFormModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setFormLang((prev) => (prev === 'ur' ? 'en' : 'ur'))}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
             >
               <Languages className="w-3.5 h-3.5" />
-              {isUr ? 'English View' : 'اردو فارم'}
+              {isUr ? 'English' : 'اردو'}
             </button>
-            <button
-              type="button"
-              onClick={closeRukniyatForm}
-              className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition"
-              aria-label="Close Rukniyat Form"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!embedded && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+                aria-label="Close Rukniyat Form"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -506,41 +522,49 @@ export const RukniyatFormModal: React.FC = () => {
 
               <button
                 type="button"
-                onClick={closeRukniyatForm}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] font-extrabold text-sm shadow-lg hover:brightness-110 transition"
+                onClick={() => {
+                  setSubmittedSerial(null);
+                  if (!embedded) handleClose();
+                }}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] font-extrabold text-sm shadow-lg hover:brightness-110 transition cursor-pointer"
               >
-                {isUr ? 'ڈیش بورڈ پر واپس جائیں' : 'Return to Dashboard'}
+                {embedded
+                  ? (isUr ? 'نیا رکنیت فارم پُر کریں' : 'Fill Another Rukniyat Form')
+                  : (isUr ? 'ڈیش بورڈ پر واپس جائیں' : 'Return to Dashboard')}
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Official Form Header Card */}
+              {/* Official Form Header Card with Circular Emblem */}
               <div className="relative p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#131C31] to-[#090F1B] border-2 border-[#D4AF37]/60 shadow-xl">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  {/* Organization Title & Motto */}
-                  <div className="text-center md:text-start space-y-1.5 flex-1">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{isUr ? 'رکنیت فارم' : 'RUKNIYAT FORM · MEMBERSHIP'}</span>
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FEF08A] via-[#D4AF37] to-[#FDE047]">
-                      سوئی خیل قومی اتحاد
-                    </h1>
-                    {!isUr && (
-                      <p className="text-xs font-bold tracking-widest uppercase text-amber-200/80">
-                        Sui Khel Qaumi Ittehad · Kifayat Connect
+                  {/* Circular Emblem + Organization Title & Motto */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-start flex-1 min-w-0">
+                    <BrandEmblem3D size="md" className="shrink-0" />
+                    <div className="space-y-1 min-w-0">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isUr ? 'رکنیت فارم' : 'RUKNIYAT FORM · MEMBERSHIP'}</span>
+                      </div>
+                      <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FEF08A] via-[#D4AF37] to-[#FDE047]">
+                        سوئی خیل قومی اتحاد
+                      </h1>
+                      {!isUr && (
+                        <p className="text-xs font-bold tracking-widest uppercase text-amber-200/80">
+                          Sui Khel Qaumi Ittehad · Kifayat Connect
+                        </p>
+                      )}
+                      <p className="text-xs sm:text-sm font-bold text-emerald-300">
+                        {isUr
+                          ? 'وحدت  |  خدمت  |  معاونت  |  مصالحت'
+                          : 'Unity  |  Service  |  Cooperation  |  Reconciliation'}
                       </p>
-                    )}
-                    <p className="text-xs sm:text-sm font-bold text-emerald-300">
-                      {isUr
-                        ? 'وحدت  |  خدمت  |  معاونت  |  مصالحت'
-                        : 'Unity  |  Service  |  Cooperation  |  Reconciliation'}
-                    </p>
+                    </div>
                   </div>
 
-                  {/* Meta Row + Photo Box */}
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="space-y-2 text-xs min-w-[180px]">
+                  {/* Meta Row + Dual Camera/Gallery Photo Box */}
+                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-3.5 shrink-0">
+                    <div className="space-y-2 text-xs min-w-[170px]">
                       <div className="p-2 rounded-xl bg-[#070D14]/80 border border-[#D4AF37]/30">
                         <span className="text-[10px] text-slate-400 block">
                           {isUr ? 'رکنیت / سیریل نمبر' : 'Membership / Serial No.'}
@@ -578,35 +602,50 @@ export const RukniyatFormModal: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Applicant Photo Upload Box */}
-                    <label
-                      className={`w-24 h-28 rounded-2xl border-2 border-dashed border-[#D4AF37]/60 bg-[#070D14] flex flex-col items-center justify-center overflow-hidden relative shrink-0 ${
-                        isInspectMode ? 'cursor-default' : 'cursor-pointer hover:border-[#FDE047]'
-                      }`}
-                    >
-                      {applicantPhotoUrl ? (
-                        <img
-                          src={applicantPhotoUrl}
-                          alt="Applicant"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center p-2">
-                          <Upload className="w-5 h-5 text-amber-300 mx-auto mb-1" />
-                          <span className="text-[10px] font-bold text-amber-200 leading-tight block">
-                            {isUr ? 'تصویر لگائیں' : 'Upload Photo'}
-                          </span>
+                    {/* Applicant Photo Frame + Camera / Gallery Buttons */}
+                    <div className="flex flex-col items-center gap-1.5 shrink-0">
+                      <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#D4AF37]/60 bg-[#070D14] flex flex-col items-center justify-center overflow-hidden relative">
+                        {applicantPhotoUrl ? (
+                          <img
+                            src={applicantPhotoUrl}
+                            alt="Applicant"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center p-2">
+                            <Upload className="w-5 h-5 text-amber-300 mx-auto mb-1" />
+                            <span className="text-[10px] font-bold text-amber-200 leading-tight block">
+                              {isUr ? 'تصویر لگائیں' : 'Applicant Photo'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {!isInspectMode && (
+                        <div className="flex items-center gap-1.5">
+                          <label className="kc-pressable inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/60 text-[#FEF08A] text-[10px] font-bold cursor-pointer">
+                            <Camera className="w-3 h-3" />
+                            <span>{isUr ? 'کیمرہ' : 'Camera'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="user"
+                              onChange={handlePhotoSelect}
+                              className="hidden"
+                            />
+                          </label>
+                          <label className="kc-pressable inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#131C31] border border-[#38BDF8]/50 text-[#38BDF8] text-[10px] font-bold cursor-pointer">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>{isUr ? 'گیلری' : 'Gallery'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoSelect}
+                              className="hidden"
+                            />
+                          </label>
                         </div>
                       )}
-                      {!isInspectMode && (
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoSelect}
-                          className="hidden"
-                        />
-                      )}
-                    </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -647,6 +686,7 @@ export const RukniyatFormModal: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {/* Row 1: نام | ولد | رابطہ نمبر */}
                   <div>
                     <label className={labelClass}>{isUr ? 'نام *' : 'Full Name *'}</label>
                     <input
@@ -687,26 +727,7 @@ export const RukniyatFormModal: React.FC = () => {
                     />
                   </div>
 
-                  {/* Mandatory 13-Digit CNIC */}
-                  <div className="sm:col-span-2 lg:col-span-1">
-                    <label className={labelClass}>
-                      {isUr ? 'شناختی کارڈ نمبر (13 ہندسے لازمی) *' : 'CNIC (13 Digits Mandatory) *'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      disabled={isInspectMode}
-                      value={cnic}
-                      onChange={(e) => setCnic(formatCnicDisplay(e.target.value))}
-                      placeholder="XXXXX-XXXXXXX-X"
-                      inputMode="numeric"
-                      dir="ltr"
-                      className={`${inputClass} font-mono ${
-                        cnic && !cnicIsValid ? 'border-rose-500/80' : 'border-emerald-500/40'
-                      }`}
-                    />
-                  </div>
-
+                  {/* Row 2: تعلیم | تجربہ | پیشہ/روزگار */}
                   <div>
                     <label className={labelClass}>{isUr ? 'تعلیم' : 'Education'}</label>
                     <input
@@ -743,20 +764,47 @@ export const RukniyatFormModal: React.FC = () => {
                     />
                   </div>
 
+                  {/* Row 3: ازدواجی حیثیت | موجودہ علاقہ | آبائی علاقہ (کند بائیں) */}
                   <div>
                     <label className={labelClass}>{isUr ? 'ازدواجی حیثیت' : 'Marital Status'}</label>
-                    <select
+                    <LuxurySelect
                       disabled={isInspectMode}
                       value={maritalStatus}
-                      onChange={(e) => setMaritalStatus(e.target.value)}
-                      className={inputClass}
-                    >
-                      <option value="Married">{isUr ? 'شادی شدہ (Married)' : 'Married'}</option>
-                      <option value="Single">{isUr ? 'غیر شادی شدہ (Single)' : 'Single'}</option>
-                      <option value="Widowed">{isUr ? 'بیوہ / رنڈوا (Widowed)' : 'Widowed'}</option>
-                    </select>
+                      onChange={setMaritalStatus}
+                      label={isUr ? 'ازدواجی حیثیت' : 'Marital Status'}
+                      options={[
+                        { value: 'Married', label: isUr ? 'شادی شدہ (Married)' : 'Married' },
+                        { value: 'Single', label: isUr ? 'غیر شادی شدہ (Single)' : 'Single' },
+                        { value: 'Widowed', label: isUr ? 'بیوہ / رنڈوا (Widowed)' : 'Widowed' }
+                      ]}
+                    />
                   </div>
 
+                  <div>
+                    <label className={labelClass}>{isUr ? 'موجودہ علاقہ' : 'Current Area'}</label>
+                    <input
+                      type="text"
+                      disabled={isInspectMode}
+                      value={currentArea}
+                      onChange={(e) => setCurrentArea(e.target.value)}
+                      placeholder={isUr ? 'موجودہ رہائشی علاقہ' : 'Current Area / City'}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>{isUr ? 'آبائی علاقہ (کند بائیں)' : 'Ancestral Area (کند بائیں)'}</label>
+                    <input
+                      type="text"
+                      disabled={isInspectMode}
+                      value={ancestralArea}
+                      onChange={(e) => setAncestralArea(e.target.value)}
+                      placeholder={isUr ? 'آبائی گاؤں / علاقہ' : 'Ancestral Area'}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  {/* Row 4: تاریخ پیدائش | عمر | شناختی کارڈ نمبر */}
                   <div>
                     <label className={labelClass}>{isUr ? 'تاریخ پیدائش' : 'Date of Birth'}</label>
                     <input
@@ -786,47 +834,68 @@ export const RukniyatFormModal: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className={labelClass}>{isUr ? 'موجودہ علاقہ' : 'Current Area'}</label>
+                    <label className={labelClass}>
+                      {isUr ? 'شناختی کارڈ نمبر (13 ہندسے لازمی) *' : 'CNIC (13 Digits Mandatory) *'}
+                    </label>
                     <input
                       type="text"
+                      required
                       disabled={isInspectMode}
-                      value={currentArea}
-                      onChange={(e) => setCurrentArea(e.target.value)}
-                      placeholder={isUr ? 'موجودہ رہائشی علاقہ' : 'Current Area / City'}
-                      className={inputClass}
+                      value={cnic}
+                      onChange={(e) => setCnic(formatCnicDisplay(e.target.value))}
+                      placeholder="XXXXX-XXXXXXX-X"
+                      inputMode="numeric"
+                      dir="ltr"
+                      className={`${inputClass} font-mono ${
+                        cnic && !cnicIsValid ? 'border-rose-500/80' : 'border-emerald-500/40'
+                      }`}
                     />
                   </div>
 
-                  <div>
-                    <label className={labelClass}>{isUr ? 'آبائی علاقہ (کند بائیں)' : 'Ancestral Area (کند بائیں)'}</label>
-                    <input
-                      type="text"
-                      disabled={isInspectMode}
-                      value={ancestralArea}
-                      onChange={(e) => setAncestralArea(e.target.value)}
-                      placeholder={isUr ? 'آبائی گاؤں / علاقہ' : 'Ancestral Area'}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  {/* 11 Tabbar Clans + Custom */}
+                  {/* Row 5: مرکزی خاندان (ٹبر) | ذیلی شاخ (ٹبر) | نمائندہ خاندان (ٹبر) */}
                   <div>
                     <label className={labelClass}>{isUr ? 'مرکزی خاندان (ٹبر)' : 'Central Tabbar / Family'}</label>
-                    <select
+                    <LuxurySelect
+                      searchable
                       disabled={isInspectMode}
                       value={selectedTabbarId}
-                      onChange={(e) => setSelectedTabbarId(e.target.value)}
+                      onChange={setSelectedTabbarId}
+                      label={isUr ? 'مرکزی خاندان (ٹبر)' : 'Central Tabbar / Family'}
+                      options={[
+                        ...TABBAR_CLANS.map((c) => ({
+                          value: c.id,
+                          label: `${c.emblem} ${c.urduName} — ${c.englishName}`
+                        })),
+                        {
+                          value: CUSTOM_TABBAR_ID,
+                          label: isUr ? 'دیگر ٹبر (خود لکھیں)' : 'Other / Custom Tabbar'
+                        }
+                      ]}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>{isUr ? 'ذیلی شاخ (ٹبر)' : 'Sub-Branch (ذیلی شاخ)'}</label>
+                    <input
+                      type="text"
+                      disabled={isInspectMode}
+                      value={subBranch}
+                      onChange={(e) => setSubBranch(e.target.value)}
+                      placeholder={isUr ? 'ذیلی خاندانی شاخ' : 'Sub-Branch'}
                       className={inputClass}
-                    >
-                      {TABBAR_CLANS.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.emblem} {c.urduName} — {c.englishName}
-                        </option>
-                      ))}
-                      <option value={CUSTOM_TABBAR_ID}>
-                        {isUr ? 'دیگر ٹبر (خود لکھیں)' : 'Other / Custom Tabbar'}
-                      </option>
-                    </select>
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>{isUr ? 'نمائندہ خاندان (ٹبر)' : 'Tabar Representative'}</label>
+                    <input
+                      type="text"
+                      disabled={isInspectMode}
+                      value={tabarRepName}
+                      onChange={(e) => setTabarRepName(e.target.value)}
+                      placeholder={isUr ? 'خاندان کے نمائندے کا نام' : 'Representative Name'}
+                      className={inputClass}
+                    />
                   </div>
 
                   {selectedTabbarId === CUSTOM_TABBAR_ID && (
@@ -856,68 +925,36 @@ export const RukniyatFormModal: React.FC = () => {
                     </>
                   )}
 
-                  <div>
-                    <label className={labelClass}>{isUr ? 'ذیلی شاخ' : 'Sub-Branch (ذیلی شاخ)'}</label>
-                    <input
-                      type="text"
-                      disabled={isInspectMode}
-                      value={subBranch}
-                      onChange={(e) => setSubBranch(e.target.value)}
-                      placeholder={isUr ? 'ذیلی خاندانی شاخ' : 'Sub-Branch'}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>{isUr ? 'نمائندہ خاندان' : 'Tabar Representative'}</label>
-                    <input
-                      type="text"
-                      disabled={isInspectMode}
-                      value={tabarRepName}
-                      onChange={(e) => setTabarRepName(e.target.value)}
-                      placeholder={isUr ? 'خاندان کے نمائندے کا نام' : 'Representative Name'}
-                      className={inputClass}
-                    />
-                  </div>
-
+                  {/* Province | Searchable All Pakistan Districts | Email */}
                   <div>
                     <label className={labelClass}>{isUr ? 'صوبہ' : 'Province'}</label>
-                    <select
+                    <LuxurySelect
+                      searchable
                       disabled={isInspectMode}
                       value={stateProvince}
-                      onChange={(e) => {
-                        const prov = e.target.value;
+                      onChange={(prov) => {
                         setStateProvince(prov);
                         const firstDist = PROVINCES_DATA[prov]?.districts?.[0]?.name || '';
                         if (firstDist) setDistrict(firstDist);
                       }}
-                      className={inputClass}
-                    >
-                      {provinceNames.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
+                      label={isUr ? 'صوبہ' : 'Province'}
+                      options={provinceNames.map((p) => ({ value: p, label: p }))}
+                    />
                   </div>
 
                   <div>
-                    <label className={labelClass}>{isUr ? 'ضلع' : 'District'}</label>
-                    <select
+                    <label className={labelClass}>{isUr ? 'ضلع (تمام اضلاع پاکستان)' : 'District (Searchable)'}</label>
+                    <LuxurySelect
+                      searchable
                       disabled={isInspectMode}
                       value={district}
-                      onChange={(e) => {
-                        setDistrict(e.target.value);
-                        if (!unit) setUnit(e.target.value);
+                      onChange={(dist) => {
+                        setDistrict(dist);
+                        if (!unit) setUnit(dist);
                       }}
-                      className={inputClass}
-                    >
-                      {availableDistricts.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
+                      label={isUr ? 'ضلع' : 'District'}
+                      options={availableDistricts.map((d) => ({ value: d, label: d }))}
+                    />
                   </div>
 
                   <div>
@@ -933,6 +970,7 @@ export const RukniyatFormModal: React.FC = () => {
                     />
                   </div>
 
+                  {/* Row 6: موجودہ پتہ | مستقل پتہ */}
                   <div className="sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
                       <label className={labelClass}>{isUr ? 'موجودہ پتہ *' : 'Current Address *'}</label>
@@ -1089,10 +1127,10 @@ export const RukniyatFormModal: React.FC = () => {
                 <h3 className="text-base font-extrabold text-amber-300 border-b border-[#D4AF37]/25 pb-2">
                   {isUr ? '۳۔ تصدیق نمائندہ خاندان' : '3. Tabar Representative Verification (تصدیق نمائندہ خاندان)'}
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-amber-50/90 leading-relaxed font-medium">
                   {isUr
-                    ? 'تصدیق کی جاتی ہے کہ سائل سوئی خیل قومی اتحاد کے متعلقہ ٹبر / خاندان سے تعلق رکھتا ہے اور رکنیت کا اہل ہے۔'
-                    : 'It is verified that the applicant belongs to the specified Sui Khel Tabbar/clan and is eligible for Rukniyat membership.'}
+                    ? 'میں نے مندرجہ بالا اندراجات اچھی طرح ملاحظہ کر لیے ہیں اور میری معلومات کی حد تک وہ بالکل درست ہیں۔ میں یقین دلاتا ہوں کہ موصوف سوئی خیل قومی اتحاد کے وفادار رکن ثابت ہوں گے۔'
+                    : 'I have carefully reviewed the entries above and to the best of my knowledge they are completely accurate. I assure that the applicant will prove to be a loyal member of Sui Khel Qaumi Ittehad.'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
@@ -1181,8 +1219,8 @@ export const RukniyatFormModal: React.FC = () => {
                   {/* Mandatory Official Mohar Stamp */}
                   <div className="flex flex-col items-center gap-1.5 shrink-0">
                     <OfficialMoharStamp
-                      variant={inspectedRukniyatApp?.status === 'ACTIVE' ? 'VERIFIED' : 'OFFICIAL'}
-                      serialNumber={inspectedRukniyatApp?.serialNumber || inspectedRukniyatApp?.generatedMembershipId}
+                      variant={effectiveInspected?.status === 'ACTIVE' ? 'VERIFIED' : 'OFFICIAL'}
+                      serialNumber={effectiveInspected?.serialNumber || effectiveInspected?.generatedMembershipId}
                       size={118}
                     />
                     <span className="text-[10px] font-bold text-amber-300/80">
@@ -1201,20 +1239,22 @@ export const RukniyatFormModal: React.FC = () => {
 
               {/* Footer Actions */}
               <div className="flex flex-wrap items-center justify-end gap-3 pt-2 pb-2" dir="ltr">
-                <button
-                  type="button"
-                  onClick={closeRukniyatForm}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-800 text-slate-200 text-xs sm:text-sm font-bold hover:bg-slate-700 transition"
-                >
-                  {isUr ? 'بند کریں' : 'Close'}
-                </button>
+                {!embedded && (
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-5 py-2.5 rounded-2xl bg-slate-800 text-slate-200 text-xs sm:text-sm font-bold hover:bg-slate-700 transition cursor-pointer"
+                  >
+                    {isUr ? 'بند کریں' : 'Close'}
+                  </button>
+                )}
 
                 {canOfficeApprove && (
                   <button
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleOfficeApprove}
-                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs sm:text-sm font-extrabold shadow-lg flex items-center gap-2 hover:brightness-110 disabled:opacity-50 transition"
+                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs sm:text-sm font-extrabold shadow-lg flex items-center gap-2 hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
                   >
                     <UserCheck className="w-4 h-4" />
                     {isSubmitting ? 'Approving...' : 'Approve Rukniyat & Issue Official Serial'}
@@ -1225,7 +1265,7 @@ export const RukniyatFormModal: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#F59E0B] to-[#EAB308] text-[#070D14] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition"
+                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#F59E0B] to-[#EAB308] text-[#070D14] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
                   >
                     {isSubmitting
                       ? isUr
@@ -1241,6 +1281,21 @@ export const RukniyatFormModal: React.FC = () => {
           )}
         </div>
       </div>
+  );
+
+  if (embedded) {
+    return bodyWrapper;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      {bodyWrapper}
     </div>
   );
+};
+
+export const RukniyatFormModal: React.FC = () => {
+  const { isRukniyatFormOpen, closeRukniyatForm } = useApp();
+  if (!isRukniyatFormOpen) return null;
+  return <RukniyatFormContent onClose={closeRukniyatForm} />;
 };

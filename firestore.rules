@@ -202,14 +202,24 @@ service cloud.firestore {
 
     match /direct_messages/{messageId} {
       allow read: if true;
-      allow create, update: if isValidId(messageId) && isValidDirectMessage(incoming());
-      allow delete: if isFounder() || isSuperAdmin();
+      allow create: if isValidId(messageId) && isValidDirectMessage(incoming());
+      allow update: if isValidId(messageId) && isValidDirectMessage(incoming()) && (
+        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
+          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
+          !isFounder())
+      );
+      allow delete: if (isFounder() || isSuperAdmin()) && !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
     }
 
     match /chat_messages/{messageId} {
       allow read: if true;
-      allow create, update: if isValidId(messageId) && isValidDirectMessage(incoming());
-      allow delete: if isFounder() || isSuperAdmin();
+      allow create: if isValidId(messageId) && isValidDirectMessage(incoming());
+      allow update: if isValidId(messageId) && isValidDirectMessage(incoming()) && (
+        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
+          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
+          !isFounder())
+      );
+      allow delete: if (isFounder() || isSuperAdmin()) && !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
     }
 
     // 8. Live Community Chat Room (Primary + Legacy Collection, Founder Protection)
@@ -217,18 +227,34 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
       allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
-        !(existing().senderIsFounder == true && incoming().isDeleted == true && !isFounder())
+        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
+          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
+          !isFounder())
       );
-      allow delete: if !(existing().senderIsFounder == true && !isFounder());
+      allow delete: if !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
     }
 
     match /community_chat_messages/{messageId} {
       allow read: if true;
       allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
       allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
-        !(existing().senderIsFounder == true && incoming().isDeleted == true && !isFounder())
+        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
+          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
+          !isFounder())
       );
-      allow delete: if !(existing().senderIsFounder == true && !isFounder());
+      allow delete: if !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
+    }
+
+    match /chat_typing/{typingId} {
+      allow read: if true;
+      allow create, update: if isValidId(typingId) &&
+        incoming().keys().hasAll(['id', 'chatId', 'userId', 'userName', 'updatedAt']) &&
+        incoming().id is string && isValidId(incoming().id) &&
+        incoming().chatId is string && incoming().chatId.size() > 0 && incoming().chatId.size() <= 128 &&
+        incoming().userId is string && incoming().userId.size() > 0 && incoming().userId.size() <= 128 &&
+        incoming().userName is string && incoming().userName.size() > 0 && incoming().userName.size() <= 120 &&
+        incoming().updatedAt is number;
+      allow delete: if isValidId(typingId);
     }
 
     // 9. Dual Announcements

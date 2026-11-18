@@ -19,7 +19,9 @@ import {
   Clock,
   ShieldCheck,
   FilePlus2,
-  AlertTriangle
+  AlertTriangle,
+  Camera,
+  FileCheck2
 } from 'lucide-react';
 import { FundCategory, FundTier, PaymentMethod, PaymentTransaction } from '../../types';
 import { exportTransactionsToCSV } from '../../utils/exportUtils';
@@ -33,6 +35,7 @@ import { LuxurySelect } from '../common/LuxurySelect';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
 import { DastoorPaymentCalculator } from '../common/DastoorPaymentCalculator';
 import { OldPaperRecordModal } from './OldPaperRecordModal';
+import { RukniyatFormContent } from './RukniyatFormModal';
 import {
   DASTOOR_MONTHLY_RATE,
   calculateDastoorPeriod,
@@ -89,13 +92,17 @@ export const FundsAndPayments: React.FC = () => {
       : 'ALL'
   );
 
+  // Unified Funds & Rukniyat Sub-Tab
+  const [activeSubTab, setActiveSubTab] = useState<'FUNDS' | 'RUKNIYAT'>('FUNDS');
+
   // 3-Step Payment Submission Modal (3-Tier Fund Calculator + Mandatory 13-Digit CNIC)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isOldPaperModalOpen, setIsOldPaperModalOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [fundTier, setFundTier] = useState<FundTier>('MAHANA');
-  const [monthsCount, setMonthsCount] = useState<number>(2);
+  const [monthsCount, setMonthsCount] = useState<number>(1);
   const [yearsCount, setYearsCount] = useState<number>(1);
+  const [startDay, setStartDay] = useState<number>(() => new Date().getDate());
   const [startMonth, setStartMonth] = useState<number>(() => new Date().getMonth());
   const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
   const [payAmount, setPayAmount] = useState<string>('');
@@ -194,8 +201,9 @@ export const FundsAndPayments: React.FC = () => {
     setIsSubmitModalOpen(false);
     setStep(1);
     setFundTier('MAHANA');
-    setMonthsCount(2);
+    setMonthsCount(1);
     setYearsCount(1);
+    setStartDay(new Date().getDate());
     setStartMonth(new Date().getMonth());
     setStartYear(new Date().getFullYear());
     setPayAmount('');
@@ -211,7 +219,7 @@ export const FundsAndPayments: React.FC = () => {
     setSubmitError(null);
   };
 
-  const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(2, monthsCount)));
+  const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(1, monthsCount)));
   const salanaPeriod = calculateSalanaPeriod(startMonth, startYear, Math.max(1, yearsCount));
 
   const numericPayAmount =
@@ -224,7 +232,7 @@ export const FundsAndPayments: React.FC = () => {
   const isCnicValid = isValid13DigitCnic(payerCnic);
   const isPayAmountValid =
     fundTier === 'MAHANA'
-      ? monthsCount >= 2 && monthsCount <= 11 && mahanaPeriod.totalAmount > 0
+      ? monthsCount >= 1 && monthsCount <= 11 && mahanaPeriod.totalAmount > 0
       : fundTier === 'SALANA'
       ? yearsCount >= 1 && salanaPeriod.totalAmount > 0
       : Boolean(payAmount.trim()) && Number.isFinite(numericPayAmount) && numericPayAmount > 0;
@@ -256,6 +264,10 @@ export const FundsAndPayments: React.FC = () => {
           ? 'Annual Welfare Fund'
           : payFund || 'Emergency Relief';
 
+      const maxDayInSelectedMonth = new Date(startYear, startMonth + 1, 0).getDate();
+      const safeDay = Math.max(1, Math.min(maxDayInSelectedMonth, startDay));
+      const formattedSelectedDate = `${startYear}-${String(startMonth + 1).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+
       const res = await submitPayment({
         amount: Math.round(numericPayAmount),
         fundCategory: resolvedCategory,
@@ -265,6 +277,10 @@ export const FundsAndPayments: React.FC = () => {
         payerCnic: formatCnicDisplay(payerCnic),
         paymentMethod: payMethod,
         referenceNumber: cleanRef,
+        date: formattedSelectedDate,
+        startDay: safeDay,
+        startMonth,
+        startYear,
         proofNote: payNotes.trim() || undefined,
         receiptImageUrl: receiptImageUrl || undefined,
         receiptImageName: receiptImageName || undefined,
@@ -457,6 +473,44 @@ export const FundsAndPayments: React.FC = () => {
       {requiresProfileCompletion && (
         <ProfileCompletionGate compact featureName={isUr ? 'فلاحی فنڈ ادائیگیاں' : 'Contribution Payments'} />
       )}
+
+      {/* Unified Navigation Tabs: Funds & Raseed Wasooli | Rukniyat Form */}
+      <div className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl kc-tab-shell no-print">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('FUNDS')}
+          className={`kc-pressable py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeSubTab === 'FUNDS'
+              ? 'kc-gold-button shadow-md'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <Coins className="w-4 h-4 shrink-0" />
+          <span className="truncate">
+            {isUr ? 'فنڈز اور رسید وصولی' : 'Funds & Raseed Wasooli'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('RUKNIYAT')}
+          className={`kc-pressable py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeSubTab === 'RUKNIYAT'
+              ? 'kc-gold-button shadow-md'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <FileCheck2 className="w-4 h-4 shrink-0" />
+          <span className="truncate">
+            {isUr ? 'رکنیت فارم (Rukniyat Form)' : 'Rukniyat Form (رکنیت فارم)'}
+          </span>
+        </button>
+      </div>
+
+      {activeSubTab === 'RUKNIYAT' ? (
+        <RukniyatFormContent embedded />
+      ) : (
+        <>
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -821,6 +875,8 @@ export const FundsAndPayments: React.FC = () => {
           </table>
         </div>
       </div>
+        </>
+      )}
 
       {/* 3-Step Payment Submission Modal */}
       {isSubmitModalOpen && (
@@ -835,7 +891,7 @@ export const FundsAndPayments: React.FC = () => {
                   {isUr ? `مرحلہ ${step} از 3` : `Step ${step} of 3`}
                 </span>
                 <h3 className="text-base font-bold text-white">
-                  {isUr ? 'فلاحی حصہ جمع کروائیں' : 'Submit Welfare Contribution'}
+                  {isUr ? 'فنڈ ادائیگی اور رسید وصولی' : 'Funds Payment & Raseed Wasooli'}
                 </h3>
               </div>
               <button
@@ -880,6 +936,8 @@ export const FundsAndPayments: React.FC = () => {
                     onMonthsCountChange={setMonthsCount}
                     yearsCount={yearsCount}
                     onYearsCountChange={setYearsCount}
+                    startDay={startDay}
+                    onStartDayChange={setStartDay}
                     startMonth={startMonth}
                     onStartMonthChange={setStartMonth}
                     startYear={startYear}
@@ -1025,25 +1083,40 @@ export const FundsAndPayments: React.FC = () => {
                       {isUr ? 'ادائیگی کا اسکرین شاٹ / رسید کی تصویر اپ لوڈ کریں (گیلری یا کیمرہ)' : 'Upload Payment Screenshot / Receipt Photo (Gallery or Camera)'}
                     </label>
 
-                    <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D4AF37]/45 hover:border-[#F5D061] bg-[#090D16] cursor-pointer transition-colors">
-                      <Upload className="w-6 h-6 text-[#F5D061] mb-1.5" />
-                      <span className="text-xs font-bold text-white">
-                        {isCompressing
-                          ? (isUr ? 'تصویر بہتر بنائی جا رہی ہے...' : 'Optimizing image...')
-                          : receiptImageUrl
-                          ? (isUr ? 'رسید کی تصویر تبدیل کریں' : 'Change Receipt Photo')
-                          : (isUr ? 'رسید منتخب کرنے یا تصویر لینے کے لیے ٹیپ کریں' : 'Tap to Select or Capture Receipt')}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">
-                        {isUr ? '10MB تک سپورٹ · موبائل کے لیے خودکار کمپریشن' : 'Supports up to 10MB · Auto-compressed for mobile'}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleReceiptFileChange}
-                        className="hidden"
-                      />
-                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#D4AF37]/55 hover:border-[#FDE047] bg-[#090D16] cursor-pointer transition-colors text-center">
+                        <Camera className="w-5 h-5 text-[#FDE047] mb-1" />
+                        <span className="text-xs font-extrabold text-white">
+                          {isUr ? '📷 کیمرہ سے تصویر لیں' : '📷 Take Photo'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">
+                          {isUr ? 'کیمرہ کھولیں' : 'Live Camera'}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleReceiptFileChange}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#38BDF8]/50 hover:border-[#38BDF8] bg-[#090D16] cursor-pointer transition-colors text-center">
+                        <Upload className="w-5 h-5 text-[#38BDF8] mb-1" />
+                        <span className="text-xs font-extrabold text-white">
+                          {isUr ? '🖼️ گیلری سے منتخب کریں' : '🖼️ Choose Gallery'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">
+                          {isCompressing ? (isUr ? 'کمپریس ہو رہا ہے...' : 'Optimizing...') : 'JPG / PNG'}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleReceiptFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
 
                     {uploadError && (
                       <p className="text-xs text-rose-400 font-medium mt-1.5">{uploadError}</p>

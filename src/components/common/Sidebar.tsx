@@ -12,6 +12,7 @@ import {
   IdCard,
   Clock,
   MessageSquare,
+  Send,
   Award,
   Crown,
   X,
@@ -43,7 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     appSettings,
     setSelectedCardUser,
     openRukniyatForm,
-    openTutorial
+    openTutorial,
+    preferredChatMode,
+    setPreferredChatMode,
+    restoreLiveChat
   } = useApp();
 
   if (!currentUser) return null;
@@ -77,11 +81,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     },
     {
       id: 'chat',
-      label: translate(language, 'navChat'),
+      label: translate(language, 'communityRoomTab'),
       icon: MessageSquare,
       visible: true,
       badge: totalUnreadMessages > 0 ? totalUnreadMessages : null,
       badgeColor: 'bg-[#F5D061] text-[#0A0D12] font-bold'
+    },
+    {
+      id: 'direct-chat',
+      label: translate(language, 'actionOpenChat'),
+      icon: Send,
+      visible: true
     },
     {
       id: 'office_bearers',
@@ -225,7 +235,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
       {/* Navigation List */}
       <div className="p-3 flex-1 overflow-y-auto overscroll-none touch-pan-y space-y-1">
         {navItems.filter(item => item.visible).map(item => {
-          const isActive = activeTab === item.id;
+          const isActive =
+            item.id === 'chat'
+              ? activeTab === 'chat' && preferredChatMode === 'COMMUNITY'
+              : item.id === 'direct-chat'
+              ? activeTab === 'chat' && preferredChatMode === 'DIRECT'
+              : activeTab === item.id;
           const Icon = item.icon;
 
           return (
@@ -234,6 +249,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
               onClick={() => {
                 if (item.id === 'digital-card') {
                   setSelectedCardUser(currentUser);
+                } else if (item.id === 'chat') {
+                  restoreLiveChat();
+                } else if (item.id === 'direct-chat') {
+                  setPreferredChatMode('DIRECT');
+                  setActiveTab('chat');
                 } else if (item.id === 'rukn-form') {
                   openRukniyatForm();
                 } else if (item.id === 'member-guide') {

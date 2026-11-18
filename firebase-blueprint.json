@@ -113,6 +113,7 @@
         "yearsCount": { "type": "number" },
         "ratePerMonth": { "type": "number" },
         "startMonth": { "type": "number" },
+        "startDay": { "type": "number" },
         "startYear": { "type": "number" },
         "periodLabelEn": { "type": "string", "maxLength": 120 },
         "periodLabelUr": { "type": "string", "maxLength": 160 },
@@ -216,6 +217,12 @@
         "text": { "type": "string", "maxLength": 5000 },
         "timestamp": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 40 },
+        "forwardedFrom": { "type": "string", "maxLength": 120 },
+        "isDeleted": { "type": "boolean" },
+        "isDeletedForEveryone": { "type": "boolean" },
+        "deletedByRole": { "type": "string", "maxLength": 40 },
+        "deletedByFounder": { "type": "boolean" },
+        "deletedAt": { "type": "string", "maxLength": 40 },
         "hiddenForUsers": { "type": "array" }
       },
       "required": ["id", "senderId", "recipientId", "text", "timestamp"]
@@ -243,10 +250,28 @@
         "islamicGifId": { "type": "string", "maxLength": 64 },
         "isHighlighted": { "type": "boolean" },
         "isPinned": { "type": "boolean" },
+        "forwardedFrom": { "type": "string", "maxLength": 120 },
         "isDeleted": { "type": "boolean" },
+        "isDeletedForEveryone": { "type": "boolean" },
+        "deletedByRole": { "type": "string", "maxLength": 40 },
+        "deletedByFounder": { "type": "boolean" },
+        "deletedAt": { "type": "string", "maxLength": 40 },
         "hiddenForUsers": { "type": "array" }
       },
       "required": ["id", "chatId", "senderId", "senderName", "senderRole", "text", "timestamp"]
+    },
+    "ChatTyping": {
+      "title": "ChatTyping",
+      "description": "Ephemeral live typing indicator state per chat room and user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "chatId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "chatId", "userId", "userName", "updatedAt"]
     },
     "AppNotification": {
       "title": "AppNotification",
@@ -313,6 +338,10 @@
     "/community_chat_messages/{messageId}": {
       "schema": { "$ref": "#/entities/CommunityChatMessage" },
       "description": "Live Community Room messages (legacy alias)"
+    },
+    "/chat_typing/{typingId}": {
+      "schema": { "$ref": "#/entities/ChatTyping" },
+      "description": "Live chat typing indicators"
     },
     "/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/AppNotification" },

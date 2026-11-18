@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Coins,
@@ -11,36 +11,22 @@ import {
   Clock,
   IdCard,
   Send,
-  Upload,
   XCircle,
   MessageSquare,
   MessageSquareWarning,
   Users,
   FileCheck2,
-  HelpCircle,
-  AlertTriangle
+  HelpCircle
 } from 'lucide-react';
-import { FundCategory, FundTier, PaymentMethod, ComplaintCategory } from '../../types';
+import { ComplaintCategory } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
-import { compressImageFile } from '../../utils/imageCompression';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { RoleBadge } from '../common/RoleBadge';
 import { TabbarBadge, FaizKhelVipCrownIcon } from '../common/TabbarBadge';
 import { LuxurySelect } from '../common/LuxurySelect';
 import { ProfileCompletionGate, needsProfileCompletion } from '../common/ProfileCompletionGate';
-import { DastoorPaymentCalculator } from '../common/DastoorPaymentCalculator';
-import {
-  DASTOOR_MONTHLY_RATE,
-  calculateDastoorPeriod,
-  calculateSalanaPeriod,
-  isFaizKhelUser,
-} from '../../utils/dastoor';
-import {
-  formatCnicDisplay,
-  isValid13DigitCnic,
-  getCnicLockAlertMessage,
-  normalizeCnicDigits,
-} from '../../utils/cnic';
+import { isFaizKhelUser } from '../../utils/dastoor';
+import { normalizeCnicDigits } from '../../utils/cnic';
 import { resolveReceiptFundTierLabel } from '../../utils/receiptExport';
 import { translate } from '../../data/translations';
 
@@ -52,7 +38,6 @@ export const MemberDashboard: React.FC = () => {
     complaints,
     announcements,
     appSettings,
-    submitPayment,
     submitComplaint,
     setSelectedReceipt,
     setSelectedCardUser,
@@ -63,36 +48,6 @@ export const MemberDashboard: React.FC = () => {
     language
   } = useApp();
   const requiresProfileCompletion = needsProfileCompletion(currentUser);
-
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [fundTier, setFundTier] = useState<FundTier>('MAHANA');
-  const [monthsCount, setMonthsCount] = useState<number>(2);
-  const [yearsCount, setYearsCount] = useState<number>(1);
-  const [startMonth, setStartMonth] = useState<number>(() => new Date().getMonth());
-  const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
-  const [customPayAmount, setCustomPayAmount] = useState<string>('');
-  const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
-  const [payerCnic, setPayerCnic] = useState<string>(() =>
-    currentUser?.cnic ? formatCnicDisplay(currentUser.cnic) : ''
-  );
-  const [unit, setUnit] = useState<string>('');
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
-  const [payReference, setPayReference] = useState('');
-  const [payNote, setPayNote] = useState('');
-  const [receiptImageUrl, setReceiptImageUrl] = useState('');
-  const [receiptImageName, setReceiptImageName] = useState('');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [isCompressing, setIsCompressing] = useState(false);
-  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
-  const [paymentSubmittedSuccess, setPaymentSubmittedSuccess] = useState(false);
-  const lastActionTsRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (currentUser?.cnic && !payerCnic) {
-      setPayerCnic(formatCnicDisplay(currentUser.cnic));
-    }
-  }, [currentUser?.cnic, payerCnic]);
 
   const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
   const [cmpCategory, setCmpCategory] = useState<ComplaintCategory>('Membership Card');
@@ -139,41 +94,6 @@ export const MemberDashboard: React.FC = () => {
 
   const pendingPayments = ownPayments.filter(p => p.status === 'PENDING_VERIFICATION');
 
-  const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadError(null);
-    setIsCompressing(true);
-    try {
-      const compressed = await compressImageFile(file, 1080, 0.78);
-      setReceiptImageUrl(compressed.dataUrl);
-      setReceiptImageName(file.name);
-    } catch (err: any) {
-      setUploadError(err?.message || 'Unable to process receipt image.');
-    } finally {
-      setIsCompressing(false);
-    }
-  };
-
-  const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(2, monthsCount)));
-  const salanaPeriod = calculateSalanaPeriod(startMonth, startYear, Math.max(1, yearsCount));
-
-  const effectivePayAmount =
-    fundTier === 'MAHANA'
-      ? mahanaPeriod.totalAmount
-      : fundTier === 'SALANA'
-      ? salanaPeriod.totalAmount
-      : Math.round(Number(customPayAmount) || 0);
-
-  const isCnicValid = isValid13DigitCnic(payerCnic);
-  const isPayAmountValid =
-    fundTier === 'MAHANA'
-      ? monthsCount >= 2 && monthsCount <= 11 && mahanaPeriod.totalAmount > 0
-      : fundTier === 'SALANA'
-      ? yearsCount >= 1 && salanaPeriod.totalAmount > 0
-      : Boolean(customPayAmount.trim()) && Number.isFinite(Number(customPayAmount)) && Number(customPayAmount) > 0;
-  const canSubmitPayment = isPayAmountValid && isCnicValid;
-
   const currentUserCnicDigits = normalizeCnicDigits(currentUser.cnic);
   const ownRukniyatApp = applications.find(
     a =>
@@ -181,96 +101,6 @@ export const MemberDashboard: React.FC = () => {
       (currentUserCnicDigits.length === 13 && normalizeCnicDigits(a.cnic) === currentUserCnicDigits) ||
       (currentUser.membershipId && a.generatedMembershipId === currentUser.membershipId)
   );
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const now = Date.now();
-    if (now - lastActionTsRef.current < 500 || isSubmittingPayment) return;
-    lastActionTsRef.current = now;
-
-    if (!isCnicValid) {
-      setPaymentError(getCnicLockAlertMessage(language));
-      return;
-    }
-    if (!isPayAmountValid || effectivePayAmount <= 0) return;
-
-    setPaymentError(null);
-    setIsSubmittingPayment(true);
-    try {
-      const cleanRef =
-        payReference.trim() ||
-        `${payMethod.replace(/\s+/g, '').substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
-
-      const resolvedCategory: FundCategory =
-        fundTier === 'MAHANA'
-          ? 'Monthly Contribution'
-          : fundTier === 'SALANA'
-          ? 'Annual Welfare Fund'
-          : payFund || 'Emergency Relief';
-
-      const res = await submitPayment({
-        amount: effectivePayAmount,
-        fundCategory: resolvedCategory,
-        fundTier,
-        yearsCount: fundTier === 'SALANA' ? yearsCount : undefined,
-        unit: unit.trim() || undefined,
-        payerCnic: formatCnicDisplay(payerCnic),
-        paymentMethod: payMethod,
-        referenceNumber: cleanRef,
-        proofNote: payNote.trim() || undefined,
-        receiptImageUrl: receiptImageUrl || undefined,
-        receiptImageName: receiptImageName || undefined,
-        paymentMode: fundTier === 'HANGAMI' ? 'OTHER' : 'DASTOOR',
-        ...(fundTier === 'MAHANA'
-          ? {
-              monthsCount: mahanaPeriod.monthsCount,
-              ratePerMonth: DASTOOR_MONTHLY_RATE,
-              startMonth: mahanaPeriod.startMonth,
-              startYear: mahanaPeriod.startYear,
-              periodLabelEn: mahanaPeriod.periodLabelEn,
-              periodLabelUr: mahanaPeriod.periodLabelUr,
-            }
-          : fundTier === 'SALANA'
-          ? {
-              monthsCount: salanaPeriod.monthsCount,
-              ratePerMonth: DASTOOR_MONTHLY_RATE,
-              startMonth: salanaPeriod.startMonth,
-              startYear: salanaPeriod.startYear,
-              periodLabelEn: salanaPeriod.periodLabelEn,
-              periodLabelUr: salanaPeriod.periodLabelUr,
-            }
-          : {
-              periodLabelEn: 'ہنگامی فنڈ / Hangami Fund',
-              periodLabelUr: 'ہنگامی فنڈ / Hangami Fund',
-            }),
-      });
-
-      if (!res.success) {
-        setPaymentError(res.error || getCnicLockAlertMessage(language));
-        return;
-      }
-
-      setPaymentSubmittedSuccess(true);
-      setTimeout(() => {
-        setPaymentSubmittedSuccess(false);
-        setIsPaymentModalOpen(false);
-        setFundTier('MAHANA');
-        setMonthsCount(2);
-        setYearsCount(1);
-        setStartMonth(new Date().getMonth());
-        setStartYear(new Date().getFullYear());
-        setCustomPayAmount('');
-        setUnit('');
-        setPayReference('');
-        setPayNote('');
-        setReceiptImageUrl('');
-        setReceiptImageName('');
-        setPaymentError(null);
-      }, 1500);
-    } finally {
-      setIsSubmittingPayment(false);
-    }
-  };
 
   const handleComplaintSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -351,13 +181,13 @@ export const MemberDashboard: React.FC = () => {
                 if (requiresProfileCompletion) {
                   openCompleteProfileModal();
                 } else {
-                  setIsPaymentModalOpen(true);
+                  setActiveTab('funds');
                 }
               }}
               className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>{translate(language, 'actionPayFunds')}</span>
+              <span>{translate(language, 'navFunds')}</span>
             </button>
           )}
         </div>
@@ -423,7 +253,7 @@ export const MemberDashboard: React.FC = () => {
                 if (requiresProfileCompletion) {
                   openCompleteProfileModal();
                 } else {
-                  setIsPaymentModalOpen(true);
+                  setActiveTab('funds');
                 }
               }}
               className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#F5D061]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
@@ -431,7 +261,7 @@ export const MemberDashboard: React.FC = () => {
               <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/40 flex items-center justify-center mb-2">
                 <Coins className="w-4 h-4 text-[#F5D061]" />
               </div>
-              <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionPayFunds')}</span>
+              <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'navFunds')}</span>
             </button>
           )}
 
@@ -683,11 +513,11 @@ export const MemberDashboard: React.FC = () => {
           {allowPayments && (
             <button
               type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
+              onClick={() => setActiveTab('funds')}
               className="flex items-center gap-1.5 px-3.5 py-2 kc-gold-button text-xs font-extrabold rounded-xl cursor-pointer self-start sm:self-auto"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>{language === 'ur' ? 'نئی ادائیگی کریں' : 'Make New Payment'}</span>
+              <span>{translate(language, 'navFunds')}</span>
             </button>
           )}
         </div>
@@ -756,8 +586,8 @@ export const MemberDashboard: React.FC = () => {
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
                     {language === 'ur'
-                      ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ پہلی ادائیگی کے لیے "نئی ادائیگی کریں" پر کلک کریں۔'
-                      : 'No contributions submitted yet. Click "Make New Payment" to submit your first contribution.'}
+                      ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ ادائیگی کے لیے "فنڈز اور ادائیگیاں" کھولیں۔'
+                      : 'No contributions submitted yet. Open "Funds & Payments" to submit your contribution.'}
                   </td>
                 </tr>
               )}
@@ -867,150 +697,6 @@ export const MemberDashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* MODAL: SUBMIT PAYMENT (PRESERVED UPLOAD & COMPRESSION) */}
-      {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
-          <div
-            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 pb-[100px] sm:pb-6 my-auto max-h-[92dvh] overflow-y-auto"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
-              {language === 'ur' ? 'ادائیگی / ویلفیئر تعاون جمع کروائیں' : 'Submit Payment / Welfare Contribution'}
-            </h3>
-
-            {paymentSubmittedSuccess ? (
-              <div className="py-8 text-center space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h4 className="font-bold text-sm text-white">
-                  {language === 'ur' ? 'ادائیگی کامیابی سے جمع ہو گئی!' : 'Payment Submitted Successfully!'}
-                </h4>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  {language === 'ur'
-                    ? 'آپ کی ادائیگی ایڈمن کی تصدیق کے لیے زیر التواء ہے۔ منظوری کے بعد آپ کی مصدقہ رسید خودکار جاری ہو جائے گی۔'
-                    : 'Your transaction is pending verification by your Admin. Once approved, your certified receipt is automatically issued.'}
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handlePaymentSubmit} className="mt-4 space-y-4">
-                <DastoorPaymentCalculator
-                  compact
-                  language={language}
-                  fundTier={fundTier}
-                  onFundTierChange={setFundTier}
-                  monthsCount={monthsCount}
-                  onMonthsCountChange={setMonthsCount}
-                  yearsCount={yearsCount}
-                  onYearsCountChange={setYearsCount}
-                  startMonth={startMonth}
-                  onStartMonthChange={setStartMonth}
-                  startYear={startYear}
-                  onStartYearChange={setStartYear}
-                  customAmount={customPayAmount}
-                  onCustomAmountChange={setCustomPayAmount}
-                  fundCategory={payFund}
-                  onFundCategoryChange={setPayFund}
-                  payerCnic={payerCnic}
-                  onPayerCnicChange={setPayerCnic}
-                  unit={unit}
-                  onUnitChange={setUnit}
-                  contactHelpline={appSettings.contactHelpline}
-                />
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    {language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
-                  </label>
-                  <LuxurySelect
-                    compact
-                    value={payMethod}
-                    onChange={(val) => setPayMethod(val as PaymentMethod)}
-                    label={language === 'ur' ? 'ادائیگی کا طریقہ' : 'Payment Method'}
-                    options={[
-                      { value: 'EasyPaisa', label: language === 'ur' ? 'ایزی پیسہ (EasyPaisa)' : 'EasyPaisa' },
-                      { value: 'JazzCash', label: language === 'ur' ? 'جاز کیش (JazzCash)' : 'JazzCash' },
-                      { value: 'Bank Transfer', label: language === 'ur' ? 'بینک ٹرانسفر' : 'Bank Transfer' },
-                      { value: 'Cash', label: language === 'ur' ? 'نقد (Cash)' : 'Cash' }
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    {language === 'ur' ? 'ٹرانزیکشن ریفرنس / سلپ نمبر' : 'Transaction Reference ID / Slip No.'}{' '}
-                    <span className="text-slate-500 font-normal">
-                      {language === 'ur' ? '(اگر تصویر اپلوڈ کی ہو تو اختیاری)' : '(Optional if photo uploaded)'}
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. EP-99281726 or Bank Ref"
-                    value={payReference}
-                    onChange={(e) => setPayReference(e.target.value)}
-                    className="w-full text-xs font-mono px-3 py-2 rounded-xl kc-luxury-input"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    {language === 'ur' ? 'ادائیگی اسکرین شاٹ / رسید تصویر اپلوڈ کریں' : 'Upload Payment Screenshot / Receipt Photo (Compressed)'}
-                  </label>
-                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#D4AF37]/45 bg-[#090D16] cursor-pointer hover:border-[#F5D061] text-xs font-semibold text-slate-200 kc-pressable">
-                    <Upload className="w-4 h-4 text-[#F5D061]" />
-                    <span>
-                      {isCompressing
-                        ? (language === 'ur' ? 'رسید کمپریس ہو رہی ہے...' : 'Compressing receipt...')
-                        : receiptImageName
-                        ? `${language === 'ur' ? 'منسلک:' : 'Attached:'} ${receiptImageName}`
-                        : (language === 'ur' ? 'رسید کی تصویر منتخب کریں (JPG/PNG)' : 'Tap to attach receipt photo (JPG/PNG)')}
-                    </span>
-                    <input type="file" accept="image/*" onChange={handleReceiptFileChange} className="hidden" />
-                  </label>
-                  {uploadError && <p className="text-[11px] text-rose-400 mt-1">{uploadError}</p>}
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    {language === 'ur' ? 'اضافی نوٹ (اختیاری)' : 'Optional Note'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={language === 'ur' ? `مثلاً: ${currentMonthLabel} کا ماہانہ تعاون` : `e.g. ${currentMonthLabel} contribution`}
-                    value={payNote}
-                    onChange={(e) => setPayNote(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-xl kc-luxury-input"
-                  />
-                </div>
-
-                {paymentError && (
-                  <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                    <span>{paymentError}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
-                  <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
-                    {translate(language, 'cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!canSubmitPayment || isCompressing || isSubmittingPayment}
-                    className="flex items-center gap-1.5 px-4 py-2 kc-gold-button disabled:opacity-45 text-xs font-extrabold rounded-xl cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>
-                      {isSubmittingPayment
-                        ? (language === 'ur' ? 'جمع ہو رہا ہے...' : 'Submitting...')
-                        : `${translate(language, 'actionPayFunds')} (PKR ${effectivePayAmount.toLocaleString()})`}
-                    </span>
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* MODAL: COMPLAINT */}
       {isComplaintModalOpen && (

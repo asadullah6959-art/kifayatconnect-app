@@ -3,7 +3,7 @@ import {
   X,
   Camera,
   FileText,
-  Upload,
+  Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
   Sparkles,
@@ -14,6 +14,7 @@ import { useApp } from '../../context/AppContext';
 import { TABBAR_CLANS, CUSTOM_TABBAR_ID, transliterateTabbarToUrdu } from '../../data/tabbars';
 import { PROVINCES_DATA } from '../../data/locationData';
 import { FundTier } from '../../types';
+import { LuxurySelect } from '../common/LuxurySelect';
 import {
   formatCnicDisplay,
   isValid13DigitCnic,
@@ -131,7 +132,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
       }
 
       const payload = await response.json();
-      const d = payload?.data || {};
+      const d = payload?.data || payload?.fields || {};
       if (d.oldMembershipNo) setOldMembershipNo(String(d.oldMembershipNo));
       if (d.oldReceiptSerialNo) setOldReceiptSerialNo(String(d.oldReceiptSerialNo));
       if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) setDate(d.date);
@@ -140,7 +141,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
       if (d.cnic) setCnic(formatCnicDisplay(String(d.cnic)));
       if (d.amount !== undefined && d.amount !== null) {
         const cleanAmt = String(d.amount).replace(/\D/g, '');
-        if (cleanAmt) setAmount(cleanAmt);
+        if (cleanAmt && Number(cleanAmt) > 0) setAmount(cleanAmt);
       }
       if (d.unit) setUnit(String(d.unit));
       if (d.phone) setPhone(String(d.phone));
@@ -172,6 +173,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
       );
     } finally {
       setIsScanning(false);
+      e.target.value = '';
     }
   };
 
@@ -333,39 +335,52 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
               </div>
 
               {/* Photo Upload + AI Scan Box */}
-              <div className="p-4 rounded-2xl bg-[#11192C] border border-[#D4AF37]/35 space-y-2.5">
-                <label className="flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
-                      {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-white">
-                        {isScanning
-                          ? isUr
-                            ? 'AI پرانے فارم کو پڑھ رہا ہے...'
-                            : 'Scanning Old Form with AI...'
-                          : entryMode === 'SCAN'
-                          ? isUr
-                            ? 'پرانے فارم یا رسید کی تصویر اپ لوڈ کریں (AI خودکار اندراج)'
-                            : 'Upload Old Paper Form / Receipt Photo (AI Auto-Fill)'
-                          : isUr
-                          ? 'ثبوت کے لیے پرانے فارم کی تصویر منسلک کریں (اختیاری)'
-                          : 'Attach Paper Form / Receipt Photo Proof (Optional)'}
-                      </p>
-                      <p className="text-[11px] text-slate-400">JPG, PNG · Auto-compressed</p>
-                    </div>
+              <div className="p-4 rounded-2xl bg-[#11192C] border border-[#D4AF37]/35 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
+                    {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
                   </div>
-                  <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-bold shrink-0">
-                    {isScanning ? 'Scanning...' : 'Choose Photo'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUploadAndScan}
-                    className="hidden"
-                  />
-                </label>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white">
+                      {isScanning
+                        ? isUr
+                          ? 'AI پرانے فارم کو پڑھ رہا ہے...'
+                          : 'Scanning Old Form with AI...'
+                        : entryMode === 'SCAN'
+                        ? isUr
+                          ? 'پرانے فارم یا رسید کی تصویر لیں یا گیلری سے منتخب کریں'
+                          : 'Capture or Upload Old Paper Form / Receipt (AI Auto-Fill)'
+                        : isUr
+                        ? 'ثبوت کے لیے پرانے فارم کی تصویر منسلک کریں (اختیاری)'
+                        : 'Attach Paper Form / Receipt Photo Proof (Optional)'}
+                    </p>
+                    <p className="text-[11px] text-slate-400">JPG, PNG, WEBP · Auto-compressed</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="kc-pressable flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-bold cursor-pointer">
+                    <Camera className="w-4 h-4 shrink-0" />
+                    <span>{isUr ? 'کیمرہ سے تصویر' : 'Take Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handlePhotoUploadAndScan}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className="kc-pressable flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A111D] hover:bg-[#161F33] border border-[#D4AF37]/40 text-slate-200 text-xs font-bold cursor-pointer">
+                    <ImageIcon className="w-4 h-4 text-[#FDE047] shrink-0" />
+                    <span>{isUr ? 'گیلری سے منتخب کریں' : 'Choose Gallery'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUploadAndScan}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
 
                 {paperPhotoUrl && (
                   <img
@@ -469,18 +484,20 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   <label className="block text-[11px] font-bold text-amber-200 mb-1">
                     Tabar / Family (ٹبر)
                   </label>
-                  <select
+                  <LuxurySelect
+                    label="Tabar / Family (ٹبر)"
                     value={tabbarId}
-                    onChange={(e) => setTabbarId(e.target.value)}
-                    className={inputCls}
-                  >
-                    {TABBAR_CLANS.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.urduName} — {c.englishName}
-                      </option>
-                    ))}
-                    <option value={CUSTOM_TABBAR_ID}>Other / Custom Tabbar</option>
-                  </select>
+                    onChange={setTabbarId}
+                    options={[
+                      ...TABBAR_CLANS.map((c) => ({
+                        value: c.id,
+                        label: `${c.urduName} — ${c.englishName}`,
+                      })),
+                      { value: CUSTOM_TABBAR_ID, label: 'Other / Custom Tabbar' },
+                    ]}
+                    searchable
+                    compact
+                  />
                 </div>
 
                 {tabbarId === CUSTOM_TABBAR_ID && (
@@ -502,15 +519,17 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   <label className="block text-[11px] font-bold text-amber-200 mb-1">
                     Fund Tier (فنڈ کی قسم)
                   </label>
-                  <select
+                  <LuxurySelect
+                    label="Fund Tier (فنڈ کی قسم)"
                     value={fundTier}
-                    onChange={(e) => setFundTier(e.target.value as FundTier)}
-                    className={inputCls}
-                  >
-                    <option value="MAHANA">Mahana Fund (ماہانہ فنڈ)</option>
-                    <option value="SALANA">Salana Fund (سالانہ فنڈ)</option>
-                    <option value="HANGAMI">ہنگامی فنڈ / Hangami Fund</option>
-                  </select>
+                    onChange={(val) => setFundTier(val as FundTier)}
+                    options={[
+                      { value: 'MAHANA', label: 'Mahana Fund (ماہانہ فنڈ)' },
+                      { value: 'SALANA', label: 'Salana Fund (سالانہ فنڈ)' },
+                      { value: 'HANGAMI', label: 'ہنگامی فنڈ / Hangami Fund' },
+                    ]}
+                    compact
+                  />
                 </div>
 
                 <div>
@@ -557,38 +576,32 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   <label className="block text-[11px] font-bold text-amber-200 mb-1">
                     Province (صوبہ)
                   </label>
-                  <select
+                  <LuxurySelect
+                    label="Province (صوبہ)"
                     value={stateProvince}
-                    onChange={(e) => {
-                      setStateProvince(e.target.value);
-                      const firstDist = PROVINCES_DATA[e.target.value]?.districts?.[0]?.name || '';
+                    onChange={(val) => {
+                      setStateProvince(val);
+                      const firstDist = PROVINCES_DATA[val]?.districts?.[0]?.name || '';
                       if (firstDist) setDistrict(firstDist);
                     }}
-                    className={inputCls}
-                  >
-                    {provinceNames.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
+                    options={provinceNames.map((p) => ({ value: p, label: p }))}
+                    searchable
+                    compact
+                  />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-amber-200 mb-1">
                     District (ضلع)
                   </label>
-                  <select
+                  <LuxurySelect
+                    label="District (ضلع)"
                     value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    className={inputCls}
-                  >
-                    {availableDistricts.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setDistrict}
+                    options={availableDistricts.map((d) => ({ value: d, label: d }))}
+                    searchable
+                    compact
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

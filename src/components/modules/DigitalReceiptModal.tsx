@@ -421,9 +421,9 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
                   </p>
                   <div className="border-t border-[#D4AF37]/50 pt-1">
                     <p className="text-xs font-extrabold text-[#FEF08A] font-urdu-auto">
-                      دستخط پرانا مالیات
+                      دستخط ناظم مالیات
                     </p>
-                    <p className="text-[10px] text-slate-400">Finance Verification Signature</p>
+                    <p className="text-[10px] text-slate-400">Finance Secretary Signature</p>
                   </div>
                 </div>
 

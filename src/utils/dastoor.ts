@@ -4,23 +4,8 @@ import { resolveUserTabbar } from '../data/tabbars';
 export const DASTOOR_MONTHLY_RATE = 100;
 export const SALANA_ANNUAL_RATE = 1200;
 
-export const MAHANA_QUICK_MONTHS = [2, 3, 4, 6, 9, 11] as const;
+export const MAHANA_QUICK_MONTHS = [1, 2, 3, 4, 6, 9, 11] as const;
 export const SALANA_QUICK_YEARS = [1, 2, 3, 5, 10] as const;
-
-export interface DastoorPreset {
-  months: number;
-  amount: number;
-  labelEn: string;
-  labelUr: string;
-}
-
-export const DASTOOR_QUICK_PRESETS: DastoorPreset[] = [
-  { months: 2, amount: 200, labelEn: '2 Months', labelUr: '۲ مہینے' },
-  { months: 3, amount: 300, labelEn: '3 Months', labelUr: '۳ مہینے' },
-  { months: 6, amount: 600, labelEn: '6 Months', labelUr: '۶ مہینے' },
-  { months: 9, amount: 900, labelEn: '9 Months', labelUr: '۹ مہینے' },
-  { months: 11, amount: 1100, labelEn: '11 Months', labelUr: '۱۱ مہینے' },
-];
 
 export interface MonthOption {
   index: number; // 0..11

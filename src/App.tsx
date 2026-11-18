@@ -121,7 +121,7 @@ const MainLayout: React.FC = () => {
   if (!currentUser) {
     return (
       <>
-        <div className="relative">
+        <div className="relative w-full max-w-[100vw] overflow-x-hidden box-border">
           <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] inset-x-3 z-50 max-w-md mx-auto pointer-events-auto">
             <IphoneSafariInstallBanner language={language} />
           </div>
@@ -300,7 +300,7 @@ const MainLayout: React.FC = () => {
         </div>
 
         {/* Scrollable Center Content Viewport */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 w-full min-w-0 max-w-full relative z-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 pb-[calc(96px+env(safe-area-inset-bottom,16px))] md:pb-8 w-full min-w-0 max-w-[100vw] box-border relative z-10">
           <div className="max-w-7xl mx-auto w-full min-w-0 space-y-4">
             <IphoneSafariInstallBanner language={language} />
             {liveApprovalAlert && (
