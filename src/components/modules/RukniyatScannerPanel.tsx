@@ -119,8 +119,8 @@ export const RukniyatScannerPanel: React.FC<Props> = ({ isUr, disabled, onApply,
       setDetected(lastDetected);
       setBanner(
         isUr
-          ? `✅ اے آئی اسکینر نے تصویر بہتر کی اور تمام فیلڈز خودکار بھر دیں! (${filledTotal} فیلڈز)`
-          : '✅ AI Scanner enhanced photo & auto-filled all fields!'
+          ? `✅ Gemini 3.8 وژن نے تصویر اسکین کی اور تمام فیلڈز خودکار بھر دیں! (${filledTotal} فیلڈز)`
+          : '✅ Scanned with Gemini 3.8 Vision & auto-filled all fields!'
       );
     }
   };

@@ -76,8 +76,11 @@ async function startServer() {
         'Use 13 digits with no dashes for cnic, YYYY-MM-DD for date, digits only for amount, and put the printed membership/receipt number in serialNo.',
       ].join(' ');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+      // Best → fastest vision models; an unavailable or throttled model fails over instantly.
+      const modelChain = ['gemini-3.8-flash', 'gemini-4-hydrogen', 'gemini-3.5-flash-lite'];
+      const generateWith = (model: string) =>
+        ai.models.generateContent({
+        model,
         contents: [
           {
             role: 'user',
@@ -112,7 +115,20 @@ async function startServer() {
             },
           },
         },
-      });
+        });
+
+      let response: Awaited<ReturnType<typeof generateWith>> | null = null;
+      let lastModelError: unknown = null;
+      for (const model of modelChain) {
+        try {
+          response = await generateWith(model);
+          lastModelError = null;
+          break;
+        } catch (error) {
+          lastModelError = error;
+        }
+      }
+      if (!response) throw lastModelError ?? new Error('No vision model answered');
 
       const rawText = (response.text || '{}').trim();
       const parsed = JSON.parse(rawText) as Record<string, unknown>;

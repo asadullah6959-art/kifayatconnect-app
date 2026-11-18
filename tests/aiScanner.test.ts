@@ -10,12 +10,14 @@ import {
   ENHANCE_MAX_DIMENSION,
   MAX_UPLOAD_BYTES,
   PRIMARY_MODEL,
+  MODEL_CHAIN,
 } from '../src/utils/aiFormScanner';
 
 /** The scanner must read the same values whether the model answers in English or Urdu. */
 
-test('scanner targets gemini-2.5-flash and the documented limits', () => {
-  assert.equal(PRIMARY_MODEL, 'gemini-2.5-flash');
+test('scanner targets Gemini 3.8 Vision with a fallback chain and the documented limits', () => {
+  assert.equal(PRIMARY_MODEL, 'gemini-3.8-flash');
+  assert.deepEqual(MODEL_CHAIN, ['gemini-3.8-flash', 'gemini-4-hydrogen', 'gemini-3.5-flash-lite']);
   assert.equal(ENHANCE_MAX_DIMENSION, 1800);
   assert.equal(MAX_UPLOAD_BYTES, 50 * 1024 * 1024);
 });
