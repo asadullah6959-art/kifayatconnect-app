@@ -18,8 +18,13 @@ import type { RukniyatFormValues } from '../components/documents/RukniyatFormDoc
 
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 export const ENHANCE_MAX_DIMENSION = 1800;
-export const PRIMARY_MODEL = 'gemini-2.5-flash';
-const MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+export const PRIMARY_MODEL = 'gemini-3.8-flash';
+/**
+ * Best → fastest vision models. A model that is unavailable, region-blocked or
+ * rate-limited fails over instantly to the next one, so a scan never dead-ends
+ * because of a single model's availability.
+ */
+export const MODEL_CHAIN = ['gemini-3.8-flash', 'gemini-4-hydrogen', 'gemini-3.5-flash-lite'];
 
 /** Raised when no API key is configured anywhere — a setup issue, not a photo issue. */
 export class ScannerConfigError extends Error {
@@ -608,7 +613,16 @@ export async function scanFormPhoto(
           lastError = error;
         }
       }
-      if (lastError) throw lastError;
+      if (lastError) {
+        // Every direct model was refused (key restriction, quota, region). Try the
+        // same-origin proxy once before giving up on this pass.
+        try {
+          text = await callGeminiProxy(enhanced.mimeType, enhanced.base64, passes[index].hint);
+          usedModel = `${PRIMARY_MODEL} (server)`;
+        } catch {
+          throw lastError;
+        }
+      }
     } else {
       text = await callGeminiProxy(enhanced.mimeType, enhanced.base64, passes[index].hint);
     }
