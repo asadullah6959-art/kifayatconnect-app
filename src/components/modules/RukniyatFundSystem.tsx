@@ -17,6 +17,7 @@ import {
   type DocLanguage,
   type RukniyatFormValues,
 } from '../documents/RukniyatFormDocument';
+import { RukniyatScannerPanel } from './RukniyatScannerPanel';
 import { printElement } from '../documents/printDocument';
 import {
   calculateFundQuote,
@@ -257,15 +258,25 @@ export const RukniyatFundSystem: React.FC<Props> = ({ isOpen, onClose }) => {
         ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
-          {/* Official document */}
-          <div ref={printRef} className="min-w-0">
-            <RukniyatFormDocument
-              values={values}
-              onChange={(patch: Partial<RukniyatFormValues>) => setValues(prev => ({ ...prev, ...patch }))}
-              language={docLang}
-              editable={!submitted}
-              serialNumber={issuedSerial}
+          {/* AI Camera & Photo Scanner — enhances the shot and fills the form below */}
+          <div className="min-w-0 space-y-3">
+            <RukniyatScannerPanel
+              isUr={isUr}
+              disabled={submitted}
+              onApply={patch => setValues(prev => ({ ...prev, ...patch }))}
+              totalAmount={quote.totalAmount}
             />
+
+            {/* Official document (kept outside the scanner so printing stays clean) */}
+            <div ref={printRef}>
+              <RukniyatFormDocument
+                values={values}
+                onChange={(patch: Partial<RukniyatFormValues>) => setValues(prev => ({ ...prev, ...patch }))}
+                language={docLang}
+                editable={!submitted}
+                serialNumber={issuedSerial}
+              />
+            </div>
           </div>
 
           {/* Fund calculator */}
