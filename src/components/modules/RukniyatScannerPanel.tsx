@@ -229,9 +229,9 @@ export const RukniyatScannerPanel: React.FC<Props> = ({ isUr, disabled, onApply,
                 onClick={() => removePhoto(photo.id)}
                 aria-label={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
                 title={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
-                className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold leading-none cursor-pointer shadow-lg"
+                className="absolute top-[6px] right-[6px] z-[999] w-[30px] h-[30px] rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.6)] cursor-pointer leading-none text-[13px] font-bold"
               >
-                ❌
+                ✕
               </button>
             </div>
           ))}

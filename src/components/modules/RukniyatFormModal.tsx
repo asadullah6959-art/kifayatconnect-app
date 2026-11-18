@@ -137,6 +137,7 @@ export const RukniyatFormModal: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [submittedSerial, setSubmittedSerial] = useState<string | null>(null);
   const submitCooldownRef = useRef<number>(0);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   const provinceNames = useMemo(() => Object.keys(PROVINCES_DATA), []);
   const availableDistricts = useMemo(() => {
@@ -246,6 +247,12 @@ export const RukniyatFormModal: React.FC = () => {
     } catch {
       setErrorMsg(isUr ? 'تصویر اپ لوڈ کرنے میں مسئلہ آیا۔' : 'Could not process selected photo.');
     }
+  };
+
+  /** Red ✕ on the photo box: clear the image and reset the file input so the same file can be picked again. */
+  const clearApplicantPhoto = () => {
+    setApplicantPhotoUrl('');
+    if (photoInputRef.current) photoInputRef.current.value = '';
   };
 
   // Signature canvas pointer helpers
@@ -598,8 +605,24 @@ export const RukniyatFormModal: React.FC = () => {
                           </span>
                         </div>
                       )}
+                      {applicantPhotoUrl ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            clearApplicantPhoto();
+                          }}
+                          aria-label={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
+                          title={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
+                          className="absolute top-[6px] right-[6px] z-[999] w-[30px] h-[30px] rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.6)] cursor-pointer leading-none text-[13px] font-bold"
+                        >
+                          ✕
+                        </button>
+                      ) : null}
                       {!isInspectMode && (
                         <input
+                          ref={photoInputRef}
                           type="file"
                           accept="image/*"
                           onChange={handlePhotoSelect}
