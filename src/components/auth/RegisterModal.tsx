@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -29,6 +29,7 @@ import {
   verifyEmailOTP,
   getPendingEmailOTP,
   clearPendingEmailOTP,
+  OTP_RESEND_COOLDOWN_SECONDS,
   findExistingFirestoreUserByEmail
 } from '../../services/firebase';
 import { compressAvatarFile } from '../../utils/imageCompression';
@@ -66,6 +67,16 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  // 30-second resend cooldown for the sign-up verification email
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = window.setTimeout(() => {
+      setOtpCooldown(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [otpCooldown]);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -214,8 +225,10 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       if (res.success) {
         setOtpSent(true);
         setOtpSuccess(res.message);
+        setOtpCooldown(res.cooldownSeconds || OTP_RESEND_COOLDOWN_SECONDS);
       } else {
         setOtpError(res.message);
+        if (res.cooldownSeconds) setOtpCooldown(res.cooldownSeconds);
       }
     } finally {
       setOtpLoading(false);
@@ -508,9 +521,10 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   <button
                     type="button"
                     onClick={handleSendSignupOtp}
-                    className="text-[#F5D061] hover:underline cursor-pointer"
+                    disabled={otpCooldown > 0 || otpLoading}
+                    className="text-[#F5D061] hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
                   >
-                    {translate(language, 'resendOtpBtn')}
+                    {otpCooldown > 0 ? `${otpCooldown}s` : translate(language, 'resendOtpBtn')}
                   </button>
                 </div>
                 <button
