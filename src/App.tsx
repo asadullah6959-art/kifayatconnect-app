@@ -32,8 +32,6 @@ import { DigitalReceiptModal } from './components/modules/DigitalReceiptModal';
 import { DigitalCardModal } from './components/modules/DigitalCardModal';
 import { RegisterModal } from './components/auth/RegisterModal';
 import { LoginModal } from './components/auth/LoginModal';
-import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
-import { GlobalShortcutsHandler } from './components/common/GlobalShortcutsHandler';
 import { NotificationsSlideOver } from './components/common/NotificationsSlideOver';
 import { AppUpdateModal } from './components/common/AppUpdateModal';
 import { MemberProfileModal } from './components/modules/MemberProfileModal';
@@ -90,7 +88,6 @@ const MainLayout: React.FC = () => {
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -238,42 +235,29 @@ const MainLayout: React.FC = () => {
 
   return (
     <div
-      className="h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-full overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC]"
+      className="relative h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-[100vw] overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC] box-border"
       style={{
         backgroundColor: 'var(--kc-bg, #070D14)',
         backgroundImage:
           'radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.10), transparent 44%), radial-gradient(circle at 12% 88%, rgba(212, 175, 55, 0.08), transparent 54%)'
       }}
     >
-      {/* Global Keyboard Shortcuts Handler */}
-      <GlobalShortcutsHandler
-        onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
-        onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
-      />
+      {/* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */}
+      <div aria-hidden="true" className="absolute inset-0 kc-geo-watermark pointer-events-none z-0" />
 
-      {/* Fixed Top Navigation Bar */}
+      {/* Fixed Mobile Top Navigation Bar */}
       <Header
         onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
-        onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onToggleSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         isSidebarOpen={isMobileSidebarOpen}
       />
 
-      {/* Main App Workspace */}
-      <div className="flex-1 flex min-h-0 overflow-hidden relative w-full max-w-full">
-        {/* Desktop Docked Sidebar */}
-        <aside
-          className="hidden md:flex md:w-64 md:shrink-0 h-full select-none z-20 border-r border-slate-400/15"
-          style={{ backgroundColor: 'var(--kc-surface, #131C31)' }}
-        >
-          <Sidebar />
-        </aside>
-
-        {/* Mobile Sidebar Overlay (zero blur for 60FPS mobile performance) */}
-        <div className="md:hidden overscroll-none touch-pan-y">
+      {/* Main Mobile App Workspace */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative z-10 w-full max-w-[100vw] box-border">
+        {/* Mobile Sidebar Drawer Overlay (100% mobile-first across all screens) */}
+        <div className="overscroll-none touch-pan-y">
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
             className={`fixed inset-0 bg-[#090D16]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
@@ -299,9 +283,9 @@ const MainLayout: React.FC = () => {
           </aside>
         </div>
 
-        {/* Scrollable Center Content Viewport */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y p-3 sm:p-5 md:p-7 pb-[calc(96px+env(safe-area-inset-bottom,16px))] md:pb-8 w-full min-w-0 max-w-[100vw] box-border relative z-10">
-          <div className="max-w-7xl mx-auto w-full min-w-0 space-y-4">
+        {/* Scrollable Center Mobile Content Viewport */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y px-3 pt-3 sm:px-4 sm:pt-4 pb-[calc(96px+env(safe-area-inset-bottom,16px))] w-full min-w-0 max-w-[100vw] box-border relative z-10">
+          <div className="w-full max-w-full min-w-0 space-y-4 box-border">
             <IphoneSafariInstallBanner language={language} />
             {liveApprovalAlert && (
               <div className="p-3.5 rounded-xl kc-emerald-panel flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
@@ -352,7 +336,7 @@ const MainLayout: React.FC = () => {
       {/* Fixed Mobile Bottom Navigation Bar with Android/iPhone Gesture Safe-Area Inset */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="md:hidden shrink-0 w-full max-w-full bg-gradient-to-t from-[#090D16] to-[#131C31] border-t border-slate-400/20 px-1.5 pt-1.5 pb-[calc(env(safe-area-inset-bottom,12px)+8px)] z-50 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(148,163,184,0.14)]"
+        className="shrink-0 w-full max-w-[100vw] box-border bg-gradient-to-t from-[#090D16] to-[#131C31] border-t border-slate-400/20 px-1.5 pt-1.5 pb-[calc(env(safe-area-inset-bottom,12px)+8px)] z-50 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(148,163,184,0.14)]"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -419,11 +403,11 @@ const MainLayout: React.FC = () => {
 
       {/* Floating Golden Chat Bubble when Live Chat is Minimized */}
       {liveChatDisplayMode === 'MINIMIZED' && activeTab !== 'chat' && (
-        <div className="fixed bottom-[72px] md:bottom-5 right-3 sm:right-5 z-40 flex items-center rounded-full bg-[#111726] border border-[#D4AF37]/70 shadow-[0_12px_32px_rgba(0,0,0,0.75),0_4px_18px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(252,227,138,0.22)] overflow-hidden transition-transform duration-200 hover:-translate-y-0.5">
+        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,12px))] right-3 z-40 flex items-center rounded-full bg-[#111726] border border-[#D4AF37]/70 shadow-[0_12px_32px_rgba(0,0,0,0.75),0_4px_18px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(252,227,138,0.22)] overflow-hidden">
           <button
             type="button"
             onClick={restoreLiveChat}
-            className="flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161F33] cursor-pointer kc-pressable"
+            className="min-h-[44px] flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161F33] cursor-pointer kc-pressable"
             title="Restore Live Chat Room"
           >
             <span className="relative flex items-center justify-center">
@@ -444,7 +428,7 @@ const MainLayout: React.FC = () => {
             }}
             aria-label={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
             title={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
-            className="px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/30 cursor-pointer kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/30 cursor-pointer kc-pressable"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -467,11 +451,6 @@ const MainLayout: React.FC = () => {
           setIsLoginModalOpen(false);
           setIsRegisterModalOpen(true);
         }}
-      />
-
-      <KeyboardShortcutsModal
-        isOpen={isShortcutsModalOpen}
-        onClose={() => setIsShortcutsModalOpen(false)}
       />
 
       {iphoneShareNotice && (

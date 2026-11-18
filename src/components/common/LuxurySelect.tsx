@@ -100,8 +100,8 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
         onClick={() => {
           if (!disabled) setIsOpen(true);
         }}
-        className={`w-full flex items-center justify-between gap-2 text-left rounded-xl border transition-colors ${
-          compact ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2.5 text-sm'
+        className={`w-full min-h-[44px] flex items-center justify-between gap-2 text-left rounded-xl border transition-colors ${
+          compact ? 'px-3 py-2 text-xs' : 'px-3.5 py-2.5 text-sm'
         } ${
           disabled
             ? 'bg-[#090D16]/60 border-slate-800 text-slate-500 cursor-not-allowed'
@@ -116,13 +116,13 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-3"
           onClick={handleClose}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-sm max-h-[55vh] flex flex-col kc-luxury-modal rounded-2xl overflow-hidden text-slate-100"
+            className="w-full max-w-[calc(100vw-24px)] sm:max-w-sm max-h-[65dvh] flex flex-col kc-luxury-modal rounded-2xl overflow-hidden text-slate-100 box-border"
             onClick={e => e.stopPropagation()}
           >
             {/* Compact Header with top-right Close (X) */}
@@ -141,7 +141,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label={isUr ? 'بند کریں' : 'Close selector'}
-                className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
+                className="min-w-[44px] min-h-[44px] rounded-lg bg-[#141B2D] border border-[#D4AF37]/35 text-slate-300 hover:text-white hover:border-[#F5D061] flex items-center justify-center shrink-0 kc-pressable cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -157,13 +157,13 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder={resolvedSearchPlaceholder}
-                    className="w-full pl-8 pr-7 py-1.5 kc-luxury-input rounded-lg text-xs"
+                    className="w-full min-h-[44px] pl-8 pr-9 py-2 kc-luxury-input rounded-lg text-xs"
                   />
                   {query && (
                     <button
                       type="button"
                       onClick={() => setQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -186,7 +186,7 @@ export const LuxurySelect: React.FC<LuxurySelectProps> = ({
                       key={`${opt.value}-${opt.label}`}
                       type="button"
                       onClick={() => handleSelect(opt.value)}
-                      className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 text-left kc-pressable cursor-pointer ${
+                      className={`w-full min-h-[44px] px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 text-left kc-pressable cursor-pointer ${
                         active
                           ? 'bg-[#1E293B] border border-[#38BDF8]/55 text-[#38BDF8]'
                           : 'hover:bg-[#1E293B]/65 text-[#F8FAFC] border border-transparent'

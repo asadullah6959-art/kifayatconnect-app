@@ -15,7 +15,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 async function startServer() {
   const app = express();
 
-  app.use(express.json({ limit: '12mb' }));
+  app.use(express.json({ limit: '25mb' }));
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'kifayat-connect-server' });
@@ -36,6 +36,7 @@ async function startServer() {
       imageDataUrl?: string;
       imageBase64?: string;
       mimeType?: string;
+      formType?: 'RUKNIYAT' | 'RASEED' | 'AUTO';
     };
 
     let mimeType = '';
@@ -69,65 +70,229 @@ async function startServer() {
       });
 
       const prompt = [
-        'You are a careful bilingual (Urdu Nastaliq & English) document OCR assistant for "Sui Khel Qaumi Ittehad / Kifayat Connect".',
-        'Extract any visible handwritten or printed details from this old membership (Rukniyat) paper form or old paper receipt (Raseed).',
-        'Return clean extracted values. For CNIC, extract digits (format XXXXX-XXXXXXX-X if 13 digits are clear).',
-        'For date, prefer YYYY-MM-DD if clear, otherwise keep the visible date string.',
-        'For amount, return numeric PKR value (0 if not present). For tabar, identify clan/family name if visible (e.g., Faiz Khel, Swati Khel, Rousa Khel, etc.).',
-        'Leave any unreadable or missing fields as empty strings (or 0 for amount). Do not invent data.',
-      ].join(' ');
+        'You are a high-precision bilingual (Urdu Nastaliq & English) OCR assistant for "سوئی خیل قومی اتحاد / Sui Khel Qaumi Ittehad / Kifayat Connect".',
+        'CRITICAL RULE: Even if this image is blurry, dark, low-resolution, shadowed, faded, rotated, or taken on an old phone camera, NEVER refuse or ask for a clearer photo. Carefully decipher every visible Urdu Nastaliq and English word, handwritten pen ink, stamp, number, CNIC, phone number, Tabar, district, date, and amount, and return the JSON so all fields auto-fill into the form boxes below.',
+        'Use the exact spatial layout map of our paper "رکنیت فارم - سوئی خیل قومی اتحاد" (Rukniyat Form) OR "رسید وصولی - سوئی خیل قومی اتحاد" (Raseed Wasooli Receipt).',
+        'Convert any Urdu/Arabic-Indic numerals (۰-۹, ٠-٩) into ASCII digits (0-9).',
+        'EXACT SPATIAL & FIELD MAP (RUKNIYAT FORM & RASEED WASOOLI):',
+        'Top Meta Row: date (تاریخ, prefer YYYY-MM-DD), serialNo (رکنیت نمبر / سیریل نمبر), oldReceiptSerialNo (رسید نمبر — e.g. printed black receipt serial number like 4200), district (یونٹ / ضلع out of Pakistan districts), unit (یونٹ).',
+        'Row 1 (ذاتی معلومات / رسید وصولی): name (نام / محترم جناب / صاحب کی جانب سے), fatherName (ولد), contactNumber (رابطہ نمبر).',
+        'Row 2: education (تعلیم), experience (تجربہ), profession (پیشہ / روزگار).',
+        'Row 3: maritalStatus (ازدواجی حیثیت -> "Married", "Single", or "Widowed"), currentArea (موجودہ علاقہ), ancestralArea (آبائی علاقہ (کند بائیں)).',
+        'Row 4: dob (تاریخ پیدائش, prefer YYYY-MM-DD), age (عمر, numeric string), cnic (شناختی کارڈ نمبر — EXACTLY 13 digits stripped of all dashes, e.g. 3520112345671).',
+        'Row 5: tabar (مرکزی خاندان (ٹبر) — match to one of the 11 clans if visible: Faiz Khel, Swati Khel, Rousa Khel, Malkhan Khel, Surjam Khel, Akhar Khel, Ulbaik Khel, Hakidad Khel, Zinwar Khel, Mir Baz Khel, Chharo Khel), subBranch (ذیلی شاخ (ٹبر)), representative (نمائندہ خاندان (ٹبر)).',
+        'Row 6 & 7: currentAddress (موجودہ پتہ), permanentAddress (مستقل پتہ).',
+        'Bottom (عہد نامہ / تصدیق / دفتری کارروائی / رسید وصولی): amount (مبلغ / روپے / وصول پائے / ماہانہ تعاون مبلغ / فارم فیس in PKR, numeric 0 if blank), representativeName (نام نمائندہ / دستخط وصول کنندہ).',
+        'Also extract stateProvince if mentioned. Perform maximum best-effort OCR on every visible handwritten or printed line; return empty string (or 0 for amount) only if a field box on the paper is completely blank.',
+      ].join('\n');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
-        contents: {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data,
-              },
-            },
-          ],
-        },
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              oldMembershipNo: { type: Type.STRING },
-              oldReceiptSerialNo: { type: Type.STRING },
-              date: { type: Type.STRING },
-              applicantName: { type: Type.STRING },
-              fatherName: { type: Type.STRING },
-              cnic: { type: Type.STRING },
-              tabar: { type: Type.STRING },
-              amount: { type: Type.NUMBER },
-              unit: { type: Type.STRING },
-              phone: { type: Type.STRING },
-              district: { type: Type.STRING },
-              address: { type: Type.STRING },
-            },
+      const requestConfig = {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            date: { type: Type.STRING },
+            serialNo: { type: Type.STRING },
+            oldReceiptSerialNo: { type: Type.STRING },
+            unit: { type: Type.STRING },
+            district: { type: Type.STRING },
+            stateProvince: { type: Type.STRING },
+            name: { type: Type.STRING },
+            fatherName: { type: Type.STRING },
+            contactNumber: { type: Type.STRING },
+            email: { type: Type.STRING },
+            education: { type: Type.STRING },
+            experience: { type: Type.STRING },
+            profession: { type: Type.STRING },
+            maritalStatus: { type: Type.STRING },
+            currentArea: { type: Type.STRING },
+            ancestralArea: { type: Type.STRING },
+            dob: { type: Type.STRING },
+            age: { type: Type.STRING },
+            cnic: { type: Type.STRING },
+            tabar: { type: Type.STRING },
+            subBranch: { type: Type.STRING },
+            representative: { type: Type.STRING },
+            currentAddress: { type: Type.STRING },
+            permanentAddress: { type: Type.STRING },
+            amount: { type: Type.NUMBER },
+            representativeName: { type: Type.STRING },
           },
         },
-      });
+      };
+
+      const requestContents = {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          },
+        ],
+      };
+
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: requestContents,
+          config: requestConfig,
+        });
+      } catch (primaryErr: unknown) {
+        const msg = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
+        const shouldFallback = /not found|404|unsupported|not available|model/i.test(msg);
+        if (!shouldFallback) {
+          throw primaryErr;
+        }
+        response = await ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: requestContents,
+          config: requestConfig,
+        });
+      }
+
+      const extractJsonObject = (raw: string): Record<string, unknown> => {
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/```$/i, '')
+          .trim();
+
+        const tryParse = (candidate: string): unknown => {
+          try {
+            return JSON.parse(candidate);
+          } catch {
+            return null;
+          }
+        };
+
+        let parsedVal = tryParse(cleaned);
+        if (!parsedVal) {
+          const firstBrace = cleaned.indexOf('{');
+          const lastBrace = cleaned.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace > firstBrace) {
+            parsedVal = tryParse(cleaned.slice(firstBrace, lastBrace + 1));
+          }
+        }
+        if (Array.isArray(parsedVal)) {
+          parsedVal = parsedVal[0] ?? {};
+        }
+        if (parsedVal && typeof parsedVal === 'object') {
+          const rec = parsedVal as Record<string, unknown>;
+          const nested = rec.data || rec.fields || rec.result || rec.form;
+          if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+            return nested as Record<string, unknown>;
+          }
+          return rec;
+        }
+        return {};
+      };
 
       const rawText = (response.text || '{}').trim();
-      const parsed = JSON.parse(rawText) as Record<string, unknown>;
+      const parsed = extractJsonObject(rawText);
+
+      // Flexible bilingual English & Urdu key-mapper
+      const normKeyMap = new Map<string, unknown>();
+      for (const [k, v] of Object.entries(parsed)) {
+        normKeyMap.set(k.trim().toLowerCase(), v);
+      }
+      const pick = (...keys: string[]): unknown => {
+        for (const k of keys) {
+          const direct = parsed[k];
+          if (direct !== undefined && direct !== null && String(direct).trim() !== '') {
+            return direct;
+          }
+          const matched = normKeyMap.get(k.trim().toLowerCase());
+          if (matched !== undefined && matched !== null && String(matched).trim() !== '') {
+            return matched;
+          }
+        }
+        return '';
+      };
+
+      const toAsciiDigits = (v: unknown) =>
+        String(v ?? '')
+          .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660))
+          .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06f0))
+          .trim();
+
+      const rawCnic = pick('cnic', 'nic', 'idCard', 'شناختی کارڈ نمبر', 'شناختی کارڈ');
+      const cnicStripped = toAsciiDigits(rawCnic).replace(/\D/g, '').slice(0, 13);
+
+      const rawAmount = pick(
+        'amount',
+        'monthlyPledgeAmount',
+        'fee',
+        'مبلغ',
+        'رقم',
+        'روپے',
+        'وصول پائے'
+      );
+      const numericAmount =
+        typeof rawAmount === 'number' && Number.isFinite(rawAmount)
+          ? Math.max(0, rawAmount)
+          : Number(toAsciiDigits(rawAmount).replace(/\D/g, '')) || 0;
+
+      const serialNo = toAsciiDigits(
+        pick('serialNo', 'oldMembershipNo', 'membershipNo', 'serialNumber', 'رکنیت نمبر', 'رکنیت / سیریل نمبر', 'سیریل نمبر')
+      );
+      const oldReceiptSerialNo = toAsciiDigits(
+        pick('oldReceiptSerialNo', 'receiptNo', 'receiptNumber', 'رسید نمبر', 'رسید')
+      );
+      const nameVal = String(
+        pick('name', 'applicantName', 'fullName', 'memberName', 'نام', 'مکمل نام', 'محترم جناب', 'صاحب کی جانب سے')
+      ).trim();
+      const fatherNameVal = String(pick('fatherName', 'father', 'sonOf', 'ولد', 'ولدیت')).trim();
+      const contactVal = toAsciiDigits(
+        pick('contactNumber', 'phone', 'mobile', 'mobileNumber', 'contact', 'رابطہ نمبر', 'فون', 'موبائل نمبر')
+      );
+      const currentAddrVal = String(
+        pick('currentAddress', 'address', 'presentAddress', 'موجودہ پتہ', 'پتہ')
+      ).trim();
+      const permAddrVal = String(pick('permanentAddress', 'مستقل پتہ')).trim();
+      const repVal = String(
+        pick('representative', 'tabarRep', 'نمائندہ خاندان', 'نمائندہ خاندان (ٹبر)')
+      ).trim();
+      const repNameVal = String(
+        pick('representativeName', 'tabarRepName', 'نام نمائندہ')
+      ).trim();
 
       const extractedFields = {
-        oldMembershipNo: String(parsed.oldMembershipNo || '').trim(),
-        oldReceiptSerialNo: String(parsed.oldReceiptSerialNo || '').trim(),
-        date: String(parsed.date || '').trim(),
-        applicantName: String(parsed.applicantName || '').trim(),
-        fatherName: String(parsed.fatherName || '').trim(),
-        cnic: String(parsed.cnic || '').trim(),
-        tabar: String(parsed.tabar || '').trim(),
-        amount: typeof parsed.amount === 'number' && Number.isFinite(parsed.amount) ? Math.max(0, parsed.amount) : 0,
-        unit: String(parsed.unit || '').trim(),
-        phone: String(parsed.phone || '').trim(),
-        district: String(parsed.district || '').trim(),
-        address: String(parsed.address || '').trim(),
+        // Exact Rukniyat Spatial Map Keys
+        date: toAsciiDigits(pick('date', 'formDate', 'تاریخ')),
+        serialNo,
+        district: String(pick('district', 'ضلع')).trim(),
+        stateProvince: String(pick('stateProvince', 'province', 'صوبہ')).trim(),
+        unit: String(pick('unit', 'یونٹ')).trim(),
+        name: nameVal,
+        fatherName: fatherNameVal,
+        contactNumber: contactVal,
+        email: String(pick('email', 'ای میل')).trim(),
+        education: String(pick('education', 'qualification', 'تعلیم')).trim(),
+        experience: String(pick('experience', 'تجربہ')).trim(),
+        profession: String(pick('profession', 'occupation', 'job', 'پیشہ', 'پیشہ / روزگار', 'روزگار')).trim(),
+        maritalStatus: String(pick('maritalStatus', 'marital', 'ازدواجی حیثیت')).trim(),
+        currentArea: String(pick('currentArea', 'area', 'موجودہ علاقہ', 'علاقہ')).trim(),
+        ancestralArea: String(pick('ancestralArea', 'nativeArea', 'آبائی علاقہ', 'آبائی علاقہ (کند بائیں)')).trim(),
+        dob: toAsciiDigits(pick('dob', 'dateOfBirth', 'birthDate', 'تاریخ پیدائش')),
+        age: toAsciiDigits(pick('age', 'عمر')).replace(/\D/g, '').slice(0, 3),
+        cnic: cnicStripped,
+        tabar: String(pick('tabar', 'tabbar', 'clan', 'مرکزی خاندان', 'مرکزی خاندان (ٹبر)', 'ٹبر')).trim(),
+        subBranch: String(pick('subBranch', 'subTabbar', 'ذیلی شاخ', 'ذیلی شاخ (ٹبر)')).trim(),
+        representative: repVal,
+        currentAddress: currentAddrVal,
+        permanentAddress: permAddrVal,
+        amount: numericAmount,
+        representativeName: repNameVal,
+        // Legacy / Cross-Modal Compatibility Aliases
+        oldMembershipNo: serialNo,
+        oldReceiptSerialNo,
+        applicantName: nameVal,
+        phone: contactVal,
+        address: currentAddrVal,
+        tabarRepName: repNameVal || repVal,
+        monthlyPledgeAmount: numericAmount,
       };
 
       res.json({
@@ -135,12 +300,15 @@ async function startServer() {
         fields: extractedFields,
         data: extractedFields,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Paper form scan failed:', err);
+      const detail = err instanceof Error && err.message ? err.message : '';
       res.status(502).json({
         success: false,
         code: 'SCAN_FAILED',
-        error: 'Could not read paper form automatically. You can enter all fields manually below.',
+        error: detail
+          ? `AI scan encountered an error: ${detail}`
+          : 'Photo enhanced and attached. You can review or enter fields manually below.',
       });
     }
   });

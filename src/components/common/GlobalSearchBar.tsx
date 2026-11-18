@@ -301,10 +301,10 @@ export const GlobalSearchBar: React.FC = () => {
       if (isCoAdmin) return `${currentUser.assignedStateProvince || currentUser.stateProvince || 'صوبہ'} ریکارڈ تلاش کریں...`;
       return 'اپنی رسیدیں اور رپورٹس تلاش کریں...';
     }
-    if (isSuperAdmin) return 'Search members, receipts, reports (⌘K)...';
-    if (isDistrictAdmin) return `Search ${(currentUser.assignedDistrict || currentUser.district || 'District')} records (⌘K)...`;
-    if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records (⌘K)...`;
-    return 'Search my receipts & reports (⌘K)...';
+    if (isSuperAdmin) return 'Search members, receipts, reports...';
+    if (isDistrictAdmin) return `Search ${(currentUser.assignedDistrict || currentUser.district || 'District')} records...`;
+    if (isCoAdmin) return `Search ${(currentUser.assignedStateProvince || currentUser.stateProvince || 'State')} records...`;
+    return 'Search my receipts & reports...';
   };
 
   if (!currentUser) return null;
@@ -327,20 +327,16 @@ export const GlobalSearchBar: React.FC = () => {
           className="kc-luxury-input w-full text-xs pl-8 pr-12 py-1.5 rounded-xl"
         />
         
-        {query ? (
+        {query && (
           <button
             onClick={() => {
               setQuery('');
               inputRef.current?.focus();
             }}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-[#F5D061] cursor-pointer"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#F5D061] cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        ) : (
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-[#F5D061] bg-[#141B2D] px-1.5 py-0.5 rounded border border-[#D4AF37]/35 shadow-2xs">
-            ⌘K
-          </kbd>
         )}
       </div>
 
@@ -388,14 +384,14 @@ export const GlobalSearchBar: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#F5D061] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
+                      <ArrowRight className="w-3.5 h-3.5 text-[#F5D061] shrink-0 ml-2" />
                     </button>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-[#D4AF37]/20 text-[10px] text-slate-400 flex items-center justify-between">
+                <div className="pt-2 border-t border-[#D4AF37]/20 text-[10px] text-slate-400 flex items-center justify-between gap-2">
                   <span>{language === 'ur' ? 'ممبران، رسیدیں یا ریفرنس آئی ڈی تلاش کرنے کے لیے لکھیں' : 'Type to search members, receipt vouchers, or reference IDs'}</span>
-                  <span className="font-mono text-[#F5D061]">{language === 'ur' ? 'بند کرنے کے لیے ESC' : 'ESC to close'}</span>
+                  <span className="font-mono text-[#F5D061] shrink-0">{language === 'ur' ? 'بند کرنے کے لیے باہر ٹیپ کریں' : 'Tap outside to close'}</span>
                 </div>
               </div>
             ) : totalResultsCount === 0 ? (

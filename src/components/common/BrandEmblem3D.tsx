@@ -4,6 +4,7 @@ import kcUnityEmblem from '../../assets/images/kc-unity-emblem.png';
 interface BrandEmblem3DProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   animated?: boolean;
+  halo?: boolean;
   className?: string;
 }
 
@@ -18,8 +19,10 @@ const SIZE_MAP: Record<NonNullable<BrandEmblem3DProps['size']>, string> = {
 export const BrandEmblem3D: React.FC<BrandEmblem3DProps> = React.memo(({
   size = 'md',
   animated = false,
+  halo = false,
   className = ''
 }) => {
+  const showHalo = halo || animated;
   return (
     <div
       className={`relative inline-flex items-center justify-center select-none shrink-0 rounded-full ${SIZE_MAP[size]} ${
@@ -27,11 +30,17 @@ export const BrandEmblem3D: React.FC<BrandEmblem3DProps> = React.memo(({
       } ${className}`}
       aria-label="Kifayat Connect Unity Emblem"
     >
+      {showHalo && (
+        <span
+          aria-hidden="true"
+          className="absolute -inset-1.5 rounded-full kc-unity-halo"
+        />
+      )}
       <img
         src={kcUnityEmblem}
         alt="Kifayat Connect Unity"
         draggable={false}
-        className="w-full h-full rounded-full object-contain drop-shadow-[0_6px_14px_rgba(212,175,55,0.34)]"
+        className="relative z-10 w-full h-full rounded-full object-contain ring-1 ring-[#D4AF37]/45 drop-shadow-[0_6px_14px_rgba(212,175,55,0.34)]"
       />
     </div>
   );

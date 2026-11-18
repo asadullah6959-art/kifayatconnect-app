@@ -13,7 +13,8 @@ import {
   Sparkles,
   UserCheck,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { TABBAR_CLANS, CUSTOM_TABBAR_ID, resolveUserTabbar, transliterateTabbarToUrdu } from '../../data/tabbars';
@@ -27,6 +28,13 @@ import {
   normalizeCnicDigits,
   getCnicLockAlertMessage
 } from '../../utils/cnic';
+import {
+  prepareImageForAiScan,
+  normalizeDigits,
+  normalizeExtractedDate,
+  matchProvinceAndDistrict,
+  pickBilingualField
+} from '../../utils/imageCompression';
 
 async function compressAvatarFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -99,6 +107,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
   // Header fields
   const [formDate, setFormDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [paperSerialNo, setPaperSerialNo] = useState<string>('');
   const [unit, setUnit] = useState<string>('');
   const [applicantPhotoUrl, setApplicantPhotoUrl] = useState<string>('');
 
@@ -149,6 +158,17 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
   const [submittedSerial, setSubmittedSerial] = useState<string | null>(null);
   const submitCooldownRef = useRef<number>(0);
 
+  // Photo & AI Form Scanner refs/states
+  const photoCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const photoGalleryInputRef = useRef<HTMLInputElement | null>(null);
+  const scanCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const scanGalleryInputRef = useRef<HTMLInputElement | null>(null);
+  const aiAutoFormInputRef = useRef<HTMLInputElement | null>(null);
+  const [scannedFormPhotoUrl, setScannedFormPhotoUrl] = useState<string>('');
+  const [isAiScanning, setIsAiScanning] = useState<boolean>(false);
+  const [aiScanStatus, setAiScanStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [aiScanMessage, setAiScanMessage] = useState<string>('');
+
   const provinceNames = useMemo(() => Object.keys(PROVINCES_DATA), []);
   const availableDistricts = useMemo(() => {
     return (PROVINCES_DATA[stateProvince]?.districts || []).map((d) => d.name);
@@ -163,6 +183,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
     if (effectiveInspected) {
       setFormDate((effectiveInspected.submittedAt || '').split('T')[0] || new Date().toISOString().split('T')[0]);
+      setPaperSerialNo(effectiveInspected.oldMembershipNo || effectiveInspected.serialNumber || '');
       setUnit(effectiveInspected.unit || effectiveInspected.district || '');
       setApplicantPhotoUrl(effectiveInspected.applicantPhotoUrl || '');
       setApplicantName(effectiveInspected.applicantName || '');
@@ -203,6 +224,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
     } else {
       const userTab = resolveUserTabbar(currentUser || undefined);
       setFormDate(new Date().toISOString().split('T')[0]);
+      setPaperSerialNo('');
       setUnit(currentUser?.district || 'Mardan');
       setApplicantPhotoUrl(currentUser?.photoUrl || currentUser?.avatarUrl || '');
       setApplicantName(currentUser?.name || '');
@@ -250,12 +272,306 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     try {
       const compressed = await compressAvatarFile(file);
       setApplicantPhotoUrl(compressed);
     } catch {
       setErrorMsg(isUr ? 'تصویر اپ لوڈ کرنے میں مسئلہ آیا۔' : 'Could not process selected photo.');
+    }
+  };
+
+  const clearApplicantPhoto = () => {
+    setApplicantPhotoUrl('');
+    if (photoCameraInputRef.current) photoCameraInputRef.current.value = '';
+    if (photoGalleryInputRef.current) photoGalleryInputRef.current.value = '';
+  };
+
+  const resetScannerInputs = () => {
+    if (scanCameraInputRef.current) scanCameraInputRef.current.value = '';
+    if (scanGalleryInputRef.current) scanGalleryInputRef.current.value = '';
+    if (aiAutoFormInputRef.current) aiAutoFormInputRef.current.value = '';
+  };
+
+  const clearScannedFormPhoto = () => {
+    setScannedFormPhotoUrl('');
+    setAiScanMessage('');
+    setAiScanStatus('idle');
+    resetScannerInputs();
+  };
+
+  const runRukniyatAiScan = async (source: File | string) => {
+    setErrorMsg('');
+    setAiScanMessage('');
+    setAiScanStatus('idle');
+    setIsAiScanning(true);
+
+    try {
+      const prepared = await prepareImageForAiScan(source, 1800, 0.88);
+      setScannedFormPhotoUrl(prepared.dataUrl);
+
+      const response = await fetch('/api/scan-paper-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: prepared.base64,
+          mimeType: prepared.mimeType,
+          formType: 'RUKNIYAT'
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.success === false) {
+        setAiScanStatus('error');
+        setAiScanMessage(
+          payload?.error ||
+            (isUr
+              ? 'تصویر بہتر کر کے منسلک کر دی گئی ہے — آپ نیچے تمام خانے دستی پُر یا ترمیم کر سکتے ہیں۔'
+              : 'Photo enhanced and attached — you can review or edit all fields below.')
+        );
+        return;
+      }
+
+      const d = (payload?.data || payload?.fields || {}) as Record<string, unknown>;
+      let filledCount = 0;
+
+      const normDate = normalizeExtractedDate(pickBilingualField(d, ['date', 'formDate', 'تاریخ']));
+      if (normDate) {
+        setFormDate(normDate);
+        filledCount += 1;
+      }
+      const rawSerial = pickBilingualField(d, [
+        'serialNo',
+        'oldMembershipNo',
+        'membershipNo',
+        'serialNumber',
+        'رکنیت نمبر',
+        'رکنیت / سیریل نمبر',
+        'سیریل نمبر'
+      ]);
+      if (rawSerial) {
+        setPaperSerialNo(normalizeDigits(rawSerial).trim());
+        filledCount += 1;
+      }
+      const rawDistrict = pickBilingualField(d, ['district', 'unit', 'ضلع', 'یونٹ']);
+      const rawProvince = pickBilingualField(d, ['stateProvince', 'province', 'صوبہ']);
+      const locMatch = matchProvinceAndDistrict(rawDistrict, rawProvince, PROVINCES_DATA);
+      if (locMatch.stateProvince) {
+        setStateProvince(locMatch.stateProvince);
+        filledCount += 1;
+      }
+      if (locMatch.district) {
+        setDistrict(locMatch.district);
+        filledCount += 1;
+      }
+      const rawUnit = pickBilingualField(d, ['unit', 'یونٹ']);
+      if (rawUnit || locMatch.district || rawDistrict) {
+        setUnit(String(rawUnit || locMatch.district || rawDistrict).trim());
+        if (rawUnit) filledCount += 1;
+      }
+      const rawName = pickBilingualField(d, [
+        'name',
+        'applicantName',
+        'fullName',
+        'memberName',
+        'نام',
+        'مکمل نام',
+        'محترم جناب',
+        'صاحب کی جانب سے'
+      ]);
+      if (rawName) {
+        const nameVal = String(rawName).trim();
+        setApplicantName(nameVal);
+        if (!typedSignature) setTypedSignature(nameVal);
+        filledCount += 1;
+      }
+      const rawFather = pickBilingualField(d, ['fatherName', 'father', 'sonOf', 'ولد', 'ولدیت']);
+      if (rawFather) {
+        setFatherName(String(rawFather).trim());
+        filledCount += 1;
+      }
+      const rawPhone = pickBilingualField(d, [
+        'contactNumber',
+        'phone',
+        'mobile',
+        'mobileNumber',
+        'contact',
+        'رابطہ نمبر',
+        'فون',
+        'موبائل نمبر'
+      ]);
+      if (rawPhone) {
+        setPhone(normalizeDigits(rawPhone).trim());
+        filledCount += 1;
+      }
+      const rawEmail = pickBilingualField(d, ['email', 'ای میل']);
+      if (rawEmail) {
+        setEmail(String(rawEmail).trim());
+        filledCount += 1;
+      }
+      const rawEducation = pickBilingualField(d, ['education', 'qualification', 'تعلیم']);
+      if (rawEducation) {
+        setEducation(String(rawEducation).trim());
+        filledCount += 1;
+      }
+      const rawExperience = pickBilingualField(d, ['experience', 'تجربہ']);
+      if (rawExperience) {
+        setExperience(String(rawExperience).trim());
+        filledCount += 1;
+      }
+      const rawProfession = pickBilingualField(d, ['profession', 'occupation', 'job', 'پیشہ', 'پیشہ / روزگار', 'روزگار']);
+      if (rawProfession) {
+        setProfession(String(rawProfession).trim());
+        filledCount += 1;
+      }
+      const rawMarital = pickBilingualField(d, ['maritalStatus', 'marital', 'ازدواجی حیثیت']);
+      if (rawMarital) {
+        const ms = String(rawMarital).toLowerCase();
+        if (ms.includes('single') || ms.includes('unmarried') || ms.includes('غیر')) setMaritalStatus('Single');
+        else if (ms.includes('widow') || ms.includes('بیوہ')) setMaritalStatus('Widowed');
+        else if (ms.includes('married') || ms.includes('شادی')) setMaritalStatus('Married');
+        filledCount += 1;
+      }
+      const rawCurrentArea = pickBilingualField(d, ['currentArea', 'area', 'موجودہ علاقہ', 'علاقہ']);
+      if (rawCurrentArea) {
+        setCurrentArea(String(rawCurrentArea).trim());
+        filledCount += 1;
+      }
+      const rawAncestralArea = pickBilingualField(d, ['ancestralArea', 'nativeArea', 'آبائی علاقہ', 'آبائی علاقہ (کند بائیں)']);
+      if (rawAncestralArea) {
+        setAncestralArea(String(rawAncestralArea).trim());
+        filledCount += 1;
+      }
+      const normDob = normalizeExtractedDate(pickBilingualField(d, ['dob', 'dateOfBirth', 'birthDate', 'تاریخ پیدائش']));
+      if (normDob) {
+        setDob(normDob);
+        const computedAge = calculateAgeFromDob(normDob);
+        if (computedAge) setAge(computedAge);
+        filledCount += 1;
+      }
+      const rawAge = pickBilingualField(d, ['age', 'عمر']);
+      if (rawAge) {
+        const cleanAge = normalizeDigits(rawAge).replace(/\D/g, '').slice(0, 3);
+        if (cleanAge) {
+          setAge(cleanAge);
+          filledCount += 1;
+        }
+      }
+      const rawCnic = pickBilingualField(d, ['cnic', 'nic', 'idCard', 'شناختی کارڈ نمبر', 'شناختی کارڈ']);
+      if (rawCnic) {
+        const strippedCnic = normalizeDigits(rawCnic).replace(/\D/g, '').slice(0, 13);
+        if (strippedCnic) {
+          setCnic(strippedCnic);
+          filledCount += 1;
+        }
+      }
+      const rawTabar = pickBilingualField(d, [
+        'tabar',
+        'tabbar',
+        'clan',
+        'مرکزی خاندان',
+        'مرکزی خاندان (ٹبر)',
+        'ٹبر'
+      ]);
+      if (rawTabar) {
+        const tabText = String(rawTabar).trim();
+        const matchedTab = TABBAR_CLANS.find(
+          (c) =>
+            c.englishName.toLowerCase().includes(tabText.toLowerCase()) ||
+            c.urduName.includes(tabText)
+        );
+        if (matchedTab) {
+          setSelectedTabbarId(matchedTab.id);
+        } else {
+          setSelectedTabbarId(CUSTOM_TABBAR_ID);
+          setCustomTabbarEnglish(tabText);
+        }
+        filledCount += 1;
+      }
+      const rawSubBranch = pickBilingualField(d, ['subBranch', 'subTabbar', 'ذیلی شاخ', 'ذیلی شاخ (ٹبر)']);
+      if (rawSubBranch) {
+        setSubBranch(String(rawSubBranch).trim());
+        filledCount += 1;
+      }
+      const rawRep = pickBilingualField(d, [
+        'representative',
+        'representativeName',
+        'tabarRepName',
+        'نمائندہ خاندان',
+        'نمائندہ خاندان (ٹبر)',
+        'نام نمائندہ'
+      ]);
+      if (rawRep) {
+        setTabarRepName(String(rawRep).trim());
+        filledCount += 1;
+      }
+      const rawRepName = pickBilingualField(d, ['representativeName', 'tabarRepName', 'نام نمائندہ']);
+      if (rawRepName && String(rawRepName).trim()) {
+        setTabarRepSignature(String(rawRepName).trim());
+      }
+      const rawCurrentAddr = pickBilingualField(d, ['currentAddress', 'address', 'presentAddress', 'موجودہ پتہ', 'پتہ']);
+      if (rawCurrentAddr) {
+        setAddress(String(rawCurrentAddr).trim());
+        filledCount += 1;
+      }
+      const rawPermAddr = pickBilingualField(d, ['permanentAddress', 'مستقل پتہ']);
+      if (rawPermAddr) {
+        setPermanentAddress(String(rawPermAddr).trim());
+        filledCount += 1;
+      }
+      const rawPledge = pickBilingualField(d, ['amount', 'monthlyPledgeAmount', 'fee', 'مبلغ', 'رقم', 'روپے']);
+      if (rawPledge !== undefined && rawPledge !== null && String(rawPledge).trim() !== '') {
+        const pledgeDigits = normalizeDigits(rawPledge).replace(/\D/g, '');
+        if (pledgeDigits && Number(pledgeDigits) >= 50) {
+          setMonthlyPledgeAmount(pledgeDigits);
+          filledCount += 1;
+        }
+      }
+
+      if (filledCount === 0) {
+        setAiScanStatus('success');
+        setAiScanMessage(
+          isUr
+            ? '✅ تصویر بہتر کر کے منسلک کر دی گئی ہے — نیچے خانوں میں تفصیلات پُر یا ترمیم کر لیں۔'
+            : '✅ Photo enhanced and attached — fill or edit any remaining fields below.'
+        );
+        return;
+      }
+
+      setAiScanStatus('success');
+      setAiScanMessage(
+        isUr
+          ? `✅ AI Auto نے فارم سے ${filledCount} خانے خودکار پُر کر دیے ہیں — براہ کرم نیچے تفصیلات چیک کریں۔`
+          : `✅ AI Auto filled ${filledCount} form field${filledCount > 1 ? 's' : ''} below — please review before submitting.`
+      );
+    } catch (err) {
+      setAiScanStatus('error');
+      setAiScanMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : isUr
+          ? 'AI اسکین ناکام رہا۔ براہ کرم دستی اندراج کریں۔'
+          : 'AI Auto scan failed. Please review or fill manually.'
+      );
+    } finally {
+      setIsAiScanning(false);
+    }
+  };
+
+  const handleScannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await runRukniyatAiScan(file);
+  };
+
+  const handleAiAutoFormClick = async () => {
+    if (isAiScanning) return;
+    if (scannedFormPhotoUrl) {
+      await runRukniyatAiScan(scannedFormPhotoUrl);
+    } else {
+      aiAutoFormInputRef.current?.click();
     }
   };
 
@@ -394,7 +710,8 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
         permanentAddress,
         applicantPhotoUrl,
         applicantSignature: finalSignature,
-        monthlyPledgeAmount: Math.max(100, Number(monthlyPledgeAmount) || 100)
+        monthlyPledgeAmount: Math.max(100, Number(monthlyPledgeAmount) || 100),
+        oldMembershipNo: paperSerialNo.trim() || undefined
       });
 
       if (!result.success) {
@@ -434,13 +751,13 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
     'w-full px-3 py-2.5 bg-[#0A111D] border border-[#D4AF37]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FDE047] focus:ring-1 focus:ring-[#FDE047]/40 transition';
 
   const outerWrapperClass = embedded
-    ? 'w-full max-w-full flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-xl overflow-hidden box-border'
-    : 'relative w-full max-w-4xl max-h-[94dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border';
+    ? 'w-full max-w-[100vw] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-xl overflow-hidden box-border'
+    : 'relative w-full max-w-[calc(100vw-16px)] max-h-[94dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border';
 
   const bodyWrapper = (
       <div className={outerWrapperClass}>
         {/* Top Control Bar */}
-        <div className="flex items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3.5 bg-[#0C1524] border-b border-[#D4AF37]/30">
+        <div className="flex items-center justify-between gap-2 px-3.5 sm:px-5 py-3 bg-[#0C1524] border-b border-[#D4AF37]/30">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FDE047] to-[#B45309] flex items-center justify-center text-[#070D14] shadow-md shrink-0">
               <Crown className="w-5 h-5" />
@@ -463,7 +780,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
             <button
               type="button"
               onClick={() => setFormLang((prev) => (prev === 'ur' ? 'en' : 'ur'))}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
+              className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
             >
               <Languages className="w-3.5 h-3.5" />
               {isUr ? 'English' : 'اردو'}
@@ -472,7 +789,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               <button
                 type="button"
                 onClick={handleClose}
-                className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                 aria-label="Close Rukniyat Form"
               >
                 <X className="w-4 h-4" />
@@ -536,17 +853,17 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Official Form Header Card with Circular Emblem */}
-              <div className="relative p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#131C31] to-[#090F1B] border-2 border-[#D4AF37]/60 shadow-xl">
+              <div className="relative p-4 sm:p-6 rounded-3xl kc-glass-bevel bg-gradient-to-br from-[#0F1B2E]/90 via-[#131C31]/90 to-[#090F1B]/95 shadow-xl">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   {/* Circular Emblem + Organization Title & Motto */}
                   <div className="flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-start flex-1 min-w-0">
-                    <BrandEmblem3D size="md" className="shrink-0" />
-                    <div className="space-y-1 min-w-0">
+                    <BrandEmblem3D size="md" halo className="shrink-0" />
+                    <div className="space-y-1.5 min-w-0">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>{isUr ? 'رکنیت فارم' : 'RUKNIYAT FORM · MEMBERSHIP'}</span>
+                        <span className={isUr ? 'kc-font-urdu' : ''}>{isUr ? 'رکنیت فارم' : 'RUKNIYAT FORM · MEMBERSHIP'}</span>
                       </div>
-                      <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FEF08A] via-[#D4AF37] to-[#FDE047]">
+                      <h1 className="kc-font-urdu text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FEF08A] via-[#D4AF37] to-[#FDE047] py-0.5">
                         سوئی خیل قومی اتحاد
                       </h1>
                       {!isUr && (
@@ -554,7 +871,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                           Sui Khel Qaumi Ittehad · Kifayat Connect
                         </p>
                       )}
-                      <p className="text-xs sm:text-sm font-bold text-emerald-300">
+                      <p className={`text-xs sm:text-sm font-bold text-emerald-300 ${isUr ? 'kc-font-urdu' : ''}`}>
                         {isUr
                           ? 'وحدت  |  خدمت  |  معاونت  |  مصالحت'
                           : 'Unity  |  Service  |  Cooperation  |  Reconciliation'}
@@ -564,14 +881,25 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
                   {/* Meta Row + Dual Camera/Gallery Photo Box */}
                   <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-3.5 shrink-0">
-                    <div className="space-y-2 text-xs min-w-[170px]">
-                      <div className="p-2 rounded-xl bg-[#070D14]/80 border border-[#D4AF37]/30">
+                    <div className="space-y-2 text-xs min-w-0 w-full sm:min-w-[180px]">
+                      <div className="p-2 rounded-xl bg-[#070D14]/80 border border-[#D4AF37]/30 space-y-1">
                         <span className="text-[10px] text-slate-400 block">
-                          {isUr ? 'رکنیت / سیریل نمبر' : 'Membership / Serial No.'}
+                          {isUr ? 'رکنیت نمبر / سیریل نمبر' : 'Membership / Serial No.'}
                         </span>
-                        <span className="font-mono font-extrabold text-[#FDE047]">
-                          {displaySerial}
-                        </span>
+                        {isInspectMode ? (
+                          <span className="font-mono font-extrabold text-[#FDE047] block">
+                            {displaySerial}
+                          </span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={paperSerialNo}
+                            onChange={(e) => setPaperSerialNo(e.target.value)}
+                            placeholder={displaySerial}
+                            dir="ltr"
+                            className="w-full px-2 py-1.5 bg-[#0C1524] border border-slate-700 rounded-lg text-xs font-mono font-bold text-[#FDE047] placeholder-slate-500"
+                          />
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -583,7 +911,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                             value={formDate}
                             disabled={isInspectMode}
                             onChange={(e) => setFormDate(e.target.value)}
-                            className="w-full px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
+                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
                           />
                         </div>
                         <div>
@@ -596,21 +924,35 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                             disabled={isInspectMode}
                             onChange={(e) => setUnit(e.target.value)}
                             placeholder={isUr ? 'یونٹ' : 'Unit'}
-                            className="w-full px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
+                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Applicant Photo Frame + Camera / Gallery Buttons */}
-                    <div className="flex flex-col items-center gap-1.5 shrink-0">
+                    <div className="flex flex-col items-center gap-2 shrink-0">
                       <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#D4AF37]/60 bg-[#070D14] flex flex-col items-center justify-center overflow-hidden relative">
                         {applicantPhotoUrl ? (
-                          <img
-                            src={applicantPhotoUrl}
-                            alt="Applicant"
-                            className="w-full h-full object-cover"
-                          />
+                          <>
+                            <img
+                              src={applicantPhotoUrl}
+                              alt="Applicant"
+                              className="w-full h-full object-cover"
+                            />
+                            {!isInspectMode && (
+                              <button
+                                type="button"
+                                onClick={clearApplicantPhoto}
+                                aria-label="Remove applicant photo"
+                                title={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
+                                style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 50 }}
+                                className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5 stroke-[2.75]" />
+                              </button>
+                            )}
+                          </>
                         ) : (
                           <div className="text-center p-2">
                             <Upload className="w-5 h-5 text-amber-300 mx-auto mb-1" />
@@ -622,10 +964,11 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       </div>
                       {!isInspectMode && (
                         <div className="flex items-center gap-1.5">
-                          <label className="kc-pressable inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/60 text-[#FEF08A] text-[10px] font-bold cursor-pointer">
-                            <Camera className="w-3 h-3" />
+                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/60 text-[#FEF08A] text-[11px] font-bold cursor-pointer">
+                            <Camera className="w-3.5 h-3.5" />
                             <span>{isUr ? 'کیمرہ' : 'Camera'}</span>
                             <input
+                              ref={photoCameraInputRef}
                               type="file"
                               accept="image/*"
                               capture="user"
@@ -633,10 +976,11 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                               className="hidden"
                             />
                           </label>
-                          <label className="kc-pressable inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#131C31] border border-[#38BDF8]/50 text-[#38BDF8] text-[10px] font-bold cursor-pointer">
-                            <ImageIcon className="w-3 h-3" />
+                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#131C31] border border-[#38BDF8]/50 text-[#38BDF8] text-[11px] font-bold cursor-pointer">
+                            <ImageIcon className="w-3.5 h-3.5" />
                             <span>{isUr ? 'گیلری' : 'Gallery'}</span>
                             <input
+                              ref={photoGalleryInputRef}
                               type="file"
                               accept="image/*"
                               onChange={handlePhotoSelect}
@@ -649,6 +993,112 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   </div>
                 </div>
               </div>
+
+              {/* Instant Auto-Enhance AI Paper Rukniyat Form Scanner */}
+              {!isInspectMode && (
+                <div className="p-4 rounded-2xl bg-[#11192C]/90 border border-[#D4AF37]/40 space-y-3">
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
+                        {isAiScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-extrabold text-amber-200 truncate">
+                          {isUr ? 'کاغذی رکنیت فارم فوری اسکینر (AI Auto)' : 'Instant AI Camera Form Scanner'}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {isUr
+                            ? 'تصویر لیتے ہی یا گیلری سے منتخب کرتے ہی تمام خانے فوراً خودکار پُر ہو جائیں گے (50MB تک)'
+                            : 'Capture or choose form photo (up to 50MB) — enhances clarity & auto-fills all fields immediately'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2">
+                      <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/50 text-amber-200 text-xs font-bold cursor-pointer">
+                        <Camera className="w-4 h-4 shrink-0" />
+                        <span>{isUr ? '📷 تصویر لیں' : '📷 Take Photo'}</span>
+                        <input
+                          ref={scanCameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleScannerFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#0A111D] hover:bg-[#161F33] border border-[#D4AF37]/40 text-slate-200 text-xs font-bold cursor-pointer">
+                        <ImageIcon className="w-4 h-4 text-[#FDE047] shrink-0" />
+                        <span>{isUr ? '🖼️ گیلری' : '🖼️ Choose from Gallery'}</span>
+                        <input
+                          ref={scanGalleryInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleScannerFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isAiScanning}
+                        onClick={handleAiAutoFormClick}
+                        className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] text-xs font-black shadow-md hover:brightness-110 disabled:opacity-60 cursor-pointer"
+                      >
+                        {isAiScanning ? (
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 shrink-0" />
+                        )}
+                        <span>{isAiScanning ? (isUr ? 'اسکین...' : 'Scanning...') : '✨ AI Auto'}</span>
+                      </button>
+                      <input
+                        ref={aiAutoFormInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleScannerFileChange}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {scannedFormPhotoUrl && (
+                    <div className="relative rounded-xl overflow-hidden bg-[#070D14] border border-[#D4AF37]/40">
+                      <img
+                        src={scannedFormPhotoUrl}
+                        alt="Scanned Rukniyat paper form"
+                        className="w-full max-h-44 object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={clearScannedFormPhoto}
+                        aria-label="Remove scanned form photo"
+                        title={isUr ? 'اسکین شدہ تصویر ہٹائیں' : 'Remove scanned photo'}
+                        style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 50 }}
+                        className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                      >
+                        <X className="w-4 h-4 stroke-[2.75]" />
+                      </button>
+                    </div>
+                  )}
+
+                  {aiScanMessage && (
+                    <div
+                      className={`text-xs font-semibold rounded-xl px-3 py-2.5 flex items-center gap-2 border ${
+                        aiScanStatus === 'success'
+                          ? 'text-emerald-200 bg-emerald-950/75 border-emerald-400/60'
+                          : 'text-amber-200 bg-amber-500/10 border-amber-400/35'
+                      }`}
+                    >
+                      {aiScanStatus === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0" />
+                      )}
+                      <span>{aiScanMessage}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Mandatory 13-Digit CNIC Alert Strip */}
               <div
@@ -1238,12 +1688,12 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               )}
 
               {/* Footer Actions */}
-              <div className="flex flex-wrap items-center justify-end gap-3 pt-2 pb-2" dir="ltr">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-2 pb-[calc(16px+env(safe-area-inset-bottom,0px))]" dir="ltr">
                 {!embedded && (
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="px-5 py-2.5 rounded-2xl bg-slate-800 text-slate-200 text-xs sm:text-sm font-bold hover:bg-slate-700 transition cursor-pointer"
+                    className="min-h-[44px] px-5 py-2.5 rounded-2xl bg-slate-800 text-slate-200 text-xs sm:text-sm font-bold hover:bg-slate-700 transition cursor-pointer"
                   >
                     {isUr ? 'بند کریں' : 'Close'}
                   </button>
@@ -1254,7 +1704,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleOfficeApprove}
-                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs sm:text-sm font-extrabold shadow-lg flex items-center gap-2 hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
+                    className="min-h-[44px] px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs sm:text-sm font-extrabold shadow-lg flex items-center gap-2 hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
                   >
                     <UserCheck className="w-4 h-4" />
                     {isSubmitting ? 'Approving...' : 'Approve Rukniyat & Issue Official Serial'}
@@ -1265,7 +1715,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#F59E0B] to-[#EAB308] text-[#070D14] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
+                    className="min-h-[44px] w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#F59E0B] to-[#EAB308] text-[#070D14] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
                   >
                     {isSubmitting
                       ? isUr

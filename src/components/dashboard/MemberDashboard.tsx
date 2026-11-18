@@ -256,7 +256,7 @@ export const MemberDashboard: React.FC = () => {
                   setActiveTab('funds');
                 }
               }}
-              className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#F5D061]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+              className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#F5D061]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
             >
               <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/40 flex items-center justify-center mb-2">
                 <Coins className="w-4 h-4 text-[#F5D061]" />
@@ -268,7 +268,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <IdCard className="w-4 h-4 text-[#F5D061]" />
@@ -279,7 +279,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('members')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <Users className="w-4 h-4 text-[#F5D061]" />
@@ -290,7 +290,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('chat')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-emerald-500/35 flex items-center justify-center mb-2">
               <MessageSquare className="w-4 h-4 text-emerald-400" />
@@ -301,7 +301,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('announcements')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
               <Megaphone className="w-4 h-4 text-[#F5D061]" />
@@ -319,7 +319,7 @@ export const MemberDashboard: React.FC = () => {
                   setIsComplaintModalOpen(true);
                 }
               }}
-              className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+              className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
             >
               <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-rose-500/35 flex items-center justify-center mb-2">
                 <MessageSquareWarning className="w-4 h-4 text-rose-400" />
@@ -334,10 +334,10 @@ export const MemberDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div
           onClick={() => setSelectedCardUser(currentUser)}
-          className={`lg:col-span-5 rounded-2xl p-5 text-[#F8FAFC] shadow-xl cursor-pointer transition-colors flex flex-col justify-between relative overflow-hidden ${
+          className={`lg:col-span-5 rounded-2xl p-5 text-[#F8FAFC] shadow-xl cursor-pointer transition-colors flex flex-col justify-between relative overflow-hidden kc-glass-bevel kc-gold-touch ${
             isFaizKhelUser(currentUser)
               ? 'border-[1.5px] border-[#FDE047] shadow-[0_12px_32px_rgba(212,175,55,0.28)]'
-              : 'border border-slate-400/25 hover:border-[#38BDF8]/65'
+              : 'hover:border-[#F5D061]/75'
           }`}
           style={{
             background: isFaizKhelUser(currentUser)
@@ -345,9 +345,33 @@ export const MemberDashboard: React.FC = () => {
               : 'linear-gradient(145deg, #131C31 0%, #1E293B 55%, #090D16 100%)'
           }}
         >
-          <div className="flex items-start justify-between">
+          {/* Holographic Gold Foil Light Shimmer */}
+          <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
+
+          {/* Embossed "KIFAYAT CONNECT UNITY" Circular Vector Crest Watermark */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 180 180"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-32 h-32 opacity-[0.075] pointer-events-none z-0"
+          >
+            <defs>
+              <path id="kcDashCrestPath" d="M 90, 90 m -66, 0 a 66,66 0 1,1 132,0 a 66,66 0 1,1 -132,0" />
+            </defs>
+            <circle cx="90" cy="90" r="82" fill="none" stroke="#F9E29C" strokeWidth="1.5" strokeDasharray="3 3" />
+            <circle cx="90" cy="90" r="52" fill="none" stroke="#D4AF37" strokeWidth="1.5" />
+            <text fill="#F9E29C" fontSize="10.5" fontWeight="800" letterSpacing="3.4">
+              <textPath href="#kcDashCrestPath" startOffset="4%">
+                ★ KIFAYAT CONNECT UNITY ★ OFFICIAL VIP
+              </textPath>
+            </text>
+            <text x="90" y="96" textAnchor="middle" fill="#D4AF37" fontSize="18" fontWeight="900">
+              KC
+            </text>
+          </svg>
+
+          <div className="relative z-10 flex items-start justify-between">
             <div className="flex items-center gap-2.5">
-              <BrandEmblem3D size="xs" />
+              <BrandEmblem3D size="xs" halo />
               <div>
                 <h4 className="font-extrabold text-xs uppercase tracking-wider kc-gold-gradient-text">
                   KIFAYAT CONNECT 👑
@@ -359,13 +383,14 @@ export const MemberDashboard: React.FC = () => {
             <div className="flex items-center gap-1.5">
               {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-6 h-6" />}
               <span className="text-[10px] font-mono font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 kc-live-pulse" />
                 <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
                 <span>{translate(language, 'activeLabel')}</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 my-4">
+          <div className="relative z-10 flex items-center gap-3.5 my-4">
             {(currentUser.avatarUrl || currentUser.avatar) ? (
               <img
                 src={currentUser.avatarUrl || currentUser.avatar}
@@ -382,7 +407,7 @@ export const MemberDashboard: React.FC = () => {
                 {currentUser.name}
               </h3>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-[11px] font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
+                <p className="text-[11px] font-mono tabular-nums text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
                 <TabbarBadge user={currentUser} language={language} compact />
               </div>
               <p className="text-[10px] text-[#94A3B8] truncate">
@@ -391,10 +416,10 @@ export const MemberDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-400/20 flex items-center justify-between text-[10px] text-[#94A3B8]">
+          <div className="relative z-10 pt-2 border-t border-slate-400/20 flex items-center justify-between text-[10px] text-[#94A3B8]">
             <div>
               <span>{language === 'ur' ? 'میعاد:' : 'VALID THRU:'} </span>
-              <span className="font-mono text-[#F5D061] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
+              <span className="font-mono tabular-nums text-[#F5D061] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
             </div>
             <span className="text-[#38BDF8] font-semibold">
               {language === 'ur' ? 'وی آئی پی کارڈ اور QR دیکھیں →' : 'Tap for VIP Card & QR →'}
@@ -404,7 +429,7 @@ export const MemberDashboard: React.FC = () => {
 
         {vis.showKpiGrid && (
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 kc-obsidian-card rounded-2xl flex flex-col justify-between">
+            <div className="p-4 kc-obsidian-card kc-gold-touch rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-semibold uppercase tracking-wider">
@@ -522,77 +547,77 @@ export const MemberDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="overflow-x-auto mt-3 rounded-xl border border-[#D4AF37]/20">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
-                <th className="py-2.5 px-3">{language === 'ur' ? 'رسید نمبر' : 'Receipt No.'}</th>
-                <th className="py-2.5 px-3">{translate(language, 'dateLabel')}</th>
-                <th className="py-2.5 px-3">{language === 'ur' ? 'مد' : 'Category'}</th>
-                <th className="py-2.5 px-3">{language === 'ur' ? 'طریقہ' : 'Method'}</th>
-                <th className="py-2.5 px-3">{language === 'ur' ? 'حوالہ' : 'Reference'}</th>
-                <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'رقم (PKR)' : 'Amount (PKR)'}</th>
-                <th className="py-2.5 px-3 text-center">{translate(language, 'statusLabel')}</th>
-                <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'واؤچر' : 'Voucher'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#D4AF37]/10">
-              {ownPayments.map(tx => (
-                <tr key={tx.id} className="hover:bg-[#1A233A]/55 transition-colors">
-                  <td className="py-2.5 px-3 font-mono font-bold text-[#F5D061]">{tx.serialNumber || tx.receiptNumber}</td>
-                  <td className="py-2.5 px-3 font-mono tabular-nums text-slate-400">{tx.date}</td>
-                  <td className="py-2.5 px-3 text-emerald-300 font-medium">
-                    <div>{language === 'ur' ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}</div>
-                    {(tx.periodLabelUr || tx.periodLabelEn) && (
-                      <div className="text-[10px] text-[#F5D061] font-semibold">
-                        {language === 'ur' ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-300">{tx.paymentMethod}</td>
-                  <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400">{tx.referenceNumber}</td>
-                  <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-white">{tx.amount.toLocaleString()}</td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                      tx.status === 'VERIFIED'
-                        ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
-                        : tx.status === 'REJECTED'
-                        ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
-                        : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
-                    }`}>
-                      {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      <span>
-                        {tx.status === 'VERIFIED'
-                          ? (language === 'ur' ? 'منظور شدہ ✓' : 'Approved ✓')
-                          : tx.status === 'REJECTED'
-                          ? translate(language, 'rejectedLabel')
-                          : (language === 'ur' ? 'زیرِ جائزہ' : 'Under Review')}
-                      </span>
+        <div className="mt-3 space-y-2.5">
+          {ownPayments.length === 0 ? (
+            <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#D4AF37]/20 bg-[#090D16]">
+              {language === 'ur'
+                ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ ادائیگی کے لیے "فنڈز اور ادائیگیاں" کھولیں۔'
+                : 'No contributions submitted yet. Open "Funds & Payments" to submit your contribution.'}
+            </div>
+          ) : (
+            ownPayments.map(tx => (
+              <div
+                key={tx.id}
+                className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-2 text-xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="font-mono font-bold text-[#F5D061] block truncate">
+                      {tx.serialNumber || tx.receiptNumber}
                     </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-right">
+                    <span className="text-[11px] font-mono tabular-nums text-slate-400 block mt-0.5">
+                      {tx.date} · {tx.paymentMethod}
+                    </span>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold shrink-0 ${
+                    tx.status === 'VERIFIED'
+                      ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
+                      : tx.status === 'REJECTED'
+                      ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
+                      : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
+                  }`}>
+                    {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                    <span>
+                      {tx.status === 'VERIFIED'
+                        ? (language === 'ur' ? 'منظور شدہ ✓' : 'Approved ✓')
+                        : tx.status === 'REJECTED'
+                        ? translate(language, 'rejectedLabel')
+                        : (language === 'ur' ? 'زیرِ جائزہ' : 'Under Review')}
+                    </span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15">
+                  <div className="min-w-0">
+                    <span className="text-emerald-300 font-semibold block truncate">
+                      {language === 'ur' ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}
+                    </span>
+                    {(tx.periodLabelUr || tx.periodLabelEn) && (
+                      <span className="text-[10px] text-[#F5D061] font-semibold block truncate">
+                        {language === 'ur' ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-mono text-slate-400 block truncate">
+                      {language === 'ur' ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono tabular-nums font-extrabold text-sm text-white">
+                      PKR {tx.amount.toLocaleString()}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setSelectedReceipt(tx)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#090D16] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-lg font-medium kc-pressable cursor-pointer"
+                      className="min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#141B2D] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-xl font-semibold kc-pressable cursor-pointer"
                     >
-                      <Printer className="w-3 h-3" />
+                      <Printer className="w-3.5 h-3.5" />
                       <span>{language === 'ur' ? 'رسید' : 'Receipt'}</span>
                     </button>
-                  </td>
-                </tr>
-              ))}
-              {ownPayments.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
-                    {language === 'ur'
-                      ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ ادائیگی کے لیے "فنڈز اور ادائیگیاں" کھولیں۔'
-                      : 'No contributions submitted yet. Open "Funds & Payments" to submit your contribution.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

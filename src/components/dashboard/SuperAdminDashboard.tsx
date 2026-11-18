@@ -191,7 +191,7 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* Top Executive Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
         <div className="flex items-center gap-3 min-w-0">
-          <BrandEmblem3D size="sm" />
+          <BrandEmblem3D size="sm" halo />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
@@ -200,7 +200,7 @@ export const SuperAdminDashboard: React.FC = () => {
               <span className="text-slate-500">·</span>
               <span className="text-xs text-slate-400 font-mono truncate">{currentUser?.email}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 truncate">
+            <h1 className={`text-xl sm:text-2xl font-extrabold text-white mt-0.5 truncate ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {language === 'ur' ? 'مرکزی گورننس ڈیش بورڈ' : 'Executive Governance Dashboard'}
             </h1>
           </div>
@@ -243,9 +243,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   key={act.label}
                   type="button"
                   onClick={act.onClick}
-                  className={`p-3.5 rounded-2xl bg-gradient-to-br ${act.accent} border text-left transition-transform hover:-translate-y-0.5 kc-pressable shadow-[0_12px_28px_-6px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(252,227,138,0.16)] cursor-pointer`}
+                  className={`p-3.5 rounded-2xl bg-gradient-to-br ${act.accent} kc-glass-bevel kc-gold-touch text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-center mb-2.5 shadow-inner">
+                  <div className="w-9 h-9 rounded-xl bg-[#090D16] border border-[#D4AF37]/40 flex items-center justify-center mb-2.5 shadow-inner">
                     <Icon className="w-4 h-4 text-[#F5D061]" />
                   </div>
                   <p className="text-xs font-extrabold text-white truncate">{act.label}</p>
@@ -460,55 +460,47 @@ export const SuperAdminDashboard: React.FC = () => {
                 </span>
               </div>
 
-              <div className="overflow-x-auto mt-3 rounded-xl border border-[#D4AF37]/20">
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr className="border-b border-[#D4AF37]/20 bg-[#090D16] text-slate-300 font-semibold">
-                      <th className="py-2.5 px-3">{language === 'ur' ? 'ضلع' : 'District'}</th>
-                      <th className="py-2.5 px-3">{language === 'ur' ? 'صوبہ / علاقہ' : 'State / Province'}</th>
-                      <th className="py-2.5 px-3">{language === 'ur' ? 'ایڈمن' : 'Admin'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'ممبران' : 'Members'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'کوٹہ' : 'Quota'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'ur' ? 'فنڈز (PKR)' : 'Funds (PKR)'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#D4AF37]/10">
-                    {districtRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-400">
-                          {language === 'ur'
-                            ? 'ابھی تک کسی ضلع کی سرگرمی ریکارڈ نہیں ہوئی۔ ضلعی ایڈمن مقرر کریں یا ممبران کی منظوری دیں۔'
-                            : 'No district activity recorded yet. Appoint Admins or approve members to populate district metrics.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      districtRows.map((stat, idx) => {
-                        const dist = stat.district;
-                        const prov = stat.stateProvince;
-                        const adminCount = users.filter(
-                          u => u.role === 'ADMIN' && (u.assignedDistrict === dist || u.district === dist)
-                        ).length;
+              <div className="mt-3 space-y-2.5">
+                {districtRows.length === 0 ? (
+                  <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#D4AF37]/20 bg-[#090D16]">
+                    {language === 'ur'
+                      ? 'ابھی تک کسی ضلع کی سرگرمی ریکارڈ نہیں ہوئی۔ ضلعی ایڈمن مقرر کریں یا ممبران کی منظوری دیں۔'
+                      : 'No district activity recorded yet. Appoint Admins or approve members to populate district metrics.'}
+                  </div>
+                ) : (
+                  districtRows.map((stat, idx) => {
+                    const dist = stat.district;
+                    const prov = stat.stateProvince;
+                    const adminCount = users.filter(
+                      u => u.role === 'ADMIN' && (u.assignedDistrict === dist || u.district === dist)
+                    ).length;
 
-                        return (
-                          <tr key={dist ? `${prov}-${dist}` : `reg-${idx}`} className="hover:bg-[#1A233A]/55 transition-colors">
-                            <td className="py-2.5 px-3 font-bold text-white">{dist}</td>
-                            <td className="py-2.5 px-3 font-medium text-slate-300">{prov}</td>
-                            <td className="py-2.5 px-3 text-slate-400">{stat.officerInCharge}</td>
-                            <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-200">{stat.totalMembers}</td>
-                            <td className="py-2.5 px-3 text-right">
-                              <span className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-[#090D16] border border-[#D4AF37]/30 text-[#F5D061]">
-                                {adminCount}/{appSettings.maxAdminsPerDistrict}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-emerald-300">
-                              {stat.totalCollected.toLocaleString()}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                    return (
+                      <div
+                        key={dist ? `${prov}-${dist}` : `reg-${idx}`}
+                        className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-1.5 text-xs"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold text-white block truncate">{dist}</span>
+                            <span className="text-[11px] text-slate-400 block truncate">{prov}</span>
+                          </div>
+                          <span className="text-[10px] font-mono tabular-nums px-2 py-0.5 rounded bg-[#141B2D] border border-[#D4AF37]/30 text-[#F5D061] shrink-0">
+                            {language === 'ur' ? 'کوٹہ:' : 'Quota:'} {adminCount}/{appSettings.maxAdminsPerDistrict}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15">
+                          <span className="text-[11px] text-slate-300 truncate">
+                            {stat.officerInCharge} · <span className="font-mono text-slate-200">{stat.totalMembers}</span> {language === 'ur' ? 'ممبران' : 'members'}
+                          </span>
+                          <span className="font-mono tabular-nums font-bold text-emerald-300 shrink-0">
+                            PKR {stat.totalCollected.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

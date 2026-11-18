@@ -250,6 +250,30 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 border: isFaizKhel ? '2px solid #FDE047' : '1.5px solid #D4AF37'
               }}
             >
+              {/* Holographic Gold Foil Shimmer Sweep (60FPS GPU-composited) */}
+              <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
+
+              {/* Embossed "KIFAYAT CONNECT UNITY" Circular Vector Crest Watermark */}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 180 180"
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-36 h-36 opacity-[0.075] pointer-events-none z-0"
+              >
+                <defs>
+                  <path id="kcCardCrestPath" d="M 90, 90 m -66, 0 a 66,66 0 1,1 132,0 a 66,66 0 1,1 -132,0" />
+                </defs>
+                <circle cx="90" cy="90" r="82" fill="none" stroke="#F9E29C" strokeWidth="1.5" strokeDasharray="3 3" />
+                <circle cx="90" cy="90" r="52" fill="none" stroke="#D4AF37" strokeWidth="1.5" />
+                <text fill="#F9E29C" fontSize="10.5" fontWeight="800" letterSpacing="3.4">
+                  <textPath href="#kcCardCrestPath" startOffset="4%">
+                    ★ KIFAYAT CONNECT UNITY ★ OFFICIAL VIP
+                  </textPath>
+                </text>
+                <text x="90" y="96" textAnchor="middle" fill="#D4AF37" fontSize="18" fontWeight="900">
+                  KC
+                </text>
+              </svg>
+
               {/* Inner Gold Trim + 3D Gold Corner Accents */}
               <div className="absolute inset-1.5 rounded-xl border border-[#F5D061]/35 pointer-events-none" />
               <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-[#F5D061] rounded-tl-lg pointer-events-none" />
@@ -260,7 +284,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               {/* Top Header */}
               <div className="relative z-10 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <BrandEmblem3D size="xs" />
+                  <BrandEmblem3D size="xs" halo />
                   <div className="min-w-0">
                     <h4 className="font-extrabold text-xs sm:text-sm tracking-[0.14em] uppercase kc-gold-gradient-text truncate">
                       KIFAYAT CONNECT 👑
@@ -274,6 +298,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isFaizKhel && <FaizKhelVipCrownIcon className="w-6 h-6" />}
                   <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 kc-live-pulse" />
                     <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
                     <span>ACTIVE</span>
                   </span>
@@ -313,7 +338,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                     {showCnicOnCard && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-slate-400">CNIC:</span>
-                        <span className="font-mono text-white truncate">{user.cnic || 'Verified'}</span>
+                        <span className="font-mono tabular-nums text-white truncate">{user.cnic || 'Verified'}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5 truncate">
@@ -327,10 +352,10 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               {/* Bottom Strip: Member ID + Footer Tagline + Golden SVG QR */}
               <div className="relative z-10 pt-2 border-t border-[#D4AF37]/30 flex items-end justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="text-[8px] font-mono text-slate-400 uppercase block">
+                  <span className="text-[8px] font-mono tabular-nums text-slate-400 uppercase block">
                     {translate(language, 'vipMemberIdPrefix')} · VALID {user.validUntil || '2028-12-31'}
                   </span>
-                  <span className="text-xs font-mono font-extrabold text-[#F5D061] block truncate">
+                  <span className="text-xs font-mono tabular-nums font-extrabold text-[#F5D061] block truncate">
                     {memberIdStr}
                   </span>
                   <span className="text-[8px] font-bold tracking-wider uppercase text-slate-300 block truncate mt-0.5">
@@ -359,14 +384,15 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 border: '2px solid #D4AF37'
               }}
             >
-              <div className="flex items-center justify-between border-b border-[#D4AF37]/30 pb-2">
+              <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
+              <div className="relative z-10 flex items-center justify-between border-b border-[#D4AF37]/30 pb-2">
                 <div>
                   <span className="text-[10px] uppercase font-extrabold text-[#F5D061] tracking-wider block">
                     {translate(language, 'vipBackTitle')}
                   </span>
                   <p className="text-[9px] text-emerald-300">{translate(language, 'vipIssuedBy')}</p>
                 </div>
-                <BrandEmblem3D size="xs" />
+                <BrandEmblem3D size="xs" halo />
               </div>
 
               <div className="flex items-center gap-4 my-auto">

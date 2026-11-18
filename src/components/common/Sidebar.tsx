@@ -189,14 +189,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     <div className="w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#070D14] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
-        <div className="md:hidden flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#131C31] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#131C31] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">
+          <div className="flex items-center gap-2.5 min-w-0">
             <BrandEmblem3D size="xs" />
-            <div>
-              <span className="font-extrabold text-sm kc-gold-gradient-text block leading-tight">
+            <div className="min-w-0">
+              <span className="font-extrabold text-sm kc-gold-gradient-text block leading-tight truncate">
                 {appDisplayName}
               </span>
-              <span className="text-[10px] text-[#38BDF8] font-medium">
+              <span className="text-[10px] text-[#38BDF8] font-medium truncate block">
                 {translate(language, 'tagline')}
               </span>
             </div>
@@ -205,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#1E293B] transition-colors cursor-pointer kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#1E293B] transition-colors cursor-pointer kc-pressable shrink-0"
           >
             <X className="w-5 h-5 text-[#F5D061]" />
           </button>
@@ -263,7 +263,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
                 }
                 if (onClose) onClose();
               }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 text-xs rounded-xl transition-all text-start cursor-pointer kc-pressable ${
+              className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 text-xs rounded-xl transition-all text-start cursor-pointer kc-pressable ${
                 isActive
                   ? 'kc-gold-button font-bold'
                   : 'text-[#94A3B8] hover:bg-[#131C31] hover:text-[#F8FAFC] border border-transparent hover:border-slate-400/20'

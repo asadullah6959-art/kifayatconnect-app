@@ -128,7 +128,7 @@ export const AdminDashboard: React.FC = () => {
             <span className="text-slate-500">·</span>
             <span className="text-xs text-slate-400 font-medium">{assignedDistrict} ({assignedState})</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-1 flex items-center gap-2.5">
+          <h1 className={`text-xl sm:text-2xl font-extrabold text-white mt-1 flex items-center gap-2.5 ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
             <MapPin className="w-6 h-6 text-[#F5D061] shrink-0" />
             <span>{assignedDistrict} – {translate(language, 'roleAdmin')}</span>
           </h1>
@@ -164,7 +164,7 @@ export const AdminDashboard: React.FC = () => {
                 key={card.label}
                 type="button"
                 onClick={card.onClick}
-                className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+                className="p-3.5 rounded-2xl kc-obsidian-card kc-gold-touch hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
               >
                 <div className="w-9 h-9 rounded-xl kc-emerald-panel flex items-center justify-center mb-2">
                   <Icon className="w-4 h-4 text-[#F5D061]" />

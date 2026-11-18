@@ -686,62 +686,55 @@ export const ReportsView: React.FC = () => {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-[#D4AF37]/25">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                    <th className="py-2.5 px-3">{isUr ? 'ضلع' : 'District'}</th>
-                    <th className="py-2.5 px-3">{isUr ? 'صوبہ / علاقہ' : 'State / Province'}</th>
-                    <th className="py-2.5 px-3">{isUr ? 'نگران افسر' : 'Officer in Charge'}</th>
-                    <th className="py-2.5 px-3 text-right">{isUr ? 'فعال اراکین' : 'Active Count'}</th>
-                    <th className="py-2.5 px-3 text-right">{isUr ? 'کل حصہ (PKR)' : 'Total Contributed (PKR)'}</th>
-                    <th className="py-2.5 px-3 text-center">{isUr ? 'مطابقت' : 'Compliance'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#D4AF37]/15">
-                  {liveDistrictRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
-                        {isUr
-                          ? 'ابھی تک کوئی ضلعی ریکارڈ موجود نہیں۔ تصدیق شدہ اراکین اور رسیدیں یہاں خودکار ظاہر ہوں گی۔'
-                          : 'No district records recorded yet. Verified members and treasury receipts will appear here automatically.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    liveDistrictRows.map((stat, idx) => {
-                      const fb = mapLegacyRegionToHierarchy((stat as any).region);
-                      const sDist = stat.district || fb.district;
-                      const sProv = stat.stateProvince || fb.stateProvince;
+            <div className="space-y-2.5">
+              {liveDistrictRows.length === 0 ? (
+                <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#D4AF37]/25 bg-[#090D16]">
+                  {isUr
+                    ? 'ابھی تک کوئی ضلعی ریکارڈ موجود نہیں۔ تصدیق شدہ اراکین اور رسیدیں یہاں خودکار ظاہر ہوں گی۔'
+                    : 'No district records recorded yet. Verified members and treasury receipts will appear here automatically.'}
+                </div>
+              ) : (
+                liveDistrictRows.map((stat, idx) => {
+                  const fb = mapLegacyRegionToHierarchy((stat as any).region);
+                  const sDist = stat.district || fb.district;
+                  const sProv = stat.stateProvince || fb.stateProvince;
 
-                      return (
-                        <tr key={sDist ? `${sProv}-${sDist}` : `rep-${idx}`} className="hover:bg-[#161F33]/70 transition-colors">
-                          <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
-                            <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                            <span>{sDist}</span>
-                          </td>
-                          <td className="py-2.5 px-3 font-medium text-slate-300">
-                            {sProv}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-300">
-                            {stat.officerInCharge}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-200">
-                            {stat.activeMembers}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-[#F5D061]">
-                            {stat.totalCollected.toLocaleString()}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <span className="text-[10px] text-emerald-300 font-semibold">
-                              {isUr ? '100% آڈٹ شدہ' : '100% Audited'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                  return (
+                    <div
+                      key={sDist ? `${sProv}-${sDist}` : `rep-${idx}`}
+                      className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-2 text-xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-white flex items-center gap-1.5 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span className="truncate">{sDist}</span>
+                          </p>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">{sProv}</p>
+                        </div>
+                        <span className="text-[10px] text-emerald-300 font-semibold bg-emerald-950/60 border border-emerald-500/35 px-2 py-0.5 rounded-full shrink-0">
+                          {isUr ? '100% آڈٹ شدہ' : '100% Audited'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D4AF37]/15">
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-slate-400 block">{isUr ? 'نگران افسر' : 'Officer in Charge'}</span>
+                          <span className="font-medium text-slate-200 truncate block">{stat.officerInCharge}</span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono tabular-nums font-bold text-[#F5D061] block">
+                            PKR {stat.totalCollected.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] font-mono tabular-nums text-slate-300">
+                            {isUr ? `فعال اراکین: ${stat.activeMembers}` : `${stat.activeMembers} active members`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}

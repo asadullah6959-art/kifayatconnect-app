@@ -382,48 +382,38 @@ export const OfficeBearersModule: React.FC = () => {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-[#D4AF37]/25 text-[#F5D061] bg-[#090D16] font-semibold">
-                  <th className="py-3 px-4">{isUr ? 'نشست / عہدہ' : 'Seat / Office Title'}</th>
-                  <th className="py-3 px-4">{isUr ? 'عہدیدار کا نام' : 'Incumbent Name'}</th>
-                  <th className="py-3 px-4">{isUr ? 'مدتِ عہدہ' : 'Term Tenure'}</th>
-                  <th className="py-3 px-4">{isUr ? 'خاتمہ مجاز اتھارٹی' : 'Termination Authority'}</th>
-                  <th className="py-3 px-4">{isUr ? 'وجہ / نوٹس' : 'Reason / Notes'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#D4AF37]/15">
-                {officeBearerHistory.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">
-                      {isUr ? 'ابھی تک کوئی تاریخی تقرری ریکارڈ نہیں ہوئی۔' : 'No historical appointments recorded yet.'}
-                    </td>
-                  </tr>
-                ) : (
-                  officeBearerHistory.map(hist => (
-                    <tr key={hist.id} className="hover:bg-[#161F33]/70 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-white">
-                        <div>{hist.title}</div>
-                        <div className="text-[10px] text-slate-400 font-normal">{hist.seatLabel}</div>
-                      </td>
-                      <td className="py-3 px-4 font-medium text-slate-200">
-                        {hist.userName}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-slate-300 tabular-nums">
-                        {hist.startDate} → {hist.endDate} ({hist.termYears}y)
-                      </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {hist.terminatedBy}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400 italic max-w-xs truncate">
-                        "{hist.reason}"
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="p-3 sm:p-4 space-y-2.5">
+            {officeBearerHistory.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                {isUr ? 'ابھی تک کوئی تاریخی تقرری ریکارڈ نہیں ہوئی۔' : 'No historical appointments recorded yet.'}
+              </div>
+            ) : (
+              officeBearerHistory.map(hist => (
+                <div
+                  key={hist.id}
+                  className="p-3.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 space-y-2 text-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-white truncate">{hist.title}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{hist.seatLabel}</p>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#F5D061] bg-[#141B2D] border border-[#D4AF37]/30 px-2 py-0.5 rounded shrink-0 tabular-nums">
+                      {hist.startDate} → {hist.endDate} ({hist.termYears}y)
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15 text-[11px]">
+                    <span className="font-semibold text-slate-200">{hist.userName}</span>
+                    <span className="text-slate-400">{hist.terminatedBy}</span>
+                  </div>
+                  {hist.reason && (
+                    <p className="text-[11px] text-slate-400 italic break-words">
+                      "{hist.reason}"
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

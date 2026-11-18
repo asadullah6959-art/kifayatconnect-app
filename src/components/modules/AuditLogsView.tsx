@@ -132,20 +132,20 @@ export const AuditLogsView: React.FC = () => {
         </div>
 
         {/* Search & Filter */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 sm:flex-initial">
-            <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <div className="flex flex-wrap items-center gap-2 w-full">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder={isUr ? 'آڈٹ ریکارڈ تلاش کریں...' : 'Search audit trail...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="kc-luxury-input pl-8 pr-3 py-2 text-xs rounded-xl w-full sm:w-64"
+              className="kc-luxury-input min-h-[44px] pl-9 pr-3 py-2 text-xs rounded-xl w-full"
             />
           </div>
 
           {canSeeAllLogs && (
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <LuxurySelect
                 compact
                 value={categoryFilter}
@@ -165,66 +165,50 @@ export const AuditLogsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Logs Table */}
-      <div className="kc-obsidian-card rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                <th className="py-3 px-4">{isUr ? 'وقت' : 'Timestamp'}</th>
-                <th className="py-3 px-4">{isUr ? 'عامل اور عہدہ' : 'Actor & Role'}</th>
-                <th className="py-3 px-4">{isUr ? 'کارروائی' : 'Action Event'}</th>
-                <th className="py-3 px-4">{isUr ? 'زمرہ' : 'Category'}</th>
-                <th className="py-3 px-4">{isUr ? 'متعلقہ فرد / ہدف' : 'Target Entity'}</th>
-                <th className="py-3 px-4">{isUr ? 'تفصیلی بیان' : 'Detailed Statement'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#D4AF37]/15">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
-                    {isUr ? 'آپ کے فلٹر کے مطابق کوئی آڈٹ ریکارڈ نہیں ملا۔' : 'No audit records found matching your filter criteria.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map(log => (
-                  <tr key={log.id} className="hover:bg-[#161F33]/70 transition-colors">
-                    <td className="py-3 px-4 font-mono tabular-nums text-slate-400 whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </td>
+      {/* Mobile-First Audit Cards */}
+      <div className="space-y-3">
+        {filteredLogs.length === 0 ? (
+          <div className="kc-obsidian-card rounded-2xl py-10 px-4 text-center text-xs text-slate-400">
+            {isUr ? 'آپ کے فلٹر کے مطابق کوئی آڈٹ ریکارڈ نہیں ملا۔' : 'No audit records found matching your filter criteria.'}
+          </div>
+        ) : (
+          filteredLogs.map(log => (
+            <div
+              key={log.id}
+              className="kc-obsidian-card rounded-2xl p-3.5 space-y-2 text-xs border border-[#D4AF37]/25"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="font-mono font-bold text-[#F5D061] block break-all">
+                    {log.action}
+                  </span>
+                  <span className="text-[10px] font-mono tabular-nums text-slate-400 block mt-0.5">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border shrink-0 ${getCategoryBadge(log.category)}`}>
+                  {localizeCategory(log.category)}
+                </span>
+              </div>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-semibold text-white block">
-                        {log.actorName}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        {log.actorRole} {log.district ? `· ${log.district}, ${log.stateProvince || 'Pakistan'}` : log.region ? `· ${log.region}` : ''}
-                      </span>
-                    </td>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15">
+                <div className="min-w-0">
+                  <span className="font-semibold text-white block truncate">{log.actorName}</span>
+                  <span className="text-[10px] text-slate-400 block truncate">
+                    {log.actorRole} {log.district ? `· ${log.district}, ${log.stateProvince || 'Pakistan'}` : log.region ? `· ${log.region}` : ''}
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-200 bg-[#090D16] px-2 py-0.5 rounded border border-[#D4AF37]/20 truncate max-w-full">
+                  {log.targetEntity}
+                </span>
+              </div>
 
-                    <td className="py-3 px-4 font-mono font-bold text-[#F5D061] whitespace-nowrap">
-                      {log.action}
-                    </td>
-
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${getCategoryBadge(log.category)}`}>
-                        {localizeCategory(log.category)}
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
-                      {log.targetEntity}
-                    </td>
-
-                    <td className="py-3 px-4 text-slate-300 max-w-md">
-                      {log.details}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed break-words">
+                {log.details}
+              </p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -319,7 +319,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
           <button
             onClick={onClose}
             aria-label={isUr ? 'بند کریں' : 'Close modal'}
-            className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 transition-colors cursor-pointer kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white bg-[#111726] hover:bg-[#161F33] border border-[#D4AF37]/30 transition-colors cursor-pointer kc-pressable shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -587,8 +587,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                             ) : (
                               <FileText className="w-7 h-7 text-rose-400" />
                             )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                              <Eye className="w-4 h-4" />
+                            <div className="absolute bottom-1 right-1 bg-black/75 rounded-md p-1 flex items-center justify-center text-[#F5D061] border border-[#D4AF37]/40">
+                              <Eye className="w-3 h-3" />
                             </div>
                           </div>
 

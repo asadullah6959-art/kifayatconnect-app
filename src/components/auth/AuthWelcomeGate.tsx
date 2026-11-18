@@ -302,19 +302,22 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
 
   return (
     <div
-      className="min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#F8FAFC] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="relative min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#F8FAFC] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
       style={{
-        backgroundColor: '#090D16',
+        backgroundColor: '#070D14',
         backgroundImage:
-          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #090D16 100%)'
+          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #070D14 100%)'
       }}
     >
+      {/* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */}
+      <div aria-hidden="true" className="fixed inset-0 kc-geo-watermark pointer-events-none z-0" />
+
       {/* Top Bar */}
-      <div className="w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-1">
+      <div className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-2.5">
-          <BrandEmblem3D size="sm" />
+          <BrandEmblem3D size="sm" halo />
           <div>
-            <span className="font-extrabold text-sm tracking-tight kc-gold-gradient-text block leading-none">
+            <span className={`font-extrabold text-sm tracking-tight kc-gold-gradient-text block leading-none ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {language === 'ur' ? (appSettings.appNameUr || 'کفایت کنیکٹ') : (appSettings.appName || 'Kifayat Connect')}
             </span>
             <span className="text-[10px] text-[#38BDF8] font-semibold">
@@ -334,15 +337,15 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
       </div>
 
       {/* Main Fintech Wallet Dark Slate & Gold Card */}
-      <div className="w-full max-w-md mx-auto my-5 kc-obsidian-card rounded-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-md mx-auto my-5 kc-obsidian-card rounded-2xl overflow-hidden">
         <div className="h-1.5 bg-gradient-to-r from-[#0EA5E9] via-[#D4AF37] to-[#F59E0B]" />
 
         <div className="p-5 sm:p-6 space-y-5">
           <div className="text-center space-y-2">
             <div className="flex justify-center">
-              <BrandEmblem3D size="md" animated />
+              <BrandEmblem3D size="md" animated halo />
             </div>
-            <h1 className="text-xl font-extrabold kc-gold-gradient-text tracking-tight">
+            <h1 className={`text-xl font-extrabold kc-gold-gradient-text tracking-tight ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {translate(language, 'welcomeSignInTitle', appSettings.textOverrides)}
             </h1>
             <p className="text-xs text-slate-400 leading-relaxed">

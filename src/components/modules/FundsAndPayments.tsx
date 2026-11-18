@@ -121,6 +121,8 @@ export const FundsAndPayments: React.FC = () => {
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const lastActionTsRef = useRef<number>(0);
+  const receiptCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const receiptGalleryInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (currentUser?.cnic && !payerCnic) {
@@ -177,8 +179,21 @@ export const FundsAndPayments: React.FC = () => {
   const pendingPayments = visibleTransactions.filter(p => p.status === 'PENDING_VERIFICATION');
   const pendingSum = pendingPayments.reduce((acc, curr) => acc + curr.amount, 0);
 
+  const resetReceiptFileInputs = () => {
+    if (receiptCameraInputRef.current) receiptCameraInputRef.current.value = '';
+    if (receiptGalleryInputRef.current) receiptGalleryInputRef.current.value = '';
+  };
+
+  const clearReceiptUpload = () => {
+    setReceiptImageUrl('');
+    setReceiptImageName('');
+    setUploadError(null);
+    resetReceiptFileInputs();
+  };
+
   const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       setUploadError(isUr ? 'تصویر 10MB کی حد سے زیادہ ہے۔ براہ کرم چھوٹی تصویر منتخب کریں۔' : 'Image exceeds 10MB limit. Please choose a smaller photo.');
@@ -217,6 +232,7 @@ export const FundsAndPayments: React.FC = () => {
     setReceiptImageName('');
     setUploadError(null);
     setSubmitError(null);
+    resetReceiptFileInputs();
   };
 
   const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(1, monthsCount)));
@@ -409,7 +425,7 @@ export const FundsAndPayments: React.FC = () => {
               {isUr ? 'آڈٹ شدہ فلاحی عطیات و چندہ' : 'Audited Welfare Contributions'}
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2">
+          <h1 className={`text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2 ${isUr ? 'kc-font-urdu' : ''}`}>
             <Coins className="w-6 h-6 text-[#F5D061] shrink-0" />
             <span>{isUr ? 'فنڈز اور ادائیگیاں' : 'Funds & Contributions'}</span>
           </h1>
@@ -514,7 +530,7 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="kc-obsidian-card p-4 rounded-2xl">
+        <div className="kc-obsidian-card kc-gold-touch p-4 rounded-2xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
             {isUr ? 'کل منظور شدہ فنڈز' : 'Total Approved Funds'}
           </span>
@@ -529,7 +545,7 @@ export const FundsAndPayments: React.FC = () => {
           </p>
         </div>
 
-        <div className="kc-obsidian-card p-4 rounded-2xl !border-[#F5D061]/55">
+        <div className="kc-obsidian-card kc-gold-touch p-4 rounded-2xl !border-[#F5D061]/55">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#F5D061] block">
             {isUr ? 'تصدیق کے منتظر' : 'Pending Verification'}
           </span>
@@ -548,7 +564,7 @@ export const FundsAndPayments: React.FC = () => {
           </p>
         </div>
 
-        <div className="kc-emerald-panel p-4 rounded-2xl">
+        <div className="kc-emerald-panel kc-gold-touch p-4 rounded-2xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 block">
             {isUr ? 'ڈیجیٹل لیجر شفافیت' : 'Digital Ledger Integrity'}
           </span>
@@ -661,8 +677,8 @@ export const FundsAndPayments: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-3">
+        {/* Mobile-First Transaction Cards */}
+        <div className="space-y-3">
           {filteredTransactions.length === 0 ? (
             <div className="py-10 text-center text-xs text-slate-400">
               {isUr
@@ -678,15 +694,16 @@ export const FundsAndPayments: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 rounded-xl border border-[#D4AF37]/35 bg-[#090D16] shadow-[inset_0_1px_0_rgba(252,227,138,0.08)] space-y-2.5"
+                  className="p-3.5 rounded-xl kc-glass-bevel bg-[#090D16]/90 space-y-2.5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="font-mono font-bold text-xs text-[#F5D061] block">
+                      <span className="font-mono tabular-nums font-bold text-xs text-[#F5D061] block">
                         {tx.serialNumber || tx.receiptNumber}
                       </span>
-                      <span className="text-xs font-semibold text-white block truncate">
-                        {tx.userName} · {dist}, {prov}
+                      <span className="text-xs font-semibold text-white flex items-center gap-1 truncate mt-0.5">
+                        <MapPin className="w-3 h-3 text-[#D4AF37] shrink-0" />
+                        <span className="truncate">{tx.userName} · {dist}, {prov}</span>
                       </span>
                     </div>
                     {renderStatusPill(tx.status)}
@@ -718,7 +735,7 @@ export const FundsAndPayments: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setPreviewTx(tx)}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F5D061] hover:underline cursor-pointer"
+                        className="min-h-[44px] inline-flex items-center gap-1.5 px-2 text-xs font-semibold text-[#F5D061] hover:underline cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>{isUr ? 'رسید کی تصویر دیکھیں' : 'View Receipt Photo'}</span>
@@ -727,28 +744,28 @@ export const FundsAndPayments: React.FC = () => {
                       <span className="text-[10px] text-slate-400">{isUr ? 'کوئی تصویر منسلک نہیں' : 'No photo attached'}</span>
                     )}
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         onClick={() => setSelectedReceipt(tx)}
-                        className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-md font-semibold cursor-pointer"
+                        className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-xl font-semibold cursor-pointer"
                       >
-                        <Printer className="w-3 h-3 text-emerald-400" />
+                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
                         <span>{isUr ? 'ڈیجیٹل رسید' : 'Digital Receipt'}</span>
                       </button>
                       {canVerify && tx.status === 'PENDING_VERIFICATION' && (
                         <>
                           <button
                             onClick={() => handleDebouncedVerify(tx.id, true)}
-                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded-md font-bold cursor-pointer"
+                            className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded-xl font-bold cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3 h-3 text-[#F8FAFC]" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#F8FAFC]" />
                             <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
                           </button>
                           <button
                             onClick={() => setRejectTxId(tx.id)}
-                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded-md font-semibold cursor-pointer"
+                            className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded-xl font-semibold cursor-pointer"
                           >
-                            <XCircle className="w-3 h-3" />
+                            <XCircle className="w-3.5 h-3.5" />
                             <span>{isUr ? 'مسترد' : 'Reject'}</span>
                           </button>
                         </>
@@ -759,120 +776,6 @@ export const FundsAndPayments: React.FC = () => {
               );
             })
           )}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto rounded-xl border border-[#D4AF37]/25">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="border-b border-[#D4AF37]/25 bg-[#090D16] text-[#F5D061] font-semibold">
-                <th className="py-2.5 px-3">{isUr ? 'رسید نمبر' : 'Receipt No.'}</th>
-                <th className="py-2.5 px-3">{isUr ? 'تاریخ' : 'Date'}</th>
-                <th className="py-2.5 px-3">{isUr ? 'ممبر اور مقام' : 'Member & Location'}</th>
-                <th className="py-2.5 px-3">{isUr ? 'فنڈ کی قسم' : 'Fund Category'}</th>
-                <th className="py-2.5 px-3">{isUr ? 'طریقہ اور ثبوت' : 'Method & Proof'}</th>
-                <th className="py-2.5 px-3 text-right">{isUr ? 'رقم (PKR)' : 'Amount (PKR)'}</th>
-                <th className="py-2.5 px-3 text-center">{isUr ? 'حیثیت' : 'Status'}</th>
-                <th className="py-2.5 px-3 text-right">{isUr ? 'عمل' : 'Action'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#D4AF37]/15">
-              {filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-10 text-center text-slate-400">
-                    {isUr ? 'ابھی تک کوئی لین دین ریکارڈ نہیں ہوا۔ شروع کرنے کے لیے ادائیگی جمع کروائیں۔' : 'No transactions recorded yet. Submit a payment to get started.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredTransactions.map(tx => {
-                  const fallback = mapLegacyRegionToHierarchy(tx.userRegion);
-                  const prov = tx.stateProvince || fallback.stateProvince;
-                  const dist = tx.district || fallback.district;
-
-                  return (
-                    <tr key={tx.id} className="hover:bg-[#161F33]/70 transition-colors">
-                      <td className="py-2.5 px-3 font-mono font-bold text-[#F5D061]">
-                        <div>{tx.serialNumber || tx.receiptNumber}</div>
-                        {tx.serialNumber && tx.serialNumber !== tx.receiptNumber && (
-                          <div className="text-[10px] text-slate-400 font-normal">{tx.receiptNumber}</div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono tabular-nums text-slate-300">
-                        {tx.date}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="font-semibold text-white block">{tx.userName}</span>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium mt-0.5">
-                          <MapPin className="w-2.5 h-2.5 text-[#D4AF37] shrink-0" />
-                          <span>{dist}, {prov}</span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-emerald-400 font-medium">
-                        <div>{isUr ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}</div>
-                        {(tx.periodLabelUr || tx.periodLabelEn) && (
-                          <div className="text-[10px] text-[#F5D061] font-semibold mt-0.5">
-                            {isUr ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-200">
-                        <div className="flex items-center gap-2">
-                          {tx.receiptImageUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewTx(tx)}
-                              className="shrink-0 w-8 h-8 rounded border border-[#D4AF37]/50 overflow-hidden hover:opacity-80 cursor-pointer"
-                              title={isUr ? 'اپ لوڈ کردہ رسید کی تصویر دیکھیں' : 'View uploaded receipt photo'}
-                            >
-                              <img src={tx.receiptImageUrl} alt="Receipt" className="w-full h-full object-cover" />
-                            </button>
-                          )}
-                          <div>
-                            <div className="font-medium text-white">{localizeMethod(tx.paymentMethod)}</div>
-                            <div className="text-[10px] font-mono text-slate-400">{isUr ? 'حوالہ:' : 'Ref:'} {tx.referenceNumber}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold text-white">
-                        {tx.amount.toLocaleString()}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        {renderStatusPill(tx.status)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            onClick={() => setSelectedReceipt(tx)}
-                            className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/40 text-slate-100 rounded font-medium transition-colors cursor-pointer"
-                          >
-                            <Printer className="w-3 h-3 text-emerald-400" />
-                            <span>{isUr ? 'رسید' : 'Receipt'}</span>
-                          </button>
-                          {canVerify && tx.status === 'PENDING_VERIFICATION' && (
-                            <>
-                              <button
-                                onClick={() => handleDebouncedVerify(tx.id, true)}
-                                className="kc-pressable inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded font-bold transition-colors cursor-pointer"
-                              >
-                                <CheckCircle2 className="w-3 h-3 text-[#F8FAFC]" />
-                                <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
-                              </button>
-                              <button
-                                onClick={() => setRejectTxId(tx.id)}
-                                className="kc-pressable inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-rose-950/90 hover:bg-rose-900 border border-rose-500/45 text-rose-200 rounded font-medium transition-colors cursor-pointer"
-                              >
-                                <XCircle className="w-3 h-3" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
         </>
@@ -1093,6 +996,7 @@ export const FundsAndPayments: React.FC = () => {
                           {isUr ? 'کیمرہ کھولیں' : 'Live Camera'}
                         </span>
                         <input
+                          ref={receiptCameraInputRef}
                           type="file"
                           accept="image/*"
                           capture="environment"
@@ -1110,6 +1014,7 @@ export const FundsAndPayments: React.FC = () => {
                           {isCompressing ? (isUr ? 'کمپریس ہو رہا ہے...' : 'Optimizing...') : 'JPG / PNG'}
                         </span>
                         <input
+                          ref={receiptGalleryInputRef}
                           type="file"
                           accept="image/*"
                           onChange={handleReceiptFileChange}
@@ -1123,32 +1028,32 @@ export const FundsAndPayments: React.FC = () => {
                     )}
 
                     {receiptImageUrl && (
-                      <div className="mt-3 p-2.5 rounded-xl kc-emerald-panel flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="mt-3 p-2.5 rounded-xl kc-emerald-panel space-y-2">
+                        <div className="relative rounded-xl overflow-hidden bg-[#070D14] border border-[#D4AF37]/45">
                           <img
                             src={receiptImageUrl}
                             alt="Receipt preview"
-                            className="w-14 h-14 rounded-lg object-cover border border-[#D4AF37]/40 shrink-0"
+                            className="w-full max-h-44 object-contain"
                           />
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-white block truncate">
-                              {receiptImageName || 'receipt.jpg'}
-                            </span>
-                            <span className="text-[10px] text-emerald-300 font-semibold">
-                              {isUr ? 'کمپریس شدہ اور تیار ہے' : 'Compressed & Ready'}
-                            </span>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={clearReceiptUpload}
+                            aria-label="Remove uploaded receipt image"
+                            title={isUr ? 'رسید کی تصویر ہٹائیں' : 'Remove receipt image'}
+                            style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 50 }}
+                            className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                          >
+                            <X className="w-4 h-4 stroke-[2.75]" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReceiptImageUrl('');
-                            setReceiptImageName('');
-                          }}
-                          className="p-1.5 text-slate-300 hover:text-rose-400 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-between gap-2 text-xs px-1">
+                          <span className="font-bold text-white truncate">
+                            {receiptImageName || 'receipt.jpg'}
+                          </span>
+                          <span className="text-[10px] text-emerald-300 font-semibold shrink-0">
+                            {isUr ? 'کمپریس شدہ اور تیار ہے' : 'Compressed & Ready'}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
