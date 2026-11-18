@@ -23,6 +23,7 @@ import {
   getPendingEmailOTP,
   getPendingPasswordReset,
   isNativeMobileRuntime,
+  OTP_RESEND_COOLDOWN_SECONDS,
   requestPasswordReset
 } from '../../services/firebase';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
