@@ -107,7 +107,7 @@ service cloud.firestore {
     }
 
     // --- COLLECTION RULES ---
-    // Note: Supports both Google-verified Web sessions and EmailJS OTP / Password / Android APK sessions
+    // Note: Supports both Google-verified Web sessions and Firebase email-verification / Password / Android APK sessions
     // with schema validation and strict Founder protection guarantees.
 
     // 1. Users Collection (Full Real-Time Directory + Online Status + Founder Zero-Deletion Lock)

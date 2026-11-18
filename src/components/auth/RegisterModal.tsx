@@ -440,7 +440,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             </p>
           </div>
         ) : step === 1 ? (
-          /* STEP 1: One-Time Email Verification via Working 6-Digit EmailJS OTP */
+          /* STEP 1: One-Time Email Verification via Firebase Auth secure email link */
           <div className="space-y-4">
             <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#38BDF8] flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0" />

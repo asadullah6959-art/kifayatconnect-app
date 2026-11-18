@@ -124,7 +124,7 @@ export async function testFirestoreConnection(): Promise<boolean> {
   }
 }
 
-// Bridge EmailJS OTP / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
+// Bridge Firebase email-verification / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
 export async function ensureFirebaseAuthSession(): Promise<FirebaseUser | null> {
   try {
     if (auth.currentUser) return auth.currentUser;
@@ -494,7 +494,7 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 }
 
 // ----------------------------------------------------
-// Secure 6-Digit Email OTP System (State + kc_active_otp localStorage + EmailJS)
+// Secure Email Verification System (Firebase Auth email link + kc_active_otp localStorage)
 // ----------------------------------------------------
 export const PENDING_OTP_STORAGE_KEY = 'kc_active_otp';
 const LEGACY_PENDING_OTP_STORAGE_KEY = 'kc_pending_email_otp';
@@ -575,7 +575,7 @@ async function hashOTP(email: string, code: string): Promise<string> {
 }
 
 // Firebase Authentication now delivers every verification / reset email itself.
-// The third-party EmailJS service has been removed permanently.
+// No third-party email service is used anywhere in this app.
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SECONDS * 1000;
 
@@ -786,7 +786,19 @@ export async function verifyEmailOTP(
   if (now >= saved.expiresAt) {
     otpStore.delete(targetEmail);
     clearPendingEmailOTP();
-    return { success: false, message: 'Verification code has expired (15-minute limit). Please request a new code.' };
+    return { success: false, message: 'This verification has expired (15-minute limit). Please tap “Resend Code” to send a fresh one.' };
+  }
+
+  // Firebase email-link mode: the emailed message carries a secure link, not a 6-digit code.
+  // Guide the user to that link instead of reporting a wrong code or burning a retry attempt.
+  const hasLocalCode = Boolean(
+    String(saved.otp || '').replace(/\D/g, '') || saved.codeHash
+  );
+  if (!hasLocalCode) {
+    return {
+      success: false,
+      message: `Open the secure verification link we emailed to ${targetEmail} to finish verifying. Tap “Resend Code” if you need a fresh link.`
+    };
   }
 
   if (saved.attempts >= 3) {
@@ -830,7 +842,7 @@ export async function verifyEmailOTP(
 export const verifyEmailOtp = verifyEmailOTP;
 
 // ----------------------------------------------------
-// Forgot Password / Temporary Reset Flow (EmailJS + localStorage)
+// Forgot Password / Reset Flow (Firebase Auth sendPasswordResetEmail + localStorage)
 // ----------------------------------------------------
 export const PENDING_RESET_STORAGE_KEY = 'kc_pending_password_reset';
 const resetStore = new Map<string, StoredOTP>();
