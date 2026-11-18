@@ -11,6 +11,11 @@ import {
   signOut as fbSignOut, 
   GoogleAuthProvider,
   onAuthStateChanged,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
   Auth,
   User as FirebaseUser
 } from 'firebase/auth';
@@ -35,7 +40,6 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
-import emailjs from '@emailjs/browser';
 import { 
   User, 
   MembershipApplication, 
@@ -570,44 +574,40 @@ async function hashOTP(email: string, code: string): Promise<string> {
   return `h_${Math.abs(hash)}`;
 }
 
-const EMAILJS_DEFAULT_SERVICE_ID = 'service_dit4b7i';
-const EMAILJS_DEFAULT_TEMPLATE_ID = 'template_ibzfyx7';
-const EMAILJS_DEFAULT_PUBLIC_KEY = 'kzxuOJCacRGWQ5nVb';
-let emailjsInitializedKey = '';
+// Firebase Authentication now delivers every verification / reset email itself.
+// The third-party EmailJS service has been removed permanently.
+export const OTP_RESEND_COOLDOWN_SECONDS = 30;
+const OTP_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SECONDS * 1000;
 
-function getEmailJSConfig() {
-  const envService = (import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim();
-  const envTemplate = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim();
-  const envPublicKey = (import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim();
-
-  const serviceId =
-    envService && envService.startsWith('service_') && !envService.includes('YOUR_')
-      ? envService
-      : EMAILJS_DEFAULT_SERVICE_ID;
-  const templateId =
-    envTemplate && envTemplate.startsWith('template_') && !envTemplate.includes('YOUR_')
-      ? envTemplate
-      : EMAILJS_DEFAULT_TEMPLATE_ID;
-  const publicKey =
-    envPublicKey && envPublicKey.length >= 10 && !envPublicKey.includes('YOUR_')
-      ? envPublicKey
-      : EMAILJS_DEFAULT_PUBLIC_KEY;
-
-  if (emailjsInitializedKey !== publicKey) {
-    try {
-      emailjs.init({ publicKey });
-      emailjsInitializedKey = publicKey;
-    } catch {
-      // Fallback handled by options passed directly to send()
-    }
+function emailActionUrl(): string {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return 'https://kifayatconnect.app';
   }
+  return `${window.location.origin}${window.location.pathname}`;
+}
 
-  return { serviceId, templateId, publicKey };
+function describeAuthEmailError(err: unknown): string {
+  const code = (err as { code?: string })?.code || '';
+  switch (code) {
+    case 'auth/operation-not-allowed':
+      return 'Email link sign-in is not enabled yet. Ask the Super Admin to enable “Email link (passwordless sign-in)” under Firebase Authentication → Sign-in method.';
+    case 'auth/invalid-email':
+      return 'That email address is not valid. Please check it and try again.';
+    case 'auth/network-request-failed':
+      return 'Network problem. Check your internet connection and try again.';
+    case 'auth/too-many-requests':
+      return 'Too many requests. Please wait a minute and try again.';
+    case 'auth/expired-action-code':
+      return 'This verification link has expired. Please request a new one.';
+    case 'auth/invalid-action-code':
+      return 'This verification link is no longer valid. Please request a new one.';
+    default:
+      return (err instanceof Error && err.message) || 'Could not send the verification email. Please try again.';
+  }
 }
 
 export function isEmailOTPConfigured(): boolean {
-  const { serviceId, templateId, publicKey } = getEmailJSConfig();
-  return Boolean(serviceId && templateId && publicKey);
+  return Boolean(auth);
 }
 
 export interface OTPRequestResult {
@@ -627,18 +627,16 @@ export async function requestEmailOTP(
     return { success: false, message: 'Please enter a valid email address.' };
   }
 
-  const { serviceId, templateId, publicKey } = getEmailJSConfig();
-
   const now = Date.now();
   const persistedPending = getPendingEmailOTP();
   const existing = otpStore.get(cleanEmail) || (persistedPending?.email === cleanEmail ? persistedPending : undefined);
 
-  // Enforce 60-second cooldown
-  if (existing && now - existing.lastSentAt < 60000) {
-    const remainingSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
+  // Enforce the 30-second resend cooldown
+  if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
-      message: `Please wait ${remainingSeconds} seconds before requesting a new verification code.`,
+      message: `Please wait ${remainingSeconds} seconds before requesting a new verification email.`,
       cooldownSeconds: remainingSeconds
     };
   }
@@ -650,59 +648,60 @@ export async function requestEmailOTP(
     };
   }
 
-  // Generate clean 6-digit OTP and store in BOTH state + kc_active_otp BEFORE calling emailjs.send()
-  const cleanOtp = String(Math.floor(100000 + Math.random() * 900000)).trim();
-  const codeHash = await hashOTP(cleanEmail, cleanOtp);
-  const expiresAt = now + OTP_TTL_MS;
-
   const pendingRecord: StoredOTP = {
     email: cleanEmail,
-    otp: cleanOtp,
-    codeHash,
-    expiresAt,
+    otp: '',
+    codeHash: '',
+    expiresAt: now + OTP_TTL_MS,
     attempts: 0,
     lastSentAt: now
   };
 
-  otpStore.set(cleanEmail, pendingRecord);
-  writePendingOTPToStorage(pendingRecord);
-  if (onOtpPrepared) {
-    onOtpPrepared(pendingRecord);
-  }
-
   try {
-    await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        email: cleanEmail,
-        to_email: cleanEmail,
-        passcode: cleanOtp,
-        otp: cleanOtp,
-        otp_code: cleanOtp,
-        app_name: 'Kifayat Connect',
-        expiry_minutes: '15'
-      },
-      { publicKey }
-    );
+    // Firebase Authentication dispatches the verification email itself.
+    await sendSignInLinkToEmail(auth, cleanEmail, {
+      url: emailActionUrl(),
+      handleCodeInApp: true
+    });
+
+    otpStore.set(cleanEmail, pendingRecord);
+    writePendingOTPToStorage(pendingRecord);
+    if (onOtpPrepared) {
+      onOtpPrepared(pendingRecord);
+    }
 
     return {
       success: true,
-      message: `A 6-digit verification code has been sent to ${cleanEmail}. Check your inbox (valid for 15 minutes).`,
+      message: `A secure sign-in link has been emailed to ${cleanEmail}. Open it on this device to verify and continue.`,
       pendingRecord
     };
   } catch (err: unknown) {
     // Clean up failed dispatch so the user can retry immediately
     otpStore.delete(cleanEmail);
     clearPendingEmailOTP();
-    const detail =
-      (err as { text?: string })?.text ||
-      (err instanceof Error ? err.message : '') ||
-      'Please check your connection.';
     return {
       success: false,
-      message: `Unable to dispatch verification email (${serviceId}): ${detail}`
+      message: describeAuthEmailError(err)
     };
+  }
+}
+
+/**
+ * Completes an email-link sign-in when the app is opened from the emailed link.
+ * Safe to call on boot: it does nothing when the URL carries no sign-in link.
+ */
+export async function completeEmailLinkSignInIfPresent(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const href = window.location.href;
+  if (!isSignInWithEmailLink(auth, href)) return false;
+  const pendingEmail = getPendingEmailOTP()?.email || '';
+  if (!pendingEmail) return false;
+  try {
+    await signInWithEmailLink(auth, pendingEmail, href);
+    clearPendingEmailOTP();
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -724,8 +723,48 @@ export async function verifyEmailOTP(
   const enteredOtp = String(otpInput || '').replace(/\D/g, '');
   const now = Date.now();
 
+  // 1. Complete a Firebase email-link sign-in when the app was opened from the email
+  const href = typeof window !== 'undefined' ? window.location.href : '';
+  if (href && isSignInWithEmailLink(auth, href)) {
+    const pendingEmail = cleanEmail || getPendingEmailOTP()?.email || '';
+    if (!pendingEmail) {
+      return {
+        success: false,
+        message: 'Open this link on the device where you requested it, or enter your email address again.'
+      };
+    }
+    try {
+      const credential = await signInWithEmailLink(auth, pendingEmail, href);
+      clearPendingEmailOTP();
+      const verifiedEmail = (credential.user.email || pendingEmail).toLowerCase();
+      return {
+        success: true,
+        message: 'Email verified successfully. Signing you in…',
+        isSuperAdmin: verifiedEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase(),
+        verifiedEmail
+      };
+    } catch (err) {
+      return { success: false, message: describeAuthEmailError(err) };
+    }
+  }
+
+  // 2. Already verified in this session by the emailed link
+  if (auth.currentUser?.email) {
+    const verifiedEmail = auth.currentUser.email.toLowerCase();
+    clearPendingEmailOTP();
+    return {
+      success: true,
+      message: 'Email verified successfully.',
+      isSuperAdmin: verifiedEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase(),
+      verifiedEmail
+    };
+  }
+
   if (enteredOtp.length !== 6) {
-    return { success: false, message: 'Please enter the complete 6-digit verification code.' };
+    return {
+      success: false,
+      message: 'Open the secure verification link we emailed you to finish verifying your address.'
+    };
   }
 
   const persisted = getPendingEmailOTP();
@@ -845,14 +884,12 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
     return { success: false, message: 'Please enter a valid registered email address.' };
   }
 
-  const { templateId, publicKey } = getEmailJSConfig();
-  const serviceId = EMAILJS_DEFAULT_SERVICE_ID; // Always use service_dit4b7i for Reset Password OTP
   const now = Date.now();
   const persistedPending = getPendingPasswordReset();
   const existing = resetStore.get(normEmail) || (persistedPending?.email === normEmail ? persistedPending : undefined);
 
-  if (existing && now - existing.lastSentAt < 60000) {
-    const remainingSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
+  if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
       message: `Please wait ${remainingSeconds} seconds before requesting another reset code.`,
@@ -867,37 +904,15 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
     };
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const codeHash = await hashOTP(normEmail, `reset:${code}`);
-  const expiresAt = now + OTP_TTL_MS;
-  const origin = typeof window !== 'undefined' && window.location.origin.startsWith('http')
-    ? window.location.origin
-    : 'https://kifayatconnect.app';
-  const resetLink = `${origin}/?recoveryEmail=${encodeURIComponent(normEmail)}&recoveryCode=${encodeURIComponent(code)}`;
-
   try {
-    await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        email: normEmail,
-        to_email: normEmail,
-        passcode: code,
-        otp: code,
-        otp_code: code,
-        reset_code: code,
-        reset_link: resetLink,
-        app_name: 'Kifayat Connect — Password Recovery',
-        expiry_minutes: '10'
-      },
-      { publicKey }
-    );
+    // Firebase Authentication sends the reset email itself — no third-party service.
+    await sendPasswordResetEmail(auth, normEmail);
 
     const pendingRecord: StoredOTP = {
       email: normEmail,
-      otp: code,
-      codeHash,
-      expiresAt,
+      otp: '',
+      codeHash: '',
+      expiresAt: now + OTP_TTL_MS,
       attempts: 0,
       lastSentAt: now
     };
@@ -907,16 +922,12 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
 
     return {
       success: true,
-      message: `A temporary 6-digit password reset code has been sent to ${normEmail} (valid for 10 minutes).`
+      message: `A secure password reset link has been emailed to ${normEmail}. Open it to choose a new password.`
     };
   } catch (err: unknown) {
-    const detail =
-      (err as { text?: string })?.text ||
-      (err instanceof Error ? err.message : '') ||
-      'Please check your connection.';
     return {
       success: false,
-      message: `Unable to send recovery email (${serviceId}): ${detail}`
+      message: describeAuthEmailError(err)
     };
   }
 }
@@ -935,6 +946,36 @@ export async function verifyPasswordReset(
     return { success: false, message: 'New password must be at least 6 characters long.' };
   }
 
+  // In-app completion of a Firebase reset link (?mode=resetPassword&oobCode=...)
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const oobCode = params?.get('oobCode') || '';
+  const resetMode = params?.get('mode') || '';
+  if (oobCode && (!resetMode || resetMode === 'resetPassword')) {
+    try {
+      await confirmPasswordReset(auth, oobCode, cleanPassword);
+      const newPasswordHash = await saveLocalPasswordCredential(normEmail, cleanPassword);
+      try {
+        const remoteUser = await findExistingFirestoreUserByEmail(normEmail);
+        if (remoteUser?.id) {
+          await setDoc(
+            doc(db, 'users', remoteUser.id),
+            { passwordHash: newPasswordHash, hasPassword: true, otpVerifiedOnce: true },
+            { merge: true }
+          );
+        }
+      } catch {
+        // Non-blocking cloud sync fallback
+      }
+      return {
+        success: true,
+        message: 'Password updated. Signing you in with your new password…',
+        verifiedEmail: normEmail
+      };
+    } catch (err) {
+      return { success: false, message: describeAuthEmailError(err) };
+    }
+  }
+
   const persisted = getPendingPasswordReset();
   let record = resetStore.get(normEmail);
   if (!record && persisted && persisted.email === normEmail) {
@@ -943,7 +984,10 @@ export async function verifyPasswordReset(
   }
 
   if (!record) {
-    return { success: false, message: 'No active password reset request found. Please request a new code.' };
+    return {
+      success: false,
+      message: 'Open the password reset link we emailed you to choose a new password.'
+    };
   }
 
   if (now > record.expiresAt) {

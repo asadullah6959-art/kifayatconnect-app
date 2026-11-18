@@ -40,8 +40,7 @@ self.addEventListener('fetch', (event) => {
   if (
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('identitytoolkit') ||
-    url.origin.includes('googleapis.com') ||
-    url.origin.includes('emailjs.com')
+    url.origin.includes('googleapis.com')
   ) {
     return;
   }
