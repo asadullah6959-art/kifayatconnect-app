@@ -101,6 +101,46 @@ test('district names resolve from the Pakistan district list', () => {
   assert.ok(hit, 'Kohat should match a district');
 });
 
+test('the documented scanner keys land in the matching Rukniyat form boxes', () => {
+  const { patch, detected, filledCount } = buildFormPatch({
+    name: 'Ali Khan',
+    fatherName: 'Rahim Khan',
+    contactNumber: '03001234567',
+    cnic: '12345-1234567-1',
+    tabar: 'Faiz Khel',
+    district: 'Kohat',
+    date: '18/11/2026',
+    serialNo: '4200',
+    amount: '1300',
+    currentAddress: 'Street 1, Kohat',
+    permanentAddress: 'Village Kandian',
+  });
+
+  assert.equal(patch.applicantName, 'Ali Khan');
+  assert.equal(patch.fatherName, 'Rahim Khan');
+  assert.equal(patch.phone, '03001234567');
+  assert.equal(patch.cnic, '1234512345671');
+  assert.ok(patch.centralClan, 'مرکزی خاندان must be filled');
+  assert.ok(patch.centralClanEn, 'the English clan box must be filled too');
+  assert.equal(patch.unit, 'Kohat');
+  assert.equal(patch.formDate, '2026-11-18');
+  assert.equal(patch.currentAddress, 'Street 1, Kohat');
+  assert.equal(patch.permanentAddress, 'Village Kandian');
+  assert.equal(filledCount, 10, 'every readable box is counted');
+
+  // The paper serial is an identifier: it is reported, never written into money.
+  assert.equal(detected.serialNo, '4200');
+  assert.equal(detected.amount, 1300);
+  assert.ok(!('amount' in patch), 'the serial must never become a form amount');
+});
+
+test('a model that nests its answer under "fields" is still mapped', () => {
+  const nested = buildFormPatch({ fields: { نام: 'Sara', ولد: 'Karim', یونٹ: 'Swat' } });
+  assert.equal(nested.patch.applicantName, 'Sara');
+  assert.equal(nested.patch.fatherName, 'Karim');
+  assert.equal(nested.patch.unit, 'Swat');
+});
+
 test('unreadable photos still return an empty patch instead of an error', () => {
   const empty = buildFormPatch({});
   assert.equal(empty.filledCount, 0);
