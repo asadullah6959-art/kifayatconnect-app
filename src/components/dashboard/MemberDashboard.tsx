@@ -84,6 +84,7 @@ export const MemberDashboard: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentSubmittedSuccess, setPaymentSubmittedSuccess] = useState(false);
   const lastActionTsRef = useRef<number>(0);
@@ -153,6 +154,14 @@ export const MemberDashboard: React.FC = () => {
     } finally {
       setIsCompressing(false);
     }
+  };
+
+  /** Red ✕ on the receipt preview: clear the image and reset the file input so the same file can be re-picked. */
+  const clearReceiptImage = () => {
+    setReceiptImageUrl('');
+    setReceiptImageName('');
+    setUploadError(null);
+    if (receiptInputRef.current) receiptInputRef.current.value = '';
   };
 
   const mahanaPeriod = calculateDastoorPeriod(startMonth, startYear, Math.min(11, Math.max(2, monthsCount)));
@@ -964,8 +973,30 @@ export const MemberDashboard: React.FC = () => {
                         ? `${language === 'ur' ? 'منسلک:' : 'Attached:'} ${receiptImageName}`
                         : (language === 'ur' ? 'رسید کی تصویر منتخب کریں (JPG/PNG)' : 'Tap to attach receipt photo (JPG/PNG)')}
                     </span>
-                    <input type="file" accept="image/*" onChange={handleReceiptFileChange} className="hidden" />
+                    <input ref={receiptInputRef} type="file" accept="image/*" onChange={handleReceiptFileChange} className="hidden" />
                   </label>
+                  {receiptImageUrl ? (
+                    <div className="relative mt-2 w-24 h-24 rounded-xl overflow-hidden border border-[#D4AF37]/30 bg-[#090D16]">
+                      <img
+                        src={receiptImageUrl}
+                        alt={receiptImageName || 'Receipt'}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clearReceiptImage();
+                        }}
+                        aria-label={language === 'ur' ? 'رسید ہٹائیں' : 'Remove receipt photo'}
+                        title={language === 'ur' ? 'رسید ہٹائیں' : 'Remove receipt photo'}
+                        className="absolute top-[6px] right-[6px] z-[999] w-[30px] h-[30px] rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.6)] cursor-pointer leading-none text-[13px] font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
                   {uploadError && <p className="text-[11px] text-rose-400 mt-1">{uploadError}</p>}
                 </div>
 
