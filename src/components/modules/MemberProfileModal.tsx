@@ -97,9 +97,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
 
   return (
     <>
-      <div className="fixed inset-0 z-[10000] bg-black/85 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-[10000] kc-modal-backdrop bg-black/85 flex items-start sm:items-center justify-center overflow-y-auto">
         <div
-          className={`kc-luxury-modal rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto max-h-[92dvh] ${
+          className={`kc-luxury-modal kc-modal-panel rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto ${
             isFaizKhel ? '!border-[1.5px] !border-[#FDE047] shadow-[0_18px_50px_rgba(28,20,4,0.88),0_0_28px_rgba(253,224,71,0.26)]' : ''
           }`}
           style={{ WebkitOverflowScrolling: 'touch' }}
@@ -114,7 +114,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
           >
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FDE047] to-[#38BDF8]" />
             {isFaizKhel && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1404]/95 border-[1.5px] border-[#FDE047] text-[#FEF08A] text-[10px] font-extrabold shadow-[0_2px_12px_rgba(253,224,71,0.28)]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1404]/95 border-[1.5px] border-[#FDE047] text-[#FEF08A] text-[10px] font-extrabold shadow-[0_2px_12px_rgba(253,224,71,0.28)] pr-12">
                 <FaizKhelVipCrownIcon className="w-6 h-6" />
                 <span>{language === 'ur' ? 'شاہی وی آئی پی · فیض خیل' : 'ROYAL VIP · FAIZ KHEL'}</span>
                 <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black uppercase leading-none">
@@ -125,13 +125,14 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
             <button
               type="button"
               onClick={onClose}
-              className="kc-pressable absolute top-3.5 right-3.5 p-1.5 rounded-full bg-[#090D16]/85 hover:bg-[#1E293B] border border-slate-400/25 text-slate-200 hover:text-[#38BDF8] transition-colors cursor-pointer"
+              aria-label="Close"
+              className="kc-pressable absolute top-2.5 right-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#090D16]/90 hover:bg-[#1E293B] border border-slate-400/25 text-slate-200 hover:text-[#38BDF8] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="px-5 sm:px-6 pb-6 pt-0 relative">
+          <div className="px-5 sm:px-6 pb-24 sm:pb-6 pt-0 relative">
             <div className="flex items-end justify-between -mt-12 mb-4 gap-3">
               <div className="relative">
                 {avatarSrc ? (

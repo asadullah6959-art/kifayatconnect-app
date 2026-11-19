@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrandEmblem3D } from './BrandEmblem3D';
+import { AppLogo } from './AppLogo';
 
 interface SplashScreenProps {
   appName?: string;
@@ -52,7 +52,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                 'linear-gradient(90deg, transparent 0%, rgba(245, 208, 97, 0.22) 50%, transparent 100%)'
             }}
           />
-          <BrandEmblem3D size="xl" animated />
+          <AppLogo size="xl" animated halo />
         </div>
 
         {/* Metallic Gold Brand Typography */}

@@ -208,25 +208,26 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
       <div
-        className="relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+        className="kc-modal-panel relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="min-w-0">
-            <h3 className="text-base font-extrabold text-white truncate">
+        <div className="flex items-start justify-between gap-2 pb-4 border-b border-slate-800">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-extrabold text-white break-words whitespace-normal leading-snug">
               {translate(language, 'vipCardTitle')}
             </h3>
-            <p className="text-xs text-slate-400 truncate">
+            <p className="text-xs text-slate-400 break-words whitespace-normal leading-snug mt-0.5">
               {user.name} · <span className="font-mono text-[#F5D061]">{memberIdStr}</span>
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
+            aria-label="Close"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

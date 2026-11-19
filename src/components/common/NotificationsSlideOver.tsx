@@ -208,7 +208,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[95] overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/80 transition-opacity duration-200 ease-out"
@@ -246,7 +246,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                 <button
                   type="button"
                   onClick={onClose}
-                  className="kc-pressable min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-slate-400/20 text-slate-200 hover:text-[#F5D061] hover:bg-[#1E293B] transition-colors cursor-pointer"
+                  className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-slate-400/20 text-slate-200 hover:text-[#F5D061] hover:bg-[#1E293B] transition-colors cursor-pointer"
                   aria-label="Close notifications"
                 >
                   <X className="w-5 h-5" />
@@ -331,7 +331,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/15">
+          <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/15 pb-6">
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center flex flex-col items-center justify-center h-64 text-slate-400">
                 <div className="w-12 h-12 rounded-full bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-3 text-[#F5D061]">

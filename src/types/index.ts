@@ -483,6 +483,9 @@ export interface ChatMessage {
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentType?: 'IMAGE' | 'DOCUMENT';
+  imageUrl?: string;
+  audioUrl?: string;
+  media?: unknown;
   voiceNote?: ChatVoiceNote;
   islamicGifId?: string;
   replyTo?: ChatReplySnapshot;
@@ -598,6 +601,8 @@ export interface AppSettings {
   contactEmail: string;
   contactHelpline: string;
   webAppLiveUrl?: string;
+  liveBuildId?: string;
+  liveAppVersion?: string;
   masterPinHash?: string;
   dashboardVisibility?: DashboardSectionVisibility;
   featureToggles?: FeatureToggles;

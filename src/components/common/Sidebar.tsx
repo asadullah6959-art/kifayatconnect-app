@@ -20,7 +20,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
-import { BrandEmblem3D } from './BrandEmblem3D';
+import { AppLogo } from './AppLogo';
 import { RoleBadge } from './RoleBadge';
 import { translate } from '../../data/translations';
 import { canAccessRouteTab } from '../../utils/permissions';
@@ -185,19 +185,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     ? (appSettings.appNameUr || translate('ur', 'appTitleShort'))
     : (appSettings.appName || translate('en', 'appTitleShort'));
 
+  const appDisplayTagline = language === 'ur'
+    ? (appSettings.taglineUr || translate('ur', 'tagline'))
+    : (appSettings.tagline || translate('en', 'tagline'));
+
   return (
     <div className="w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#070D14] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
-        <div className="flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#131C31] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <BrandEmblem3D size="xs" />
-            <div className="min-w-0">
-              <span className="font-extrabold text-sm kc-gold-gradient-text block leading-tight truncate">
+        <div className="flex items-center justify-between gap-2 px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#131C31] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <AppLogo size="sm" halo />
+            <div className="min-w-0 flex-1">
+              <span className={`font-extrabold text-sm kc-gold-gradient-text block leading-tight truncate ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
                 {appDisplayName}
               </span>
               <span className="text-[10px] text-[#38BDF8] font-medium truncate block">
-                {translate(language, 'tagline')}
+                {appDisplayTagline}
               </span>
             </div>
           </div>

@@ -11,7 +11,8 @@ import {
   Filter,
   Mic,
   Square,
-  AudioLines
+  AudioLines,
+  X
 } from 'lucide-react';
 import { Complaint, ComplaintCategory, ComplaintStatus } from '../../types';
 import { 
@@ -438,55 +439,69 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: SUBMIT COMPLAINT */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25">
-              <h3 className="text-base font-bold text-[#F5D061]">
-                {isUr ? 'شکایت یا استفسار کا ٹکٹ درج کریں' : 'Submit Grievance or Inquiry Ticket'}
-              </h3>
+            <div className="flex items-start justify-between gap-2.5 pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex-1 min-w-0 space-y-2">
+                <h3 className="text-base font-bold text-[#F5D061] break-words whitespace-normal leading-snug">
+                  {isUr ? 'شکایت یا استفسار کا ٹکٹ درج کریں' : 'Submit Grievance or Inquiry Ticket'}
+                </h3>
 
-              {/* Speech Recognition Language Selector */}
-              <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-[10px]">
-                <span className="px-1.5 text-slate-400 font-semibold flex items-center gap-1">
-                  <AudioLines className="w-3 h-3 text-[#F5D061]" />
-                  <span>{isUr ? 'آواز:' : 'Voice:'}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDictationLocale('en-US');
-                    if (speech.isListening && dictationTarget) {
-                      speech.startDictation('en-US');
-                    }
-                  }}
-                  className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
-                    dictationLocale === 'en-US'
-                      ? 'kc-gold-button'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDictationLocale('ur-PK');
-                    if (speech.isListening && dictationTarget) {
-                      speech.startDictation('ur-PK');
-                    }
-                  }}
-                  className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
-                    dictationLocale === 'ur-PK'
-                      ? 'kc-gold-button'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  اردو
-                </button>
+                {/* Speech Recognition Language Selector */}
+                <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-[10px]">
+                  <span className="px-1.5 text-slate-400 font-semibold flex items-center gap-1">
+                    <AudioLines className="w-3 h-3 text-[#F5D061]" />
+                    <span>{isUr ? 'آواز:' : 'Voice:'}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDictationLocale('en-US');
+                      if (speech.isListening && dictationTarget) {
+                        speech.startDictation('en-US');
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
+                      dictationLocale === 'en-US'
+                        ? 'kc-gold-button'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDictationLocale('ur-PK');
+                      if (speech.isListening && dictationTarget) {
+                        speech.startDictation('ur-PK');
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
+                      dictationLocale === 'ur-PK'
+                        ? 'kc-gold-button'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    اردو
+                  </button>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  stopComplaintDictation();
+                  setIsSubmitModalOpen(false);
+                }}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {speech.error && (
@@ -673,21 +688,34 @@ export const ComplaintsManager: React.FC = () => {
 
       {/* MODAL: UPDATE TICKET & RESPOND (STAFF ONLY) */}
       {respondingTicket && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 text-xs my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 text-xs my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-[#F5D061] uppercase font-mono font-bold">
-                {respondingTicket.ticketNumber}
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? `جواب دیں: ${respondingTicket.subject}` : `Respond to: ${respondingTicket.subject}`}
-              </h3>
-              <p className="text-slate-400 mt-1">
-                {isUr ? 'درخواست گزار:' : 'Filer:'} {respondingTicket.userName} ({respondingTicket.district || (isUr ? 'پاکستان' : 'Pakistan')})
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className="text-[#F5D061] uppercase font-mono font-bold block">
+                  {respondingTicket.ticketNumber}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? `جواب دیں: ${respondingTicket.subject}` : `Respond to: ${respondingTicket.subject}`}
+                </h3>
+                <p className="text-slate-400 mt-1 break-words whitespace-normal leading-snug">
+                  {isUr ? 'درخواست گزار:' : 'Filer:'} {respondingTicket.userName} ({respondingTicket.district || (isUr ? 'پاکستان' : 'Pakistan')})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  stopComplaintDictation();
+                  setRespondingTicket(null);
+                }}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div>

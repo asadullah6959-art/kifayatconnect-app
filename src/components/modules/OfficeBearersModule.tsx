@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   FileText,
   Search,
-  Building
+  Building,
+  X
 } from 'lucide-react';
 import { OfficeBearer, OfficeBearerHistory, User } from '../../types';
 import { LuxurySelect } from '../common/LuxurySelect';
@@ -420,21 +421,31 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Appoint Office-Bearer */}
       {selectedSeatForAppoint && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider">
-                {isUr ? 'سپر ایڈمن تقرری کا اختیار' : 'Super Admin Appointment Authority'}
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? `${selectedSeatForAppoint.title} پر تقرری` : `Appoint to ${selectedSeatForAppoint.title}`}
-              </h3>
-              <p className="text-xs text-slate-300">
-                {selectedSeatForAppoint.seatLabel} ({localizeJurisdiction(selectedSeatForAppoint.jurisdiction)} {isUr ? 'دائرہ اختیار' : 'Jurisdiction'})
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider block">
+                  {isUr ? 'سپر ایڈمن تقرری کا اختیار' : 'Super Admin Appointment Authority'}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? `${selectedSeatForAppoint.title} پر تقرری` : `Appoint to ${selectedSeatForAppoint.title}`}
+                </h3>
+                <p className="text-xs text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
+                  {selectedSeatForAppoint.seatLabel} ({localizeJurisdiction(selectedSeatForAppoint.jurisdiction)} {isUr ? 'دائرہ اختیار' : 'Jurisdiction'})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSeatForAppoint(null)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {actionError && (
@@ -497,23 +508,33 @@ export const OfficeBearersModule: React.FC = () => {
 
       {/* MODAL: Declare Seat Vacant */}
       {selectedSeatForVacate && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-[10px] font-bold text-rose-300 uppercase tracking-wider">
-                {isUr ? 'عہدے کی مدت کا اختتام' : 'Termination of Office Term'}
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? `کیا ${selectedSeatForVacate.seatLabel} خالی قرار دیں؟` : `Declare ${selectedSeatForVacate.seatLabel} Vacant?`}
-              </h3>
-              <p className="text-xs text-slate-300">
-                {isUr ? 'موجودہ عہدیدار:' : 'Current Incumbent:'}{' '}
-                <strong className="text-white">{selectedSeatForVacate.assignedUserName}</strong>.{' '}
-                {isUr ? 'تاریخی مدت کا ریکارڈ خود بخود محفوظ ہو جائے گا۔' : 'A historical tenure record will be preserved automatically.'}
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-rose-300 uppercase tracking-wider block">
+                  {isUr ? 'عہدے کی مدت کا اختتام' : 'Termination of Office Term'}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? `کیا ${selectedSeatForVacate.seatLabel} خالی قرار دیں؟` : `Declare ${selectedSeatForVacate.seatLabel} Vacant?`}
+                </h3>
+                <p className="text-xs text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
+                  {isUr ? 'موجودہ عہدیدار:' : 'Current Incumbent:'}{' '}
+                  <strong className="text-white">{selectedSeatForVacate.assignedUserName}</strong>.{' '}
+                  {isUr ? 'تاریخی مدت کا ریکارڈ خود بخود محفوظ ہو جائے گا۔' : 'A historical tenure record will be preserved automatically.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSeatForVacate(null)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <form onSubmit={handleVacateSubmit} className="space-y-4 text-xs">

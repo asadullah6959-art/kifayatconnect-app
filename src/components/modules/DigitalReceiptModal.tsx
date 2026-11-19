@@ -126,17 +126,17 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
   const hasDastoorBreakdown = Boolean(receipt.monthsCount && receipt.monthsCount > 0);
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
       <div
-        className={`kc-luxury-modal relative w-full max-w-xl rounded-2xl p-4 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto ${
+        className={`kc-luxury-modal kc-modal-panel relative w-full max-w-xl rounded-2xl p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto ${
           isFaizKhel ? '!border-[1.5px] !border-[#D4AF37]' : ''
         }`}
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header Action Bar */}
-        <div className="flex items-center justify-between gap-2 pb-4 border-b border-[#D4AF37]/25 no-print">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider truncate">
+        <div className="flex items-start justify-between gap-2 pb-4 border-b border-[#D4AF37]/25 no-print">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 flex-1 min-w-0">
+            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider break-words whitespace-normal leading-snug">
               {isVerified
                 ? (isUr ? 'رسید وصولی · آفیشل تصدیق شدہ واؤچر' : 'Official Raseed · Approved Voucher')
                 : (isUr ? 'ٹریکنگ سلپ · منظوری کا انتظار' : 'Tracking Slip · Pending Admin Approval')}
@@ -150,7 +150,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
               <button
                 type="button"
                 onClick={handlePrint}
-                className="kc-pressable kc-gold-button flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-extrabold rounded-lg cursor-pointer"
+                className="kc-pressable kc-gold-button flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-extrabold rounded-lg cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>{isUr ? 'پرنٹ' : 'Print'}</span>
@@ -160,7 +160,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({ receip
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="kc-pressable p-1.5 rounded-lg text-slate-300 hover:text-[#F5D061] hover:bg-[#161F33] cursor-pointer"
+              className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-[#F5D061] hover:bg-[#161F33] shrink-0 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

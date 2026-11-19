@@ -16,7 +16,7 @@ export function formatCnicDisplay(raw?: string | null): string {
 
 export function getCnicLockAlertMessage(language: 'en' | 'ur'): string {
   if (language === 'ur') {
-    return 'براہِ کرم درست 13 ہندسوں کا شناختی کارڈ نمبر (CNIC) درج کریں (مثلاً 35201-1234567-1)۔ 13 ہندسوں کے شناختی کارڈ کے بغیر رکنیت فارم یا فنڈ جمع نہیں ہو سکتا۔';
+    return 'براہِ کرم درست 13 ہندسوں کا شناختی کارڈ نمبر (CNIC) درج کریں (مثلاً 00000-0000000-0)۔ 13 ہندسوں کے شناختی کارڈ کے بغیر رکنیت فارم یا فنڈ جمع نہیں ہو سکتا۔';
   }
-  return 'Valid 13-digit CNIC is strictly required (e.g. 35201-1234567-1). Neither Rukniyat Form nor Fund Payments can be submitted without a 13-digit CNIC.';
+  return 'Valid 13-digit CNIC is strictly required (e.g. 00000-0000000-0). Neither Rukniyat Form nor Fund Payments can be submitted without a 13-digit CNIC.';
 }

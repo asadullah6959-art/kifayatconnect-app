@@ -300,28 +300,28 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
   const pendingCount = docs.filter(d => !d.verificationStatus || d.verificationStatus === 'PENDING').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/90 p-3 sm:p-5 overflow-y-auto">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/90 overflow-y-auto">
       <div
-        className="kc-luxury-modal rounded-2xl w-full max-w-4xl flex flex-col max-h-[92dvh] my-auto overflow-hidden text-slate-100"
+        className="kc-luxury-modal kc-modal-panel rounded-2xl w-full max-w-4xl flex flex-col my-auto overflow-hidden text-slate-100"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-400/20 bg-gradient-to-r from-[#090D16] via-[#131C31] to-[#090D16] text-[#F8FAFC] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#131C31] border border-[#38BDF8]/45 flex items-center justify-center text-[#38BDF8] shadow-inner">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-slate-400/20 bg-gradient-to-r from-[#090D16] via-[#131C31] to-[#090D16] text-[#F8FAFC] flex items-start justify-between gap-2.5 shrink-0">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-[#131C31] border border-[#38BDF8]/45 flex items-center justify-center text-[#38BDF8] shadow-inner shrink-0">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-lg font-bold text-white tracking-wide break-words whitespace-normal leading-snug">
                   {isUr ? 'ڈوزیئر اور معاون دستاویزات' : 'Dossier & Supporting Documents'}
                 </h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40 shrink-0">
                   {isUr ? 'محفوظ اسٹوریج' : 'Secure Storage'}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5 break-words whitespace-normal leading-snug">
                 {isUr ? 'درخواست گزار:' : 'Applicant:'} <strong className="text-[#F5D061] font-semibold">{application.applicantName}</strong> · {isUr ? 'شناختی کارڈ:' : 'CNIC:'} <span className="font-mono text-slate-200 tabular-nums">{application.cnic}</span> · {application.district}, {application.stateProvince}
               </p>
             </div>
@@ -337,7 +337,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
         </div>
 
         {/* Modal Body: Two Column Layout on Desktop */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6 space-y-6">
           
           {/* Summary Metric Ribbon */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -735,8 +735,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
       {/* SUB-MODAL 1: FLAGGING PROMPT */}
       {flaggingDocId && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#090D16]/85 p-4">
-          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
+        <div className="fixed inset-0 z-[110] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100 my-auto">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
               <span>{isUr ? 'معاون دستاویز پر اعتراض لگائیں' : 'Flag Supporting Document'}</span>
@@ -784,8 +784,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
       {/* SUB-MODAL 1B: DELETE CONFIRMATION (Replaces window.confirm) */}
       {confirmDeleteDoc && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#090D16]/85 p-4">
-          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100">
+        <div className="fixed inset-0 z-[110] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
+          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 text-slate-100 my-auto">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-rose-400" />
               <span>{isUr ? 'معاون فائل ہٹائیں؟' : 'Remove Supporting File?'}</span>
@@ -820,9 +820,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
       {/* SUB-MODAL 2: HIGH-RESOLUTION LIGHTBOX VIEWER */}
       {viewingDoc && (
-        <div className="fixed inset-0 z-70 flex flex-col bg-slate-950/95">
+        <div className="fixed inset-0 z-[120] flex flex-col bg-slate-950/95 pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
           {/* Lightbox Toolbar */}
-          <div className="px-6 py-3.5 bg-black/60 border-b border-white/10 flex items-center justify-between text-white">
+          <div className="px-4 sm:px-6 py-3.5 bg-black/60 border-b border-white/10 flex items-center justify-between gap-2 text-white">
             <div className="flex items-center gap-3">
               <h4 className="font-bold text-sm text-amber-300 truncate max-w-md">
                 {viewingDoc.name}

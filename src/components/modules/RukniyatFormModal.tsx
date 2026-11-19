@@ -124,6 +124,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
   const [ancestralArea, setAncestralArea] = useState<string>('');
   const [dob, setDob] = useState<string>('');
   const [age, setAge] = useState<string>('');
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty and editable.
   const [cnic, setCnic] = useState<string>('');
   const [selectedTabbarId, setSelectedTabbarId] = useState<string>('faiz_khel');
   const [customTabbarEnglish, setCustomTabbarEnglish] = useState<string>('');
@@ -239,7 +240,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
       setAncestralArea('');
       setDob('');
       setAge('');
-      setCnic(formatCnicDisplay(currentUser?.cnic));
+      setCnic('');
       setSelectedTabbarId(userTab?.id || 'faiz_khel');
       setCustomTabbarEnglish(userTab?.isCustom ? userTab.englishName : '');
       setCustomTabbarUrdu(userTab?.isCustom ? userTab.urduName : '');
@@ -752,21 +753,21 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
   const outerWrapperClass = embedded
     ? 'w-full max-w-[100vw] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-xl overflow-hidden box-border'
-    : 'relative w-full max-w-[calc(100vw-16px)] max-h-[94dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border';
+    : 'relative w-full max-w-[calc(100vw-20px)] sm:max-w-4xl kc-modal-panel flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border my-auto';
 
   const bodyWrapper = (
       <div className={outerWrapperClass}>
         {/* Top Control Bar */}
-        <div className="flex items-center justify-between gap-2 px-3.5 sm:px-5 py-3 bg-[#0C1524] border-b border-[#D4AF37]/30">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-start sm:items-center justify-between gap-2 px-3.5 sm:px-5 py-3 bg-[#0C1524] border-b border-[#D4AF37]/30 shrink-0">
+          <div className="flex items-start sm:items-center gap-2.5 flex-1 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FDE047] to-[#B45309] flex items-center justify-center text-[#070D14] shadow-md shrink-0">
               <Crown className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-extrabold text-amber-300 tracking-wide truncate">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xs sm:text-base font-extrabold text-amber-300 tracking-wide break-words whitespace-normal leading-snug">
                 {isUr ? 'رکنیت فارم — سوئی خیل قومی اتحاد' : 'RUKNIYAT FORM — SUI KHEL QAUMI ITTEHAD'}
               </h2>
-              <p className="text-[11px] text-slate-400 truncate">
+              <p className="text-[11px] text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
                 {isInspectMode
                   ? `Serial: ${displaySerial} · Status: ${effectiveInspected?.status}`
                   : isUr
@@ -776,23 +777,23 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setFormLang((prev) => (prev === 'ur' ? 'en' : 'ur'))}
-              className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
+              className="min-h-[44px] flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
             >
-              <Languages className="w-3.5 h-3.5" />
-              {isUr ? 'English' : 'اردو'}
+              <Languages className="w-3.5 h-3.5 shrink-0" />
+              <span>{isUr ? 'English' : 'اردو'}</span>
             </button>
             {!embedded && (
               <button
                 type="button"
                 onClick={handleClose}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800/90 border border-[#D4AF37]/30 text-slate-200 hover:text-white hover:bg-slate-700 transition cursor-pointer shrink-0 kc-pressable"
                 aria-label="Close Rukniyat Form"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -800,7 +801,8 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
         {/* Scrollable Luxury Paper / Dark Form Body */}
         <div
-          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5"
+          className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6 space-y-5"
+          style={{ WebkitOverflowScrolling: 'touch' }}
           dir={isUr ? 'rtl' : 'ltr'}
         >
           {submittedSerial ? (
@@ -1293,7 +1295,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       disabled={isInspectMode}
                       value={cnic}
                       onChange={(e) => setCnic(formatCnicDisplay(e.target.value))}
-                      placeholder="XXXXX-XXXXXXX-X"
+                      placeholder="e.g. 00000-0000000-0"
                       inputMode="numeric"
                       dir="ltr"
                       className={`${inputClass} font-mono ${
@@ -1738,7 +1740,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
       {bodyWrapper}
     </div>
   );

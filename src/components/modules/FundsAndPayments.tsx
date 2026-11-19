@@ -107,9 +107,8 @@ export const FundsAndPayments: React.FC = () => {
   const [startYear, setStartYear] = useState<number>(() => new Date().getFullYear());
   const [payAmount, setPayAmount] = useState<string>('');
   const [payFund, setPayFund] = useState<FundCategory>('Monthly Contribution');
-  const [payerCnic, setPayerCnic] = useState<string>(() =>
-    currentUser?.cnic ? formatCnicDisplay(currentUser.cnic) : ''
-  );
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty and editable.
+  const [payerCnic, setPayerCnic] = useState<string>('');
   const [unit, setUnit] = useState<string>('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('EasyPaisa');
   const [payRef, setPayRef] = useState('');
@@ -123,12 +122,6 @@ export const FundsAndPayments: React.FC = () => {
   const lastActionTsRef = useRef<number>(0);
   const receiptCameraInputRef = useRef<HTMLInputElement | null>(null);
   const receiptGalleryInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (currentUser?.cnic && !payerCnic) {
-      setPayerCnic(formatCnicDisplay(currentUser.cnic));
-    }
-  }, [currentUser?.cnic, payerCnic]);
 
   // Preview / Reject modals
   const [previewTx, setPreviewTx] = useState<PaymentTransaction | null>(null);
@@ -223,7 +216,7 @@ export const FundsAndPayments: React.FC = () => {
     setStartYear(new Date().getFullYear());
     setPayAmount('');
     setPayFund('Monthly Contribution');
-    setPayerCnic(currentUser?.cnic ? formatCnicDisplay(currentUser.cnic) : '');
+    setPayerCnic('');
     setUnit('');
     setPayMethod('EasyPaisa');
     setPayRef('');
@@ -783,24 +776,25 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* 3-Step Payment Submission Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal relative w-full max-w-lg rounded-2xl p-5 sm:p-6 pb-[100px] sm:pb-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/25">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
+            <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#D4AF37]/25">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061] block">
                   {isUr ? `مرحلہ ${step} از 3` : `Step ${step} of 3`}
                 </span>
-                <h3 className="text-base font-bold text-white">
+                <h3 className="text-base font-bold text-white break-words whitespace-normal leading-snug mt-0.5">
                   {isUr ? 'فنڈ ادائیگی اور رسید وصولی' : 'Funds Payment & Raseed Wasooli'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={resetPaymentModal}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-[#F5D061] transition-colors cursor-pointer"
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] transition-colors cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1096,21 +1090,23 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Receipt Image Preview Modal */}
       {previewTx && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="kc-luxury-modal rounded-2xl max-w-md w-full p-4 space-y-3 my-auto max-h-[92dvh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="flex items-center justify-between pb-2 border-b border-[#D4AF37]/25">
-              <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4 text-[#F5D061]" />
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
+          <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-md w-full p-4 sm:p-5 pb-24 sm:pb-5 space-y-3 my-auto overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/25">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-white flex items-center gap-1.5 break-words whitespace-normal leading-snug">
+                  <ImageIcon className="w-4 h-4 text-[#F5D061] shrink-0" />
                   <span>{previewTx.receiptNumber} {isUr ? 'ثبوت' : 'Proof'}</span>
                 </h4>
-                <p className="text-[11px] text-slate-400 tabular-nums">
+                <p className="text-[11px] text-slate-400 tabular-nums break-words whitespace-normal leading-snug mt-0.5">
                   {previewTx.userName} · PKR {previewTx.amount.toLocaleString()} ({localizeMethod(previewTx.paymentMethod)})
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setPreviewTx(null)}
-                className="p-1 text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1128,11 +1124,24 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Rejection Reason Modal */}
       {rejectTxId && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 space-y-3 my-auto">
-            <h4 className="text-sm font-bold text-white">
-              {isUr ? 'ادائیگی کا ثبوت مسترد کریں' : 'Reject Payment Proof'}
-            </h4>
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
+          <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-sm w-full p-5 pb-24 sm:pb-5 space-y-3 my-auto overflow-y-auto">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="text-sm font-bold text-white flex-1 min-w-0 break-words whitespace-normal leading-snug">
+                {isUr ? 'ادائیگی کا ثبوت مسترد کریں' : 'Reject Payment Proof'}
+              </h4>
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectTxId(null);
+                  setRejectReason('');
+                }}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <p className="text-xs text-slate-400">
               {isUr
                 ? 'مختصر وجہ بیان کریں تاکہ ممبر درست رسید دوبارہ جمع کروا سکے۔'

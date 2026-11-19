@@ -1,12 +1,17 @@
 package com.kifayatconnect.app;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -123,14 +128,56 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private boolean isNetworkAvailable() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                android.net.Network activeNetwork = cm.getActiveNetwork();
+                if (activeNetwork == null) return false;
+                NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
+                return caps != null && (
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                );
+            }
+            return true;
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private class KifayatOtaBridge {
+        @JavascriptInterface
+        public void clearWebViewHttpCache() {
+            runOnUiThread(() -> {
+                if (bridge != null && bridge.getWebView() != null) {
+                    // Clears ONLY HTTP disk cache (JS/CSS/HTML), leaving localStorage & IndexedDB auth sessions untouched
+                    bridge.getWebView().clearCache(false);
+                }
+            });
+        }
+    }
+
     @Override
     public void onStart() {
         super.onStart();
         if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView webView = this.bridge.getWebView();
+            WebSettings settings = webView.getSettings();
+            if (settings != null) {
+                settings.setCacheMode(
+                    isNetworkAvailable()
+                        ? WebSettings.LOAD_NO_CACHE
+                        : WebSettings.LOAD_CACHE_ELSE_NETWORK
+                );
+            }
+            webView.addJavascriptInterface(new KifayatOtaBridge(), "KifayatOtaNative");
             if (customChromeClient == null) {
                 customChromeClient = new KifayatWebChromeClient();
             }
-            this.bridge.getWebView().setWebChromeClient(customChromeClient);
+            webView.setWebChromeClient(customChromeClient);
         }
     }
 

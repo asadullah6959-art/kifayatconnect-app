@@ -15,7 +15,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
-import { BrandEmblem3D } from './BrandEmblem3D';
+import { AppLogo } from './AppLogo';
 import { RoleBadge } from './RoleBadge';
 import { translate } from '../../data/translations';
 import { isFounderIdentity } from '../../utils/permissions';
@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center gap-1.5 cursor-pointer select-none flex-1 min-w-0 overflow-hidden"
         >
           <div className="shrink-0">
-            <BrandEmblem3D size="sm" halo />
+            <AppLogo size="sm" halo />
           </div>
           <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
             <span className={`text-[14px] font-extrabold tracking-tight kc-gold-gradient-text leading-tight truncate block ${language === 'ur' ? 'kc-font-urdu' : ''}`}>

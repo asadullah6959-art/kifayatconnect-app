@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -17,8 +18,62 @@ async function startServer() {
 
   app.use(express.json({ limit: '25mb' }));
 
+  const SERVER_BOOT_BUILD_ID = new Date().toISOString();
+
+  const readLiveVersionManifest = () => {
+    if (!IS_PROD) {
+      return {
+        version: '1.0.0',
+        buildId: 'dev',
+        builtAt: SERVER_BOOT_BUILD_ID,
+        otaEnabled: false,
+      };
+    }
+    const candidates = [
+      path.resolve(__dirname, 'dist', 'version.json'),
+      path.resolve(__dirname, 'public', 'version.json'),
+    ];
+    for (const filePath of candidates) {
+      try {
+        if (fs.existsSync(filePath)) {
+          const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          if (parsed && typeof parsed === 'object') {
+            return {
+              version: String(parsed.version || '1.0.0'),
+              buildId: String(parsed.buildId || SERVER_BOOT_BUILD_ID),
+              builtAt: String(parsed.builtAt || SERVER_BOOT_BUILD_ID),
+              otaEnabled: true,
+            };
+          }
+        }
+      } catch {
+        // fallback to next candidate
+      }
+    }
+    return {
+      version: '1.0.0',
+      buildId: SERVER_BOOT_BUILD_ID,
+      builtAt: SERVER_BOOT_BUILD_ID,
+      otaEnabled: true,
+    };
+  };
+
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'kifayat-connect-server' });
+  });
+
+  app.get('/api/version', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json(readLiveVersionManifest());
+  });
+
+  app.get('/version.json', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json(readLiveVersionManifest());
   });
 
   app.post('/api/scan-paper-form', async (req, res) => {
@@ -325,8 +380,25 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distDir = path.resolve(__dirname, 'dist');
-    app.use(express.static(distDir));
+    app.use(
+      express.static(distDir, {
+        setHeaders(res, filePath) {
+          if (
+            filePath.endsWith('index.html') ||
+            filePath.endsWith('sw.js') ||
+            filePath.endsWith('version.json')
+          ) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+          }
+        },
+      })
+    );
     app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(distDir, 'index.html'));
     });
   }

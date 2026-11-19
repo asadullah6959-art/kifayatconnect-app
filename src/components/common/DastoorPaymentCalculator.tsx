@@ -698,7 +698,9 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               type="text"
               inputMode="numeric"
               required
-              placeholder="35201-1234567-1"
+              maxLength={15}
+              dir="ltr"
+              placeholder="e.g. 00000-0000000-0"
               value={payerCnic}
               onChange={(e) => onPayerCnicChange(formatCnicDisplay(e.target.value))}
               className={`kc-luxury-input w-full text-xs font-mono font-bold px-3 py-2 rounded-xl ${

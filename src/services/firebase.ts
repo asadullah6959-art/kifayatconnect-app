@@ -1847,25 +1847,56 @@ export async function saveCommunityMessageToFirestore(msg: ChatMessage): Promise
 
 export async function deleteCommunityMessageFromFirestore(messageId: string): Promise<void> {
   await tryEnsureSessionBestEffort();
-  await Promise.all([
-    deleteDoc(doc(db, 'community_messages', messageId)).catch(() => {}),
-    deleteDoc(doc(db, 'community_chat_messages', messageId)).catch(() => {})
-  ]);
+  try {
+    await Promise.all([
+      deleteDoc(doc(db, 'community_messages', messageId)),
+      deleteDoc(doc(db, 'community_chat_messages', messageId))
+    ]);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `community_messages/${messageId}`);
+  }
+}
+
+export async function deleteAllCommunityMessagesFromFirestore(): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  try {
+    const [primarySnap, legacySnap] = await Promise.all([
+      getDocs(collection(db, 'community_messages')),
+      getDocs(collection(db, 'community_chat_messages'))
+    ]);
+    const deleteTasks: Promise<void>[] = [];
+    primarySnap.forEach((docSnap) => {
+      deleteTasks.push(deleteDoc(doc(db, 'community_messages', docSnap.id)));
+    });
+    legacySnap.forEach((docSnap) => {
+      deleteTasks.push(deleteDoc(doc(db, 'community_chat_messages', docSnap.id)));
+    });
+    if (deleteTasks.length > 0) {
+      await Promise.all(deleteTasks);
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, 'community_messages');
+  }
 }
 
 export async function overwriteDeletedCommunityMessageInFirestore(msg: ChatMessage): Promise<void> {
   await tryEnsureSessionBestEffort();
-  const payload = {
+  const deletedByLabel =
+    msg.deletedBy || (msg.deletedByFounder ? 'Founder' : (msg.deletedByRole || 'MEMBER'));
+  const updatePayload = {
     id: msg.id,
     chatId: msg.chatId || 'community_global_room',
-    roomType: 'COMMUNITY',
+    roomType: 'COMMUNITY' as const,
     senderId: msg.senderId,
-    senderName: msg.senderName,
+    senderName: msg.senderName || 'Member',
     senderRole: msg.senderRole || 'MEMBER',
     senderIsFounder: Boolean(msg.senderIsFounder),
     timestamp: msg.timestamp || new Date().toISOString(),
     createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
     text: '',
+    imageUrl: '',
+    audioUrl: '',
+    media: null,
     attachmentUrl: '',
     attachmentName: '',
     attachmentType: null,
@@ -1875,23 +1906,62 @@ export async function overwriteDeletedCommunityMessageInFirestore(msg: ChatMessa
     reactions: {},
     isPinned: false,
     isHighlighted: false,
-    isDeleted: false,
+    isDeleted: true,
     isDeletedForEveryone: true,
+    deletedBy: deletedByLabel,
     deletedByRole: msg.deletedByRole || 'MEMBER',
     deletedByFounder: Boolean(msg.deletedByFounder),
     deletedAt: msg.deletedAt || new Date().toISOString()
   };
-  await Promise.all([
-    setDoc(doc(db, 'community_messages', msg.id), payload, { merge: true }).catch(() => {}),
-    setDoc(doc(db, 'community_chat_messages', msg.id), payload, { merge: true }).catch(() => {})
-  ]);
+
+  let primaryNotFound = false;
+  let legacyUpdated = false;
+
+  try {
+    await updateDoc(doc(db, 'community_messages', msg.id), updatePayload);
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === 'not-found') {
+      primaryNotFound = true;
+    } else {
+      handleFirestoreError(err, OperationType.UPDATE, `community_messages/${msg.id}`);
+    }
+  }
+
+  try {
+    await updateDoc(doc(db, 'community_chat_messages', msg.id), updatePayload);
+    legacyUpdated = true;
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code !== 'not-found') {
+      handleFirestoreError(err, OperationType.UPDATE, `community_chat_messages/${msg.id}`);
+    }
+  }
+
+  if (primaryNotFound && !legacyUpdated) {
+    try {
+      await setDoc(doc(db, 'community_messages', msg.id), updatePayload, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `community_messages/${msg.id}`);
+    }
+  }
 }
 
 export async function hideCommunityMessageForUserInFirestore(messageId: string, userId: string): Promise<void> {
   await tryEnsureSessionBestEffort();
+  const hideInCol = async (colName: string) => {
+    try {
+      await updateDoc(doc(db, colName, messageId), { hiddenForUsers: arrayUnion(userId) });
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== 'not-found') {
+        console.warn(`Firestore hide community message warning (${colName}/${messageId}):`, err);
+      }
+    }
+  };
   await Promise.all([
-    updateDoc(doc(db, 'community_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {}),
-    updateDoc(doc(db, 'community_chat_messages', messageId), { hiddenForUsers: arrayUnion(userId) }).catch(() => {})
+    hideInCol('community_messages'),
+    hideInCol('community_chat_messages')
   ]);
 }
 

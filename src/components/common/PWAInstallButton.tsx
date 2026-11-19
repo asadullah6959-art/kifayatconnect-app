@@ -78,20 +78,23 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
       {/* iOS or fallback modal */}
       {showIosModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="kc-luxury-modal rounded-2xl max-w-sm w-full p-5 relative text-white">
-            <button
-              onClick={() => setShowIosModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-3">
-              <Smartphone className="w-5 h-5 text-[#F5D061]" />
-              <h4 className="font-extrabold text-sm text-white">
-                {language === 'ur' ? 'کفایت کنیکٹ انسٹال کریں' : 'Install Kifayat Connect'}
-              </h4>
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop bg-black/80 flex items-start sm:items-center justify-center overflow-y-auto">
+          <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-sm w-full p-5 pb-24 sm:pb-5 relative text-white my-auto overflow-y-auto">
+            <div className="flex items-start justify-between gap-2.5 mb-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Smartphone className="w-5 h-5 text-[#F5D061] shrink-0" />
+                <h4 className="font-extrabold text-sm text-white break-words whitespace-normal leading-snug">
+                  {language === 'ur' ? 'کفایت کنیکٹ انسٹال کریں' : 'Install Kifayat Connect'}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowIosModal(false)}
+                aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">

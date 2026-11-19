@@ -95,38 +95,38 @@ export const MemberTutorialModal: React.FC = () => {
   const Icon = current.icon;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md overflow-y-auto">
       <div
-        className="w-full max-w-lg rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#0B1220] to-[#070D14] border-2 border-[#D4AF37]/55 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden"
+        className="w-full max-w-lg kc-modal-panel flex flex-col rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#0B1220] to-[#070D14] border-2 border-[#D4AF37]/55 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden my-auto"
         dir={isUr ? 'rtl' : 'ltr'}
       >
         {/* Top Bar with Prominent 1-Click Skip */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-[#0A1320] border-b border-[#D4AF37]/25">
-          <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
-            <Sparkles className="w-4 h-4" />
-            <span>{isUr ? 'کفایت کنیکٹ ممبر گائیڈ' : 'Kifayat Connect Member Guide'}</span>
+        <div className="flex items-start sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 bg-[#0A1320] border-b border-[#D4AF37]/25 shrink-0">
+          <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300 flex-1 min-w-0">
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span className="break-words whitespace-normal leading-snug">{isUr ? 'کفایت کنیکٹ ممبر گائیڈ' : 'Kifayat Connect Member Guide'}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={closeTutorial}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs font-extrabold hover:bg-amber-500/30 transition"
+              className="min-h-[40px] px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs font-extrabold hover:bg-amber-500/30 transition cursor-pointer"
             >
               {isUr ? 'چھپائیں / Skip' : 'Skip / چھپائیں'}
             </button>
             <button
               type="button"
               onClick={closeTutorial}
-              className="p-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer"
               aria-label="Close Tutorial"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Step Body */}
-        <div className="p-6 space-y-5 text-center">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 pb-24 sm:pb-6 space-y-5 text-center" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#D4AF37]/25 to-emerald-500/20 border border-[#D4AF37]/55 flex items-center justify-center shadow-lg">
             <Icon className="w-8 h-8 text-[#FDE047]" />
           </div>

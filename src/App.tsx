@@ -4,7 +4,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { AuthWelcomeGate } from './components/auth/AuthWelcomeGate';
-import { BrandEmblem3D } from './components/common/BrandEmblem3D';
+import { AppLogo } from './components/common/AppLogo';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Dashboards (Strict 4 Roles)
@@ -38,6 +38,8 @@ import { MemberProfileModal } from './components/modules/MemberProfileModal';
 import { IphoneSafariInstallBanner } from './components/common/IphoneSafariInstallBanner';
 import { RukniyatFormModal } from './components/modules/RukniyatFormModal';
 import { MemberTutorialModal } from './components/common/MemberTutorialModal';
+import { LiveUpdateBanner } from './components/common/LiveUpdateBanner';
+import { useLiveAutoUpdate } from './hooks/useLiveAutoUpdate';
 
 import {
   LayoutDashboard,
@@ -80,8 +82,14 @@ const MainLayout: React.FC = () => {
     markNotificationAsRead,
     jumpToMemberApproval,
     iphoneShareNotice,
-    dismissIphoneShareNotice
+    dismissIphoneShareNotice,
+    latestPublishedUpdate
   } = useApp();
+
+  const liveUpdate = useLiveAutoUpdate({
+    appSettings,
+    latestPublishedUpdate,
+  });
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -119,7 +127,15 @@ const MainLayout: React.FC = () => {
     return (
       <>
         <div className="relative w-full max-w-[100vw] overflow-x-hidden box-border">
-          <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] inset-x-3 z-50 max-w-md mx-auto pointer-events-auto">
+          <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] inset-x-3 z-50 max-w-md mx-auto pointer-events-auto space-y-2">
+            <LiveUpdateBanner
+              visible={liveUpdate.updateAvailable}
+              versionLabel={liveUpdate.updateVersionLabel}
+              isRefreshing={liveUpdate.isRefreshing}
+              language={language}
+              onRefresh={liveUpdate.applyLiveUpdate}
+              onDismiss={liveUpdate.dismissBanner}
+            />
             <IphoneSafariInstallBanner language={language} />
           </div>
           <AuthWelcomeGate onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
@@ -144,7 +160,7 @@ const MainLayout: React.FC = () => {
       >
         <div className="max-w-md w-full kc-luxury-modal rounded-2xl p-6 sm:p-8 space-y-5">
           <div className="flex flex-col items-center gap-3">
-            <BrandEmblem3D size="lg" />
+            <AppLogo size="lg" halo />
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#131C31] border border-[#38BDF8]/35 text-[#38BDF8] text-[11px] font-bold uppercase shadow-sm">
               <Wrench className="w-3.5 h-3.5" />
               <span>{translate(language, 'maintenanceTitle')}</span>
@@ -286,6 +302,14 @@ const MainLayout: React.FC = () => {
         {/* Scrollable Center Mobile Content Viewport */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y px-3 pt-3 sm:px-4 sm:pt-4 pb-[calc(96px+env(safe-area-inset-bottom,16px))] w-full min-w-0 max-w-[100vw] box-border relative z-10">
           <div className="w-full max-w-full min-w-0 space-y-4 box-border">
+            <LiveUpdateBanner
+              visible={liveUpdate.updateAvailable}
+              versionLabel={liveUpdate.updateVersionLabel}
+              isRefreshing={liveUpdate.isRefreshing}
+              language={language}
+              onRefresh={liveUpdate.applyLiveUpdate}
+              onDismiss={liveUpdate.dismissBanner}
+            />
             <IphoneSafariInstallBanner language={language} />
             {liveApprovalAlert && (
               <div className="p-3.5 rounded-xl kc-emerald-panel flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">

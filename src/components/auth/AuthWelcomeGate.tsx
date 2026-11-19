@@ -27,7 +27,7 @@ import {
   OTP_COOLDOWN_SECONDS,
   requestPasswordReset
 } from '../../services/firebase';
-import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { AppLogo } from '../common/AppLogo';
 import { translate } from '../../data/translations';
 import { resolveIphoneLiveUrl, shareKifayatForIphone } from '../../utils/iphoneShare';
 
@@ -210,7 +210,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
       {/* Top Bar */}
       <div className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-2.5">
-          <BrandEmblem3D size="sm" halo />
+          <AppLogo size="sm" halo />
           <div>
             <span className={`font-extrabold text-sm tracking-tight kc-gold-gradient-text block leading-none ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {language === 'ur' ? (appSettings.appNameUr || 'کفایت کنیکٹ') : (appSettings.appName || 'Kifayat Connect')}
@@ -238,7 +238,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
         <div className="p-5 sm:p-6 space-y-5">
           <div className="text-center space-y-2">
             <div className="flex justify-center">
-              <BrandEmblem3D size="md" animated halo />
+              <AppLogo size="md" animated halo />
             </div>
             <h1 className={`text-xl font-extrabold kc-gold-gradient-text tracking-tight ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {translate(language, 'welcomeSignInTitle', appSettings.textOverrides)}
@@ -301,7 +301,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                     <input
                       type="text"
                       required
-                      placeholder="name@gmail.com / 35201-1234567-1"
+                      placeholder="name@gmail.com / 00000-0000000-0"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
@@ -452,7 +452,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                       type="text"
                       required
                       autoComplete="username"
-                      placeholder={language === 'ur' ? 'name@gmail.com یا 35201-1234567-1' : 'name@gmail.com / 35201-1234567-1'}
+                      placeholder={language === 'ur' ? 'name@gmail.com یا 00000-0000000-0' : 'name@gmail.com / 00000-0000000-0'}
                       value={pwdEmail}
                       onChange={(e) => {
                         setPwdEmail(e.target.value);

@@ -12,7 +12,8 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Ban,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 import { User, UserRole } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
@@ -45,6 +46,7 @@ export const StaffManagement: React.FC = () => {
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty and editable.
   const [formCnic, setFormCnic] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('ADMIN');
   const [formStateProvince, setFormStateProvince] = useState('Punjab');
@@ -441,17 +443,25 @@ export const StaffManagement: React.FC = () => {
 
       {/* APPOINT / MODIFY STAFF MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto">
-          <div className="kc-luxury-modal relative w-full max-w-lg rounded-2xl my-auto max-h-[92dvh] flex flex-col overflow-hidden text-white">
-            <div className="px-6 py-4 border-b border-[#D4AF37]/25 bg-[#090D16] shrink-0">
-              <h3 className="text-base font-bold text-[#F5D061]">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
+          <div className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl my-auto flex flex-col overflow-hidden text-white">
+            <div className="px-4 sm:px-6 py-3.5 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-start justify-between gap-2.5 shrink-0">
+              <h3 className="text-base font-bold text-[#F5D061] flex-1 min-w-0 break-words whitespace-normal leading-snug pt-1">
                 {editingStaff
                   ? (isUr ? `عہدیدار میں ترمیم: ${editingStaff.name}` : `Modify Official: ${editingStaff.name}`)
                   : (isUr ? 'نیا عہدیدار مقرر کریں' : 'Appoint New Official')}
               </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 pb-24 sm:pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
             {formError && (
               <div className="mb-3 p-2.5 rounded-xl bg-rose-950/70 border border-rose-500/45 text-xs text-rose-200 font-medium">
                 {formError}
@@ -499,7 +509,7 @@ export const StaffManagement: React.FC = () => {
                     required
                     value={formCnic}
                     onChange={(e) => setFormCnic(e.target.value)}
-                    placeholder="35201-1234567-1"
+                    placeholder="e.g. 00000-0000000-0"
                     className="kc-luxury-input w-full text-xs font-mono px-3 py-2.5 rounded-xl"
                   />
                 </div>

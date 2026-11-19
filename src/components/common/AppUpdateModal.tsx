@@ -8,6 +8,7 @@ import {
   X 
 } from 'lucide-react';
 import { compareVersions, INSTALLED_APP_VERSION } from '../../services/githubReleases';
+import { applyOtaCacheBustAndReload } from '../../utils/otaUpdate';
 
 export const AppUpdateModal: React.FC = () => {
   const { 
@@ -60,14 +61,7 @@ export const AppUpdateModal: React.FC = () => {
     : (githubRelease?.publishedAt ? new Date(githubRelease.publishedAt).toLocaleDateString() : (language === 'ur' ? 'تازہ ترین' : 'Latest'));
 
   const handlePwaUpdate = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        for (const reg of regs) {
-          reg.update();
-        }
-      });
-    }
-    window.location.reload();
+    void applyOtaCacheBustAndReload(activeVersion);
   };
 
   const handleDismiss = () => {
@@ -77,48 +71,50 @@ export const AppUpdateModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="kc-luxury-modal rounded-2xl max-w-lg w-full overflow-hidden relative text-white">
-        <div className="h-1.5 bg-gradient-to-r from-[#FCE38A] via-[#D4AF37] to-[#8A6218]" />
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop bg-black/80 flex items-start sm:items-center justify-center overflow-y-auto">
+      <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-lg w-full flex flex-col overflow-hidden relative text-white my-auto">
+        <div className="h-1.5 bg-gradient-to-r from-[#FCE38A] via-[#D4AF37] to-[#8A6218] shrink-0" />
 
-        <div className="p-5 sm:p-6 pb-4 relative bg-[#090D16] border-b border-[#D4AF37]/25">
-          {!isMandatory && (
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] flex items-center justify-center text-[#090D16] shadow-lg border border-[#FCE38A]/60">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40">
-                  v{activeVersion}
-                </span>
-                {isMandatory && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40">
-                    {language === 'ur' ? 'لازمی اپڈیٹ' : 'Required Update'}
-                  </span>
-                )}
+        <div className="p-4 sm:p-6 pb-4 bg-[#090D16] border-b border-[#D4AF37]/25 shrink-0">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] flex items-center justify-center text-[#090D16] shadow-lg border border-[#FCE38A]/60 shrink-0">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="text-base sm:text-lg font-extrabold text-white mt-1">
-                {title}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40">
+                    v{activeVersion}
+                  </span>
+                  {isMandatory && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40">
+                      {language === 'ur' ? 'لازمی اپڈیٹ' : 'Required Update'}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-base sm:text-lg font-extrabold text-white mt-1 break-words whitespace-normal leading-snug">
+                  {title}
+                </h3>
+                <p className="text-xs text-slate-400 font-mono tabular-nums mt-0.5">
+                  {language === 'ur' ? `جاری کردہ: ${releaseDate}` : `Released: ${releaseDate}`}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <p className="text-xs text-slate-400 font-mono tabular-nums">
-            {language === 'ur' ? `جاری کردہ: ${releaseDate}` : `Released: ${releaseDate}`}
-          </p>
+            {!isMandatory && (
+              <button
+                type="button"
+                onClick={handleDismiss}
+                aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 pb-24 sm:pb-6 space-y-4">
           <p className="text-xs text-slate-200 leading-relaxed">
             {description}
           </p>

@@ -376,6 +376,7 @@ const ChatModuleContent: React.FC = () => {
     togglePinCommunityMessage,
     deleteCommunityMessageForMe,
     deleteCommunityMessageForEveryone,
+    clearDeletedCommunityMessageGlobally,
     clearOldCommunityMessages,
     deleteDirectMessageForMe,
     deleteDirectMessageForEveryone,
@@ -2249,17 +2250,23 @@ const ChatModuleContent: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (isPermanentlyDeleted) {
+                              void clearDeletedCommunityMessageGlobally(msg.id).then((res) => {
+                                if (!res.success && res.error) setChatError(res.error);
+                              });
+                              return;
+                            }
                             setDeleteModalTarget({
                               scope: 'COMMUNITY',
                               msg,
                               canDeleteForEveryone
-                            })
-                          }
+                            });
+                          }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111622]/90 border border-rose-500/35 text-rose-300 hover:bg-rose-950/60 cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
-                          <span>{isPermanentlyDeleted ? (language === 'ur' ? 'میرے لیے ہٹائیں' : 'Clear') : translate(language, 'deleteLabel')}</span>
+                          <span>{isPermanentlyDeleted ? (language === 'ur' ? 'صاف کریں' : 'Clear') : translate(language, 'deleteLabel')}</span>
                         </button>
 
                         {!isPermanentlyDeleted && canMuteThisAuthor && authorRecord && (
@@ -3499,20 +3506,20 @@ const ChatModuleContent: React.FC = () => {
       {/* Direct Chat File Attachment Modal */}
       {isAttachmentModalOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsAttachmentModalOpen(false)}
         >
           <div
-            className="bg-[#111622] rounded-2xl max-w-sm w-full p-5 border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-modal-panel bg-[#111622] rounded-2xl max-w-sm w-full p-5 pb-24 sm:pb-5 border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-bold text-white flex-1 min-w-0 break-words whitespace-normal leading-snug pt-1">
                 {language === 'ur' ? 'تصویر یا فائل منسلک کریں' : 'Attach Photo or File'}
               </h3>
-              <button type="button" onClick={() => setIsAttachmentModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
+              <button type="button" onClick={() => setIsAttachmentModalOpen(false)} aria-label="Close" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3558,26 +3565,27 @@ const ChatModuleContent: React.FC = () => {
       {/* Forward Message Picker Modal */}
       {forwardingMessage && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10004] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10004] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setForwardingMessage(null)}
         >
           <div
-            className="w-full max-w-md kc-luxury-modal rounded-2xl p-5 space-y-3.5 my-auto max-h-[88dvh] flex flex-col text-xs text-white"
+            className="kc-modal-panel w-full max-w-md kc-luxury-modal rounded-2xl p-5 pb-24 sm:pb-5 space-y-3.5 my-auto flex flex-col text-xs text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
-              <div className="flex items-center gap-2">
-                <Forward className="w-4 h-4 text-[#F5D061]" />
-                <h3 className="text-sm font-extrabold text-[#F5D061]">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
+              <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
+                <Forward className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <h3 className="text-sm font-extrabold text-[#F5D061] break-words whitespace-normal leading-snug">
                   {language === 'ur' ? 'پیغام فارورڈ کریں' : 'Forward Message'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setForwardingMessage(null)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3652,30 +3660,31 @@ const ChatModuleContent: React.FC = () => {
       {/* Scenic Live Chat Theme Modal (Leadership + Founder Custom BG Upload) */}
       {isThemeModalOpen && isLeadership && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsThemeModalOpen(false)}
         >
           <div
-            className="bg-[#111622] rounded-2xl max-w-md w-full p-5 border border-[#D4AF37]/40 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-modal-panel bg-[#111622] rounded-2xl max-w-md w-full p-5 pb-24 sm:pb-5 border border-[#D4AF37]/40 shadow-2xl space-y-4 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-[#F5D061]" />
+            <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-extrabold text-white flex items-center gap-2 break-words whitespace-normal leading-snug">
+                  <Palette className="w-4 h-4 text-[#F5D061] shrink-0" />
                   <span>{language === 'ur' ? 'لائیو کمیونٹی منظر تھیمز' : 'Live Community Scenic Themes'}</span>
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-400 mt-0.5 break-words whitespace-normal">
                   {language === 'ur' ? 'تمام اینڈرائیڈ موبائلز کے لیے تیز رفتار جی پی یو تھیمز۔' : 'GPU-only animated themes optimized for all Android devices.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsThemeModalOpen(false)}
-                className="p-1.5 rounded-lg bg-[#161D2C] text-slate-300 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#161D2C] text-slate-200 hover:text-white shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3741,25 +3750,26 @@ const ChatModuleContent: React.FC = () => {
       {/* Founder Exclusive Bubble Color Picker Modal */}
       {isBubbleColorModalOpen && isFounder && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsBubbleColorModalOpen(false)}
         >
           <div
-            className="bg-[#111622] rounded-2xl max-w-sm w-full p-5 border border-[#F5D061]/45 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="kc-modal-panel bg-[#111622] rounded-2xl max-w-sm w-full p-5 pb-24 sm:pb-5 border border-[#F5D061]/45 shadow-2xl space-y-4 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-2">
-                <Crown className="w-4 h-4" />
+            <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-2 flex-1 min-w-0 break-words whitespace-normal leading-snug pt-1">
+                <Crown className="w-4 h-4 shrink-0" />
                 <span>{language === 'ur' ? 'بانی وی آئی پی ببل اسٹائل' : 'Founder VIP Bubble Style'}</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsBubbleColorModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3792,26 +3802,27 @@ const ChatModuleContent: React.FC = () => {
       {/* Delete Message Modal (Delete for Me vs Delete for Everyone) */}
       {deleteModalTarget && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10002] flex items-center justify-center bg-[#0A0D12]/90 p-4"
+          className="fixed inset-0 z-[10002] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setDeleteModalTarget(null)}
         >
           <div
-            className="w-full max-w-sm kc-luxury-modal rounded-2xl p-5 space-y-4 text-xs text-white"
+            className="kc-modal-panel w-full max-w-sm kc-luxury-modal rounded-2xl p-5 pb-24 sm:pb-5 space-y-4 my-auto text-xs text-white overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
-              <div className="flex items-center gap-2">
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <h3 className="text-sm font-extrabold text-white">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
+                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <h3 className="text-sm font-extrabold text-white break-words whitespace-normal leading-snug">
                   {translate(language, 'deleteMessageTitle')}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setDeleteModalTarget(null)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3844,11 +3855,16 @@ const ChatModuleContent: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const res =
-                      deleteModalTarget.scope === 'COMMUNITY'
-                        ? deleteCommunityMessageForEveryone(deleteModalTarget.msg.id)
-                        : deleteDirectMessageForEveryone(deleteModalTarget.msg.id);
-                    if (!res.success && res.error) setChatError(res.error);
+                    if (deleteModalTarget.scope === 'COMMUNITY') {
+                      const res = deleteCommunityMessageForEveryone(deleteModalTarget.msg.id);
+                      if (!res.success && res.error) setChatError(res.error);
+                      res.promise?.then((asyncRes) => {
+                        if (!asyncRes.success && asyncRes.error) setChatError(asyncRes.error);
+                      });
+                    } else {
+                      const res = deleteDirectMessageForEveryone(deleteModalTarget.msg.id);
+                      if (!res.success && res.error) setChatError(res.error);
+                    }
                     setDeleteModalTarget(null);
                   }}
                   className="w-full text-left p-3 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 transition-colors cursor-pointer space-y-0.5"
@@ -3880,26 +3896,27 @@ const ChatModuleContent: React.FC = () => {
       {/* Founder-Only Clear Old Messages Modal */}
       {isClearOldModalOpen && isFounder && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10002] flex items-center justify-center bg-[#0A0D12]/90 p-4"
+          className="fixed inset-0 z-[10002] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsClearOldModalOpen(false)}
         >
           <div
-            className="w-full max-w-sm kc-luxury-modal rounded-2xl p-5 space-y-4 text-xs text-white"
+            className="kc-modal-panel w-full max-w-sm kc-luxury-modal rounded-2xl p-5 pb-24 sm:pb-5 space-y-4 my-auto text-xs text-white overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-[#F5D061]" />
-                <h3 className="text-sm font-extrabold text-[#F5D061]">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
+                <Crown className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <h3 className="text-sm font-extrabold text-[#F5D061] break-words whitespace-normal leading-snug">
                   {translate(language, 'clearOldMessagesTitle')}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsClearOldModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -3909,6 +3926,9 @@ const ChatModuleContent: React.FC = () => {
                 onClick={() => {
                   const res = clearOldCommunityMessages('OLDER_7_DAYS');
                   if (!res.success && res.error) setChatError(res.error);
+                  res.promise?.then((asyncRes) => {
+                    if (!asyncRes.success && asyncRes.error) setChatError(asyncRes.error);
+                  });
                   setIsClearOldModalOpen(false);
                 }}
                 className="w-full p-3 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/35 text-left font-bold text-[#F5D061] cursor-pointer"
@@ -3921,6 +3941,9 @@ const ChatModuleContent: React.FC = () => {
                 onClick={() => {
                   const res = clearOldCommunityMessages('OLDER_24_HOURS');
                   if (!res.success && res.error) setChatError(res.error);
+                  res.promise?.then((asyncRes) => {
+                    if (!asyncRes.success && asyncRes.error) setChatError(asyncRes.error);
+                  });
                   setIsClearOldModalOpen(false);
                 }}
                 className="w-full p-3 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-amber-500/40 text-left font-bold text-amber-200 cursor-pointer"
@@ -3933,6 +3956,9 @@ const ChatModuleContent: React.FC = () => {
                 onClick={() => {
                   const res = clearOldCommunityMessages('ALL');
                   if (!res.success && res.error) setChatError(res.error);
+                  res.promise?.then((asyncRes) => {
+                    if (!asyncRes.success && asyncRes.error) setChatError(asyncRes.error);
+                  });
                   setIsClearOldModalOpen(false);
                 }}
                 className="w-full p-3 rounded-xl bg-rose-950/75 hover:bg-rose-900 border border-rose-500/45 text-left font-extrabold text-rose-200 cursor-pointer"
@@ -3958,22 +3984,22 @@ const ChatModuleContent: React.FC = () => {
       {/* Fullscreen Image Preview Modal */}
       {previewImageUrl && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#0A0D12]/95 p-4"
+          className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/95 overflow-y-auto"
           onClick={() => setPreviewImageUrl(null)}
         >
-          <div className="relative max-w-2xl w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-2xl w-full flex flex-col items-center my-auto" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => setPreviewImageUrl(null)}
-              className="self-end mb-2 p-2 rounded-full bg-[#161D2C] border border-[#D4AF37]/40 text-white cursor-pointer"
+              className="self-end mb-2 min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-[#161D2C] border border-[#D4AF37]/40 text-white cursor-pointer"
               aria-label="Close image preview"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
             <img
               src={previewImageUrl}
               alt="Full preview"
-              className="max-h-[82dvh] max-w-full rounded-2xl border border-[#D4AF37]/40 object-contain"
+              className="max-h-[75dvh] sm:max-h-[82dvh] max-w-full rounded-2xl border border-[#D4AF37]/40 object-contain"
             />
           </div>
         </div>,
@@ -3982,26 +4008,27 @@ const ChatModuleContent: React.FC = () => {
       {/* Pinned Messages Modal */}
       {isPinnedModalOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10002] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10002] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsPinnedModalOpen(false)}
         >
           <div
-            className="w-full max-w-md kc-luxury-modal rounded-2xl p-5 space-y-3 my-auto max-h-[88dvh] overflow-y-auto text-xs text-white"
+            className="kc-modal-panel w-full max-w-md kc-luxury-modal rounded-2xl p-5 pb-24 sm:pb-5 space-y-3 my-auto overflow-y-auto text-xs text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25">
-              <div className="flex items-center gap-2">
-                <Pin className="w-4 h-4 text-[#F5D061]" />
-                <h3 className="text-sm font-extrabold text-[#F5D061]">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25">
+              <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
+                <Pin className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <h3 className="text-sm font-extrabold text-[#F5D061] break-words whitespace-normal leading-snug">
                   {language === 'ur' ? 'پن شدہ پیغامات' : 'Pinned Messages'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPinnedModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -4050,21 +4077,21 @@ const ChatModuleContent: React.FC = () => {
       {/* Room Members Control Modal (Founder, Additional Super Admins, Admins & Co-Admins ONLY) */}
       {isRoomMembersModalOpen && canModerateRoom && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[10002] flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10002] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto"
           onClick={() => setIsRoomMembersModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg kc-luxury-modal rounded-2xl p-5 space-y-4 my-auto max-h-[90dvh] flex flex-col text-xs text-white"
+            className="kc-modal-panel w-full max-w-lg kc-luxury-modal rounded-2xl p-5 pb-24 sm:pb-5 space-y-4 my-auto flex flex-col text-xs text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#38BDF8]" />
-                <div>
-                  <h3 className="text-sm font-extrabold text-white">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/25 shrink-0">
+              <div className="flex items-start gap-2 flex-1 min-w-0 pt-0.5">
+                <Users className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-extrabold text-white break-words whitespace-normal leading-snug">
                     {language === 'ur' ? 'روم ممبران کنٹرول' : 'Room Members Control'}
                   </h3>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-400 break-words whitespace-normal">
                     {language === 'ur' ? 'کسی بھی ممبر کے پیغامات، وائس نوٹس یا روم رسائی کنٹرول کریں۔' : '1-tap lock messages, lock voice, or remove member from room.'}
                   </p>
                 </div>
@@ -4072,9 +4099,10 @@ const ChatModuleContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsRoomMembersModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white cursor-pointer"
+                aria-label="Close"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 

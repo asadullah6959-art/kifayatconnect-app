@@ -386,21 +386,22 @@ export const AnnouncementsManager: React.FC = () => {
 
       {/* Publish Modal */}
       {isPublishModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto text-xs space-y-4"
+            className="relative w-full max-w-lg kc-luxury-modal kc-modal-panel rounded-2xl p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs space-y-4"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-[#D4AF37]/20">
-              <h3 className="text-base font-bold text-white">
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+              <h3 className="text-base font-bold text-white flex-1 min-w-0 break-words whitespace-normal leading-snug">
                 {translate(language, 'publishAnnouncementBtn')}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsPublishModalOpen(false)}
-                className="p-1.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer"
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 

@@ -77,6 +77,7 @@ import {
   saveChatMessageToFirestore,
   saveCommunityMessageToFirestore,
   deleteCommunityMessageFromFirestore,
+  deleteAllCommunityMessagesFromFirestore,
   overwriteDeletedCommunityMessageInFirestore,
   hideCommunityMessageForUserInFirestore,
   deleteDirectMessageFromFirestore,
@@ -212,6 +213,20 @@ function addIdsToStorageSet(key: string, ids: string[]): Set<string> {
     // Ignore quota errors
   }
   return new Set(trimmed);
+}
+
+function removeIdsFromStorageSet(key: string, ids: string[]): Set<string> {
+  const set = readIdSetFromStorage(key);
+  ids.forEach(id => {
+    if (id) set.delete(id);
+  });
+  const arr = Array.from(set);
+  try {
+    safeSetItem(key, JSON.stringify(arr));
+  } catch {
+    // Ignore quota errors
+  }
+  return new Set(arr);
 }
 
 export function isFounderUser(user?: User | null): boolean {
@@ -629,10 +644,11 @@ interface AppContextType {
   toggleCommunityReaction: (messageId: string, emoji: string) => void;
   toggleHighlightCommunityMessage: (messageId: string) => { success: boolean; error?: string };
   togglePinCommunityMessage: (messageId: string) => { success: boolean; error?: string };
-  deleteCommunityMessage: (messageId: string) => { success: boolean; error?: string };
+  deleteCommunityMessage: (messageId: string) => { success: boolean; error?: string; promise?: Promise<{ success: boolean; error?: string }> };
   deleteCommunityMessageForMe: (messageId: string) => { success: boolean; error?: string };
-  deleteCommunityMessageForEveryone: (messageId: string) => { success: boolean; error?: string };
-  clearOldCommunityMessages: (mode: 'OLDER_7_DAYS' | 'OLDER_24_HOURS' | 'ALL') => { success: boolean; count: number; error?: string };
+  deleteCommunityMessageForEveryone: (messageId: string) => { success: boolean; error?: string; promise?: Promise<{ success: boolean; error?: string }> };
+  clearDeletedCommunityMessageGlobally: (messageId: string) => Promise<{ success: boolean; error?: string }>;
+  clearOldCommunityMessages: (mode: 'OLDER_7_DAYS' | 'OLDER_24_HOURS' | 'ALL') => { success: boolean; count: number; error?: string; promise?: Promise<{ success: boolean; error?: string }> };
   deleteDirectMessageForMe: (messageId: string) => { success: boolean; error?: string };
   deleteDirectMessageForEveryone: (messageId: string) => { success: boolean; error?: string };
   muteChatUser: (userId: string, muted: boolean) => { success: boolean; error?: string };
@@ -846,7 +862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedUid = safeGetItem(STORAGE_KEYS.CURRENT_USER_ID);
     const hiddenComm = savedUid ? readIdSetFromStorage(`${STORAGE_KEYS.HIDDEN_COMMUNITY_MSG_IDS_PREFIX}${savedUid}`) : new Set<string>();
     return readStorage<ChatMessage[]>(STORAGE_KEYS.COMMUNITY_MESSAGES, []).filter(
-      m => !m.isDeleted && !deletedComm.has(m.id) && !hiddenComm.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
+      m => !(m.isDeleted && !m.isDeletedForEveryone) && !deletedComm.has(m.id) && !hiddenComm.has(m.id) && (!savedUid || !m.hiddenForUsers?.includes(savedUid))
     );
   });
   const [offlineChatQueue, setOfflineChatQueue] = useState<ChatMessage[]>(() => readStorage<ChatMessage[]>(STORAGE_KEYS.OFFLINE_CHAT_QUEUE, []));
@@ -976,7 +992,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     for (const m of communityMessages) {
       if (!prevIds.has(m.id)) {
         prevIds.add(m.id);
-        if (!m.isDeleted) {
+        if (!m.isDeleted && !m.isDeletedForEveryone) {
           newlyAdded += 1;
         }
       }
@@ -4719,7 +4735,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 1;
   };
 
-  const deleteCommunityMessageForEveryone = (messageId: string): { success: boolean; error?: string } => {
+  const deleteCommunityMessageForEveryone = (
+    messageId: string
+  ): { success: boolean; error?: string; promise?: Promise<{ success: boolean; error?: string }> } => {
     if (!currentUser) return { success: false, error: 'Authentication required.' };
     const target = communityMessages.find(m => m.id === messageId);
     if (!target) return { success: false, error: 'Message not found.' };
@@ -4745,9 +4763,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    const deletedByLabel = actorIsFounder
+      ? 'Founder'
+      : (currentUser.name || currentUser.role);
+
     const deletedRecord: ChatMessage = {
       ...target,
       text: '',
+      imageUrl: '',
+      audioUrl: '',
+      media: undefined,
       attachmentUrl: undefined,
       attachmentName: undefined,
       attachmentType: undefined,
@@ -4757,23 +4782,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       reactions: {},
       isPinned: false,
       isHighlighted: false,
-      isDeleted: false,
+      isDeleted: true,
       isDeletedForEveryone: true,
+      deletedBy: deletedByLabel,
       deletedByRole: currentUser.role,
       deletedByFounder: actorIsFounder,
       deletedAt: new Date().toISOString()
     };
 
+    localRecentSentMsgsRef.current.delete(messageId);
     setCommunityMessages(prev => prev.map(m => (m.id === messageId ? deletedRecord : m)));
-    overwriteDeletedCommunityMessageInFirestore(deletedRecord).catch(() => {});
-    return { success: true };
+    const promise = overwriteDeletedCommunityMessageInFirestore(deletedRecord)
+      .then(() => ({ success: true }))
+      .catch((err) => {
+        console.error('Failed to soft-delete community message in central database:', err);
+        setCommunityMessages(prev => prev.map(m => (m.id === messageId ? target : m)));
+        return {
+          success: false,
+          error: 'Unable to delete message from central database. Please check connection and retry.'
+        };
+      });
+    return { success: true, promise };
   };
 
   const deleteCommunityMessage = deleteCommunityMessageForEveryone;
 
+  const clearDeletedCommunityMessageGlobally = async (
+    messageId: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) return { success: false, error: 'Authentication required.' };
+    const prevTarget = communityMessages.find(m => m.id === messageId);
+    localRecentSentMsgsRef.current.delete(messageId);
+    deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, [messageId]);
+    setCommunityMessages(prev => prev.filter(m => m.id !== messageId));
+    try {
+      await deleteCommunityMessageFromFirestore(messageId);
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to hard-delete community message from central database:', err);
+      deletedCommunityIdsRef.current = removeIdsFromStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, [messageId]);
+      if (prevTarget) {
+        setCommunityMessages(prev =>
+          [...prev, prevTarget].sort((a, b) =>
+            (a.createdAt || a.timestamp).localeCompare(b.createdAt || b.timestamp)
+          )
+        );
+      }
+      return {
+        success: false,
+        error: 'Unable to permanently clear message from database. Please check connection and retry.'
+      };
+    }
+  };
+
   const clearOldCommunityMessages = (
     mode: 'OLDER_7_DAYS' | 'OLDER_24_HOURS' | 'ALL'
-  ): { success: boolean; count: number; error?: string } => {
+  ): { success: boolean; count: number; error?: string; promise?: Promise<{ success: boolean; error?: string }> } => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, count: 0, error: 'Founder Protection: Only the Founder Super Admin can clear room history.' };
     }
@@ -4791,16 +4855,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return Number.isFinite(ms) && ms < cutoff;
     });
 
-    if (toDelete.length === 0) {
+    const ids = toDelete.map(m => m.id);
+    if (ids.length > 0) {
+      ids.forEach(id => localRecentSentMsgsRef.current.delete(id));
+      deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, ids);
+      const idSet = new Set(ids);
+      setCommunityMessages(prev => prev.filter(m => !idSet.has(m.id)));
+    }
+
+    if (mode === 'ALL') {
+      const promise = deleteAllCommunityMessagesFromFirestore()
+        .then(() => ({ success: true }))
+        .catch((err) => {
+          console.error('Failed to clear all community messages from central database:', err);
+          return {
+            success: false,
+            error: 'Unable to clear all messages from central database. Please retry.'
+          };
+        });
+      return { success: true, count: ids.length, promise };
+    }
+
+    if (ids.length === 0) {
       return { success: true, count: 0 };
     }
 
-    const ids = toDelete.map(m => m.id);
-    deletedCommunityIdsRef.current = addIdsToStorageSet(STORAGE_KEYS.DELETED_COMMUNITY_MSG_IDS, ids);
-    const idSet = new Set(ids);
-    setCommunityMessages(prev => prev.filter(m => !idSet.has(m.id)));
-    Promise.all(ids.map(id => deleteCommunityMessageFromFirestore(id))).catch(() => {});
-    return { success: true, count: ids.length };
+    const promise = Promise.all(ids.map(id => deleteCommunityMessageFromFirestore(id)))
+      .then(() => ({ success: true }))
+      .catch((err) => {
+        console.error('Failed to clear old community messages from central database:', err);
+        return {
+          success: false,
+          error: 'Some messages could not be cleared from central database. Please retry.'
+        };
+      });
+    return { success: true, count: ids.length, promise };
   };
 
   const deleteDirectMessageForMe = (messageId: string): { success: boolean; error?: string } => {
@@ -5019,6 +5108,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppUpdates(prev => [newUpdate, ...prev]);
     saveAppUpdateToFirestore(newUpdate).catch(() => {});
 
+    const liveSettingsUpdate = mergeAppSettings({
+      ...appSettings,
+      liveBuildId: `live-${newUpdate.version}-${Date.now()}`,
+      liveAppVersion: newUpdate.version,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.name
+    });
+    setAppSettings(liveSettingsUpdate);
+    saveAppSettingsToFirestore(liveSettingsUpdate).catch(() => {});
+
     logAudit(
       'APP_UPDATE_PUBLISHED',
       'APP_UPDATE',
@@ -5212,6 +5311,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteCommunityMessage,
         deleteCommunityMessageForMe,
         deleteCommunityMessageForEveryone,
+        clearDeletedCommunityMessageGlobally,
         clearOldCommunityMessages,
         deleteDirectMessageForMe,
         deleteDirectMessageForEveryone,

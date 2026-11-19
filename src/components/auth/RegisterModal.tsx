@@ -24,7 +24,7 @@ import {
 } from '../../data/locationData';
 import { SearchableLocationSelect } from '../common/SearchableLocationSelect';
 import { LuxurySelect } from '../common/LuxurySelect';
-import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { AppLogo } from '../common/AppLogo';
 import { TabbarBadge } from '../common/TabbarBadge';
 import {
   verifyEmailOTP,
@@ -83,6 +83,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
   const [applicantName, setApplicantName] = useState(() => completeProfileUser?.name || '');
   const [phone, setPhone] = useState(() => completeProfileUser?.phone || '+92 300 ');
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty and editable.
   const [cnic, setCnic] = useState(() => completeProfileUser?.cnic || '');
 
   // Administrative Location Hierarchy (100% preserved)
@@ -392,20 +393,22 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl my-auto max-h-[92dvh] flex flex-col overflow-hidden text-xs text-white">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
+      <div className="relative w-full max-w-xl kc-modal-panel bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl my-auto flex flex-col overflow-hidden text-xs text-white">
         {/* Sticky Header */}
         <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <BrandEmblem3D size="sm" />
-              <div>
-                <h3 className="text-base font-extrabold kc-gold-gradient-text">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+              <div className="shrink-0">
+                <AppLogo size="sm" halo />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-extrabold kc-gold-gradient-text break-words whitespace-normal leading-snug">
                   {isCompletingExistingProfile
                     ? (language === 'ur' ? 'اپنی ممبر پروفائل مکمل کریں' : 'Complete Your Member Profile')
                     : translate(language, 'registerBtn')}
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
                   {step === 1
                     ? translate(language, 'step1VerifyEmail')
                     : step === 2
@@ -418,7 +421,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-[#161D2C] cursor-pointer"
+              aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] cursor-pointer shrink-0 kc-pressable"
             >
               <X className="w-5 h-5" />
             </button>
@@ -438,7 +442,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
 
         {submitted ? (
           <div className="py-10 text-center space-y-3">
@@ -715,7 +719,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   type="text"
                   inputMode="numeric"
                   required
-                  placeholder="35201-1234567-1"
+                  placeholder="e.g. 00000-0000000-0"
                   value={cnic}
                   onChange={(e) => {
                     setCnic(formatCnicDisplay(e.target.value));

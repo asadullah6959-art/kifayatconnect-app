@@ -16,7 +16,8 @@ import {
   FileCheck,
   Eye,
   FilePlus2,
-  FileCheck2
+  FileCheck2,
+  X
 } from 'lucide-react';
 import { MembershipApplication } from '../../types';
 import { 
@@ -688,21 +689,31 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: DISTRICT ADMIN RECOMMENDATION DIALOG */}
       {reviewingApp && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-xs text-[#F5D061] uppercase font-bold tracking-wide">
-                {isUr ? 'مرحلہ 1 جائزہ:' : 'Stage 1 Review:'} {reviewingApp.district || currentUser.district || (isUr ? 'ضلع دائرہ اختیار' : 'District Jurisdiction')} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? `سفارش: ${reviewingApp.applicantName}` : `Recommend ${reviewingApp.applicantName}`}
-              </h3>
-              <p className="text-xs text-slate-300">
-                {isUr ? 'ضلع:' : 'District:'} <strong className="text-white">{reviewingApp.district || (isUr ? 'جنرل' : 'General')}</strong> · {isUr ? 'تحصیل:' : 'Tehsil:'} <strong className="text-white">{reviewingApp.tehsil || (isUr ? 'مرکزی' : 'Central')}</strong> · {isUr ? 'یو سی:' : 'UC:'} <strong className="text-white">{reviewingApp.unionCouncil || 'UC-01'}</strong>
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-[#F5D061] uppercase font-bold tracking-wide block break-words whitespace-normal">
+                  {isUr ? 'مرحلہ 1 جائزہ:' : 'Stage 1 Review:'} {reviewingApp.district || currentUser.district || (isUr ? 'ضلع دائرہ اختیار' : 'District Jurisdiction')} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? `سفارش: ${reviewingApp.applicantName}` : `Recommend ${reviewingApp.applicantName}`}
+                </h3>
+                <p className="text-xs text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
+                  {isUr ? 'ضلع:' : 'District:'} <strong className="text-white">{reviewingApp.district || (isUr ? 'جنرل' : 'General')}</strong> · {isUr ? 'تحصیل:' : 'Tehsil:'} <strong className="text-white">{reviewingApp.tehsil || (isUr ? 'مرکزی' : 'Central')}</strong> · {isUr ? 'یو سی:' : 'UC:'} <strong className="text-white">{reviewingApp.unionCouncil || 'UC-01'}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewingApp(null)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Supporting Dossier Quick Check */}
@@ -811,23 +822,33 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: SUPER ADMIN FINAL APPROVAL DIALOG */}
       {finalApprovingApp && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-xs text-emerald-300 uppercase font-bold tracking-wide">
-                {isUr ? 'حتمی منظوری کا اختیار' : 'Final Authorization Authority'}
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? 'آفیشل ممبرشپ کارڈ جاری کریں' : 'Issue Official Membership Card'}
-              </h3>
-              <p className="text-xs text-slate-300">
-                {isUr
-                  ? `${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}) کی حتمی منظوری دیں۔ منفرد آئی ڈی کے ساتھ ڈیجیٹل ممبرشپ کارڈ فوری طور پر تیار ہو جائے گا۔`
-                  : `Grant final approval for ${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}, ${finalApprovingApp.stateProvince || 'Pakistan'}). A digital membership card with unique ID will be instantly generated.`}
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-emerald-300 uppercase font-bold tracking-wide block">
+                  {isUr ? 'حتمی منظوری کا اختیار' : 'Final Authorization Authority'}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? 'آفیشل ممبرشپ کارڈ جاری کریں' : 'Issue Official Membership Card'}
+                </h3>
+                <p className="text-xs text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
+                  {isUr
+                    ? `${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}) کی حتمی منظوری دیں۔ منفرد آئی ڈی کے ساتھ ڈیجیٹل ممبرشپ کارڈ فوری طور پر تیار ہو جائے گا۔`
+                    : `Grant final approval for ${finalApprovingApp.applicantName} (${finalApprovingApp.district || finalApprovingApp.region}, ${finalApprovingApp.stateProvince || 'Pakistan'}). A digital membership card with unique ID will be instantly generated.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFinalApprovingApp(null)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 text-xs">
@@ -983,31 +1004,41 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: BULK APPROVE / REJECT CONFIRMATION */}
       {bulkAction && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#090D16]/85 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
           <div
-            className="kc-luxury-modal rounded-2xl p-5 sm:p-6 max-w-lg w-full space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-slate-100"
+            className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-lg w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className={`text-xs uppercase font-bold tracking-wide tabular-nums ${bulkAction === 'APPROVE' ? 'text-emerald-300' : 'text-rose-300'}`}>
-                {isUr ? `اجتماعی تصدیق · ${selectedIds.length} درخواستیں` : `Bulk Confirmation · ${selectedIds.length} Applications`}
-              </span>
-              <h3 className="text-base font-bold text-white mt-1">
-                {bulkAction === 'APPROVE' 
-                  ? (isDistrictAdmin
-                      ? (isUr ? 'اجتماعی ضلعی سفارش' : 'Bulk District Recommendation')
-                      : (isUr ? 'اجتماعی حتمی منظوری اور کارڈ کا اجراء' : 'Bulk Final Approval & Card Generation'))
-                  : (isUr ? 'درخواستوں کی اجتماعی مستردگی' : 'Bulk Rejection of Applications')}
-              </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
-                {bulkAction === 'APPROVE'
-                  ? (isUr
-                      ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} ممبرشپ درخواستوں کو ایک ساتھ منظور کرنا چاہتے ہیں؟`
-                      : `Are you sure you want to approve ${selectedIds.length} selected membership applications in a single action?`)
-                  : (isUr
-                      ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} درخواستوں کو مسترد کرنا چاہتے ہیں؟`
-                      : `Are you sure you want to reject ${selectedIds.length} selected applications? This action will update applicant statuses.`)}
-              </p>
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex-1 min-w-0">
+                <span className={`text-xs uppercase font-bold tracking-wide tabular-nums block ${bulkAction === 'APPROVE' ? 'text-emerald-300' : 'text-rose-300'}`}>
+                  {isUr ? `اجتماعی تصدیق · ${selectedIds.length} درخواستیں` : `Bulk Confirmation · ${selectedIds.length} Applications`}
+                </span>
+                <h3 className="text-base font-bold text-white mt-1 break-words whitespace-normal leading-snug">
+                  {bulkAction === 'APPROVE' 
+                    ? (isDistrictAdmin
+                        ? (isUr ? 'اجتماعی ضلعی سفارش' : 'Bulk District Recommendation')
+                        : (isUr ? 'اجتماعی حتمی منظوری اور کارڈ کا اجراء' : 'Bulk Final Approval & Card Generation'))
+                    : (isUr ? 'درخواستوں کی اجتماعی مستردگی' : 'Bulk Rejection of Applications')}
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5 break-words whitespace-normal leading-snug">
+                  {bulkAction === 'APPROVE'
+                    ? (isUr
+                        ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} ممبرشپ درخواستوں کو ایک ساتھ منظور کرنا چاہتے ہیں؟`
+                        : `Are you sure you want to approve ${selectedIds.length} selected membership applications in a single action?`)
+                    : (isUr
+                        ? `کیا آپ واقعی منتخب کردہ ${selectedIds.length} درخواستوں کو مسترد کرنا چاہتے ہیں؟`
+                        : `Are you sure you want to reject ${selectedIds.length} selected applications? This action will update applicant statuses.`)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBulkAction(null)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="max-h-36 overflow-y-auto p-2.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 space-y-1 text-xs">

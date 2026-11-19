@@ -108,30 +108,31 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="kc-luxury-modal w-full max-w-md rounded-2xl p-5 space-y-4 my-auto max-h-[92dvh] overflow-y-auto text-xs text-white"
+        className="kc-luxury-modal kc-modal-panel w-full max-w-md rounded-2xl p-5 pb-24 sm:pb-5 space-y-4 my-auto overflow-y-auto text-xs text-white"
         style={{ WebkitOverflowScrolling: 'touch' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#D4AF37]/25 pb-3">
-          <div className="min-w-0">
-            <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-1.5">
+        <div className="flex items-start justify-between gap-2.5 border-b border-[#D4AF37]/25 pb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-1.5 break-words whitespace-normal leading-snug">
               <Crown className="w-4 h-4 shrink-0" />
               <span>{language === 'ur' ? 'براہ راست عہدہ تفویض کریں' : 'Assign Role Directly'}</span>
             </h3>
-            <p className="text-[11px] text-slate-400 truncate mt-0.5">
+            <p className="text-[11px] text-slate-400 break-words whitespace-normal leading-snug mt-0.5">
               {targetUser.name} · {targetUser.email}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="kc-pressable p-1.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0"
+            aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+            className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 

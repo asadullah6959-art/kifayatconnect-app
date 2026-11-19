@@ -41,6 +41,7 @@ export const ProfileSettings: React.FC = () => {
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty unless explicitly saved on user Profile.
   const [cnic, setCnic] = useState(currentUser?.cnic || '');
   const [address, setAddress] = useState(currentUser?.address || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
@@ -369,7 +370,7 @@ export const ProfileSettings: React.FC = () => {
               disabled={Boolean(currentUser.cnic)}
               value={currentUser.cnic ? currentUser.cnic : cnic}
               onChange={(e) => setCnic(e.target.value)}
-              placeholder="35201-1234567-1"
+              placeholder="e.g. 00000-0000000-0"
               className={`w-full px-3 py-2.5 font-mono rounded-xl text-xs ${
                 currentUser.cnic
                   ? 'border border-[#D4AF37]/20 bg-[#090D16]/75 text-slate-400 cursor-not-allowed'

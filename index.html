@@ -63,18 +63,11 @@
       (function () {
         var isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
         if (!isNative && 'serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-          var reloadedOnUpdate = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function () {
-            if (!reloadedOnUpdate) {
-              reloadedOnUpdate = true;
-              window.location.reload();
-            }
-          });
           window.addEventListener('load', function () {
             if ('caches' in window) {
               caches.keys().then(function (keys) {
                 keys.forEach(function (k) {
-                  if (k.indexOf('kifayat-connect') === 0 && k !== 'kifayat-connect-v5.0.0') {
+                  if (k.indexOf('kifayat-connect-v') === 0) {
                     caches.delete(k).catch(function () {});
                   }
                 });
@@ -82,6 +75,18 @@
             }
             navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
               try { reg.update(); } catch (e) {}
+              if (reg.waiting) {
+                window.dispatchEvent(new CustomEvent('kc-sw-update-available', { detail: { registration: reg } }));
+              }
+              reg.addEventListener('updatefound', function () {
+                var newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', function () {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.dispatchEvent(new CustomEvent('kc-sw-update-available', { detail: { registration: reg } }));
+                  }
+                });
+              });
               document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') {
                   try { reg.update(); } catch (e) {}

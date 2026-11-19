@@ -31,7 +31,8 @@ import {
   FileClock,
   Trash2,
   Share2,
-  Mail
+  Mail,
+  X
 } from 'lucide-react';
 import { resolveIphoneLiveUrl } from '../../utils/iphoneShare';
 import { PROVINCE_OPTIONS, getAllDistricts, addCustomDistrict } from '../../data/locationData';
@@ -2160,23 +2161,33 @@ export const ManageAppModule: React.FC = () => {
 
       {/* Staff Appointment Modal (STRICT 4 ROLES: ADMIN & CO_ADMIN) */}
       {staffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0A0D12]/90 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
           <div
-            className="bg-[#111622] rounded-2xl p-5 sm:p-6 max-w-md w-full border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+            className="bg-[#111622] kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div>
-              <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider">
-                {isUr ? 'سپر ایڈمن تقرری' : 'Super Admin Appointment'}
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {isUr ? 'ایڈمن / کو ایڈمن مقرر کریں' : 'Appoint Admin / Co-Admin'}
-              </h3>
-              <p className="text-xs text-slate-400">
-                {isUr
-                  ? `زیادہ سے زیادہ ${appSettings.maxAdminsPerDistrict} ایڈمن فی ضلع اور ${appSettings.maxCoAdminsPerState} کو ایڈمن فی صوبہ۔`
-                  : `Max ${appSettings.maxAdminsPerDistrict} Admins/District and max ${appSettings.maxCoAdminsPerState} Co-Admins/State.`}
-              </p>
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider block">
+                  {isUr ? 'سپر ایڈمن تقرری' : 'Super Admin Appointment'}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
+                  {isUr ? 'ایڈمن / کو ایڈمن مقرر کریں' : 'Appoint Admin / Co-Admin'}
+                </h3>
+                <p className="text-xs text-slate-400 break-words whitespace-normal leading-snug mt-0.5">
+                  {isUr
+                    ? `زیادہ سے زیادہ ${appSettings.maxAdminsPerDistrict} ایڈمن فی ضلع اور ${appSettings.maxCoAdminsPerState} کو ایڈمن فی صوبہ۔`
+                    : `Max ${appSettings.maxAdminsPerDistrict} Admins/District and max ${appSettings.maxCoAdminsPerState} Co-Admins/State.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStaffModalOpen(false)}
+                aria-label={isUr ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {staffQuotaError && (

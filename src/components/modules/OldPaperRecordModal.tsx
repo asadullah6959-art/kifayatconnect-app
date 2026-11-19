@@ -48,6 +48,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
   const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [applicantName, setApplicantName] = useState<string>('');
   const [fatherName, setFatherName] = useState<string>('');
+  // CRITICAL: Never hardcode any real CNIC as default value or placeholder; keep input completely empty and editable.
   const [cnic, setCnic] = useState<string>('');
   const [tabbarId, setTabbarId] = useState<string>('faiz_khel');
   const [customTabbarEnglish, setCustomTabbarEnglish] = useState<string>('');
@@ -383,19 +384,19 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
     'w-full px-3 py-2 bg-[#0A111D] border border-[#D4AF37]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FDE047]';
 
   return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-[calc(100vw-16px)] max-h-[92dvh] flex flex-col bg-[#070D14] border border-[#D4AF37]/55 rounded-3xl shadow-2xl overflow-hidden box-border">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-[calc(100vw-20px)] sm:max-w-2xl kc-modal-panel flex flex-col bg-[#070D14] border border-[#D4AF37]/55 rounded-3xl shadow-2xl overflow-hidden box-border my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2.5 px-4 py-3.5 bg-[#0D1726] border-b border-[#D4AF37]/30">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0">
+        <div className="flex items-start justify-between gap-2.5 px-3.5 sm:px-5 py-3.5 bg-[#0D1726] border-b border-[#D4AF37]/30 shrink-0">
+          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
               <FileText className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-extrabold text-amber-300 truncate">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-extrabold text-amber-300 break-words whitespace-normal leading-snug">
                 {isUr ? 'پرانا دستی ریکارڈ شامل کریں' : 'Add Old / By-Hand Paper Record'}
               </h2>
-              <p className="text-[11px] text-slate-400 truncate">
+              <p className="text-[11px] text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
                 {isUr
                   ? 'صرف بانی / سپر ایڈمن · براہِ راست تصدیق شدہ ریکارڈ اور مہر رسید'
                   : 'Super Admin Only · Pre-Approved with Official Mohar Receipt Unlocked'}
@@ -406,13 +407,13 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
             type="button"
             onClick={handleResetAndClose}
             aria-label={isUr ? 'بند کریں' : 'Close modal'}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white shrink-0 cursor-pointer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#D4AF37]/30 text-slate-200 hover:text-white shrink-0 cursor-pointer kc-pressable"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 pb-24 sm:pb-6 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {savedSerial ? (
             <div className="p-6 rounded-2xl bg-emerald-950/35 border border-emerald-500/45 text-center space-y-4">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
@@ -649,7 +650,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                     required
                     value={cnic}
                     onChange={(e) => setCnic(formatCnicDisplay(e.target.value))}
-                    placeholder="XXXXX-XXXXXXX-X"
+                    placeholder="e.g. 00000-0000000-0"
                     inputMode="numeric"
                     className={`${inputCls} font-mono`}
                   />

@@ -16,7 +16,8 @@ import {
   MessageSquareWarning,
   Users,
   FileCheck2,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { ComplaintCategory } from '../../types';
 import { mapLegacyRegionToHierarchy } from '../../data/locationData';
@@ -725,19 +726,31 @@ export const MemberDashboard: React.FC = () => {
 
       {/* MODAL: COMPLAINT */}
       {isComplaintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 overflow-y-auto">
           <div
-            className="relative w-full max-w-lg kc-luxury-modal rounded-2xl p-5 sm:p-6 my-auto max-h-[92dvh] overflow-y-auto"
+            className="relative w-full max-w-lg kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <h3 className="text-base font-bold text-white pb-2 border-b border-[#D4AF37]/20">
-              {language === 'ur' ? 'سپورٹ ٹکٹ یا شکایت درج کریں' : 'File Support Ticket or Grievance'}
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              {language === 'ur'
-                ? `براہ راست آپ کے ضلعی ایڈمن (${memberDistrict}, ${memberProvince}) کو بھیجی جائے گی۔`
-                : `Routed directly to your District Admin in ${memberDistrict}, ${memberProvince}.`}
-            </p>
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-white break-words whitespace-normal leading-snug">
+                  {language === 'ur' ? 'سپورٹ ٹکٹ یا شکایت درج کریں' : 'File Support Ticket or Grievance'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 break-words whitespace-normal leading-snug">
+                  {language === 'ur'
+                    ? `براہ راست آپ کے ضلعی ایڈمن (${memberDistrict}, ${memberProvince}) کو بھیجی جائے گی۔`
+                    : `Routed directly to your District Admin in ${memberDistrict}, ${memberProvince}.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsComplaintModalOpen(false)}
+                aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <form onSubmit={handleComplaintSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

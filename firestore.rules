@@ -84,7 +84,10 @@ service cloud.firestore {
         data.senderName is string && data.senderName.size() > 0 && data.senderName.size() <= 120 &&
         data.senderRole in ['SUPER_ADMIN', 'ADMIN', 'CO_ADMIN', 'MEMBER'] &&
         data.text is string && data.text.size() <= 5500 &&
-        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50;
+        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 50 &&
+        (!('isDeleted' in data) || data.isDeleted is bool) &&
+        (!('isDeletedForEveryone' in data) || data.isDeletedForEveryone is bool) &&
+        (!('deletedBy' in data) || (data.deletedBy is string && data.deletedBy.size() <= 120));
     }
 
     function isValidDirectMessage(data) {
@@ -222,27 +225,19 @@ service cloud.firestore {
       allow delete: if (isFounder() || isSuperAdmin()) && !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
     }
 
-    // 8. Live Community Chat Room (Primary + Legacy Collection, Founder Protection)
+    // 8. Live Community Chat Room (Primary + Legacy Collection, Global Soft-Delete & Hard-Delete Clear)
     match /community_messages/{messageId} {
       allow read: if true;
       allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
-      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
-        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
-          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
-          !isFounder())
-      );
-      allow delete: if !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
+      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming());
+      allow delete: if isValidId(messageId);
     }
 
     match /community_chat_messages/{messageId} {
       allow read: if true;
       allow create: if isValidId(messageId) && isValidCommunityMessage(incoming());
-      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming()) && (
-        !(('senderIsFounder' in existing() && existing().senderIsFounder == true) &&
-          (('isDeleted' in incoming() && incoming().isDeleted == true) || ('isDeletedForEveryone' in incoming() && incoming().isDeletedForEveryone == true)) &&
-          !isFounder())
-      );
-      allow delete: if !(('senderIsFounder' in existing() && existing().senderIsFounder == true) && !isFounder());
+      allow update: if isValidId(messageId) && isValidCommunityMessage(incoming());
+      allow delete: if isValidId(messageId);
     }
 
     match /chat_typing/{typingId} {

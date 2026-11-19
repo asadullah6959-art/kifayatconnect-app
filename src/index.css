@@ -105,6 +105,31 @@ body {
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 16px));
 }
 
+/* Mobile-Safe Modal Clearance: Always starts below fixed Header + ends above Bottom Nav */
+.kc-modal-backdrop {
+  padding-top: calc(env(safe-area-inset-top, 12px) + 68px);
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 16px));
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+.kc-modal-panel {
+  max-height: calc(100dvh - env(safe-area-inset-top, 12px) - 168px);
+}
+
+@media (min-width: 640px) {
+  .kc-modal-backdrop {
+    padding-top: max(1.5rem, env(safe-area-inset-top, 12px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 16px));
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .kc-modal-panel {
+    max-height: 90dvh;
+  }
+}
+
 /* Guaranteed >= 44x44px Unblocked Mobile Touch Target */
 .kc-tap-target {
   min-width: 44px;
@@ -262,6 +287,14 @@ svg {
 .kc-animate-crown-float {
   animation: kcCrownFloat 3s ease-in-out infinite;
   will-change: transform;
+}
+
+/* CRITICAL: DO NOT MODIFY OR OVERRIDE — Protects official AppLogo from CSS filters/themes */
+.kc-app-logo-locked {
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
 }
 
 .kc-gold-gradient-text {

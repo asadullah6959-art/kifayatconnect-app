@@ -20,7 +20,7 @@ import {
   OTP_COOLDOWN_SECONDS,
   requestPasswordReset
 } from '../../services/firebase';
-import { BrandEmblem3D } from '../common/BrandEmblem3D';
+import { AppLogo } from '../common/AppLogo';
 import { translate } from '../../data/translations';
 
 interface LoginModalProps {
@@ -209,17 +209,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0D12]/90 p-4 overflow-y-auto">
-      <div className="relative w-full max-w-md bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl p-6 text-xs text-white">
+    <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
+      <div
+        className="relative w-full max-w-md kc-modal-panel bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs text-white"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#D4AF37]/20">
-          <div className="flex items-center gap-2.5">
-            <BrandEmblem3D size="sm" />
-            <div>
-              <h3 className="text-base font-extrabold kc-gold-gradient-text">
+        <div className="flex items-start justify-between gap-2.5 pb-4 border-b border-[#D4AF37]/20">
+          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+            <div className="shrink-0">
+              <AppLogo size="sm" halo />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-extrabold kc-gold-gradient-text break-words whitespace-normal leading-snug">
                 {translate(language, 'welcomeSignInTitle', appSettings.textOverrides)}
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 break-words whitespace-normal leading-snug mt-0.5">
                 {translate(language, 'tagline', appSettings.textOverrides)}
               </p>
             </div>
@@ -228,7 +233,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer"
+            aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer shrink-0 kc-pressable"
           >
             <X className="w-5 h-5" />
           </button>
@@ -308,7 +314,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                   <input
                     type="text"
                     required
-                    placeholder="name@gmail.com / 35201-1234567-1"
+                    placeholder="name@gmail.com / 00000-0000000-0"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
@@ -437,7 +443,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     type="text"
                     required
                     autoComplete="username"
-                    placeholder={language === 'ur' ? 'name@gmail.com یا 35201-1234567-1' : 'name@gmail.com / 35201-1234567-1'}
+                    placeholder={language === 'ur' ? 'name@gmail.com یا 00000-0000000-0' : 'name@gmail.com / 00000-0000000-0'}
                     value={pwdEmail}
                     onChange={(e) => {
                       setPwdEmail(e.target.value);
