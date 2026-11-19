@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   User as UserIcon,
@@ -9,7 +9,8 @@ import {
   Camera,
   Image as ImageIcon,
   KeyRound,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { SearchableLocationSelect, SelectedLocationValue } from '../common/SearchableLocationSelect';
 import { RoleBadge } from '../common/RoleBadge';
@@ -83,7 +84,20 @@ export const ProfileSettings: React.FC = () => {
   const [pwdFeedback, setPwdFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [isUpdatingPwd, setIsUpdatingPwd] = useState(false);
 
+  const avatarBadgeInputRef = useRef<HTMLInputElement>(null);
+  const avatarCameraInputRef = useRef<HTMLInputElement>(null);
+  const avatarGalleryInputRef = useRef<HTMLInputElement>(null);
+
   if (!currentUser) return null;
+
+  const clearAvatarPhoto = () => {
+    setAvatarUrl('');
+    setAvatarError(null);
+    updateUserProfile({ avatarUrl: '', photoUrl: '' });
+    if (avatarBadgeInputRef.current) avatarBadgeInputRef.current.value = '';
+    if (avatarCameraInputRef.current) avatarCameraInputRef.current.value = '';
+    if (avatarGalleryInputRef.current) avatarGalleryInputRef.current.value = '';
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,6 +109,8 @@ export const ProfileSettings: React.FC = () => {
       updateUserProfile({ avatarUrl: compressed.dataUrl, photoUrl: compressed.dataUrl });
     } catch (err: any) {
       setAvatarError(err?.message || 'Unable to process selected profile image.');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -241,16 +257,28 @@ export const ProfileSettings: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={currentUser.name}
-                className={`w-16 h-16 rounded-2xl object-cover border-2 ${
-                  isFaizKhelUser(currentUser) ? 'border-[#FDE047]' : 'border-[#38BDF8]/65'
-                }`}
-              />
+              <>
+                <img
+                  src={avatarUrl}
+                  alt={currentUser.name}
+                  className={`w-20 h-20 rounded-2xl object-cover border-2 ${
+                    isFaizKhelUser(currentUser) ? 'border-[#FDE047]' : 'border-[#38BDF8]/65'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={clearAvatarPhoto}
+                  aria-label="Remove profile photo"
+                  title={language === 'ur' ? 'تصویر ہٹائیں' : 'Remove photo'}
+                  style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5 stroke-[2.75]" />
+                </button>
+              </>
             ) : (
               <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl border-2 ${
+                className={`w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-2xl border-2 ${
                   isFaizKhelUser(currentUser)
                     ? 'bg-[#1C1404] text-[#FEF08A] border-[#FDE047]'
                     : 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/55'
@@ -261,7 +289,7 @@ export const ProfileSettings: React.FC = () => {
             )}
             <label className="kc-pressable absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center cursor-pointer shadow-md border-2 border-[#0F172A]">
               <Camera className="w-3.5 h-3.5" />
-              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              <input ref={avatarBadgeInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
             </label>
           </div>
 
@@ -285,12 +313,12 @@ export const ProfileSettings: React.FC = () => {
               <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/45 text-[#FDE047] text-[11px] font-bold cursor-pointer">
                 <Camera className="w-3.5 h-3.5" />
                 <span>{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
-                <input type="file" accept="image/*" capture="user" onChange={handleAvatarUpload} className="hidden" />
+                <input ref={avatarCameraInputRef} type="file" accept="image/*" capture="user" onChange={handleAvatarUpload} className="hidden" />
               </label>
               <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/35 text-slate-200 text-[11px] font-bold cursor-pointer">
                 <ImageIcon className="w-3.5 h-3.5 text-[#38BDF8]" />
                 <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
-                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                <input ref={avatarGalleryInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </label>
             </div>
             {avatarError && <p className="text-[11px] text-rose-400 mt-1">{avatarError}</p>}

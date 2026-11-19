@@ -12,7 +12,9 @@ import {
   XCircle,
   Clock,
   Lock,
-  Phone
+  Phone,
+  SlidersHorizontal,
+  X
 } from 'lucide-react';
 import { canViewUserCnic } from '../../utils/privacy';
 import { User } from '../../types';
@@ -311,6 +313,7 @@ export const MemberDirectory: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [rolePillFilter, setRolePillFilter] = useState<'ALL' | 'SUPER_ADMIN' | 'ADMIN' | 'CO_ADMIN' | 'AUDIT_OFFICER' | 'MEMBER'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED' | 'ONLINE' | 'OFFLINE'>('ALL');
   const [tabbarFilter, setTabbarFilter] = useState<string>('ALL');
   const [isSyncingDir, setIsSyncingDir] = useState(false);
   const [selectedProvinceFilter, setSelectedProvinceFilter] = useState<string>('ALL');
@@ -377,11 +380,40 @@ export const MemberDirectory: React.FC = () => {
     return counts;
   }, [users]);
 
+  const statusCounts = useMemo(() => {
+    let approved = 0;
+    let pending = 0;
+    let rejected = 0;
+    let online = 0;
+    let offline = 0;
+    users.forEach(u => {
+      const approval = resolveUserApprovalStatus(u);
+      if (approval === 'approved') approved++;
+      else if (approval === 'pending' && !isFounderUser(u)) pending++;
+      else if (approval === 'rejected') rejected++;
+      if (isUserActuallyOnline(u, presenceNowMs)) online++;
+      else offline++;
+    });
+    return { approved, pending, rejected, online, offline };
+  }, [users, presenceNowMs]);
+
+  const effectiveStatusFilter = memberDirectoryFilter === 'PENDING_APPROVAL' ? 'PENDING' : statusFilter;
+
   const allowedMembers = useMemo(() => {
     return users.filter(u => {
-      if (memberDirectoryFilter === 'PENDING_APPROVAL') {
-        if (isFounderUser(u) || resolveUserApprovalStatus(u) !== 'pending') return false;
+      const approval = resolveUserApprovalStatus(u);
+      if (effectiveStatusFilter === 'PENDING') {
+        if (isFounderUser(u) || approval !== 'pending') return false;
+      } else if (effectiveStatusFilter === 'APPROVED') {
+        if (approval !== 'approved') return false;
+      } else if (effectiveStatusFilter === 'REJECTED') {
+        if (approval !== 'rejected') return false;
+      } else if (effectiveStatusFilter === 'ONLINE') {
+        if (!isUserActuallyOnline(u, presenceNowMs)) return false;
+      } else if (effectiveStatusFilter === 'OFFLINE') {
+        if (isUserActuallyOnline(u, presenceNowMs)) return false;
       }
+
       if (rolePillFilter === 'SUPER_ADMIN' && u.role !== 'SUPER_ADMIN' && !isFounderUser(u)) return false;
       if (rolePillFilter === 'ADMIN' && u.role !== 'ADMIN') return false;
       if (rolePillFilter === 'CO_ADMIN' && u.role !== 'CO_ADMIN') return false;
@@ -399,7 +431,7 @@ export const MemberDirectory: React.FC = () => {
       }
       return true;
     });
-  }, [users, memberDirectoryFilter, rolePillFilter, tabbarFilter]);
+  }, [users, effectiveStatusFilter, rolePillFilter, tabbarFilter, presenceNowMs]);
 
   const filteredMembers = useMemo(() => {
     if (!currentUser) return [];
@@ -488,44 +520,144 @@ export const MemberDirectory: React.FC = () => {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDir ? 'animate-spin' : ''}`} />
             <span className="tabular-nums">
-              {language === 'ur' ? `کلاؤڈ سنک (${allowedMembers.length})` : `Sync Cloud (${allowedMembers.length})`}
+              {language === 'ur' ? `کلاؤڈ سنک (${filteredMembers.length})` : `Sync Cloud (${filteredMembers.length})`}
             </span>
           </button>
+        </div>
+      </div>
 
-          <div className="relative flex-1 sm:flex-initial">
-            <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-2.5 top-1/2 -translate-y-1/2" />
+      {/* Dynamic Real-Time Search & Role/Status Filter Bar */}
+      <div className="p-3 rounded-2xl bg-[#090D16]/90 border border-[#D4AF37]/30 space-y-2.5 shadow-lg shadow-black/25">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#F5D061] uppercase tracking-wider">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#38BDF8]" />
+            <span>{language === 'ur' ? 'تلاش اور فلٹر بار' : 'Search & Filter Directory'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-300 font-bold tabular-nums">
+              {language === 'ur'
+                ? `${filteredMembers.length} / ${users.length} ممبران`
+                : `Showing ${filteredMembers.length} of ${users.length}`}
+            </span>
+            {(searchTerm ||
+              rolePillFilter !== 'ALL' ||
+              effectiveStatusFilter !== 'ALL' ||
+              tabbarFilter !== 'ALL' ||
+              selectedProvinceFilter !== 'ALL' ||
+              selectedDistrictFilter !== 'ALL') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setRolePillFilter('ALL');
+                  setStatusFilter('ALL');
+                  setMemberDirectoryFilter('ALL');
+                  setTabbarFilter('ALL');
+                  setSelectedProvinceFilter('ALL');
+                  setSelectedDistrictFilter('ALL');
+                  setFocusedMemberId(null);
+                }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-950/70 border border-rose-500/40 text-rose-200 text-[10px] font-bold hover:bg-rose-900 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+                <span>{language === 'ur' ? 'سب صاف کریں' : 'Reset'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          {/* Dynamic Real-Time Search Input */}
+          <div className="relative sm:col-span-2 lg:col-span-1">
+            <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder={language === 'ur' ? 'نام، ٹبر، آئی ڈی یا شہر تلاش کریں...' : 'Search member, Tabbar, ID, city...'}
+              placeholder={
+                language === 'ur'
+                  ? 'نام، ٹبر، آئی ڈی، فون یا شہر تلاش کریں...'
+                  : 'Search name, Tabbar, ID, phone, city...'
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs kc-luxury-input rounded-xl w-full sm:w-56"
+              className="pl-8 pr-8 py-2 min-h-[40px] text-xs kc-luxury-input rounded-xl w-full"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Real-Time Member Role Filter */}
+          <div>
+            <LuxurySelect
+              label={language === 'ur' ? 'عہدہ فلٹر' : 'Role Filter'}
+              value={rolePillFilter}
+              onChange={(val) =>
+                setRolePillFilter(
+                  val as 'ALL' | 'SUPER_ADMIN' | 'ADMIN' | 'CO_ADMIN' | 'AUDIT_OFFICER' | 'MEMBER'
+                )
+              }
+              options={[
+                { value: 'ALL', label: `${language === 'ur' ? 'تمام عہدے' : 'All Roles'} (${users.length})` },
+                { value: 'SUPER_ADMIN', label: `${translate(language, 'roleSuperAdmin')} (${roleCounts.superAdmin})` },
+                { value: 'ADMIN', label: `${translate(language, 'roleAdmin')} (${roleCounts.admin})` },
+                { value: 'CO_ADMIN', label: `${translate(language, 'roleCoAdmin')} (${roleCounts.coAdmin})` },
+                { value: 'AUDIT_OFFICER', label: `${translate(language, 'roleAuditOfficer')} (${roleCounts.auditOfficer})` },
+                { value: 'MEMBER', label: `${translate(language, 'roleMember')} (${roleCounts.member})` },
+              ]}
+              compact
             />
           </div>
 
-          <div className="w-44">
+          {/* Real-Time Member Status Filter */}
+          <div>
             <LuxurySelect
-              label={language === 'ur' ? 'صوبہ فلٹر' : 'Province Filter'}
+              label={language === 'ur' ? 'اسٹیٹس فلٹر' : 'Status Filter'}
+              value={effectiveStatusFilter}
+              onChange={(val) => {
+                const nextStatus = val as 'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED' | 'ONLINE' | 'OFFLINE';
+                setStatusFilter(nextStatus);
+                setMemberDirectoryFilter(nextStatus === 'PENDING' ? 'PENDING_APPROVAL' : 'ALL');
+              }}
+              options={[
+                { value: 'ALL', label: `${language === 'ur' ? 'تمام اسٹیٹس' : 'All Statuses'} (${users.length})` },
+                { value: 'APPROVED', label: `${language === 'ur' ? 'منظور شدہ' : 'Approved'} (${statusCounts.approved})` },
+                { value: 'PENDING', label: `${language === 'ur' ? 'زیرِ منظوری' : 'Pending Approval'} (${pendingApprovalsCount})` },
+                { value: 'REJECTED', label: `${translate(language, 'rejectedLabel')} (${statusCounts.rejected})` },
+                { value: 'ONLINE', label: `🟢 ${translate(language, 'online')} (${statusCounts.online})` },
+                { value: 'OFFLINE', label: `⚫ ${translate(language, 'offline')} (${statusCounts.offline})` },
+              ]}
+              compact
+            />
+          </div>
+
+          {/* Province + District Filter */}
+          <div className="grid grid-cols-2 gap-2">
+            <LuxurySelect
+              label={language === 'ur' ? 'صوبہ' : 'Province'}
               value={selectedProvinceFilter}
               onChange={(val) => {
                 setSelectedProvinceFilter(val);
                 setSelectedDistrictFilter('ALL');
               }}
               options={[
-                { value: 'ALL', label: language === 'ur' ? 'تمام صوبے' : 'All Provinces' },
+                { value: 'ALL', label: language === 'ur' ? 'تمام صوبے' : 'All Prov.' },
                 ...PROVINCE_OPTIONS.map(p => ({ value: p, label: p }))
               ]}
               compact
             />
-          </div>
-
-          <div className="w-44">
             <LuxurySelect
-              label={language === 'ur' ? 'ضلع فلٹر' : 'District Filter'}
+              label={language === 'ur' ? 'ضلع' : 'District'}
               value={selectedDistrictFilter}
               onChange={setSelectedDistrictFilter}
               options={[
-                { value: 'ALL', label: language === 'ur' ? 'تمام اضلاع' : 'All Districts' },
+                { value: 'ALL', label: language === 'ur' ? 'تمام اضلاع' : 'All Dist.' },
                 ...(selectedProvinceFilter !== 'ALL'
                   ? getDistrictsForProvince(selectedProvinceFilter)
                   : PROVINCE_OPTIONS.flatMap(p => getDistrictsForProvince(p))
@@ -538,19 +670,20 @@ export const MemberDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* Primary Quick-Filter Pills: All / Pending Approvals / Role Filters */}
+      {/* Primary Quick-Filter Pills: All / Status / Role Filters */}
       <div className="space-y-2.5">
         <div className="flex flex-wrap items-center gap-1.5 p-1.5 kc-tab-shell rounded-2xl">
           <button
             type="button"
             onClick={() => {
               setMemberDirectoryFilter('ALL');
+              setStatusFilter('ALL');
               setRolePillFilter('ALL');
               setTabbarFilter('ALL');
               setFocusedMemberId(null);
             }}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
-              memberDirectoryFilter === 'ALL' && rolePillFilter === 'ALL' && tabbarFilter === 'ALL'
+              effectiveStatusFilter === 'ALL' && rolePillFilter === 'ALL' && tabbarFilter === 'ALL'
                 ? 'kc-gold-button'
                 : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
             }`}
@@ -561,9 +694,13 @@ export const MemberDirectory: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setMemberDirectoryFilter(memberDirectoryFilter === 'PENDING_APPROVAL' ? 'ALL' : 'PENDING_APPROVAL')}
+            onClick={() => {
+              const nextPending = effectiveStatusFilter !== 'PENDING';
+              setStatusFilter(nextPending ? 'PENDING' : 'ALL');
+              setMemberDirectoryFilter(nextPending ? 'PENDING_APPROVAL' : 'ALL');
+            }}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
-              memberDirectoryFilter === 'PENDING_APPROVAL'
+              effectiveStatusFilter === 'PENDING'
                 ? 'kc-gold-button'
                 : 'text-[#F5D061] hover:bg-[#141B2D]'
             }`}
@@ -572,7 +709,7 @@ export const MemberDirectory: React.FC = () => {
             <span>{translate(language, 'pendingApprovalsFilter')}</span>
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] font-black tabular-nums ${
-                memberDirectoryFilter === 'PENDING_APPROVAL'
+                effectiveStatusFilter === 'PENDING'
                   ? 'bg-[#090D16] text-[#F5D061]'
                   : pendingApprovalsCount > 0
                   ? 'bg-rose-600 text-white'
@@ -581,6 +718,39 @@ export const MemberDirectory: React.FC = () => {
             >
               {pendingApprovalsCount}
             </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMemberDirectoryFilter('ALL');
+              setStatusFilter(effectiveStatusFilter === 'APPROVED' ? 'ALL' : 'APPROVED');
+            }}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold kc-pressable cursor-pointer ${
+              effectiveStatusFilter === 'APPROVED'
+                ? 'kc-gold-button font-extrabold'
+                : 'bg-[#090D16]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
+            }`}
+          >
+            <CheckCircle2 className="w-3 h-3" />
+            <span>{language === 'ur' ? 'منظور شدہ' : 'Approved'}</span>
+            <span className="tabular-nums opacity-80">({statusCounts.approved})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMemberDirectoryFilter('ALL');
+              setStatusFilter(effectiveStatusFilter === 'ONLINE' ? 'ALL' : 'ONLINE');
+            }}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold kc-pressable cursor-pointer ${
+              effectiveStatusFilter === 'ONLINE'
+                ? 'kc-gold-button font-extrabold'
+                : 'bg-[#090D16]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
+            }`}
+          >
+            <span>🟢 {translate(language, 'online')}</span>
+            <span className="tabular-nums opacity-80">({statusCounts.online})</span>
           </button>
 
           <div className="h-5 w-px bg-[#D4AF37]/20 hidden sm:block mx-0.5" />

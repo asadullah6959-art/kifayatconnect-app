@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Settings,
@@ -30,7 +30,8 @@ import {
   UserX,
   FileClock,
   Trash2,
-  Share2
+  Share2,
+  Mail
 } from 'lucide-react';
 import { resolveIphoneLiveUrl } from '../../utils/iphoneShare';
 import { PROVINCE_OPTIONS, getAllDistricts, addCustomDistrict } from '../../data/locationData';
@@ -38,7 +39,15 @@ import { SearchableLocationSelect, SelectedLocationValue } from '../common/Searc
 import { RoleBadge } from '../common/RoleBadge';
 import { BrandEmblem3D } from '../common/BrandEmblem3D';
 import { LuxurySelect } from '../common/LuxurySelect';
-import { hashSecretString, resolveUserApprovalStatus } from '../../services/firebase';
+import {
+  hashSecretString,
+  resolveUserApprovalStatus,
+  requestMasterPinResetOTP,
+  verifyMasterPinResetOTP,
+  clearPendingMasterPinReset,
+  getPendingMasterPinReset,
+  OTP_COOLDOWN_SECONDS
+} from '../../services/firebase';
 import { translate } from '../../data/translations';
 import { AssignRoleModal } from '../common/AssignRoleModal';
 import {
@@ -130,8 +139,6 @@ export const ManageAppModule: React.FC = () => {
     deleteUserPermanently,
     githubRelease,
     refreshGitHubRelease,
-    requestOTP,
-    verifyOTP,
     language
   } = useApp();
 
@@ -151,10 +158,24 @@ export const ManageAppModule: React.FC = () => {
   const [pinConfirmInput, setPinConfirmInput] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinMode, setPinMode] = useState<'ENTER' | 'OTP_RESET'>('ENTER');
-  const [resetOtpInput, setResetOtpInput] = useState('');
+  const [pinOtpInput, setPinOtpInput] = useState('');
+  const [pinOtpSent, setPinOtpSent] = useState(() => Boolean(getPendingMasterPinReset()));
+  const [pinOtpCooldown, setPinOtpCooldown] = useState(() => {
+    const pending = getPendingMasterPinReset();
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((OTP_COOLDOWN_SECONDS * 1000 - (Date.now() - pending.lastSentAt)) / 1000));
+  });
   const [newResetPin, setNewResetPin] = useState('');
   const [pinInfoMsg, setPinInfoMsg] = useState<string | null>(null);
   const [pinBusy, setPinBusy] = useState(false);
+
+  useEffect(() => {
+    if (pinOtpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setPinOtpCooldown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [pinOtpCooldown]);
 
   const [activeTab, setActiveTab] = useState<MasterTab>('GENERAL');
   const [checkingGitHub, setCheckingGitHub] = useState(false);
@@ -298,7 +319,7 @@ export const ManageAppModule: React.FC = () => {
 
   if (!currentUser) return null;
 
-  if (!isSuperAdmin) {
+  if (!currentIsFounder) {
     return (
       <div className="p-8 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
         <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-2" />
@@ -307,8 +328,8 @@ export const ManageAppModule: React.FC = () => {
         </h2>
         <p className="text-xs text-slate-400 mt-1">
           {isUr
-            ? 'ماسٹر کنٹرول پینل (👑) صرف تصدیق شدہ سپر ایڈمنز کے لیے مخصوص ہے۔'
-            : 'The Master Control Panel (👑) is strictly reserved for verified Super Admins.'}
+            ? 'ماسٹر کنٹرول پینل (👑) صرف بانی (KC-ADM-001) کے لیے مخصوص ہے۔'
+            : 'The Master Control Panel (👑) is strictly reserved for the Founder (KC-ADM-001) only.'}
         </p>
       </div>
     );
@@ -373,11 +394,14 @@ export const ManageAppModule: React.FC = () => {
     setPinInfoMsg(null);
     setPinBusy(true);
     try {
-      const res = await requestOTP(currentUser.email);
+      const res = await requestMasterPinResetOTP(currentUser.email);
       if (res.success) {
+        setPinOtpSent(true);
+        setPinOtpCooldown(res.cooldownSeconds || OTP_COOLDOWN_SECONDS);
         setPinInfoMsg(res.message);
       } else {
         setPinError(res.message);
+        if (res.cooldownSeconds) setPinOtpCooldown(res.cooldownSeconds);
       }
     } finally {
       setPinBusy(false);
@@ -387,6 +411,12 @@ export const ManageAppModule: React.FC = () => {
   const handleConfirmPinReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setPinError(null);
+    setPinInfoMsg(null);
+    const cleanOtp = pinOtpInput.replace(/\D/g, '');
+    if (cleanOtp.length !== 6) {
+      setPinError(isUr ? 'براہ کرم اپنے جی میل ان باکس سے 6 ہندسوں کا کوڈ درج کریں۔' : 'Please enter the 6-digit OTP code from your Gmail inbox.');
+      return;
+    }
     const cleanPin = newResetPin.replace(/\D/g, '');
     if (cleanPin.length < 4 || cleanPin.length > 6) {
       setPinError(isUr ? 'نیا پن 4 تا 6 ہندسوں کا ہونا ضروری ہے۔' : 'New PIN must be 4 to 6 digits.');
@@ -394,9 +424,9 @@ export const ManageAppModule: React.FC = () => {
     }
     setPinBusy(true);
     try {
-      const res = await verifyOTP(currentUser.email, resetOtpInput);
-      if (!res.success) {
-        setPinError(res.message);
+      const verifyRes = await verifyMasterPinResetOTP(currentUser.email, cleanOtp);
+      if (!verifyRes.success) {
+        setPinError(verifyRes.message);
         return;
       }
       const hash = await hashSecretString(cleanPin, 'master_pin');
@@ -404,9 +434,11 @@ export const ManageAppModule: React.FC = () => {
       sessionStorage.setItem('kc_master_unlocked', '1');
       setIsUnlocked(true);
       setPinMode('ENTER');
-      setResetOtpInput('');
+      setPinOtpSent(false);
+      setPinOtpInput('');
       setNewResetPin('');
-      showNotice('success', isUr ? 'ای میل او ٹی پی کے ذریعے ماسٹر پن تبدیل کر دیا گیا۔' : 'Master Control PIN reset via Email OTP.');
+      clearPendingMasterPinReset();
+      showNotice('success', isUr ? 'جی میل OTP تصدیق کے بعد ماسٹر پن تبدیل کر دیا گیا۔' : 'Master Control PIN updated via Email OTP.');
     } finally {
       setPinBusy(false);
     }
@@ -524,44 +556,45 @@ export const ManageAppModule: React.FC = () => {
               type="button"
               onClick={() => {
                 setPinError(null);
+                setPinInfoMsg(null);
                 setPinMode('OTP_RESET');
+                if (!pinOtpSent) {
+                  void handleSendPinResetOtp();
+                }
               }}
-              className="w-full py-1.5 text-[11px] font-semibold text-[#F5D061] hover:underline"
+              className="w-full py-1.5 text-[11px] font-semibold text-[#F5D061] hover:underline cursor-pointer"
             >
               {translate(language, 'masterPinResetOtp')}
             </button>
           </form>
         ) : (
           <form onSubmit={handleConfirmPinReset} className="space-y-3 text-xs">
-            <div className="p-2.5 rounded-xl bg-[#0A0D12] border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between gap-2">
-              <span className="truncate">{currentUser.email}</span>
-              <button
-                type="button"
-                disabled={pinBusy}
-                onClick={handleSendPinResetOtp}
-                className="px-2.5 py-1 rounded-lg bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 font-bold shrink-0"
-              >
-                {translate(language, 'sendOtpBtn')}
-              </button>
+            <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span className="truncate">
+                {isUr
+                  ? `جی میل ان باکس (${currentUser.email}) چیک کریں`
+                  : `Check Gmail inbox (${currentUser.email}) for 6-digit OTP`}
+              </span>
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                {translate(language, 'otpCodeLabel')}
+                {isUr ? 'جی میل سے 6 ہندسوں کا OTP درج کریں *' : '6-Digit Email OTP *'}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
                 required
-                value={resetOtpInput}
-                onChange={(e) => setResetOtpInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-widest"
+                value={pinOtpInput}
+                onChange={(e) => setPinOtpInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••••"
+                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/40 bg-[#0A0D12] text-[#F5D061] font-mono text-center tracking-[0.5em] text-base font-bold focus:border-[#F5D061] outline-none"
               />
             </div>
             <div>
               <label className="block font-semibold text-slate-300 mb-1">
-                {isUr ? 'نیا 4 تا 6 ہندسوں کا پن' : 'New 4–6 Digit PIN'}
+                {isUr ? 'نیا 4 تا 6 ہندسوں کا پن *' : 'New 4–6 Digit PIN *'}
               </label>
               <input
                 type="password"
@@ -571,25 +604,40 @@ export const ManageAppModule: React.FC = () => {
                 value={newResetPin}
                 onChange={(e) => setNewResetPin(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••"
-                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-widest"
+                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-widest focus:border-[#F5D061] outline-none"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between text-[11px]">
               <button
                 type="button"
-                onClick={() => setPinMode('ENTER')}
-                className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                onClick={() => {
+                  clearPendingMasterPinReset();
+                  setPinOtpSent(false);
+                  setPinOtpInput('');
+                  setPinError(null);
+                  setPinInfoMsg(null);
+                  setPinMode('ENTER');
+                }}
+                className="text-slate-400 hover:text-white cursor-pointer"
               >
                 {translate(language, 'cancel')}
               </button>
               <button
-                type="submit"
-                disabled={pinBusy}
-                className="flex-1 py-2 rounded-xl font-extrabold kc-gold-button"
+                type="button"
+                disabled={pinOtpCooldown > 0 || pinBusy}
+                onClick={() => void handleSendPinResetOtp()}
+                className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
               >
-                {isUr ? 'او ٹی پی تصدیق اور پن محفوظ کریں' : 'Verify OTP & Save PIN'}
+                {pinOtpCooldown > 0 ? `${pinOtpCooldown}s` : translate(language, 'resendOtpBtn')}
               </button>
             </div>
+            <button
+              type="submit"
+              disabled={pinBusy}
+              className="w-full py-2 rounded-xl font-extrabold kc-gold-button cursor-pointer"
+            >
+              {isUr ? 'OTP تصدیق اور پن محفوظ کریں' : 'Verify OTP & Save PIN'}
+            </button>
           </form>
         )}
       </div>

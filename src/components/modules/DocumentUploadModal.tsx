@@ -127,6 +127,17 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const clearSelectedFile = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setFileDataUrl(null);
+    setFileName('');
+    setFileSize(0);
+    setFileMime('');
+    setUploadError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   if (!currentUser) return null;
 
   const formatFileSize = (bytes: number): string => {
@@ -434,6 +445,16 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ applic
                           alt="Upload preview" 
                           className="h-28 max-w-full rounded-lg object-contain shadow-xs border border-[#D4AF37]/35" 
                         />
+                        <button
+                          type="button"
+                          onClick={clearSelectedFile}
+                          aria-label="Remove uploaded image"
+                          title={isUr ? 'تصویر ہٹائیں' : 'Remove uploaded image'}
+                          style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
+                          className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                        >
+                          <X className="w-4 h-4 stroke-[2.75]" />
+                        </button>
                         <span className="absolute bottom-1 right-1 bg-[#090D16]/85 text-[#F5D061] text-[9px] px-1.5 py-0.5 rounded border border-[#D4AF37]/30">
                           {isUr ? 'پیش نظارہ' : 'Preview'}
                         </span>

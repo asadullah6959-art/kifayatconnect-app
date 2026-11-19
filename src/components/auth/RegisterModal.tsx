@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -30,6 +30,7 @@ import {
   verifyEmailOTP,
   getPendingEmailOTP,
   clearPendingEmailOTP,
+  OTP_COOLDOWN_SECONDS,
   findExistingFirestoreUserByEmail
 } from '../../services/firebase';
 import { compressAvatarFile } from '../../utils/imageCompression';
@@ -58,15 +59,22 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
   const { registerMember, requestOTP, language, isOnline } = useApp();
   const isCompletingExistingProfile = Boolean(completeProfileUser);
 
-  // 3-Step Flow: STEP 1 (OTP Verify Email) -> STEP 2 (Create & Confirm Password) -> STEP 3 (Community Profile & Location)
+  // 3-Step Flow: STEP 1 (Real 6-Digit EmailJS OTP) -> STEP 2 (Create Password) -> STEP 3 (Profile)
   const [step, setStep] = useState<1 | 2 | 3>(() => (completeProfileUser ? 3 : 1));
 
   const [email, setEmail] = useState(() => completeProfileUser?.email || getPendingEmailOTP()?.email || '');
   const [otpSent, setOtpSent] = useState(() => Boolean(getPendingEmailOTP()));
   const [otpCode, setOtpCode] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(() => {
+    const pending = getPendingEmailOTP();
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((OTP_COOLDOWN_SECONDS * 1000 - (Date.now() - pending.lastSentAt)) / 1000));
+  });
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+  const avatarCameraInputRef = useRef<HTMLInputElement>(null);
+  const avatarGalleryInputRef = useRef<HTMLInputElement>(null);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -149,6 +157,21 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
     }
   }, [isOpen, completeProfileUser]);
 
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
+  const clearAvatarPreview = () => {
+    setAvatarUrl('');
+    setPhotoError('');
+    if (avatarCameraInputRef.current) avatarCameraInputRef.current.value = '';
+    if (avatarGalleryInputRef.current) avatarGalleryInputRef.current.value = '';
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -214,9 +237,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       const res = await requestOTP(cleanEmail);
       if (res.success) {
         setOtpSent(true);
+        setOtpCooldown(res.cooldownSeconds || OTP_COOLDOWN_SECONDS);
         setOtpSuccess(res.message);
       } else {
         setOtpError(res.message);
+        if (res.cooldownSeconds) setOtpCooldown(res.cooldownSeconds);
       }
     } finally {
       setOtpLoading(false);
@@ -229,7 +254,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
     setOtpSuccess('');
     const cleanOtp = otpCode.replace(/\D/g, '');
     if (cleanOtp.length !== 6) {
-      setOtpError('Please enter the 6-digit verification code sent to your email.');
+      setOtpError('Please enter the 6-digit verification code sent to your Gmail/Email inbox.');
       return;
     }
     setOtpLoading(true);
@@ -428,7 +453,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             </p>
           </div>
         ) : step === 1 ? (
-          /* STEP 1: One-Time Email Verification via Working 6-Digit EmailJS OTP */
+          /* STEP 1: One-Time 6-Digit EmailJS OTP sent strictly to Gmail inbox */
           <div className="space-y-4">
             <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#38BDF8] flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0" />
@@ -468,15 +493,23 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
                 <button
                   type="submit"
-                  disabled={otpLoading || !isOnline}
+                  disabled={otpCooldown > 0 || otpLoading || !isOnline}
                   className="w-full py-2.5 px-4 kc-gold-button font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {otpLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{translate(language, 'sendOtpBtn')}</span>
+                  <span>{otpCooldown > 0 ? `${otpCooldown}s` : translate(language, 'sendOtpBtn')}</span>
                 </button>
               </form>
             ) : (
               <form onSubmit={handleVerifySignupOtp} className="space-y-3">
+                <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+                  <Mail className="w-4 h-4 shrink-0" />
+                  <span>
+                    {language === 'ur'
+                      ? 'اپنا جی میل ان باکس (یا اسپام فولڈر) چیک کریں اور موصول ہونے والا 6 ہندسوں کا کوڈ درج کریں۔'
+                      : 'Check your Gmail/Email Inbox (and Spam folder) and enter the 6-digit code sent to your email.'}
+                  </span>
+                </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-semibold text-slate-300">
@@ -508,10 +541,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   </button>
                   <button
                     type="button"
+                    disabled={otpCooldown > 0 || otpLoading}
                     onClick={handleSendSignupOtp}
-                    className="text-[#F5D061] hover:underline cursor-pointer"
+                    className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
                   >
-                    {translate(language, 'resendOtpBtn')}
+                    {otpCooldown > 0 ? `${otpCooldown}s` : translate(language, 'resendOtpBtn')}
                   </button>
                 </div>
                 <button
@@ -534,7 +568,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               <span>
                 {language === 'ur'
                   ? `${email} کی تصدیق ہو گئی! فوری لاگ ان کے لیے پاس ورڈ مقرر کریں۔`
-                  : `${email} verified! Set your account password for quick login.`}
+                  : `${email} verified! Set your account password for direct login.`}
               </span>
             </div>
 
@@ -596,9 +630,21 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
           <form id="kc-register-step3-form" onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Photo Upload above Applicant Full Name */}
             <div className="p-3.5 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center gap-3.5">
-              <div className="relative w-16 h-16 rounded-full bg-[#161D2C] border-2 border-[#D4AF37]/60 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="relative w-20 h-20 rounded-2xl bg-[#161D2C] border-2 border-[#D4AF37]/60 shrink-0 flex items-center justify-center">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Applicant Preview" className="w-full h-full object-cover" />
+                  <>
+                    <img src={avatarUrl} alt="Applicant Preview" className="w-full h-full object-cover rounded-[14px]" />
+                    <button
+                      type="button"
+                      onClick={clearAvatarPreview}
+                      aria-label="Remove applicant photo"
+                      title={language === 'ur' ? 'تصویر ہٹائیں' : 'Remove photo'}
+                      style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
+                      className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5 stroke-[2.75]" />
+                    </button>
+                  </>
                 ) : (
                   <Camera className="w-6 h-6 text-[#D4AF37]/70" />
                 )}
@@ -615,6 +661,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                     <span>{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
                     <input
+                      ref={avatarCameraInputRef}
                       type="file"
                       accept="image/*"
                       capture="user"
@@ -626,21 +673,13 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     <ImageIcon className="w-3.5 h-3.5" />
                     <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
                     <input
+                      ref={avatarGalleryInputRef}
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/*"
                       onChange={handlePhotoUpload}
                       className="hidden"
                     />
                   </label>
-                  {avatarUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setAvatarUrl('')}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold cursor-pointer"
-                    >
-                      {language === 'ur' ? 'ہٹائیں' : 'Remove'}
-                    </button>
-                  )}
                 </div>
                 {photoError && <p className="text-[11px] text-rose-400">{photoError}</p>}
               </div>

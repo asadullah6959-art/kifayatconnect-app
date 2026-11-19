@@ -8,7 +8,7 @@ import {
   browserPopupRedirectResolver,
   signInWithPopup,
   signInAnonymously,
-  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signOut as fbSignOut, 
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -53,6 +53,7 @@ import {
   normalizeLegacyRole
 } from '../types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safeStorage';
+import { EMAILJS_LOCKED_CONFIG } from '../config/emailjsConfig';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
@@ -377,10 +378,17 @@ export async function findExistingFirestoreUserByIdentifier(identifier: string):
       return { ...data, id: data.id || d.id } as User;
     }
 
-    // 2. If phone digits are provided, check directory users for normalized phone match
-    if (digits.length >= 7) {
+    // 2. If CNIC (13 digits) or phone digits are provided, check directory users for normalized match
+    if (digits.length === 13 || digits.length >= 7) {
       const tail = digits.slice(-10);
       const allUsers = await fetchAllUsersFromFirestore();
+      if (digits.length === 13) {
+        const matchedByCnic = allUsers.find((u) => {
+          const uCnicDigits = (u.cnic || '').replace(/\D/g, '');
+          return Boolean(uCnicDigits && uCnicDigits === digits);
+        });
+        if (matchedByCnic) return matchedByCnic;
+      }
       const matchedByPhone = allUsers.find((u) => {
         const uDigits = (u.phone || '').replace(/\D/g, '');
         if (!uDigits) return false;
@@ -544,7 +552,9 @@ export async function syncUserWithFirestore(firebaseUser: FirebaseUser): Promise
 }
 
 // ----------------------------------------------------
-// Built-In & Firebase Auth 6-Digit OTP System (State + kc_active_otp + 30s Cooldown)
+// CRITICAL: DO NOT MODIFY, OVERWRITE, OR REMOVE THIS EMAILJS OTP CONFIG IN FUTURE UPDATES
+// Real 6-Digit EmailJS OTP Only (Sign-Up, Password Reset & Founder Master Control PIN Reset)
+// Strictly NO on-screen/demo OTPs and NO Firebase continue-URI email links.
 // ----------------------------------------------------
 export const PENDING_OTP_STORAGE_KEY = 'kc_active_otp';
 const LEGACY_PENDING_OTP_STORAGE_KEY = 'kc_pending_email_otp';
@@ -552,9 +562,12 @@ const OTP_TTL_MS = 15 * 60 * 1000; // 15-minute validity across mobile app switc
 export const OTP_COOLDOWN_MS = 30 * 1000; // 30-second resend cooldown
 export const OTP_COOLDOWN_SECONDS = 30;
 
+const EMAILJS_SERVICE_ID = EMAILJS_LOCKED_CONFIG.SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = EMAILJS_LOCKED_CONFIG.TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = EMAILJS_LOCKED_CONFIG.PUBLIC_KEY;
+
 export interface StoredOTP {
   email: string;
-  otp: string;
   codeHash: string;
   expiresAt: number; // 15-minute TTL
   attempts: number; // max 3 attempts
@@ -598,7 +611,6 @@ export function getPendingEmailOTP(): StoredOTP | null {
     }
     return {
       email: parsed.email.trim().toLowerCase(),
-      otp: String(parsed.otp || '').replace(/\D/g, ''),
       codeHash: typeof parsed.codeHash === 'string' ? parsed.codeHash : '',
       expiresAt: parsed.expiresAt,
       attempts: typeof parsed.attempts === 'number' ? parsed.attempts : 0,
@@ -628,15 +640,57 @@ async function hashOTP(email: string, code: string): Promise<string> {
 }
 
 export function isEmailOTPConfigured(): boolean {
-  return true;
+  return Boolean(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY);
+}
+
+async function dispatchRealEmailViaEmailJS(
+  toEmail: string,
+  code: string,
+  purpose: 'SIGNUP_OTP' | 'PASSWORD_RESET' | 'MASTER_PIN_RESET'
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(EMAILJS_LOCKED_CONFIG.ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          passcode: code,
+          otp: code,
+          otp_code: code,
+          code,
+          email: toEmail,
+          to_email: toEmail,
+          user_email: toEmail,
+          purpose:
+            purpose === 'SIGNUP_OTP'
+              ? 'New Account Verification'
+              : purpose === 'MASTER_PIN_RESET'
+              ? 'Founder Master Control PIN Reset'
+              : 'Password Reset'
+        }
+      })
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      return { ok: false, error: text || `Email delivery failed (${res.status}).` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Network error sending verification email.'
+    };
+  }
 }
 
 export interface OTPRequestResult {
   success: boolean;
   message: string;
   cooldownSeconds?: number;
-  unconfigured?: boolean;
-  generatedOtp?: string;
+  mode?: 'EMAILJS_OTP';
   pendingRecord?: StoredOTP;
 }
 
@@ -653,26 +707,30 @@ export async function requestEmailOTP(
   const persistedPending = getPendingEmailOTP();
   const existing = otpStore.get(cleanEmail) || (persistedPending?.email === cleanEmail ? persistedPending : undefined);
 
-  // Enforce 30-second resend cooldown
   if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
     const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return {
       success: false,
       message: `Please wait ${remainingSeconds} seconds before requesting a new verification code.`,
       cooldownSeconds: remainingSeconds,
-      generatedOtp: existing.otp,
       pendingRecord: existing
     };
   }
 
-  // Generate fresh 6-digit OTP and store cleanly in memory + localStorage + state callback
   const cleanOtp = String(Math.floor(100000 + Math.random() * 900000)).trim();
+  const delivery = await dispatchRealEmailViaEmailJS(cleanEmail, cleanOtp, 'SIGNUP_OTP');
+  if (!delivery.ok) {
+    return {
+      success: false,
+      message: delivery.error || 'Unable to send verification code to your email inbox. Please try again.'
+    };
+  }
+
   const codeHash = await hashOTP(cleanEmail, cleanOtp);
   const expiresAt = now + OTP_TTL_MS;
 
   const pendingRecord: StoredOTP = {
     email: cleanEmail,
-    otp: cleanOtp,
     codeHash,
     expiresAt,
     attempts: 0,
@@ -685,14 +743,11 @@ export async function requestEmailOTP(
     onOtpPrepared(pendingRecord);
   }
 
-  // Bridge Firebase Auth session silently in background so cloud sync works seamlessly
-  tryEnsureSessionBestEffort().catch(() => {});
-
   return {
     success: true,
+    mode: 'EMAILJS_OTP',
     cooldownSeconds: OTP_COOLDOWN_SECONDS,
-    generatedOtp: cleanOtp,
-    message: `Verification code ${cleanOtp} generated for ${cleanEmail} (valid for 15 minutes).`,
+    message: `A 6-digit verification code has been sent to ${cleanEmail}. Please check your Gmail/Email Inbox and Spam folder.`,
     pendingRecord
   };
 }
@@ -716,7 +771,7 @@ export async function verifyEmailOTP(
   const now = Date.now();
 
   if (enteredOtp.length !== 6) {
-    return { success: false, message: 'Please enter the complete 6-digit verification code.' };
+    return { success: false, message: 'Please enter the complete 6-digit verification code from your email.' };
   }
 
   const persisted = getPendingEmailOTP();
@@ -726,11 +781,10 @@ export async function verifyEmailOTP(
   if (stateOtpRecord && (!cleanEmail || stateOtpRecord.email === cleanEmail)) candidates.push(stateOtpRecord);
   if (candidates.length === 0 && persisted && !cleanEmail) candidates.push(persisted);
 
-  // Pick the most recently issued OTP record so Resend OTP & repeat logins never read a stale code
   const saved = candidates.sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0))[0];
 
   if (!saved) {
-    return { success: false, message: 'No active verification code found. Please request a new code.' };
+    return { success: false, message: 'No active verification code found. Please request a new code to your email.' };
   }
 
   const targetEmail = cleanEmail || saved.email;
@@ -748,11 +802,9 @@ export async function verifyEmailOTP(
   }
 
   const candidateHash = await hashOTP(targetEmail, enteredOtp);
-  const savedOtpClean = String(saved.otp || '').replace(/\D/g, '');
-  const matchesDirect = Boolean(savedOtpClean && enteredOtp === savedOtpClean);
   const matchesHash = Boolean(saved.codeHash && saved.codeHash === candidateHash);
 
-  if (!matchesDirect && !matchesHash) {
+  if (!matchesHash) {
     const updatedRecord: StoredOTP = { ...saved, attempts: saved.attempts + 1 };
     const remaining = 3 - updatedRecord.attempts;
     if (remaining <= 0) {
@@ -765,7 +817,6 @@ export async function verifyEmailOTP(
     return { success: false, message: `Incorrect verification code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately clear kc_active_otp and in-memory record so repeat OTP logins work cleanly
   otpStore.delete(targetEmail);
   clearPendingEmailOTP();
 
@@ -781,8 +832,24 @@ export async function verifyEmailOTP(
 
 export const verifyEmailOtp = verifyEmailOTP;
 
+export async function signInWithFirebaseEmailPassword(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: FirebaseUser; code?: string }> {
+  const normEmail = email.trim().toLowerCase();
+  const cleanPwd = password.trim();
+  if (!normEmail || !cleanPwd) return { success: false };
+  try {
+    const cred = await signInWithEmailAndPassword(auth, normEmail, cleanPwd);
+    return { success: true, user: cred.user };
+  } catch (err: any) {
+    return { success: false, code: err?.code };
+  }
+}
+
 // ----------------------------------------------------
-// Forgot Password / Built-In + Firebase Auth OTP Reset Flow (30s Cooldown)
+// Forgot Password / Real 6-Digit EmailJS OTP Only (30s Cooldown)
+// Works for BOTH Regular Members and Founder (KC-ADM-001)
 // ----------------------------------------------------
 export const PENDING_RESET_STORAGE_KEY = 'kc_pending_password_reset';
 const resetStore = new Map<string, StoredOTP>();
@@ -819,7 +886,6 @@ export function getPendingPasswordReset(): StoredOTP | null {
     }
     return {
       email: parsed.email.trim().toLowerCase(),
-      otp: String(parsed.otp || '').replace(/\D/g, ''),
       codeHash: typeof parsed.codeHash === 'string' ? parsed.codeHash : '',
       expiresAt: parsed.expiresAt,
       attempts: typeof parsed.attempts === 'number' ? parsed.attempts : 0,
@@ -831,10 +897,21 @@ export function getPendingPasswordReset(): StoredOTP | null {
   }
 }
 
-export async function requestPasswordReset(email: string): Promise<OTPRequestResult> {
-  const normEmail = email.trim().toLowerCase();
-  if (!normEmail || !normEmail.includes('@')) {
-    return { success: false, message: 'Please enter a valid registered email address.' };
+export async function requestPasswordReset(emailOrIdentifier: string): Promise<OTPRequestResult> {
+  const rawInput = emailOrIdentifier.trim();
+  if (!rawInput) {
+    return { success: false, message: 'Please enter your registered email address, CNIC, or Member ID.' };
+  }
+
+  let normEmail = rawInput.toLowerCase();
+  if (rawInput.toUpperCase() === 'KC-ADM-001') {
+    normEmail = ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+  } else if (!normEmail.includes('@')) {
+    const matched = await findExistingFirestoreUserByIdentifier(rawInput).catch(() => null);
+    if (!matched?.email) {
+      return { success: false, message: 'No registered email found for that CNIC or Member ID.' };
+    }
+    normEmail = matched.email.trim().toLowerCase();
   }
 
   const now = Date.now();
@@ -847,68 +924,85 @@ export async function requestPasswordReset(email: string): Promise<OTPRequestRes
       success: false,
       message: `Please wait ${remainingSeconds} seconds before requesting another reset code.`,
       cooldownSeconds: remainingSeconds,
-      generatedOtp: existing.otp,
       pendingRecord: existing
     };
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const codeHash = await hashOTP(normEmail, `reset:${code}`);
-  const expiresAt = now + OTP_TTL_MS;
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const delivery = await dispatchRealEmailViaEmailJS(normEmail, otpCode, 'PASSWORD_RESET');
+  if (!delivery.ok) {
+    return {
+      success: false,
+      message: delivery.error || 'Unable to send password reset code to your email inbox.'
+    };
+  }
 
+  const codeHash = await hashOTP(normEmail, `reset:${otpCode}`);
   const pendingRecord: StoredOTP = {
     email: normEmail,
-    otp: code,
     codeHash,
-    expiresAt,
+    expiresAt: now + OTP_TTL_MS,
     attempts: 0,
     lastSentAt: now
   };
-
   resetStore.set(normEmail, pendingRecord);
   writePendingResetToStorage(pendingRecord);
 
-  // Trigger native Firebase Auth password reset email best-effort in parallel (non-blocking)
-  sendPasswordResetEmail(auth, normEmail).catch(() => {});
-
   return {
     success: true,
+    mode: 'EMAILJS_OTP',
     cooldownSeconds: OTP_COOLDOWN_SECONDS,
-    generatedOtp: code,
     pendingRecord,
-    message: `Password reset OTP ${code} is ready for ${normEmail} (valid for 15 minutes).`
+    message: `A 6-digit password reset code has been sent to ${normEmail}. Please check your Gmail/Email Inbox and Spam folder.`
   };
 }
 
 export async function verifyPasswordReset(
-  email: string,
+  emailOrIdentifier: string,
   code: string,
   newPassword: string
 ): Promise<OTPVerifyResult> {
-  const normEmail = email.trim().toLowerCase();
-  const cleanCode = code.trim();
+  const rawInput = emailOrIdentifier.trim();
+  const cleanCode = String(code || '').replace(/\D/g, '');
   const cleanPassword = newPassword.trim();
   const now = Date.now();
+
+  if (cleanCode.length !== 6) {
+    return { success: false, message: 'Please enter the 6-digit reset code from your Gmail/Email inbox.' };
+  }
 
   if (cleanPassword.length < 6) {
     return { success: false, message: 'New password must be at least 6 characters long.' };
   }
 
   const persisted = getPendingPasswordReset();
+  let normEmail = rawInput.toLowerCase();
+  if (rawInput.toUpperCase() === 'KC-ADM-001') {
+    normEmail = ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+  } else if (!normEmail.includes('@')) {
+    if (persisted?.email) {
+      normEmail = persisted.email;
+    } else {
+      const matched = await findExistingFirestoreUserByIdentifier(rawInput).catch(() => null);
+      if (matched?.email) normEmail = matched.email.trim().toLowerCase();
+    }
+  }
+
   let record = resetStore.get(normEmail);
-  if (!record && persisted && persisted.email === normEmail) {
+  if (!record && persisted && (!normEmail || persisted.email === normEmail)) {
     record = persisted;
+    normEmail = persisted.email;
     resetStore.set(normEmail, persisted);
   }
 
-  if (!record) {
-    return { success: false, message: 'No active password reset request found. Please request a new code.' };
+  if (!record || !record.codeHash) {
+    return { success: false, message: 'No active password reset code found. Please request a new 6-digit code to your email.' };
   }
 
   if (now > record.expiresAt) {
     resetStore.delete(normEmail);
     clearPendingPasswordReset();
-    return { success: false, message: 'Reset code has expired (10-minute limit). Please request a new code.' };
+    return { success: false, message: 'Reset code has expired (15-minute limit). Please request a new code.' };
   }
 
   if (record.attempts >= 3) {
@@ -918,10 +1012,9 @@ export async function verifyPasswordReset(
   }
 
   const candidateHash = await hashOTP(normEmail, `reset:${cleanCode}`);
-  const matchesHash = record.codeHash ? record.codeHash === candidateHash : false;
-  const matchesPlain = record.otp ? record.otp === cleanCode : false;
+  const matchesHash = record.codeHash === candidateHash;
 
-  if (!matchesHash && !matchesPlain) {
+  if (!matchesHash) {
     record.attempts += 1;
     const remaining = 3 - record.attempts;
     if (remaining <= 0) {
@@ -934,7 +1027,6 @@ export async function verifyPasswordReset(
     return { success: false, message: `Incorrect reset code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
   }
 
-  // Verified — immediately clear single-use reset code and store hashed credential locally + in Firestore
   resetStore.delete(normEmail);
   clearPendingPasswordReset();
 
@@ -942,9 +1034,12 @@ export async function verifyPasswordReset(
   try {
     await tryEnsureSessionBestEffort();
     const remoteUser = await findExistingFirestoreUserByEmail(normEmail);
-    if (remoteUser?.id) {
+    const targetDocId =
+      remoteUser?.id ||
+      (normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase() ? 'usr_super_admin' : null);
+    if (targetDocId) {
       await setDoc(
-        doc(db, 'users', remoteUser.id),
+        doc(db, 'users', targetDocId),
         { passwordHash: newPasswordHash, hasPassword: true, otpVerifiedOnce: true },
         { merge: true }
       );
@@ -955,9 +1050,156 @@ export async function verifyPasswordReset(
 
   return {
     success: true,
-    message: 'Temporary reset code verified and password updated. Entering your Dashboard...',
+    message: 'Reset code verified and password updated. Entering your Dashboard...',
     verifiedEmail: normEmail
   };
+}
+
+// ----------------------------------------------------
+// Founder Master Control PIN Reset via Real 6-Digit EmailJS OTP
+// ----------------------------------------------------
+export const PENDING_MASTER_PIN_RESET_KEY = 'kc_pending_master_pin_reset';
+const masterPinResetStore = new Map<string, StoredOTP>();
+
+export function clearPendingMasterPinReset(): void {
+  masterPinResetStore.clear();
+  try {
+    safeRemoveItem(PENDING_MASTER_PIN_RESET_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
+export function getPendingMasterPinReset(): StoredOTP | null {
+  try {
+    const raw = safeGetItem(PENDING_MASTER_PIN_RESET_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredOTP>;
+    if (!parsed || typeof parsed.email !== 'string' || typeof parsed.expiresAt !== 'number') {
+      clearPendingMasterPinReset();
+      return null;
+    }
+    if (Date.now() > parsed.expiresAt || (parsed.attempts ?? 0) >= 3) {
+      clearPendingMasterPinReset();
+      return null;
+    }
+    return {
+      email: parsed.email.trim().toLowerCase(),
+      codeHash: typeof parsed.codeHash === 'string' ? parsed.codeHash : '',
+      expiresAt: parsed.expiresAt,
+      attempts: typeof parsed.attempts === 'number' ? parsed.attempts : 0,
+      lastSentAt: typeof parsed.lastSentAt === 'number' ? parsed.lastSentAt : Date.now()
+    };
+  } catch {
+    clearPendingMasterPinReset();
+    return null;
+  }
+}
+
+export async function requestMasterPinResetOTP(founderEmail: string): Promise<OTPRequestResult> {
+  const normEmail = (founderEmail || ROOT_SUPER_ADMIN_EMAIL).trim().toLowerCase();
+  if (!normEmail || !normEmail.includes('@')) {
+    return { success: false, message: 'Founder email address is required.' };
+  }
+
+  const now = Date.now();
+  const persisted = getPendingMasterPinReset();
+  const existing = masterPinResetStore.get(normEmail) || (persisted?.email === normEmail ? persisted : undefined);
+  if (existing && now - existing.lastSentAt < OTP_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
+    return {
+      success: false,
+      message: `Please wait ${remainingSeconds} seconds before requesting another PIN reset code.`,
+      cooldownSeconds: remainingSeconds,
+      pendingRecord: existing
+    };
+  }
+
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const delivery = await dispatchRealEmailViaEmailJS(normEmail, otpCode, 'MASTER_PIN_RESET');
+  if (!delivery.ok) {
+    return {
+      success: false,
+      message: delivery.error || 'Unable to send Master PIN reset code to your Gmail inbox.'
+    };
+  }
+
+  const codeHash = await hashOTP(normEmail, `master_pin_reset:${otpCode}`);
+  const pendingRecord: StoredOTP = {
+    email: normEmail,
+    codeHash,
+    expiresAt: now + OTP_TTL_MS,
+    attempts: 0,
+    lastSentAt: now
+  };
+  masterPinResetStore.set(normEmail, pendingRecord);
+  try {
+    safeSetItem(PENDING_MASTER_PIN_RESET_KEY, JSON.stringify(pendingRecord));
+  } catch {
+    // Ignore storage write failure
+  }
+
+  return {
+    success: true,
+    mode: 'EMAILJS_OTP',
+    cooldownSeconds: OTP_COOLDOWN_SECONDS,
+    pendingRecord,
+    message: `A 6-digit Master Control PIN reset code has been sent to ${normEmail}. Check your Gmail/Email Inbox (and Spam folder).`
+  };
+}
+
+export async function verifyMasterPinResetOTP(
+  founderEmail: string,
+  otpInput: string
+): Promise<OTPVerifyResult> {
+  const normEmail = (founderEmail || ROOT_SUPER_ADMIN_EMAIL).trim().toLowerCase();
+  const cleanCode = String(otpInput || '').replace(/\D/g, '');
+  const now = Date.now();
+
+  if (cleanCode.length !== 6) {
+    return { success: false, message: 'Please enter the 6-digit OTP code from your Gmail inbox.' };
+  }
+
+  const persisted = getPendingMasterPinReset();
+  let record = masterPinResetStore.get(normEmail);
+  if (!record && persisted && persisted.email === normEmail) {
+    record = persisted;
+    masterPinResetStore.set(normEmail, persisted);
+  }
+
+  if (!record || !record.codeHash) {
+    return { success: false, message: 'No active PIN reset OTP found. Please request a new code to your Gmail inbox.' };
+  }
+
+  if (now > record.expiresAt) {
+    clearPendingMasterPinReset();
+    return { success: false, message: 'PIN reset code has expired. Please request a new code.' };
+  }
+
+  if (record.attempts >= 3) {
+    clearPendingMasterPinReset();
+    return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
+  }
+
+  const candidateHash = await hashOTP(normEmail, `master_pin_reset:${cleanCode}`);
+  if (record.codeHash !== candidateHash) {
+    const updated: StoredOTP = { ...record, attempts: record.attempts + 1 };
+    const remaining = 3 - updated.attempts;
+    if (remaining <= 0) {
+      clearPendingMasterPinReset();
+      return { success: false, message: 'Too many incorrect attempts. Code invalidated for security.' };
+    }
+    masterPinResetStore.set(normEmail, updated);
+    try {
+      safeSetItem(PENDING_MASTER_PIN_RESET_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore
+    }
+    return { success: false, message: `Incorrect OTP code. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` };
+  }
+
+  clearPendingMasterPinReset();
+  return { success: true, message: 'OTP verified.', verifiedEmail: normEmail };
 }
 
 // ----------------------------------------------------

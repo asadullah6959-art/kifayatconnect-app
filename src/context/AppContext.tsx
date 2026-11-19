@@ -89,6 +89,7 @@ import {
   updateUserPresenceInFirestore,
   markUserOfflineInFirestore,
   findExistingFirestoreUserByEmail,
+  findExistingFirestoreUserByIdentifier,
   buildSafeEmailUserId,
   toIsoTimestamp,
   requestEmailOTP,
@@ -96,11 +97,13 @@ import {
   verifyPasswordReset,
   getPendingEmailOTP,
   clearPendingEmailOTP,
+  clearPendingPasswordReset,
   saveLocalPasswordCredential,
   verifyLocalPasswordCredential,
   hasLocalPasswordCredential,
   computeUserPasswordHash,
   mirrorPasswordHashToLocalStorage,
+  signInWithFirebaseEmailPassword,
   approveOrRejectUserInFirestore,
   sendApprovalRequestNotificationToFirestore,
   resolveUserApprovalStatus,
@@ -1286,17 +1289,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isAuditor: Boolean(currentUser?.isAuditOfficer)
   };
 
-  // Effect A: Firebase Google Auth Session Lifecycle
+  // Effect A: Firebase Auth Session Lifecycle
   // CRITICAL: NEVER wipe currentUser / currentUserId when fbUser is null or anonymous
-  // because custom Email + Password & One-Time OTP accounts persist via kifayat_current_user.
+  // because custom Email + Password accounts persist permanently via kifayat_current_user & IndexedDB.
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (!fbUser || fbUser.isAnonymous) {
         return;
       }
+      const isPasswordProvider = fbUser.providerData?.some(p => p.providerId === 'password');
+      const isFounderEmail = (fbUser.email || '').trim().toLowerCase() === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
+      if (isPasswordProvider && !fbUser.emailVerified && !isFounderEmail) {
+        return;
+      }
+      if (isPasswordProvider) {
+        // Password logins and Sign-Up completion manage session creation explicitly.
+        // Only hydrate on refresh if session isn't already restored.
+        if (currentUserObjRef.current) return;
+      }
       try {
         const syncedProfileRaw = await syncUserWithFirestore(fbUser);
+        if (isPasswordProvider && !syncedProfileRaw.profileCompleted && !isFounderEmail) {
+          return;
+        }
         const activeProfile = normalizeUserRecord({
           ...syncedProfileRaw,
           isOnline: true,
@@ -1304,7 +1320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         establishUserSession(activeProfile);
       } catch (err) {
-        console.warn('Google auth sync warning:', err);
+        console.warn('Firebase auth sync warning:', err);
       }
     });
 
@@ -1764,6 +1780,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setFirebaseUser(null);
     setIsFirebaseLive(false);
+    setActiveOtpRecord(null);
+    clearPendingEmailOTP();
+    clearPendingPasswordReset();
     persistCurrentUserToStorage(null);
     setCurrentUserState(null);
     setCurrentUserId(null);
@@ -1976,43 +1995,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { ...res, user: sessionUser };
   };
 
+  const resolveLocalUserByIdentifier = (identifier: string): User | undefined => {
+    const raw = identifier.trim();
+    if (!raw) return undefined;
+    const lower = raw.toLowerCase();
+    const upper = raw.toUpperCase();
+    const digits = raw.replace(/\D/g, '');
+    const phoneTail = digits.slice(-10);
+
+    return users.find((u) => {
+      if (u.email && u.email.toLowerCase() === lower) return true;
+      if (upper === 'KC-ADM-001' && (isFounderUser(u) || u.membershipId === 'KC-ADM-001')) return true;
+      if (u.membershipId && u.membershipId.toUpperCase() === upper) return true;
+      if (u.memberId && u.memberId.toUpperCase() === upper) return true;
+      if (digits.length === 13) {
+        const uCnic = (u.cnic || '').replace(/\D/g, '');
+        if (uCnic && uCnic === digits) return true;
+      }
+      if (digits.length >= 7) {
+        const uPhone = (u.phone || '').replace(/\D/g, '');
+        if (uPhone && (uPhone === digits || (phoneTail.length >= 9 && uPhone.endsWith(phoneTail)))) return true;
+      }
+      return false;
+    });
+  };
+
   const loginWithPassword = async (
-    email: string,
+    identifier: string,
     password: string
   ): Promise<{ success: boolean; message: string; user?: User; needsPasswordSetup?: boolean; existingAccountFound?: boolean }> => {
-    const normEmail = email.trim().toLowerCase();
-    if (!normEmail || !normEmail.includes('@')) {
-      return { success: false, message: 'Please enter a valid Gmail or email address.' };
+    const rawId = identifier.trim();
+    if (!rawId) {
+      return { success: false, message: 'Please enter your Email, 13-digit CNIC, Phone, or Member ID.' };
     }
     if (!password.trim()) {
       return { success: false, message: 'Please enter your password.' };
     }
 
-    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
-    const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
+    const localExisting = resolveLocalUserByIdentifier(rawId);
+    const remoteExisting = await findExistingFirestoreUserByIdentifier(rawId);
     const existing = remoteExisting
       ? mergeUsersLists(localExisting ? [localExisting] : [], [remoteExisting], true)[0]
       : localExisting;
+
+    const normEmail = (
+      existing?.email ||
+      (rawId.toUpperCase() === 'KC-ADM-001' ? ROOT_SUPER_ADMIN_EMAIL : rawId.includes('@') ? rawId : '')
+    ).trim().toLowerCase();
+    if (!normEmail || !normEmail.includes('@')) {
+      return {
+        success: false,
+        message: 'No registered account found for that Email, CNIC, or Member ID. New members can tap Create Account.'
+      };
+    }
+
     const cloudPwdHash = remoteExisting?.passwordHash || existing?.passwordHash;
     const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
     const hasPwd = Boolean(cloudPwdHash || hasLocalPasswordCredential(normEmail));
 
-    if (!hasPwd) {
-      return {
-        success: false,
-        needsPasswordSetup: true,
-        existingAccountFound: Boolean(existing || isFounderEmail),
-        message: (existing || isFounderEmail)
-          ? 'Your existing account does not have a password set yet. Create your password below to sign in directly.'
-          : 'No registered account found for this email. Tap Create Account to verify once via Email OTP.'
-      };
+    let ok = hasPwd ? await verifyLocalPasswordCredential(normEmail, password, cloudPwdHash) : false;
+    let syncedNewHash: string | undefined = cloudPwdHash;
+
+    // Also verify against Firebase Auth Email/Password (supports passwords updated via real Firebase Reset Email link!)
+    if (!ok) {
+      const fbSignIn = await signInWithFirebaseEmailPassword(normEmail, password);
+      if (fbSignIn.success) {
+        ok = true;
+        syncedNewHash = await saveLocalPasswordCredential(normEmail, password);
+      }
     }
 
-    const ok = await verifyLocalPasswordCredential(normEmail, password, cloudPwdHash);
     if (!ok) {
+      if (!hasPwd && (existing || isFounderEmail)) {
+        return {
+          success: false,
+          needsPasswordSetup: true,
+          existingAccountFound: true,
+          message: 'Your existing account does not have a password set yet. Create your password below to sign in directly.'
+        };
+      }
       return {
         success: false,
-        message: 'Incorrect email or password. Try again or use Forgot Password.'
+        message: 'Incorrect credentials or password. Try again or use Forgot Password.'
       };
     }
 
@@ -2023,7 +2087,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    const ensuredPwdHash = cloudPwdHash || (await computeUserPasswordHash(normEmail, password));
+    const ensuredPwdHash = syncedNewHash || (await computeUserPasswordHash(normEmail, password));
     const { user: loggedInUser, isNewSignup } = upsertVerifiedUserByEmail(normEmail, {
       hasPassword: true,
       passwordHash: ensuredPwdHash,
@@ -2031,34 +2095,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       remoteExisting
     });
     const sessionUser = establishUserSession(loggedInUser, { resetTab: true });
-    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    ensureFirebaseAuthSession().then(() => saveUserToFirestore(sessionUser, { isOnline: true })).catch(() => {});
     emitAuthAlertNotification(isNewSignup ? 'USER_SIGNUP' : 'USER_LOGIN', sessionUser);
     return { success: true, message: 'Signed in successfully.', user: sessionUser };
   };
 
   const setupPasswordForExistingAccount = async (
-    email: string,
+    identifier: string,
     password: string
   ): Promise<{ success: boolean; message: string; user?: User }> => {
-    const normEmail = email.trim().toLowerCase();
-    if (!normEmail || !normEmail.includes('@')) {
-      return { success: false, message: 'Please enter a valid Gmail or email address.' };
+    const rawId = identifier.trim();
+    if (!rawId) {
+      return { success: false, message: 'Please enter your Email, 13-digit CNIC, or Member ID.' };
     }
     if (password.trim().length < 6) {
       return { success: false, message: 'Password must be at least 6 characters long.' };
     }
 
-    const remoteExisting = await findExistingFirestoreUserByEmail(normEmail);
-    const localExisting = users.find(u => u.email.toLowerCase() === normEmail);
+    const localExisting = resolveLocalUserByIdentifier(rawId);
+    const remoteExisting = await findExistingFirestoreUserByIdentifier(rawId);
     const existing = remoteExisting
       ? mergeUsersLists(localExisting ? [localExisting] : [], [remoteExisting], true)[0]
       : localExisting;
+    const normEmail = (existing?.email || (rawId.includes('@') ? rawId : '')).trim().toLowerCase();
     const isFounderEmail = normEmail === ROOT_SUPER_ADMIN_EMAIL.toLowerCase();
 
-    if (!existing && !isFounderEmail) {
+    if ((!existing && !isFounderEmail) || !normEmail || !normEmail.includes('@')) {
       return {
         success: false,
-        message: 'No existing account found for this email. Please use Create Account with one-time Email OTP.'
+        message: 'No existing account found for those details. Please use Create Account with one-time Email OTP.'
       };
     }
 
@@ -2079,7 +2144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       remoteExisting
     });
     const sessionUser = establishUserSession(user, { resetTab: true });
-    saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
+    ensureFirebaseAuthSession().then(() => saveUserToFirestore(sessionUser, { isOnline: true })).catch(() => {});
     emitAuthAlertNotification('USER_LOGIN', sessionUser);
     return { success: true, message: 'Password saved to Cloud and signed in!', user: sessionUser };
   };

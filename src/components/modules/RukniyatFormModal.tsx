@@ -946,7 +946,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                                 onClick={clearApplicantPhoto}
                                 aria-label="Remove applicant photo"
                                 title={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
-                                style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 50 }}
+                                style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
                                 className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
                               >
                                 <X className="w-3.5 h-3.5 stroke-[2.75]" />
@@ -1073,7 +1073,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                         onClick={clearScannedFormPhoto}
                         aria-label="Remove scanned form photo"
                         title={isUr ? 'اسکین شدہ تصویر ہٹائیں' : 'Remove scanned photo'}
-                        style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 50 }}
+                        style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
                         className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
                       >
                         <X className="w-4 h-4 stroke-[2.75]" />
