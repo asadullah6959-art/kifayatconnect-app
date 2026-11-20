@@ -82,7 +82,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
   const { currentUser, assignMemberRole, language } = useApp();
   const [error, setError] = useState<string | null>(null);
 
-  if (!targetUser || !currentUser || !isFounderUser(currentUser)) return null;
+  if (!targetUser || !currentUser || !(isFounderUser(currentUser) || currentUser.role === 'SUPER_ADMIN')) return null;
 
   const targetIsFounder = isFounderUser(targetUser);
 

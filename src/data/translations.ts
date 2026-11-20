@@ -5,7 +5,8 @@ export type AppLanguage = 'en' | 'ur';
 export const TRANSLATIONS = {
   en: {
     // Brand & Splash
-    appName: 'KIFAYAT CONNECT',
+    appName: 'SUI KHEL ITTEHAD',
+     appTitleShort: 'SUI KHEL ITTEHAD',
     appTitleShort: 'Kifayat Connect',
     tagline: 'Together for a Better Tomorrow',
     loadingWorkspace: 'Preparing Luxury Governance Suite...',
@@ -227,7 +228,7 @@ export const TRANSLATIONS = {
   },
   ur: {
     // Brand & Splash
-    appName: 'کفایت کنیکٹ',
+    appName: 'سوئی خیل اتحاد',
     appTitleShort: 'کفایت کنیکٹ',
     tagline: 'بہتر کل کے لیے ایک ساتھ',
     loadingWorkspace: 'لگژری گورننس پینل لوڈ ہو رہا ہے...',

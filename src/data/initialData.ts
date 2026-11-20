@@ -186,8 +186,8 @@ export const INITIAL_OFFICE_BEARER_HISTORY: OfficeBearerHistory[] = [];
 export const INITIAL_APP_UPDATES: AppUpdate[] = [];
 
 export const INITIAL_APP_SETTINGS: AppSettings = {
-  appName: 'Kifayat Connect',
-  appNameUr: 'کفایت کنیکٹ',
+  appName: 'SUI KHEL ITTEHAD',
+    appNameUr: 'سوئی خیل اتحاد',
   tagline: 'Together for a Better Tomorrow',
   taglineUr: 'بہتر کل کے لیے ایک ساتھ',
   logoUrl: '',

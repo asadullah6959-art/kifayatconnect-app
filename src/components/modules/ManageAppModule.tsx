@@ -674,7 +674,7 @@ export const ManageAppModule: React.FC = () => {
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
     updateAppSettings({
-      appName: appName.trim() || 'KIFAYAT CONNECT',
+      appName: appName.trim() || 'SUI KHEL ITTEHAD',
       appNameUr: appNameUr.trim() || 'کفایت کنیکٹ',
       tagline: tagline.trim() || 'Together for a Better Tomorrow',
       taglineUr: taglineUr.trim() || 'بہتر کل کے لیے ایک ساتھ',

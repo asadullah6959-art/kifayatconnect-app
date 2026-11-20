@@ -171,9 +171,9 @@ export const TabbarBadge: React.FC<TabbarBadgeProps> = React.memo(
         )}
 
         {isFlagship ? (
-          <FaizKhelVipCrownIcon className={compact ? 'w-[22px] h-[22px]' : 'w-6 h-6'} />
+          <FaizKhelVipCrownIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
         ) : isRousaKhel ? (
-          <StandardSimpleCrownIcon className="w-[14px] h-[14px]" />
+          <StandardSimpleCrownIcon className="w-3 h-3" />
         ) : (
           <span aria-hidden="true" className="text-[12px] leading-none">
             {clan.emblem}
@@ -181,19 +181,19 @@ export const TabbarBadge: React.FC<TabbarBadgeProps> = React.memo(
         )}
 
         {compact ? (
-          <span className="relative z-10 truncate max-w-[148px] font-urdu-auto">
+          <span className="relative z-10 whitespace-nowrap font-urdu-auto text-[9px]">
             {language === 'ur' ? urduName : `${englishName} | ${urduName}`}
           </span>
         ) : (
-          <span className="relative z-10 inline-flex items-center gap-1 truncate max-w-[225px]">
-            <span className="uppercase tracking-wider text-[10px] font-extrabold">{englishName}</span>
+          <span className="relative z-10 inline-flex items-center gap-1 whitespace-nowrap text-[9px]">
+            <span className="uppercase tracking-wider font-extrabold">{englishName}</span>
             <span className="opacity-70">|</span>
             <span className="font-urdu-auto font-bold">{urduName}</span>
           </span>
         )}
 
         {isFlagship && (
-          <span className="relative z-10 shrink-0 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black tracking-wider uppercase leading-none shadow-xs">
+          <span className="relative z-10 shrink-0 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[8px] font-black px-1 py-0 tracking-wider uppercase leading-none shadow-xs">
             VIP
           </span>
         )}

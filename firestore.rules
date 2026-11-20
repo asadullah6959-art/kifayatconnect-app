@@ -125,6 +125,7 @@ service cloud.firestore {
 
       allow update: if isValidUserDocId(userId) && isValidUser(incoming()) && (
         isFounder() ||
+        isSuperAdmin() ||
         (
           !targetIsFounderDoc() &&
           ((!('isFounder' in existing()) && (!('isFounder' in incoming()) || incoming().isFounder != true)) || ('isFounder' in existing() && incoming().isFounder == existing().isFounder)) &&

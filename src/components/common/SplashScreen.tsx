@@ -9,7 +9,7 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
-  appName = 'KIFAYAT CONNECT',
+  appName = 'SUI KHEL ITTEHAD',
   tagline = 'Together for a Better Tomorrow',
   language = 'en',
   onFinish
