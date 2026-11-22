@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   MessageSquareWarning, 
@@ -198,13 +198,13 @@ export const ComplaintsManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {isUr ? 'اراکین کی شکایات و حل' : 'Member Grievances & Resolution'}
             </span>
-            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-[#E5E4E2]/50">·</span>
             <span className="text-xs text-slate-300">
               {isMember
                 ? (isUr ? 'میرے ٹکٹ' : 'My Tickets')
@@ -216,7 +216,7 @@ export const ComplaintsManager: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <MessageSquareWarning className="w-6 h-6 text-[#F5D061]" />
+            <MessageSquareWarning className="w-6 h-6 text-[#E5E4E2]" />
             <span>{isUr ? 'شکایات اور معاونت مرکز' : 'Complaints & Support Center'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -370,7 +370,7 @@ export const ComplaintsManager: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-[#F5D061] font-bold">{cmp.ticketNumber}</span>
+                      <span className="font-mono text-[#E5E4E2] font-bold">{cmp.ticketNumber}</span>
                       <span className="font-bold text-sm text-white">{cmp.subject}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
@@ -384,28 +384,28 @@ export const ComplaintsManager: React.FC = () => {
                       <span>·</span>
                       <span>{isUr ? 'قسم:' : 'Category:'} <strong className="text-slate-200">{localizeCategory(cmp.category)}</strong></span>
                       <span>·</span>
-                      <span>{isUr ? 'اہمیت:' : 'Priority:'} <strong className="text-[#F5D061]">{localizePriority(cmp.priority)}</strong></span>
+                      <span>{isUr ? 'اہمیت:' : 'Priority:'} <strong className="text-[#E5E4E2]">{localizePriority(cmp.priority)}</strong></span>
                     </div>
                   </div>
 
                   <span className={`text-[10px] px-2.5 py-0.5 rounded-md font-bold uppercase shrink-0 ${
                     cmp.status === 'RESOLVED'
-                      ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45'
+                      ? 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/45'
                       : cmp.status === 'UNDER_REVIEW'
-                      ? 'bg-amber-500/15 text-[#F5D061] border border-[#D4AF37]/45'
+                      ? 'bg-amber-500/15 text-[#E5E4E2] border border-[#E5E4E2]/45'
                       : 'bg-rose-950/80 text-rose-300 border border-rose-500/45'
                   }`}>
                     {localizeStatus(cmp.status)}
                   </span>
                 </div>
 
-                <p className="text-slate-200 leading-relaxed bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/20">
+                <p className="text-slate-200 leading-relaxed bg-[#071812] p-3.5 rounded-xl border border-[#E5E4E2]/20">
                   {cmp.description}
                 </p>
 
                 {cmp.responseNote && (
                   <div className="p-3.5 rounded-xl kc-emerald-panel text-xs">
-                    <span className="font-bold text-[#F5D061]">
+                    <span className="font-bold text-[#E5E4E2]">
                       {isUr ? `سرکاری جواب (${cmp.assignedOfficerName}):` : `Official Response (${cmp.assignedOfficerName}):`}
                     </span>
                     <p className="text-slate-100 mt-1">
@@ -421,10 +421,10 @@ export const ComplaintsManager: React.FC = () => {
 
                 {/* Action buttons */}
                 {(isSuperAdmin || isDistrictAdmin || isCoAdmin) && (
-                  <div className="pt-2.5 border-t border-[#D4AF37]/20 flex justify-end">
+                  <div className="pt-2.5 border-t border-[#E5E4E2]/20 flex justify-end">
                     <button
                       onClick={() => handleOpenResponse(cmp)}
-                      className="kc-pressable flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] hover:brightness-110 border border-[#38BDF8]/50 text-white text-xs font-bold rounded-lg shadow-md cursor-pointer"
+                      className="kc-pressable flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0284C7] to-[#059669] hover:brightness-110 border border-[#059669]/50 text-white text-xs font-bold rounded-lg shadow-md cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#F8FAFC]" />
                       <span>{isUr ? 'ٹکٹ اپڈیٹ اور جواب دیں' : 'Update Ticket & Respond'}</span>
@@ -444,16 +444,16 @@ export const ComplaintsManager: React.FC = () => {
             className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-start justify-between gap-2.5 pb-2.5 border-b border-[#D4AF37]/25">
+            <div className="flex items-start justify-between gap-2.5 pb-2.5 border-b border-[#E5E4E2]/25">
               <div className="flex-1 min-w-0 space-y-2">
-                <h3 className="text-base font-bold text-[#F5D061] break-words whitespace-normal leading-snug">
+                <h3 className="text-base font-bold text-[#E5E4E2] break-words whitespace-normal leading-snug">
                   {isUr ? 'شکایت یا استفسار کا ٹکٹ درج کریں' : 'Submit Grievance or Inquiry Ticket'}
                 </h3>
 
                 {/* Speech Recognition Language Selector */}
-                <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/30 text-[10px]">
+                <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#071812] border border-[#E5E4E2]/30 text-[10px]">
                   <span className="px-1.5 text-slate-400 font-semibold flex items-center gap-1">
-                    <AudioLines className="w-3 h-3 text-[#F5D061]" />
+                    <AudioLines className="w-3 h-3 text-[#E5E4E2]" />
                     <span>{isUr ? 'آواز:' : 'Voice:'}</span>
                   </span>
                   <button
@@ -498,7 +498,7 @@ export const ComplaintsManager: React.FC = () => {
                   setIsSubmitModalOpen(false);
                 }}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -568,7 +568,7 @@ export const ComplaintsManager: React.FC = () => {
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                       speech.isListening && dictationTarget === 'SUBJECT'
                         ? 'bg-rose-950/90 border-rose-500 text-rose-200'
-                        : 'bg-[#090D16] border-[#D4AF37]/35 text-[#F5D061] hover:bg-[#161F33]'
+                        : 'bg-[#071812] border-[#E5E4E2]/35 text-[#E5E4E2] hover:bg-[#161F33]'
                     }`}
                     title={isUr ? 'موضوع بول کر لکھیں' : 'Dictate subject using microphone'}
                   >
@@ -594,7 +594,7 @@ export const ComplaintsManager: React.FC = () => {
                   className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                 />
                 {speech.isListening && dictationTarget === 'SUBJECT' && (
-                  <p className="mt-1 text-[11px] text-[#F5D061] flex items-center gap-1.5">
+                  <p className="mt-1 text-[11px] text-[#E5E4E2] flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                     <span className="truncate">
                       {speech.interimTranscript
@@ -616,7 +616,7 @@ export const ComplaintsManager: React.FC = () => {
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                       speech.isListening && dictationTarget === 'DESCRIPTION'
                         ? 'bg-rose-950/90 border-rose-500 text-rose-200'
-                        : 'bg-[#090D16] border-[#D4AF37]/35 text-[#F5D061] hover:bg-[#161F33]'
+                        : 'bg-[#071812] border-[#E5E4E2]/35 text-[#E5E4E2] hover:bg-[#161F33]'
                     }`}
                     title={isUr ? 'شکایت بول کر لکھیں' : 'Dictate detailed explanation using microphone'}
                   >
@@ -642,7 +642,7 @@ export const ComplaintsManager: React.FC = () => {
                   className="kc-luxury-input w-full text-xs p-3 rounded-xl resize-none"
                 />
                 {speech.isListening && dictationTarget === 'DESCRIPTION' && (
-                  <div className="mt-1.5 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#F5D061] flex items-center justify-between gap-2">
+                  <div className="mt-1.5 px-3 py-2 rounded-xl bg-[#0D2A1F] border border-[#059669]/40 text-[11px] text-[#E5E4E2] flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                       <span className="truncate">
@@ -662,7 +662,7 @@ export const ComplaintsManager: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E5E4E2]/20">
                 <button
                   type="button"
                   onClick={() => {
@@ -695,7 +695,7 @@ export const ComplaintsManager: React.FC = () => {
           >
             <div className="flex items-start justify-between gap-2.5">
               <div className="flex-1 min-w-0">
-                <span className="text-[#F5D061] uppercase font-mono font-bold block">
+                <span className="text-[#E5E4E2] uppercase font-mono font-bold block">
                   {respondingTicket.ticketNumber}
                 </span>
                 <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
@@ -712,7 +712,7 @@ export const ComplaintsManager: React.FC = () => {
                   setRespondingTicket(null);
                 }}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -746,7 +746,7 @@ export const ComplaintsManager: React.FC = () => {
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                     speech.isListening && dictationTarget === 'RESPONSE'
                       ? 'bg-rose-950/90 border-rose-500 text-rose-200'
-                      : 'bg-[#090D16] border-[#D4AF37]/35 text-[#F5D061] hover:bg-[#161F33]'
+                      : 'bg-[#071812] border-[#E5E4E2]/35 text-[#E5E4E2] hover:bg-[#161F33]'
                   }`}
                   title={isUr ? 'جواب بول کر لکھیں' : 'Dictate official response'}
                 >
@@ -772,7 +772,7 @@ export const ComplaintsManager: React.FC = () => {
                 className="kc-luxury-input w-full p-3 rounded-xl resize-none"
               />
               {speech.isListening && dictationTarget === 'RESPONSE' && (
-                <p className="mt-1 text-[11px] text-[#F5D061] flex items-center gap-1.5">
+                <p className="mt-1 text-[11px] text-[#E5E4E2] flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-rose-500 kc-scenic-twinkle shrink-0" />
                   <span className="truncate">
                     {speech.interimTranscript
@@ -786,7 +786,7 @@ export const ComplaintsManager: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E5E4E2]/20">
               <button
                 type="button"
                 onClick={() => {

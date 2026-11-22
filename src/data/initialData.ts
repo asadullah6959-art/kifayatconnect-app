@@ -1,4 +1,4 @@
-import { 
+﻿import {
   User, 
   MembershipApplication, 
   PaymentTransaction, 
@@ -192,7 +192,7 @@ export const INITIAL_APP_SETTINGS: AppSettings = {
   taglineUr: 'بہتر کل کے لیے ایک ساتھ',
   logoUrl: '',
   primaryColor: '#043927',
-  accentGoldColor: '#D4AF37',
+  accentGoldColor: '#E5E4E2',
   themePreset: 'OBSIDIAN_GOLD',
   registrationOpen: true,
   maintenanceMode: false,
@@ -223,10 +223,10 @@ export const INITIAL_APP_SETTINGS: AppSettings = {
     allowComplaintsDesk: true
   },
   textOverrides: {
-    welcomeHeadlineEn: 'Sign In to Kifayat Connect',
-    welcomeHeadlineUr: 'کفایت کنیکٹ میں سائن ان کریں',
-    maintenanceMessageEn: 'Kifayat Connect is currently undergoing scheduled maintenance by the Founder Super Admin.',
-    maintenanceMessageUr: 'کفایت کنیکٹ اس وقت سپر ایڈمن کی جانب سے مرمت کے مرحلے میں ہے۔',
+    welcomeHeadlineEn: 'Sign In to SUI KHEL ITTEHAD',
+    welcomeHeadlineUr: 'سوئی خیل اتحاد میں سائن ان کریں',
+    maintenanceMessageEn: 'SUI KHEL ITTEHAD is currently undergoing scheduled maintenance by the Founder Super Admin.',
+    maintenanceMessageUr: 'سوئی خیل اتحاد اس وقت سپر ایڈمن کی جانب سے مرمت کے مرحلے میں ہے۔',
     idCardFooterEn: 'TOGETHER FOR A BETTER TOMORROW',
     idCardFooterUr: 'بہتر کل کے لیے ایک ساتھ'
   },

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -321,7 +321,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       return;
     }
 
-    await registerMember({
+    const registration = await registerMember({
       applicantName: applicantName.trim(),
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
@@ -341,6 +341,11 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
       password: password.trim(),
       avatarUrl: avatarUrl || undefined
     });
+
+    if (!registration.success) {
+      setCnicError(registration.error || 'Unable to complete registration.');
+      return;
+    }
 
     const resetFormFields = () => {
       setStep(1);
@@ -394,9 +399,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
-      <div className="relative w-full max-w-xl kc-modal-panel bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl my-auto flex flex-col overflow-hidden text-xs text-white">
+      <div className="relative w-full max-w-xl kc-modal-panel bg-[#111622] border border-[#E5E4E2]/35 rounded-2xl shadow-2xl my-auto flex flex-col overflow-hidden text-xs text-white">
         {/* Sticky Header */}
-        <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-[#D4AF37]/20 bg-[#111622] shrink-0">
+        <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-[#E5E4E2]/20 bg-[#111622] shrink-0">
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2.5 flex-1 min-w-0">
               <div className="shrink-0">
@@ -422,7 +427,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               type="button"
               onClick={onClose}
               aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] cursor-pointer shrink-0 kc-pressable"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] cursor-pointer shrink-0 kc-pressable"
             >
               <X className="w-5 h-5" />
             </button>
@@ -434,7 +439,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               <div
                 key={idx}
                 className={`h-1.5 rounded-full transition-colors ${
-                  step >= idx ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D061]' : 'bg-[#161D2C]'
+                  step >= idx ? 'bg-gradient-to-r from-[#E5E4E2] to-[#E5E4E2]' : 'bg-[#161D2C]'
                 }`}
               />
             ))}
@@ -448,7 +453,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
           <div className="py-10 text-center space-y-3">
             <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto" />
             <h4 className="font-bold text-base text-white">
-              {language === 'ur' ? 'اکاؤنٹ کامیابی سے بن گیا!' : `Welcome to Kifayat Connect (${district})!`}
+              {language === 'ur' ? 'اکاؤنٹ کامیابی سے بن گیا!' : `Welcome to SUI KHEL ITTEHAD (${district})!`}
             </h4>
             <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
               {language === 'ur'
@@ -459,8 +464,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
         ) : step === 1 ? (
           /* STEP 1: One-Time 6-Digit EmailJS OTP sent strictly to Gmail inbox */
           <div className="space-y-4">
-            <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[11px] text-[#38BDF8] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0" />
+            <div className="p-2.5 rounded-xl bg-[#0D2A1F] border border-[#059669]/40 text-[11px] text-[#059669] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0" />
               <span>{translate(language, 'oneTimeOtpBadge')}</span>
             </div>
             {otpError && (
@@ -489,7 +494,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                       placeholder="name@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                     />
                     <Mail className="w-4 h-4 text-slate-500 absolute end-3 top-1/2 -translate-y-1/2" />
                   </div>
@@ -506,7 +511,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </form>
             ) : (
               <form onSubmit={handleVerifySignupOtp} className="space-y-3">
-                <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[11px] text-[#059669] flex items-center gap-2">
                   <Mail className="w-4 h-4 shrink-0" />
                   <span>
                     {language === 'ur'
@@ -519,7 +524,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     <label className="font-semibold text-slate-300">
                       {translate(language, 'otpCodeLabel')}
                     </label>
-                    <span className="text-[10px] text-[#F5D061]">{email}</span>
+                    <span className="text-[10px] text-[#E5E4E2]">{email}</span>
                   </div>
                   <input
                     type="text"
@@ -528,7 +533,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     placeholder="••••••"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/50 rounded-xl text-[#F5D061] outline-none font-bold"
+                    className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/50 rounded-xl text-[#E5E4E2] outline-none font-bold"
                   />
                 </div>
                 <div className="flex justify-between text-[11px]">
@@ -547,7 +552,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     type="button"
                     disabled={otpCooldown > 0 || otpLoading}
                     onClick={handleSendSignupOtp}
-                    className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
+                    className="text-[#E5E4E2] hover:underline disabled:opacity-50 cursor-pointer"
                   >
                     {otpCooldown > 0 ? `${otpCooldown}s` : translate(language, 'resendOtpBtn')}
                   </button>
@@ -594,7 +599,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white focus:border-[#F5D061] outline-none"
+                  className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white focus:border-[#E5E4E2] outline-none"
                 />
                 <button
                   type="button"
@@ -616,7 +621,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white focus:border-[#F5D061] outline-none"
+                className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white focus:border-[#E5E4E2] outline-none"
               />
             </div>
 
@@ -633,8 +638,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
           /* STEP 3: Full Community Profile + Compressed Photo Upload + Searchable Pakistan Districts/Cities */
           <form id="kc-register-step3-form" onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Photo Upload above Applicant Full Name */}
-            <div className="p-3.5 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/30 flex items-center gap-3.5">
-              <div className="relative w-20 h-20 rounded-2xl bg-[#161D2C] border-2 border-[#D4AF37]/60 shrink-0 flex items-center justify-center">
+            <div className="p-3.5 rounded-xl bg-[#0A0D12] border border-[#E5E4E2]/30 flex items-center gap-3.5">
+              <div className="relative w-20 h-20 rounded-2xl bg-[#161D2C] border-2 border-[#E5E4E2]/60 shrink-0 flex items-center justify-center">
                 {avatarUrl ? (
                   <>
                     <img src={avatarUrl} alt="Applicant Preview" className="w-full h-full object-cover rounded-[14px]" />
@@ -644,17 +649,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                       aria-label="Remove applicant photo"
                       title={language === 'ur' ? 'تصویر ہٹائیں' : 'Remove photo'}
                       style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                      className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                      className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5 stroke-[2.75]" />
                     </button>
                   </>
                 ) : (
-                  <Camera className="w-6 h-6 text-[#D4AF37]/70" />
+                  <Camera className="w-6 h-6 text-[#E5E4E2]/70" />
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-1.5">
-                <p className="text-xs font-bold text-[#F5D061]">
+                <p className="text-xs font-bold text-[#E5E4E2]">
                   {language === 'ur' ? 'پروفائل تصویر' : 'Profile Photo'}{' '}
                   <span className="text-[10px] text-slate-400 font-normal">
                     {language === 'ur' ? '(اختیاری · خودکار کمپریسڈ 200×200)' : '(Optional · Auto-compressed 200×200 <35KB)'}
@@ -673,7 +678,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                       className="hidden"
                     />
                   </label>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161D2C] hover:bg-[#1E293B] border border-[#D4AF37]/40 text-[#FDE047] text-[11px] font-bold cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161D2C] hover:bg-[#1E293B] border border-[#E5E4E2]/40 text-[#CBD5E1] text-[11px] font-bold cursor-pointer">
                     <ImageIcon className="w-3.5 h-3.5" />
                     <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
                     <input
@@ -700,7 +705,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   placeholder={language === 'ur' ? 'مثال: محمد عثمان' : 'e.g. Muhammad Usman'}
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061]"
+                  className="w-full px-3 py-2 border border-[#E5E4E2]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#E5E4E2]"
                 />
               </div>
 
@@ -725,8 +730,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     setCnic(formatCnicDisplay(e.target.value));
                     setCnicError('');
                   }}
-                  className={`w-full px-3 py-2 font-mono border rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061] ${
-                    cnicError ? 'border-rose-500/70' : isValid13DigitCnic(cnic) ? 'border-emerald-500/60' : 'border-[#D4AF37]/30'
+                  className={`w-full px-3 py-2 font-mono border rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#E5E4E2] ${
+                    cnicError ? 'border-rose-500/70' : isValid13DigitCnic(cnic) ? 'border-emerald-500/60' : 'border-[#E5E4E2]/30'
                   }`}
                 />
                 {cnicError && (
@@ -748,7 +753,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#F5D061]"
+                  className="w-full px-3 py-2 border border-[#E5E4E2]/30 rounded-xl bg-[#0A0D12] text-xs text-white outline-none focus:border-[#E5E4E2]"
                 />
               </div>
 
@@ -760,15 +765,15 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                   type="email"
                   readOnly
                   value={email}
-                  className="w-full px-3 py-2 border border-[#38BDF8]/40 rounded-xl bg-[#131C31] text-xs text-[#38BDF8]"
+                  className="w-full px-3 py-2 border border-[#059669]/40 rounded-xl bg-[#0D2A1F] text-xs text-[#059669]"
                 />
               </div>
             </div>
 
             {/* Tabbar / Branch / Clan Selection (Black & Royal Gold) */}
-            <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/35 space-y-3">
+            <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#E5E4E2]/35 space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <label className="font-bold text-[#F5D061] text-xs">
+                <label className="font-bold text-[#E5E4E2] text-xs">
                   {translate(language, 'tabbarLabel')} *
                 </label>
                 {previewTabbar && (previewTabbar.tabbarId !== CUSTOM_TABBAR_ID || previewTabbar.tabbarEnglish || previewTabbar.tabbarUrdu) && (
@@ -817,7 +822,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                         setTabbarError('');
                       }}
                       placeholder="e.g. Yousafzai / Khan Khel"
-                      className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#111622] text-xs text-white focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2 border border-[#E5E4E2]/30 rounded-xl bg-[#111622] text-xs text-white focus:border-[#E5E4E2] outline-none"
                     />
                   </div>
                   <div>
@@ -832,7 +837,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                         setTabbarError('');
                       }}
                       placeholder="مثال: یوسفزئی"
-                      className="w-full px-3 py-2 border border-[#D4AF37]/30 rounded-xl bg-[#111622] text-xs text-[#F5D061] font-urdu-auto focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2 border border-[#E5E4E2]/30 rounded-xl bg-[#111622] text-xs text-[#E5E4E2] font-urdu-auto focus:border-[#E5E4E2] outline-none"
                     />
                   </div>
                 </div>
@@ -847,9 +852,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
             </div>
 
             {/* Preserved Administrative Location Hierarchy */}
-            <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/25 space-y-3">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#F5D061] pb-2 border-b border-[#D4AF37]/15">
-                <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <div className="p-3.5 bg-[#0A0D12] rounded-xl border border-[#E5E4E2]/25 space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#E5E4E2] pb-2 border-b border-[#E5E4E2]/15">
+                <MapPin className="w-3.5 h-3.5 text-[#E5E4E2]" />
                 <span>
                   {language === 'ur' ? 'پاکستان لوکیشن (تمام اضلاع اور شہر)' : 'Pakistan Location (All Districts & Cities)'}
                 </span>
@@ -921,7 +926,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     list="tehsils-list"
                     value={tehsil}
                     onChange={(e) => setTehsil(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
+                    className="w-full px-2.5 py-1.5 border border-[#E5E4E2]/30 rounded-lg bg-[#111622] text-xs text-white"
                   />
                   <datalist id="tehsils-list">
                     {availableTehsils.map(t => <option key={t} value={t} />)}
@@ -939,7 +944,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     required
                     value={cityTown}
                     onChange={(e) => setCityTown(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
+                    className="w-full px-2.5 py-1.5 border border-[#E5E4E2]/30 rounded-lg bg-[#111622] text-xs text-white"
                   />
                 </div>
 
@@ -953,7 +958,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                     list="ucs-list"
                     value={unionCouncil}
                     onChange={(e) => setUnionCouncil(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
+                    className="w-full px-2.5 py-1.5 border border-[#E5E4E2]/30 rounded-lg bg-[#111622] text-xs text-white"
                   />
                   <datalist id="ucs-list">
                     {sampleUCs.map(uc => <option key={uc} value={uc} />)}
@@ -972,17 +977,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
                 placeholder={language === 'ur' ? 'مکان نمبر / گلی / سیکٹر / شہر...' : 'House / Street / Sector / City...'}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#0A0D12] text-xs text-white resize-none"
+                className="w-full p-2.5 border border-[#E5E4E2]/30 rounded-xl bg-[#0A0D12] text-xs text-white resize-none"
               />
             </div>
 
-            <div className="p-3 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/20">
+            <div className="p-3 bg-[#0A0D12] rounded-xl border border-[#E5E4E2]/20">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isOldMember}
                   onChange={(e) => setIsOldMember(e.target.checked)}
-                  className="rounded text-[#D4AF37]"
+                  className="rounded text-[#E5E4E2]"
                 />
                 <span className="font-semibold text-slate-200">
                   {language === 'ur'
@@ -992,14 +997,14 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
               </label>
 
               {isOldMember && (
-                <div className="mt-2 pt-2 border-t border-[#D4AF37]/15">
+                <div className="mt-2 pt-2 border-t border-[#E5E4E2]/15">
                   <input
                     type="text"
                     required={isOldMember}
                     placeholder={language === 'ur' ? 'سابقہ مینوئل آئی ڈی مثال: OLD-LHR-1984' : 'Previous Manual ID e.g. OLD-LHR-1984'}
                     value={oldMembershipNo}
                     onChange={(e) => setOldMembershipNo(e.target.value)}
-                    className="w-full px-2.5 py-1.5 font-mono border border-[#D4AF37]/30 rounded-lg bg-[#111622] text-xs text-white"
+                    className="w-full px-2.5 py-1.5 font-mono border border-[#E5E4E2]/30 rounded-lg bg-[#111622] text-xs text-white"
                   />
                 </div>
               )}
@@ -1011,7 +1016,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, c
 
         {/* Sticky Bottom Footer for Step 3 */}
         {!submitted && step === 3 && (
-          <div className="px-4 sm:px-6 py-3 border-t border-[#D4AF37]/25 bg-[#0A0D12] flex items-center justify-between gap-3 shrink-0">
+          <div className="px-4 sm:px-6 py-3 border-t border-[#E5E4E2]/25 bg-[#0A0D12] flex items-center justify-between gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}

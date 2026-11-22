@@ -14,12 +14,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   language = 'en',
   onFinish
 }) => {
+  const [stage, setStage] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFadingOut(true), 650);
-    const doneTimer = setTimeout(() => onFinish(), 920);
+    const stageTimers = [900, 900, 900].map((duration, index) =>
+      setTimeout(() => setStage(index + 1), duration * (index + 1))
+    );
+    const fadeTimer = setTimeout(() => setFadingOut(true), 3150);
+    const doneTimer = setTimeout(onFinish, 3420);
     return () => {
+      stageTimers.forEach(clearTimeout);
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
     };
@@ -27,55 +32,60 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#070D14] overflow-hidden select-none transition-opacity duration-250 ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#071812] overflow-hidden select-none transition-opacity duration-250 ${
         fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
-      aria-label="Kifayat Connect Splash Screen"
+      aria-label="SUI KHEL ITTEHAD (SKI) Splash Screen"
+      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {/* Subtle radial midnight slate & cyan atmosphere */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.12) 0%, rgba(13, 22, 36, 0.96) 58%, #070D14 100%)'
+            'radial-gradient(circle at 50% 42%, rgba(5,150,105,0.32) 0%, rgba(4,99,7,0.22) 42%, #071812 100%)'
         }}
       />
-
-      {/* Apollo-Style 3D Perspective Stage */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 kc-animate-tilt-3d">
-        <div className="relative p-2.5 rounded-full bg-[#131C31] border border-[#D4AF37]/45 shadow-[0_20px_60px_rgba(212,175,55,0.22)] overflow-hidden">
-          {/* Moving Golden Light-Sweep Shimmer (GPU transform/opacity only) */}
-          <div
-            className="absolute inset-y-0 left-0 w-1/2 pointer-events-none kc-animate-shimmer"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent 0%, rgba(245, 208, 97, 0.22) 50%, transparent 100%)'
-            }}
-          />
+      <div className="relative z-10 flex h-full max-h-[680px] w-full max-w-lg flex-col items-center justify-center text-center px-6">
+        <div className={`relative transition-all duration-700 ${stage === 0 ? 'scale-75 opacity-0' : 'scale-100 opacity-100'}`}>
+          <div className="absolute -inset-8 rounded-full border border-[#E5E4E2]/20" />
+          <div className="absolute -inset-16 rounded-full border border-[#059669]/20" />
           <AppLogo size="xl" animated halo />
         </div>
-
-        {/* Metallic Gold Brand Typography */}
-        <h1 className="mt-7 text-2xl sm:text-4xl font-extrabold tracking-[0.18em] uppercase kc-gold-gradient-text drop-shadow-sm">
-          {language === 'ur' ? 'کفایت کنیکٹ' : appName.toUpperCase()}
+        {stage >= 1 && (
+          <div className="mt-7 flex items-end justify-center gap-2" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((person) => (
+              <span
+                key={person}
+                className="block origin-bottom rounded-t-full bg-gradient-to-b from-[#E5E4E2] to-[#046307]"
+                style={{
+                  width: `${18 + person * 2}px`,
+                  height: `${54 + (person % 3) * 10}px`,
+                  opacity: 0.72 + person * 0.05,
+                  transform: `translateY(${stage >= 2 ? 4 : 18}px)`,
+                  transition: 'all 700ms ease',
+                  clipPath: 'polygon(34% 0,66% 0,72% 26%,100% 100%,0 100%,28% 26%)'
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {stage >= 3 && (
+          <div className="mt-5 flex items-center justify-center gap-3 animate-pulse" aria-label="Unity hands joining">
+            <span className="h-2 w-14 -rotate-12 rounded-full bg-[#E5E4E2]" />
+            <span className="h-3 w-3 rotate-45 rounded-sm bg-[#059669]" />
+            <span className="h-2 w-14 rotate-12 rounded-full bg-[#046307]" />
+          </div>
+        )}
+        <h1 className="mt-7 max-w-full break-words text-xl sm:text-4xl font-extrabold leading-tight tracking-[0.12em] uppercase text-[#E5E4E2] drop-shadow-lg">
+          {language === 'ur' ? 'سوئی خیل اتحاد (SKI)' : appName}
         </h1>
-
-        <div className="mt-2.5 flex items-center justify-center gap-2">
-          <span className="h-[1px] w-8 bg-gradient-to-r from-transparent to-[#D4AF37]" />
-          <p className="text-xs sm:text-sm font-semibold tracking-wider text-[#38BDF8]">
-            {language === 'ur' ? 'بہتر کل کے لیے ایک ساتھ' : tagline}
-          </p>
-          <span className="h-[1px] w-8 bg-gradient-to-l from-transparent to-[#D4AF37]" />
-        </div>
-
-        {/* Minimal Apollo-style Progress Accent */}
-        <div className="mt-8 w-44 h-1 rounded-full bg-[#131C31] overflow-hidden border border-[#38BDF8]/25">
-          <div
-            className="h-full w-full origin-left bg-gradient-to-r from-[#0EA5E9] via-[#D4AF37] to-[#F5D061]"
-            style={{
-              animation: 'kcShimmer 1.6s ease-in-out infinite'
-            }}
-          />
+        <p className="mt-2 text-xs sm:text-sm font-semibold tracking-[0.12em] text-[#7DD3A7]">
+          {stage === 0 ? 'UNITY EMBLEM' : stage === 1 ? 'PEOPLE GATHERING' : stage === 2 ? 'STRENGTH THROUGH UNITY' : 'WELCOME'}
+        </p>
+        <div className="mt-8 flex gap-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((dot) => (
+            <span key={dot} className={`h-1.5 rounded-full transition-all duration-500 ${stage === dot ? 'w-8 bg-[#059669]' : 'w-2 bg-[#CBD5E1]/50'}`} />
+          ))}
         </div>
       </div>
     </div>

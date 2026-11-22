@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Megaphone,
@@ -187,13 +187,13 @@ export const AnnouncementsManager: React.FC = () => {
   return (
     <div className="space-y-5 max-w-full">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div className="min-w-0">
-          <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-[#E5E4E2] uppercase tracking-wider">
             {isUr ? 'اعلانات اور دوہرا نشریاتی نظام' : 'Elaanat & Dual Broadcast Channels'}
           </span>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
-            <Megaphone className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <Megaphone className="w-6 h-6 text-[#E5E4E2] shrink-0" />
             <span>{translate(language, 'announcementsHeader')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -223,7 +223,7 @@ export const AnnouncementsManager: React.FC = () => {
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'OFFICIAL_APP'
               ? 'kc-gold-button'
-              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+              : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
           }`}
         >
           <Crown className="w-3.5 h-3.5" />
@@ -237,7 +237,7 @@ export const AnnouncementsManager: React.FC = () => {
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'COMMUNITY'
               ? 'kc-gold-button'
-              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+              : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
           }`}
         >
           <Megaphone className="w-3.5 h-3.5" />
@@ -251,7 +251,7 @@ export const AnnouncementsManager: React.FC = () => {
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold whitespace-nowrap kc-pressable cursor-pointer ${
             activeChannel === 'ARCHIVE'
               ? 'kc-gold-button'
-              : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+              : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
           }`}
         >
           <Archive className="w-3.5 h-3.5" />
@@ -262,7 +262,7 @@ export const AnnouncementsManager: React.FC = () => {
 
       {canPublishAny && activeChannel !== 'ARCHIVE' && (
         <div className="p-3.5 rounded-2xl kc-emerald-panel flex items-center gap-2.5 text-xs text-emerald-100">
-          <MailCheck className="w-4 h-4 text-[#F5D061] shrink-0" />
+          <MailCheck className="w-4 h-4 text-[#E5E4E2] shrink-0" />
           <span>
             {isUr
               ? 'خودکار نشریات فعال ہیں: آفیشل ایپ اعلانات (👑) کے لیے سپر ایڈمن کی اجازت درکار ہے؛ کمیونٹی اطلاعات متعلقہ صوبے/ضلع کے ان باکس تک پہنچتی ہیں۔'
@@ -290,7 +290,7 @@ export const AnnouncementsManager: React.FC = () => {
                   ann.urgency === 'URGENT'
                     ? 'bg-rose-950/30 border border-rose-500/45 shadow-lg'
                     : isOfficial
-                    ? 'kc-obsidian-card border-[#D4AF37]/45'
+                    ? 'kc-obsidian-card border-[#E5E4E2]/45'
                     : 'kc-obsidian-card'
                 }`}
               >
@@ -299,8 +299,8 @@ export const AnnouncementsManager: React.FC = () => {
                     <span
                       className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
                         isOfficial
-                          ? 'bg-[#090D16] border-[#F5D061]/50 text-[#F5D061]'
-                          : 'bg-[#131C31] border-[#38BDF8]/45 text-[#38BDF8]'
+                          ? 'bg-[#071812] border-[#E5E4E2]/50 text-[#E5E4E2]'
+                          : 'bg-[#0D2A1F] border-[#059669]/45 text-[#059669]'
                       }`}
                     >
                       {isOfficial
@@ -309,7 +309,7 @@ export const AnnouncementsManager: React.FC = () => {
                     </span>
 
                     {ann.isPinned && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#F5D061] bg-[#131C31] px-2 py-0.5 rounded-md border border-[#D4AF37]/40">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#E5E4E2] bg-[#0D2A1F] px-2 py-0.5 rounded-md border border-[#E5E4E2]/40">
                         <Pin className="w-3 h-3" />
                         <span>{translate(language, 'pinnedBadge')}</span>
                       </span>
@@ -322,14 +322,14 @@ export const AnnouncementsManager: React.FC = () => {
                     )}
 
                     {expired && (
-                      <span className="text-[10px] font-bold text-slate-300 uppercase px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/20">
+                      <span className="text-[10px] font-bold text-slate-300 uppercase px-2 py-0.5 rounded-md bg-[#071812] border border-[#E5E4E2]/20">
                         {translate(language, 'expiredOn')}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#090D16] border border-[#D4AF37]/25 px-2.5 py-0.5 rounded-lg text-emerald-300">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#071812] border border-[#E5E4E2]/25 px-2.5 py-0.5 rounded-lg text-emerald-300">
                       <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                       {ann.targetScope === 'ALL' || ann.targetRegion === 'ALL_REGIONS' || !ann.targetScope
                         ? (isUr ? 'پورا پاکستان' : 'All Pakistan')
@@ -342,7 +342,7 @@ export const AnnouncementsManager: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => deleteAnnouncement(ann.id)}
-                        className="p-1.5 rounded-lg bg-[#090D16] hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-[#D4AF37]/25 kc-pressable cursor-pointer"
+                        className="p-1.5 rounded-lg bg-[#071812] hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-[#E5E4E2]/25 kc-pressable cursor-pointer"
                         title={translate(language, 'deleteLabel')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -357,7 +357,7 @@ export const AnnouncementsManager: React.FC = () => {
                   {ann.content}
                 </p>
 
-                <div className="pt-2.5 border-t border-[#D4AF37]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+                <div className="pt-2.5 border-t border-[#E5E4E2]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span>
                       {isUr ? 'از:' : 'By'} <strong className="text-white">{ann.publishedBy}</strong>
@@ -367,7 +367,7 @@ export const AnnouncementsManager: React.FC = () => {
 
                   <div className="flex items-center gap-3 font-mono tabular-nums text-[10px]">
                     <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[#F5D061]" />
+                      <Clock className="w-3 h-3 text-[#E5E4E2]" />
                       {new Date(ann.publishedAt).toLocaleString()}
                     </span>
                     {ann.expiresAt && (
@@ -391,7 +391,7 @@ export const AnnouncementsManager: React.FC = () => {
             className="relative w-full max-w-lg kc-luxury-modal kc-modal-panel rounded-2xl p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs space-y-4"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#E5E4E2]/20">
               <h3 className="text-base font-bold text-white flex-1 min-w-0 break-words whitespace-normal leading-snug">
                 {translate(language, 'publishAnnouncementBtn')}
               </h3>
@@ -399,7 +399,7 @@ export const AnnouncementsManager: React.FC = () => {
                 type="button"
                 onClick={() => setIsPublishModalOpen(false)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -418,8 +418,8 @@ export const AnnouncementsManager: React.FC = () => {
                     onClick={() => setAnnType('OFFICIAL_APP')}
                     className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'OFFICIAL_APP'
-                        ? 'border-[#F5D061] bg-[#131C31] text-[#F5D061]'
-                        : 'border-slate-400/20 bg-[#090D16] text-slate-400'
+                        ? 'border-[#E5E4E2] bg-[#0D2A1F] text-[#E5E4E2]'
+                        : 'border-slate-400/20 bg-[#071812] text-slate-400'
                     }`}
                   >
                     {isUr ? '👑 آفیشل ایپ' : '👑 Official App'}
@@ -434,8 +434,8 @@ export const AnnouncementsManager: React.FC = () => {
                     onClick={() => setAnnType('COMMUNITY')}
                     className={`p-2.5 rounded-xl border text-left font-bold kc-pressable cursor-pointer disabled:opacity-40 ${
                       annType === 'COMMUNITY'
-                        ? 'border-[#38BDF8] bg-[#131C31] text-[#38BDF8]'
-                        : 'border-slate-400/20 bg-[#090D16] text-slate-400'
+                        ? 'border-[#059669] bg-[#0D2A1F] text-[#059669]'
+                        : 'border-slate-400/20 bg-[#071812] text-slate-400'
                     }`}
                   >
                     {isUr ? '📢 کمیونٹی' : '📢 Community'}
@@ -466,7 +466,7 @@ export const AnnouncementsManager: React.FC = () => {
                     {isUr ? 'ہدف سامعین' : 'Target Audience'}
                   </label>
                   {isDistrictAdmin ? (
-                    <div className="p-2.5 bg-[#090D16] border border-[#D4AF37]/25 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
+                    <div className="p-2.5 bg-[#071812] border border-[#E5E4E2]/25 rounded-xl font-medium text-emerald-300 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{currentUser.assignedDistrict || currentUser.district}</span>
                     </div>
@@ -541,7 +541,7 @@ export const AnnouncementsManager: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#D4AF37]/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#E5E4E2]/20">
                 <div className="flex items-center gap-4 text-slate-200">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input

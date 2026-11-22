@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+﻿import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Users,
@@ -88,11 +88,11 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
       }
       className={`relative overflow-hidden p-3.5 rounded-2xl space-y-2.5 transition-colors ${
         isFaizKhel
-          ? 'border-[1.5px] border-[#FDE047]'
+          ? 'border-[1.5px] border-[#CBD5E1]'
           : 'kc-obsidian-card'
       } ${
         isFocused
-          ? 'border-[#38BDF8] ring-2 ring-[#38BDF8]/45'
+          ? 'border-[#059669] ring-2 ring-[#059669]/45'
           : ''
       }`}
     >
@@ -106,22 +106,22 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
                 loading="lazy"
                 decoding="async"
                 className={`w-10 h-10 rounded-full object-cover ${
-                  isFaizKhel ? 'border-2 border-[#FDE047]' : 'border border-slate-400/30'
+                  isFaizKhel ? 'border-2 border-[#CBD5E1]' : 'border border-slate-400/30'
                 }`}
               />
             ) : (
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                   isFaizKhel
-                    ? 'bg-[#1C1404] text-[#FEF08A] border-2 border-[#FDE047]'
-                    : 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
+                    ? 'bg-[#1C1404] text-[#E5E4E2] border-2 border-[#CBD5E1]'
+                    : 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/40'
                 }`}
               >
                 {member.name.charAt(0).toUpperCase()}
               </div>
             )}
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#090D16] ${
+              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#071812] ${
                 onlineNow ? 'bg-emerald-500' : 'bg-slate-500'
               }`}
             />
@@ -129,7 +129,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
               {isFaizKhel && <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" />}
-              <span className={`font-bold text-xs truncate ${isFaizKhel ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
+              <span className={`font-bold text-xs truncate ${isFaizKhel ? 'text-[#E5E4E2]' : 'text-[#F8FAFC]'}`}>
                 {member.name}
               </span>
               <span
@@ -145,7 +145,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
               </span>
             </div>
             <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-              <span className="font-mono text-[10px] text-[#F5D061] font-semibold">
+              <span className="font-mono text-[10px] text-[#E5E4E2] font-semibold">
                 {member.membershipId || 'KC-PENDING'}
               </span>
               <TabbarBadge user={member} language={language} compact />
@@ -160,7 +160,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
             compact
           />
           {approvalState === 'pending' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[9px] font-extrabold uppercase">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-[#E5E4E2] text-[9px] font-extrabold uppercase">
               <Clock className="w-2.5 h-2.5" />
               <span>
                 {isProfilePending
@@ -186,7 +186,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
 
       <div className="flex items-center justify-between text-[11px] text-slate-300">
         <span className="flex items-center gap-1 truncate">
-          <MapPin className="w-3 h-3 text-[#F5D061] shrink-0" />
+          <MapPin className="w-3 h-3 text-[#E5E4E2] shrink-0" />
           <span className="truncate">{member.cityTown || dist}, {prov}</span>
         </span>
         {canViewSensitive && (
@@ -198,7 +198,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
 
       {member.phone && (
         <div className="text-[11px] font-mono text-slate-200 flex items-center gap-1.5">
-          <Phone className="w-3 h-3 text-[#38BDF8] shrink-0" />
+          <Phone className="w-3 h-3 text-[#059669] shrink-0" />
           <span className="tabular-nums">{member.phone}</span>
         </div>
       )}
@@ -239,7 +239,7 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#D4AF37]/15">
+      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E5E4E2]/15">
         <button
           type="button"
           onClick={() => onMessage(member)}
@@ -251,23 +251,23 @@ const MemberCardMobile: React.FC<MemberRowProps> = React.memo(({
         <button
           type="button"
           onClick={() => onInspect(member)}
-          className="min-h-[44px] py-2 px-3 bg-[#090D16] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/25 font-semibold text-xs rounded-xl kc-pressable cursor-pointer"
+          className="min-h-[44px] py-2 px-3 bg-[#071812] hover:bg-[#1A233A] text-slate-200 border border-[#E5E4E2]/25 font-semibold text-xs rounded-xl kc-pressable cursor-pointer"
         >
           {language === 'ur' ? 'پروفائل' : 'Profile'}
         </button>
         <button
           type="button"
           onClick={() => onCard(member)}
-          className="min-h-[44px] inline-flex items-center gap-1.5 py-2 px-3 bg-[#090D16] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/25 font-semibold text-xs rounded-xl kc-pressable cursor-pointer"
+          className="min-h-[44px] inline-flex items-center gap-1.5 py-2 px-3 bg-[#071812] hover:bg-[#1A233A] text-slate-200 border border-[#E5E4E2]/25 font-semibold text-xs rounded-xl kc-pressable cursor-pointer"
         >
-          <IdCard className="w-3.5 h-3.5 text-[#F5D061]" />
+          <IdCard className="w-3.5 h-3.5 text-[#E5E4E2]" />
           <span>{language === 'ur' ? 'کارڈ' : 'Card'}</span>
         </button>
         {canAssignRole && (
           <button
             type="button"
             onClick={() => onAssignRole(member)}
-            className="w-full min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-[#090D16] hover:bg-[#1A233A] border border-[#F5D061]/55 text-[#F5D061] font-extrabold text-xs rounded-xl kc-pressable cursor-pointer"
+            className="w-full min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-[#071812] hover:bg-[#1A233A] border border-[#E5E4E2]/55 text-[#E5E4E2] font-extrabold text-xs rounded-xl kc-pressable cursor-pointer"
           >
             <Crown className="w-4 h-4" />
             <span>{language === 'ur' ? 'عہدہ مقرر کریں' : 'Assign Role'}</span>
@@ -471,8 +471,8 @@ export const MemberDirectory: React.FC = () => {
     openPersonalMessage(member);
   }, [openPersonalMessage]);
 
-  const handleApproveDecision = useCallback((member: User, approved: boolean) => {
-    const res = approveMemberAccount(member.id, approved);
+  const handleApproveDecision = useCallback(async (member: User, approved: boolean) => {
+    const res = await approveMemberAccount(member.id, approved);
     setRoleFeedback(res.message);
     if (focusedMemberId === member.id) {
       setFocusedMemberId(null);
@@ -493,15 +493,15 @@ export const MemberDirectory: React.FC = () => {
   return (
     <div className="space-y-4 max-w-full">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[#E5E4E2] uppercase tracking-wider">
               {language === 'ur' ? 'لائیو کمیونٹی رجسٹری' : 'Live Community Registry'}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <Users className="w-6 h-6 text-[#E5E4E2] shrink-0" />
             <span>{language === 'ur' ? 'ممبران ڈائریکٹری اور ریکارڈز' : 'Member Directory & Records'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -516,7 +516,7 @@ export const MemberDirectory: React.FC = () => {
             type="button"
             onClick={handleManualCloudSync}
             disabled={isSyncingDir}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[#38BDF8] text-xs font-bold hover:border-[#F5D061] hover:text-[#F5D061] kc-pressable cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[#059669] text-xs font-bold hover:border-[#E5E4E2] hover:text-[#E5E4E2] kc-pressable cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingDir ? 'animate-spin' : ''}`} />
             <span className="tabular-nums">
@@ -527,10 +527,10 @@ export const MemberDirectory: React.FC = () => {
       </div>
 
       {/* Dynamic Real-Time Search & Role/Status Filter Bar */}
-      <div className="p-3 rounded-2xl bg-[#090D16]/90 border border-[#D4AF37]/30 space-y-2.5 shadow-lg shadow-black/25">
+      <div className="p-3 rounded-2xl bg-[#071812]/90 border border-[#E5E4E2]/30 space-y-2.5 shadow-lg shadow-black/25">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#F5D061] uppercase tracking-wider">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#38BDF8]" />
+          <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#E5E4E2] uppercase tracking-wider">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#059669]" />
             <span>{language === 'ur' ? 'تلاش اور فلٹر بار' : 'Search & Filter Directory'}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -569,7 +569,7 @@ export const MemberDirectory: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {/* Dynamic Real-Time Search Input */}
           <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="w-3.5 h-3.5 text-[#D4AF37] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-[#E5E4E2] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder={
@@ -685,7 +685,7 @@ export const MemberDirectory: React.FC = () => {
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
               effectiveStatusFilter === 'ALL' && rolePillFilter === 'ALL' && tabbarFilter === 'ALL'
                 ? 'kc-gold-button'
-                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+                : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -702,7 +702,7 @@ export const MemberDirectory: React.FC = () => {
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold kc-pressable cursor-pointer ${
               effectiveStatusFilter === 'PENDING'
                 ? 'kc-gold-button'
-                : 'text-[#F5D061] hover:bg-[#141B2D]'
+                : 'text-[#E5E4E2] hover:bg-[#0D2A1F]'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -710,10 +710,10 @@ export const MemberDirectory: React.FC = () => {
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] font-black tabular-nums ${
                 effectiveStatusFilter === 'PENDING'
-                  ? 'bg-[#090D16] text-[#F5D061]'
+                  ? 'bg-[#071812] text-[#E5E4E2]'
                   : pendingApprovalsCount > 0
                   ? 'bg-rose-600 text-white'
-                  : 'bg-[#141B2D] text-slate-400'
+                  : 'bg-[#0D2A1F] text-slate-400'
               }`}
             >
               {pendingApprovalsCount}
@@ -729,7 +729,7 @@ export const MemberDirectory: React.FC = () => {
             className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold kc-pressable cursor-pointer ${
               effectiveStatusFilter === 'APPROVED'
                 ? 'kc-gold-button font-extrabold'
-                : 'bg-[#090D16]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
+                : 'bg-[#071812]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
             }`}
           >
             <CheckCircle2 className="w-3 h-3" />
@@ -746,14 +746,14 @@ export const MemberDirectory: React.FC = () => {
             className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold kc-pressable cursor-pointer ${
               effectiveStatusFilter === 'ONLINE'
                 ? 'kc-gold-button font-extrabold'
-                : 'bg-[#090D16]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
+                : 'bg-[#071812]/75 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
             }`}
           >
             <span>🟢 {translate(language, 'online')}</span>
             <span className="tabular-nums opacity-80">({statusCounts.online})</span>
           </button>
 
-          <div className="h-5 w-px bg-[#D4AF37]/20 hidden sm:block mx-0.5" />
+          <div className="h-5 w-px bg-[#E5E4E2]/20 hidden sm:block mx-0.5" />
 
           {([
             { id: 'SUPER_ADMIN', label: translate(language, 'roleSuperAdmin'), count: roleCounts.superAdmin },
@@ -771,7 +771,7 @@ export const MemberDirectory: React.FC = () => {
                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold kc-pressable cursor-pointer ${
                   active
                     ? 'kc-gold-button font-extrabold'
-                    : 'bg-[#090D16]/75 text-slate-300 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50'
+                    : 'bg-[#071812]/75 text-slate-300 border border-[#E5E4E2]/20 hover:border-[#E5E4E2]/50'
                 }`}
               >
                 <span>{rp.label}</span>
@@ -782,9 +782,9 @@ export const MemberDirectory: React.FC = () => {
         </div>
 
         {/* 11 Official Tabbar Clan Quick-Filter Pills */}
-        <div className="p-2 rounded-2xl bg-[#090D16]/90 border border-[#D4AF37]/25 space-y-1.5">
+        <div className="p-2 rounded-2xl bg-[#071812]/90 border border-[#E5E4E2]/25 space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-1">
-            <span className="text-[10px] font-extrabold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-[10px] font-extrabold text-[#E5E4E2] uppercase tracking-wider">
               {translate(language, 'tabbarFilterLabel')}
             </span>
             {tabbarFilter !== 'ALL' && (
@@ -804,7 +804,7 @@ export const MemberDirectory: React.FC = () => {
               className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border kc-pressable cursor-pointer ${
                 tabbarFilter === 'ALL'
                   ? 'kc-gold-button border-[#FCE38A]'
-                  : 'bg-[#111726] border-[#D4AF37]/25 text-slate-300 hover:border-[#D4AF37]/55'
+                  : 'bg-[#0D2A1F] border-[#E5E4E2]/25 text-slate-300 hover:border-[#E5E4E2]/55'
               }`}
             >
               {translate(language, 'allLabel')} ({users.length})
@@ -822,15 +822,15 @@ export const MemberDirectory: React.FC = () => {
                     isSelected
                       ? { background: clan.gradientBg, borderColor: clan.borderColor, color: clan.textColor }
                       : isFlagship
-                      ? { background: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)', borderColor: '#FDE047', color: '#FEF08A' }
+                      ? { background: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)', borderColor: '#CBD5E1', color: '#E5E4E2' }
                       : undefined
                   }
                   className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border kc-pressable cursor-pointer ${
                     isSelected
-                      ? 'ring-1 ring-[#FDE047]/65 shadow-md'
+                      ? 'ring-1 ring-[#CBD5E1]/65 shadow-md'
                       : isFlagship
                       ? 'border-[1.5px] hover:brightness-110 shadow-[0_2px_10px_rgba(253,224,71,0.22)]'
-                      : 'bg-[#131C31] border-slate-400/20 text-[#F8FAFC] hover:border-[#38BDF8]/50'
+                      : 'bg-[#0D2A1F] border-slate-400/20 text-[#F8FAFC] hover:border-[#059669]/50'
                   }`}
                 >
                   {isFlagship ? <FaizKhelVipCrownIcon className="w-[22px] h-[22px]" /> : <span className="text-xs leading-none">{clan.emblem}</span>}
@@ -838,7 +838,7 @@ export const MemberDirectory: React.FC = () => {
                     {language === 'ur' ? clan.urduName : `${clan.urduName} · ${clan.englishName}`}
                   </span>
                   {isFlagship && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black uppercase leading-none">
+                    <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#E5E4E2] via-[#CBD5E1] to-[#E5E4E2] text-[#1C1404] text-[9px] font-black uppercase leading-none">
                       VIP
                     </span>
                   )}
@@ -852,7 +852,7 @@ export const MemberDirectory: React.FC = () => {
               className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border kc-pressable cursor-pointer ${
                 tabbarFilter === CUSTOM_TABBAR_ID
                   ? 'kc-gold-button border-[#FCE38A]'
-                  : 'bg-[#111726] border-[#D4AF37]/25 text-slate-300 hover:border-[#D4AF37]/55'
+                  : 'bg-[#0D2A1F] border-[#E5E4E2]/25 text-slate-300 hover:border-[#E5E4E2]/55'
               }`}
             >
               <span>🏛️</span>
@@ -866,13 +866,13 @@ export const MemberDirectory: React.FC = () => {
       {roleFeedback && (
         <div className="p-3.5 rounded-2xl kc-emerald-panel text-emerald-100 text-xs font-semibold flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#F5D061] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#E5E4E2] shrink-0" />
             <span>{roleFeedback}</span>
           </div>
           <button
             type="button"
             onClick={() => setRoleFeedback(null)}
-            className="text-[#F5D061] hover:text-white text-xs font-bold cursor-pointer"
+            className="text-[#E5E4E2] hover:text-white text-xs font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -922,9 +922,9 @@ export const MemberDirectory: React.FC = () => {
       {selectedMemberForHierarchy && (
         <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 overflow-y-auto">
           <div className="w-full max-w-md kc-luxury-modal kc-modal-panel rounded-2xl p-5 pb-24 sm:pb-5 space-y-4 my-auto overflow-y-auto text-white">
-            <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#D4AF37]/20">
+            <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#E5E4E2]/20">
               <div className="flex items-start gap-2 flex-1 min-w-0">
-                <MapPin className="w-5 h-5 text-[#F5D061] shrink-0 mt-0.5" />
+                <MapPin className="w-5 h-5 text-[#E5E4E2] shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-white break-words whitespace-normal leading-snug">
                     {language === 'ur' ? 'انتظامی مقام و پتہ' : 'Administrative Location'}
@@ -936,13 +936,13 @@ export const MemberDirectory: React.FC = () => {
                 type="button"
                 onClick={() => setSelectedMemberForHierarchy(null)}
                 aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/25 space-y-2 text-xs">
+            <div className="p-3 bg-[#071812] rounded-xl border border-[#E5E4E2]/25 space-y-2 text-xs">
               {[
                 { label: language === 'ur' ? 'ملک' : 'Country', val: selectedMemberForHierarchy.country || 'Pakistan' },
                 { label: language === 'ur' ? 'صوبہ / ریاست' : 'Province / State', val: selectedMemberForHierarchy.stateProvince || 'Punjab' },
@@ -950,7 +950,7 @@ export const MemberDirectory: React.FC = () => {
                 { label: language === 'ur' ? 'شہر / قصبہ' : 'City / Town', val: selectedMemberForHierarchy.customCity || selectedMemberForHierarchy.cityTown || selectedMemberForHierarchy.district },
                 { label: language === 'ur' ? 'یونین کونسل' : 'Union Council', val: selectedMemberForHierarchy.unionCouncil || '—' }
               ].map((st) => (
-                <div key={st.label} className="flex items-center justify-between py-1 border-b border-[#D4AF37]/10 last:border-0">
+                <div key={st.label} className="flex items-center justify-between py-1 border-b border-[#E5E4E2]/10 last:border-0">
                   <span className="text-slate-400">{st.label}:</span>
                   <span className="font-bold text-white">{st.val}</span>
                 </div>
@@ -961,7 +961,7 @@ export const MemberDirectory: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedMemberForHierarchy(null)}
-                className="px-4 py-1.5 bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-white text-xs font-semibold rounded-xl kc-pressable cursor-pointer"
+                className="px-4 py-1.5 bg-[#071812] hover:bg-[#1A233A] border border-[#E5E4E2]/30 text-white text-xs font-semibold rounded-xl kc-pressable cursor-pointer"
               >
                 {translate(language, 'close')}
               </button>

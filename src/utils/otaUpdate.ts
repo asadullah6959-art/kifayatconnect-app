@@ -1,4 +1,4 @@
-export interface LiveVersionManifest {
+﻿export interface LiveVersionManifest {
   version: string;
   buildId: string;
   builtAt: string;
@@ -76,8 +76,8 @@ export async function applyOtaCacheBustAndReload(targetBuildId?: string): Promis
   // 1. Android Capacitor WebView HTTP disk cache clear (preserves WebStorage & IndexedDB)
   try {
     const nativeBridge = (window as unknown as {
-      KifayatOtaNative?: { clearWebViewHttpCache?: () => void };
-    }).KifayatOtaNative;
+      SKIOtaNative?: { clearWebViewHttpCache?: () => void };
+    }).SKIOtaNative;
     nativeBridge?.clearWebViewHttpCache?.();
   } catch {
     // Ignore native bridge error

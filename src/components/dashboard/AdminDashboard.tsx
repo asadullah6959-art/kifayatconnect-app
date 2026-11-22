@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Users,
@@ -119,17 +119,17 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-[#E5E4E2] uppercase tracking-wider">
               {language === 'ur' ? 'ڈسٹرکٹ ایڈمن پینل' : 'District Administration'}
             </span>
             <span className="text-slate-500">·</span>
             <span className="text-xs text-slate-400 font-medium">{assignedDistrict} ({assignedState})</span>
           </div>
           <h1 className={`text-xl sm:text-2xl font-extrabold text-white mt-1 flex items-center gap-2.5 ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
-            <MapPin className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <MapPin className="w-6 h-6 text-[#E5E4E2] shrink-0" />
             <span>{assignedDistrict} – {translate(language, 'roleAdmin')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -139,7 +139,7 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2 kc-emerald-panel rounded-xl text-[11px] text-[#F5D061]">
+        <div className="flex items-center gap-2 px-3 py-2 kc-emerald-panel rounded-xl text-[11px] text-[#E5E4E2]">
           <ShieldCheck className="w-4 h-4 shrink-0" />
           <span className="tabular-nums">
             {language === 'ur'
@@ -164,10 +164,10 @@ export const AdminDashboard: React.FC = () => {
                 key={card.label}
                 type="button"
                 onClick={card.onClick}
-                className="p-3.5 rounded-2xl kc-obsidian-card kc-gold-touch hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
+                className="p-3.5 rounded-2xl kc-obsidian-card kc-gold-touch hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable cursor-pointer"
               >
                 <div className="w-9 h-9 rounded-xl kc-emerald-panel flex items-center justify-center mb-2">
-                  <Icon className="w-4 h-4 text-[#F5D061]" />
+                  <Icon className="w-4 h-4 text-[#E5E4E2]" />
                 </div>
                 <span className="text-xs font-extrabold text-white block truncate">{card.label}</span>
               </button>
@@ -184,27 +184,27 @@ export const AdminDashboard: React.FC = () => {
               <span className="text-xs font-semibold uppercase tracking-wider">
                 {language === 'ur' ? 'ضلعی ممبران' : 'District Members'}
               </span>
-              <Users className="w-4 h-4 text-[#F5D061]" />
+              <Users className="w-4 h-4 text-[#E5E4E2]" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{districtMembers.length}</span>
-              <span className="text-xs text-[#F5D061] font-semibold">{assignedDistrict}</span>
+              <span className="text-xs text-[#E5E4E2] font-semibold">{assignedDistrict}</span>
             </div>
             <div className="mt-2 text-[11px] text-slate-400">
               {language === 'ur' ? 'فعال تصدیق شدہ کمیونٹی ممبران' : 'Active verified community members'}
             </div>
           </div>
 
-          <div className="p-4 kc-obsidian-card rounded-2xl border-[#F5D061]/50">
+          <div className="p-4 kc-obsidian-card rounded-2xl border-[#E5E4E2]/50">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">
                 {language === 'ur' ? 'زیر التواء تصدیق' : 'Pending Verification'}
               </span>
-              <CheckSquare className="w-4 h-4 text-[#F5D061]" />
+              <CheckSquare className="w-4 h-4 text-[#E5E4E2]" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
               <span className="text-2xl font-extrabold text-white font-mono tabular-nums">{pendingDistrictApps.length}</span>
-              <span className="text-xs text-[#F5D061] font-semibold">
+              <span className="text-xs text-[#E5E4E2] font-semibold">
                 {language === 'ur' ? 'مرحلہ 1 قطار' : 'Stage 1 Queue'}
               </span>
             </div>
@@ -253,10 +253,10 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Stage 1 District Verification */}
       <div className="kc-obsidian-card rounded-2xl p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E5E4E2]/20">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-[#F5D061]" />
+              <FileCheck className="w-4 h-4 text-[#E5E4E2]" />
               <span>
                 {language === 'ur'
                   ? 'مرحلہ 1: ضلعی تصدیق اور سپر ایڈمن کو سفارش'
@@ -269,7 +269,7 @@ export const AdminDashboard: React.FC = () => {
                 : 'Confirm applicant address, inspect CNIC validity, and submit recommendation'}
             </p>
           </div>
-          <span className="text-xs font-mono tabular-nums font-bold text-[#F5D061] bg-[#090D16] px-2.5 py-1 rounded-full border border-[#D4AF37]/35">
+          <span className="text-xs font-mono tabular-nums font-bold text-[#E5E4E2] bg-[#071812] px-2.5 py-1 rounded-full border border-[#E5E4E2]/35">
             {language === 'ur' ? `${pendingDistrictApps.length} قطار میں` : `${pendingDistrictApps.length} in Queue`}
           </span>
         </div>
@@ -283,7 +283,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           ) : (
             pendingDistrictApps.map(app => (
-              <div key={app.id} className="p-4 rounded-xl border border-[#D4AF37]/25 bg-[#090D16]">
+              <div key={app.id} className="p-4 rounded-xl border border-[#E5E4E2]/25 bg-[#071812]">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export const AdminDashboard: React.FC = () => {
                             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 kc-pressable cursor-pointer ${
                               recommendation === 'APPROVE'
                                 ? 'bg-emerald-700 text-white border-emerald-500'
-                                : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25'
+                                : 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25'
                             }`}
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -330,7 +330,7 @@ export const AdminDashboard: React.FC = () => {
                             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border flex items-center justify-center gap-1 kc-pressable cursor-pointer ${
                               recommendation === 'REJECT'
                                 ? 'bg-rose-700 text-white border-rose-500'
-                                : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25'
+                                : 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25'
                             }`}
                           >
                             <XCircle className="w-3.5 h-3.5" />
@@ -388,7 +388,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Grid: District Member Directory & Grievances */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="kc-obsidian-card rounded-2xl p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5E4E2]/20">
             <div>
               <h3 className="text-sm font-bold text-white">
                 {language === 'ur' ? `${assignedDistrict} کے کمیونٹی ممبران` : `${assignedDistrict} Community Members`}
@@ -397,12 +397,12 @@ export const AdminDashboard: React.FC = () => {
                 {language === 'ur' ? 'آپ کے ضلع میں رجسٹرڈ ممبران' : 'Registered members in your district'}
               </p>
             </div>
-            <span className="text-xs font-mono tabular-nums font-semibold text-[#F5D061]">
+            <span className="text-xs font-mono tabular-nums font-semibold text-[#E5E4E2]">
               {districtMembers.length} {language === 'ur' ? 'ممبران' : 'Members'}
             </span>
           </div>
 
-          <div className="mt-3 divide-y divide-[#D4AF37]/10 max-h-80 overflow-y-auto">
+          <div className="mt-3 divide-y divide-[#E5E4E2]/10 max-h-80 overflow-y-auto">
             {districtMembers.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400">
                 {language === 'ur' ? `${assignedDistrict} میں ابھی کوئی فعال ممبر نہیں ہے۔` : `No active members in ${assignedDistrict} yet.`}
@@ -412,9 +412,9 @@ export const AdminDashboard: React.FC = () => {
                 <div key={member.id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-3 min-w-0">
                     {(member.avatarUrl || member.avatar) ? (
-                      <img src={member.avatarUrl || member.avatar} alt={member.name} className="w-8 h-8 rounded-full border border-[#D4AF37]/40 object-cover shrink-0" />
+                      <img src={member.avatarUrl || member.avatar} alt={member.name} className="w-8 h-8 rounded-full border border-[#E5E4E2]/40 object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#0D2A1F] text-[#059669] border border-[#059669]/40 flex items-center justify-center font-bold text-xs shrink-0">
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -433,7 +433,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setInspectedUserProfile(member)}
-                      className="p-1.5 text-slate-300 hover:text-[#F5D061] hover:bg-[#1A233A] rounded-lg kc-pressable cursor-pointer"
+                      className="p-1.5 text-slate-300 hover:text-[#E5E4E2] hover:bg-[#1A233A] rounded-lg kc-pressable cursor-pointer"
                       title="View Member Profile"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleOpenChat(member)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#131C31] text-[#38BDF8] hover:bg-[#1E293B] rounded-lg border border-[#38BDF8]/40 kc-pressable cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-[#0D2A1F] text-[#059669] hover:bg-[#1E293B] rounded-lg border border-[#059669]/40 kc-pressable cursor-pointer"
                     >
                       <MessageSquare className="w-3 h-3" />
                       <span>{translate(language, 'mobileNavChat')}</span>
@@ -454,7 +454,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="kc-obsidian-card rounded-2xl p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5E4E2]/20">
             <div>
               <h3 className="text-sm font-bold text-white">
                 {language === 'ur' ? 'ضلعی شکایات ٹکٹس' : 'District Grievance Tickets'}
@@ -475,7 +475,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               districtComplaints.map(cmp => (
-                <div key={cmp.id} className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] text-xs">
+                <div key={cmp.id} className="p-3 rounded-xl border border-[#E5E4E2]/25 bg-[#071812] text-xs">
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-bold text-white">{cmp.subject}</span>
@@ -485,7 +485,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                       cmp.status === 'RESOLVED'
-                        ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35'
+                        ? 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/35'
                         : 'bg-rose-950/70 text-rose-300 border border-rose-500/35'
                     }`}>
                       {cmp.status === 'RESOLVED' ? translate(language, 'resolvedLabel') : translate(language, 'openLabel')}
@@ -493,7 +493,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.status !== 'RESOLVED' && (
-                    <div className="mt-2 pt-2 border-t border-[#D4AF37]/15">
+                    <div className="mt-2 pt-2 border-t border-[#E5E4E2]/15">
                       {activeComplaintId === cmp.id ? (
                         <div className="space-y-2">
                           <input
@@ -521,7 +521,7 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <button type="button" onClick={() => setActiveComplaintId(cmp.id)} className="text-[11px] text-[#F5D061] hover:underline font-medium cursor-pointer">
+                        <button type="button" onClick={() => setActiveComplaintId(cmp.id)} className="text-[11px] text-[#E5E4E2] hover:underline font-medium cursor-pointer">
                           {language === 'ur' ? 'جواب دیں اور حل کریں →' : 'Respond & Mark Resolved →'}
                         </button>
                       )}
@@ -536,10 +536,10 @@ export const AdminDashboard: React.FC = () => {
 
       {/* District Bulletins Dispatcher */}
       <div className="p-5 kc-obsidian-card rounded-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E4E2]/20">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-[#F5D061]" />
+              <Megaphone className="w-4 h-4 text-[#E5E4E2]" />
               <span>{language === 'ur' ? 'ضلعی کمیونٹی اعلانات پینل' : 'District Community Announcement Dispatcher'}</span>
             </h3>
             <p className="text-xs text-slate-400">
@@ -560,7 +560,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {isCreatingAnnouncement && (
-          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#090D16] p-4 rounded-xl border border-[#D4AF37]/25">
+          <form onSubmit={handleCreateAnnouncement} className="mt-4 space-y-3 bg-[#071812] p-4 rounded-xl border border-[#E5E4E2]/25">
             <input
               type="text"
               required

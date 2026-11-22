@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   X, 
@@ -211,11 +211,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
       <div
-        className="relative w-full max-w-md kc-modal-panel bg-[#111622] border border-[#D4AF37]/35 rounded-2xl shadow-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs text-white"
+        className="relative w-full max-w-md kc-modal-panel bg-[#111622] border border-[#E5E4E2]/35 rounded-2xl shadow-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs text-white"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-2.5 pb-4 border-b border-[#D4AF37]/20">
+        <div className="flex items-start justify-between gap-2.5 pb-4 border-b border-[#E5E4E2]/20">
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
             <div className="shrink-0">
               <AppLogo size="sm" halo />
@@ -234,7 +234,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
             type="button"
             onClick={onClose}
             aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer shrink-0 kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white hover:bg-[#161D2C] transition-colors cursor-pointer shrink-0 kc-pressable"
           >
             <X className="w-5 h-5" />
           </button>
@@ -242,7 +242,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
 
         {/* Auth Tabs (Web only shows Google alongside Direct Password Login) */}
         {!isForgotPasswordMode && !isNativeMobile && (
-          <div className="grid grid-cols-2 p-1 bg-[#0A0D12] rounded-xl mt-4 border border-[#D4AF37]/25 gap-1">
+          <div className="grid grid-cols-2 p-1 bg-[#0A0D12] rounded-xl mt-4 border border-[#E5E4E2]/25 gap-1">
             <button
               type="button"
               onClick={() => setActiveAuthMethod('PASSWORD')}
@@ -271,7 +271,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
         {isForgotPasswordMode ? (
           <div className="mt-4 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[#F5D061] font-bold text-xs">
+              <div className="flex items-center gap-2 text-[#E5E4E2] font-bold text-xs">
                 <KeyRound className="w-4 h-4" />
                 <span>{translate(language, 'resetPasswordTitle')}</span>
               </div>
@@ -317,7 +317,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     placeholder="name@gmail.com / 00000-0000000-0"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                    className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                   />
                 </div>
 
@@ -332,7 +332,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               </form>
             ) : (
               <form onSubmit={handleVerifyReset} className="space-y-3">
-                <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[11px] text-[#059669] flex items-center gap-2">
                   <Mail className="w-4 h-4 shrink-0" />
                   <span>
                     {language === 'ur'
@@ -351,7 +351,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     placeholder="••••••"
                     value={resetCode}
                     onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2 bg-[#0A0D12] border border-[#D4AF37]/50 rounded-xl text-[#F5D061] outline-none font-bold"
+                    className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2 bg-[#0A0D12] border border-[#E5E4E2]/50 rounded-xl text-[#E5E4E2] outline-none font-bold"
                   />
                 </div>
 
@@ -366,7 +366,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                       minLength={6}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-3 py-2 pe-9 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2 pe-9 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white focus:border-[#E5E4E2] outline-none"
                     />
                     <button
                       type="button"
@@ -395,7 +395,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     type="button"
                     disabled={resetCooldown > 0 || resetLoading}
                     onClick={handleRequestReset}
-                    className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
+                    className="text-[#E5E4E2] hover:underline disabled:opacity-50 cursor-pointer"
                   >
                     {resetCooldown > 0 ? `${resetCooldown}s` : translate(language, 'resendOtpBtn')}
                   </button>
@@ -417,8 +417,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
             {(activeAuthMethod === 'PASSWORD' || isNativeMobile) && (
               <form onSubmit={handlePasswordSignIn} className="mt-4 space-y-3">
                 {needsDirectPwdSetup && (
-                  <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F8FAFC] text-xs space-y-1">
-                    <div className="font-bold text-[#F5D061] flex items-center gap-1.5">
+                  <div className="p-3 rounded-xl bg-[#0D2A1F] border border-[#059669]/40 text-[#F8FAFC] text-xs space-y-1">
+                    <div className="font-bold text-[#E5E4E2] flex items-center gap-1.5">
                       <KeyRound className="w-3.5 h-3.5" />
                       <span>{translate(language, 'existingAccountSetPwdTitle')}</span>
                     </div>
@@ -449,7 +449,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                       setPwdEmail(e.target.value);
                       if (needsDirectPwdSetup) setNeedsDirectPwdSetup(false);
                     }}
-                    className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                    className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                   />
                 </div>
 
@@ -468,7 +468,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                           setResetSuccess('');
                           setIsForgotPasswordMode(true);
                         }}
-                        className="text-[11px] text-[#F5D061] hover:underline font-medium cursor-pointer"
+                        className="text-[11px] text-[#E5E4E2] hover:underline font-medium cursor-pointer"
                       >
                         {translate(language, 'forgotPasswordLink')}
                       </button>
@@ -480,7 +480,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                       required
                       value={pwdValue}
                       onChange={(e) => setPwdValue(e.target.value)}
-                      className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white focus:border-[#E5E4E2] outline-none"
                     />
                     <button
                       type="button"
@@ -504,7 +504,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                       placeholder="••••••••"
                       value={confirmSetupPwd}
                       onChange={(e) => setConfirmSetupPwd(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                     />
                   </div>
                 )}
@@ -558,11 +558,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading || !isOnline}
-                  className="w-full py-3 px-4 rounded-xl bg-[#141B2D] hover:bg-[#1A233A] text-white border border-[#D4AF37]/45 hover:border-[#F5D061]/70 font-bold text-xs flex items-center justify-center gap-3 transition-colors cursor-pointer shadow-lg shadow-black/40 kc-pressable disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-[#0D2A1F] hover:bg-[#1A233A] text-white border border-[#E5E4E2]/45 hover:border-[#E5E4E2]/70 font-bold text-xs flex items-center justify-center gap-3 transition-colors cursor-pointer shadow-lg shadow-black/40 kc-pressable disabled:opacity-50"
                 >
                   {isGoogleLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-[#F5D061]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#E5E4E2]" />
                       <span>{language === 'ur' ? 'رابطہ ہو رہا ہے...' : 'Connecting...'}</span>
                     </>
                   ) : (
@@ -582,14 +582,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
           </>
         )}
 
-        <div className="mt-5 pt-3 border-t border-[#D4AF37]/20 text-center">
+        <div className="mt-5 pt-3 border-t border-[#E5E4E2]/20 text-center">
           <button
             type="button"
             onClick={() => {
               onClose();
               onSwitchToRegister();
             }}
-            className="text-[#F5D061] hover:underline font-semibold cursor-pointer text-xs"
+            className="text-[#E5E4E2] hover:underline font-semibold cursor-pointer text-xs"
           >
             {translate(language, 'registerBtn')}
           </button>

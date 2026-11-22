@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   safeGetItem,
   safeSetItem,
@@ -61,7 +61,10 @@ import {
   testFirestoreConnection,
   fetchAllUsersFromFirestore,
   saveApplicationToFirestore,
+  createMembershipApplicationToFirestore,
   savePaymentToFirestore,
+  createPaymentToFirestore,
+  verifyPaymentInFirestore,
   generateAtomicSerialNumber,
   saveComplaintToFirestore,
   saveAnnouncementToFirestore,
@@ -91,6 +94,8 @@ import {
   markUserOfflineInFirestore,
   findExistingFirestoreUserByEmail,
   findExistingFirestoreUserByIdentifier,
+  findExistingFirestoreUserByCnic,
+  claimMemberIdentity,
   buildSafeEmailUserId,
   toIsoTimestamp,
   requestEmailOTP,
@@ -116,28 +121,29 @@ import {
 } from '../services/firebase';
 import { resolveUserTabbar } from '../data/tabbars';
 import { fetchLatestGitHubRelease, GitHubReleaseStatus } from '../services/githubReleases';
-import { shareKifayatForIphone } from '../utils/iphoneShare';
+import { shareSKIForIphone } from '../utils/iphoneShare';
 import { isFounderIdentity, isChatModerator } from '../utils/permissions';
 import { isValid13DigitCnic, formatCnicDisplay, getCnicLockAlertMessage, normalizeCnicDigits } from '../utils/cnic';
+import { DASTOOR_MONTHLY_RATE, SALANA_ANNUAL_RATE } from '../utils/dastoor';
 
 const STORAGE_KEYS = {
-  USERS: 'kifayat_users_v3',
-  CURRENT_USER: 'kifayat_current_user',
-  CURRENT_USER_ID: 'kifayat_current_user_v3',
-  APPLICATIONS: 'kifayat_applications_v3',
-  PAYMENTS: 'kifayat_payments_v3',
-  COMPLAINTS: 'kifayat_complaints_v3',
-  ANNOUNCEMENTS: 'kifayat_announcements_v3',
-  AUDIT_LOGS: 'kifayat_audit_logs_v3',
-  NOTIFICATIONS: 'kifayat_notifications_v3',
-  OFFICE_BEARERS: 'kifayat_office_bearers_v3',
-  OFFICE_BEARER_HISTORY: 'kifayat_office_bearer_history_v3',
-  APP_UPDATES: 'kifayat_app_updates_v3',
-  ACK_VERSION: 'kifayat_ack_update_version_v3',
-  APP_SETTINGS: 'kifayat_app_settings_v3',
-  CHATS: 'kifayat_chats_v3',
-  CHAT_MESSAGES: 'kifayat_chat_messages_v3',
-  COMMUNITY_MESSAGES: 'kifayat_community_chat_v1',
+  USERS: 'ski_users_v3',
+  CURRENT_USER: 'ski_current_user',
+  CURRENT_USER_ID: 'ski_current_user_v3',
+  APPLICATIONS: 'ski_applications_v3',
+  PAYMENTS: 'ski_payments_v3',
+  COMPLAINTS: 'ski_complaints_v3',
+  ANNOUNCEMENTS: 'ski_announcements_v3',
+  AUDIT_LOGS: 'ski_audit_logs_v3',
+  NOTIFICATIONS: 'ski_notifications_v3',
+  OFFICE_BEARERS: 'ski_office_bearers_v3',
+  OFFICE_BEARER_HISTORY: 'ski_office_bearer_history_v3',
+  APP_UPDATES: 'ski_app_updates_v3',
+  ACK_VERSION: 'ski_ack_update_version_v3',
+  APP_SETTINGS: 'ski_app_settings_v3',
+  CHATS: 'ski_chats_v3',
+  CHAT_MESSAGES: 'ski_chat_messages_v3',
+  COMMUNITY_MESSAGES: 'ski_community_chat_v1',
   OFFLINE_CHAT_QUEUE: 'kc_offline_chat_queue_v1',
   DELETED_COMMUNITY_MSG_IDS: 'kc_deleted_cmsg_ids_v1',
   HIDDEN_COMMUNITY_MSG_IDS_PREFIX: 'kc_hidden_cmsg_ids_',
@@ -145,8 +151,33 @@ const STORAGE_KEYS = {
   HIDDEN_DIRECT_MSG_IDS_PREFIX: 'kc_hidden_dmsg_ids_',
   READ_NOTIF_IDS_PREFIX: 'kc_read_notif_ids_',
   CLEARED_NOTIF_IDS_PREFIX: 'kc_cleared_notif_ids_',
-  LANGUAGE: 'kifayat_lang_v3'
+  LANGUAGE: 'ski_lang_v3'
 };
+
+function migrateLegacyAppStorageKeys(): void {
+  if (typeof window === 'undefined') return;
+  const legacyPrefix = `${String.fromCharCode(107, 105, 102, 97, 121, 97, 116)}_`;
+  try {
+    const storage = window.localStorage;
+    const legacyKeys: string[] = [];
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+      if (key?.startsWith(legacyPrefix)) legacyKeys.push(key);
+    }
+    legacyKeys.forEach((legacyKey) => {
+      const newKey = `ski_${legacyKey.slice(legacyPrefix.length)}`;
+      if (storage.getItem(newKey) === null) {
+        const value = storage.getItem(legacyKey);
+        if (value !== null) storage.setItem(newKey, value);
+      }
+      storage.removeItem(legacyKey);
+    });
+  } catch (error) {
+    console.warn('Legacy app storage migration could not complete:', error);
+  }
+}
+
+migrateLegacyAppStorageKeys();
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -231,6 +262,16 @@ function removeIdsFromStorageSet(key: string, ids: string[]): Set<string> {
 
 export function isFounderUser(user?: User | null): boolean {
   return isFounderIdentity(user);
+}
+
+async function requireVerifiedFounderFirebaseSession(): Promise<void> {
+  const firebaseUser = await ensureFirebaseAuthSession();
+  if (
+    !firebaseUser?.emailVerified ||
+    firebaseUser.email?.trim().toLowerCase() !== ROOT_SUPER_ADMIN_EMAIL.toLowerCase()
+  ) {
+    throw new Error('Founder role management requires a verified Firebase sign-in with the Founder email.');
+  }
 }
 
 function normalizeUserRecord(u: User): User {
@@ -554,7 +595,7 @@ interface AppContextType {
     oldMembershipNo?: string;
     password?: string;
     avatarUrl?: string;
-  }) => Promise<void> | void;
+  }) => Promise<{ success: boolean; error?: string }>;
   submitPayment: (data: {
     amount: number;
     fundCategory: any;
@@ -577,7 +618,7 @@ interface AppContextType {
     periodLabelEn?: string;
     periodLabelUr?: string;
   }) => Promise<{ success: boolean; transaction?: PaymentTransaction; error?: string }>;
-  verifyPayment: (txId: string, approved: boolean, reason?: string) => void;
+  verifyPayment: (txId: string, approved: boolean, reason?: string) => Promise<{ success: boolean; error?: string }>;
   submitComplaint: (data: {
     category: any;
     subject: string;
@@ -597,13 +638,13 @@ interface AppContextType {
     expiresAt?: string;
   }) => void;
   deleteAnnouncement: (announcementId: string) => void;
-  createOrUpdateStaff: (userData: Partial<User> & { id?: string }) => { success: boolean; error?: string };
-  assignMemberRole: (userId: string, options: { role: UserRole; isAuditOfficer?: boolean }) => { success: boolean; error?: string };
-  promoteToSuperAdmin: (userId: string) => { success: boolean; error?: string };
-  demoteSuperAdmin: (userId: string) => { success: boolean; error?: string };
-  assignAuditOfficer: (userId: string, assigned: boolean) => { success: boolean; error?: string };
+  createOrUpdateStaff: (userData: Partial<User> & { id?: string }) => Promise<{ success: boolean; error?: string }>;
+  assignMemberRole: (userId: string, options: { role: UserRole; isAuditOfficer?: boolean }) => Promise<{ success: boolean; error?: string }>;
+  promoteToSuperAdmin: (userId: string) => Promise<{ success: boolean; error?: string }>;
+  demoteSuperAdmin: (userId: string) => Promise<{ success: boolean; error?: string }>;
+  assignAuditOfficer: (userId: string, assigned: boolean) => Promise<{ success: boolean; error?: string }>;
   syncAllUsersToCloud: () => Promise<number>;
-  approveMemberAccount: (userId: string, approved: boolean, reason?: string) => { success: boolean; message: string; error?: string };
+  approveMemberAccount: (userId: string, approved: boolean, reason?: string) => Promise<{ success: boolean; message: string; error?: string }>;
   toggleUserSuspension: (userId: string, suspended: boolean) => { success: boolean; error?: string };
   deleteUserPermanently: (userId: string) => Promise<{ success: boolean; message: string; error?: string }>;
   updateUserPermissions: (userId: string, permissions: Partial<RolePermissions>) => { success: boolean; error?: string };
@@ -730,61 +771,61 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const THEME_PRESET_VARS: Record<NonNullable<AppSettings['themePreset']>, Record<string, string>> = {
   OBSIDIAN_GOLD: {
-    '--kc-bg': '#070D14',
-    '--kc-surface': '#131C31',
+    '--kc-bg': '#071812',
+    '--kc-surface': '#0D2A1F',
     '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
     '--kc-border': 'rgba(148, 163, 184, 0.18)',
-    '--kc-accent': '#38BDF8',
-    '--kc-emerald': '#0EA5E9'
+    '--kc-accent': '#059669',
+    '--kc-emerald': '#059669'
   },
   EMERALD_GOLD: {
-    '--kc-bg': '#070D14',
-    '--kc-surface': '#131C31',
+    '--kc-bg': '#071812',
+    '--kc-surface': '#0D2A1F',
     '--kc-surface-elevated': 'rgba(30, 41, 59, 0.82)',
     '--kc-border': 'rgba(56, 189, 248, 0.24)',
-    '--kc-accent': '#D4AF37',
-    '--kc-emerald': '#38BDF8'
+    '--kc-accent': '#E5E4E2',
+    '--kc-emerald': '#059669'
   },
   MIDNIGHT_ROYAL: {
-    '--kc-bg': '#070D14',
-    '--kc-surface': '#131C31',
+    '--kc-bg': '#071812',
+    '--kc-surface': '#0D2A1F',
     '--kc-surface-elevated': '#1E293B',
     '--kc-border': 'rgba(148, 163, 184, 0.2)',
-    '--kc-accent': '#38BDF8',
-    '--kc-emerald': '#0EA5E9'
+    '--kc-accent': '#059669',
+    '--kc-emerald': '#059669'
   },
   IMPERIAL_ONYX: {
-    '--kc-bg': '#070D14',
+    '--kc-bg': '#071812',
     '--kc-surface': '#0F172A',
     '--kc-surface-elevated': '#1E293B',
     '--kc-border': 'rgba(212, 175, 55, 0.28)',
-    '--kc-accent': '#F59E0B',
-    '--kc-emerald': '#38BDF8'
+    '--kc-accent': '#CBD5E1',
+    '--kc-emerald': '#059669'
   }
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Purge legacy v2 dummy storage once on upgrade
   useEffect(() => {
-    if (!safeGetItem('kifayat_migrated_clean_v3')) {
+    if (!safeGetItem('ski_migrated_clean_v3')) {
       [
-        'kifayat_users_v2',
-        'kifayat_current_user_v2',
-        'kifayat_applications_v2',
-        'kifayat_payments_v2',
-        'kifayat_complaints_v2',
-        'kifayat_announcements_v2',
-        'kifayat_audit_logs_v2',
-        'kifayat_notifications_v2',
-        'kifayat_office_bearers',
-        'kifayat_office_bearer_history',
-        'kifayat_app_updates',
-        'kifayat_app_settings',
-        'kifayat_chats',
-        'kifayat_chat_messages',
-        'kifayat_ack_update_version'
+        'ski_users_v2',
+        'ski_current_user_v2',
+        'ski_applications_v2',
+        'ski_payments_v2',
+        'ski_complaints_v2',
+        'ski_announcements_v2',
+        'ski_audit_logs_v2',
+        'ski_notifications_v2',
+        'ski_office_bearers',
+        'ski_office_bearer_history',
+        'ski_app_updates',
+        'ski_app_settings',
+        'ski_chats',
+        'ski_chat_messages',
+        'ski_ack_update_version'
       ].forEach(k => safeRemoveItem(k));
-      safeSetItem('kifayat_migrated_clean_v3', 'true');
+      safeSetItem('ski_migrated_clean_v3', 'true');
     }
   }, []);
 
@@ -1055,21 +1096,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const flushOfflineChatQueue = useCallback(() => {
     setOfflineChatQueue(prevQueue => {
       if (prevQueue.length === 0) return prevQueue;
-      const deliveredIds = new Set(prevQueue.map(m => m.id));
-      const deliveredMessages = prevQueue.map(m => ({
-        ...m,
-        deliveryStatus: 'DELIVERED' as const
-      }));
-
-      setChatMessages(prevMsgs =>
-        prevMsgs.map(m => (deliveredIds.has(m.id) ? { ...m, deliveryStatus: 'DELIVERED' } : m))
-      );
-
-      deliveredMessages.forEach(msg => {
-        saveChatMessageToFirestore(msg).catch(() => {});
-      });
-
-      return [];
+      void (async () => {
+        const failed: ChatMessage[] = [];
+        for (const queued of prevQueue) {
+          const delivered = { ...queued, deliveryStatus: 'DELIVERED' as const };
+          try {
+            if (queued.roomType === 'COMMUNITY') {
+              await saveCommunityMessageToFirestore(delivered);
+              setCommunityMessages(prev =>
+                prev.map(m => (m.id === delivered.id ? delivered : m))
+              );
+            } else {
+              await saveChatMessageToFirestore(delivered);
+              setChatMessages(prev =>
+                prev.map(m => (m.id === delivered.id ? delivered : m))
+              );
+            }
+          } catch {
+            failed.push(queued);
+          }
+        }
+        setOfflineChatQueue(failed);
+      })();
+      return prevQueue;
     });
   }, []);
 
@@ -1114,7 +1163,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.clearTimeout(id);
   }, [refreshGitHubRelease]);
 
-  // Persist active user session cleanly in kifayat_current_user (ONLY cleared on explicit Logout or resetAllData)
+  // Persist active user session cleanly in ski_current_user (ONLY cleared on explicit Logout or resetAllData)
   useEffect(() => {
     persistCurrentUserToStorage(currentUserState);
   }, [currentUserState]);
@@ -1307,7 +1356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Effect A: Firebase Auth Session Lifecycle
   // CRITICAL: NEVER wipe currentUser / currentUserId when fbUser is null or anonymous
-  // because custom Email + Password accounts persist permanently via kifayat_current_user & IndexedDB.
+  // because custom Email + Password accounts persist permanently via ski_current_user & IndexedDB.
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
@@ -2096,6 +2145,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
+    if (
+      ok &&
+      (!auth.currentUser ||
+        auth.currentUser.isAnonymous ||
+        auth.currentUser.email?.trim().toLowerCase() !== normEmail)
+    ) {
+      const firebaseCredential = await signInWithFirebaseEmailPassword(normEmail, password);
+      if (firebaseCredential.success) {
+        syncedNewHash = await saveLocalPasswordCredential(normEmail, password);
+      }
+    }
+
     if (existing?.isSuspended && !isFounderUser(existing)) {
       return {
         success: false,
@@ -2523,7 +2584,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...targetApp,
       serialNumber: matchedSerial,
       status: 'ACTIVE',
-      superAdminRemarks: remarks || 'Final approval granted under Kifayat Connect bylaws.',
+      superAdminRemarks: remarks || 'Final approval granted under SUI KHEL ITTEHAD bylaws.',
       superAdminApprovedAt: new Date().toISOString(),
       generatedMembershipId: matchedSerial,
       formFeeAmount: officeData?.formFeeAmount ?? targetApp.formFeeAmount,
@@ -2819,11 +2880,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     oldMembershipNo?: string;
     password?: string;
     avatarUrl?: string;
-  }) => {
+  }): Promise<{ success: boolean; error?: string }> => {
     const loc = mapLegacyRegionToHierarchy('');
     const prov = data.stateProvince || loc.stateProvince;
     const dist = data.district || loc.district;
     const normEmail = data.email.trim().toLowerCase();
+    const normCnic = normalizeCnicDigits(data.cnic);
+    if (!isValid13DigitCnic(normCnic)) {
+      return { success: false, error: getCnicLockAlertMessage(language) };
+    }
+
+    let cnicMatch;
+    try {
+      cnicMatch = await findExistingFirestoreUserByCnic(normCnic);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : 'Unable to verify CNIC uniqueness. Check your connection and try again.'
+      };
+    }
+    const localCnicMatch = users.find(u => normalizeCnicDigits(u.cnic) === normCnic);
+    if ((cnicMatch && cnicMatch.email?.trim().toLowerCase() !== normEmail) ||
+        (localCnicMatch && localCnicMatch.email?.trim().toLowerCase() !== normEmail)) {
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'یہ CNIC پہلے سے کسی دوسرے ممبر کے ساتھ رجسٹرڈ ہے۔'
+          : 'This CNIC is already registered to another member.'
+      };
+    }
     const resolvedTabbar = resolveUserTabbar({
       tabbarId: data.tabbarId,
       tabbarUrdu: data.tabbarUrdu,
@@ -2856,9 +2943,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isOldMemberVerification: data.isOldMember,
       oldMembershipNo: data.oldMembershipNo
     };
-
-    setApplications(prev => [newApp, ...prev]);
-    ensureFirebaseAuthSession().then(() => saveApplicationToFirestore(newApp)).catch(() => {});
 
     const remoteRegMatch = await findExistingFirestoreUserByEmail(normEmail);
     const localRegMatch = users.find(u => u.email.toLowerCase() === normEmail);
@@ -2956,6 +3040,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           notes: 'Registered via One-Time Email OTP + Password flow'
         });
 
+    const identityClaim = await claimMemberIdentity(normCnic, normEmail, registeredUser.id).catch((err) => ({
+      success: false,
+      error: err instanceof Error ? err.message : 'Unable to reserve member identity.'
+    }));
+    if (!identityClaim.success) {
+      return {
+        success: false,
+        error: identityClaim.error || 'This email or CNIC is already registered to another member.'
+      };
+    }
+
+    let applicationWrite: { created: boolean; id: string };
+    try {
+      applicationWrite = await createMembershipApplicationToFirestore(newApp);
+    } catch (error) {
+      console.error('Membership application could not be saved to Firestore:', error);
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'درخواست محفوظ نہیں ہو سکی۔ انٹرنیٹ کنکشن چیک کر کے دوبارہ کوشش کریں۔'
+          : 'The application could not be saved. Check your connection and try again.'
+      };
+    }
+    if (!applicationWrite.created) {
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'یہ CNIC پہلے سے زیرِ التوا یا منظور شدہ رکنیت فارم سے منسلک ہے۔'
+          : 'This CNIC already has a pending or approved membership application.'
+      };
+    }
+    const storedApplication = { ...newApp, id: applicationWrite.id };
+    setApplications(prev => [
+      storedApplication,
+      ...prev.filter(app => normalizeCnicDigits(app.cnic) !== normalizeCnicDigits(storedApplication.cnic))
+    ]);
+
     const sessionUser = establishUserSession(registeredUser, { resetTab: true });
     saveUserToFirestore(sessionUser, { isOnline: true }).catch(() => {});
     emitAuthAlertNotification('USER_SIGNUP', sessionUser);
@@ -2985,7 +3106,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit(
       'NEW_MEMBERSHIP_APPLICATION_SUBMITTED',
       'MEMBERSHIP',
-      newApp.id,
+      storedApplication.id,
       `New membership application submitted by ${data.applicantName} (${dist}, ${prov}).`,
       dist,
       prov
@@ -3000,6 +3121,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       linkTab: 'members',
       entityId: registeredUser.id
     });
+
+    return { success: true };
   };
 
   const submitRukniyatForm: AppContextType['submitRukniyatForm'] = async (payload) => {
@@ -3014,6 +3137,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tabbarEnglish: payload.tabbarEnglish
     });
     const normEmail = (payload.email || currentUser?.email || '').trim().toLowerCase();
+    const normCnic = normalizeCnicDigits(payload.cnic);
+    const duplicateApplication = applications.find(app =>
+      normalizeCnicDigits(app.cnic) === normCnic &&
+      String(app.status || '').toUpperCase() !== 'REJECTED'
+    );
+    if (duplicateApplication) {
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'یہ CNIC پہلے سے زیرِ التوا یا منظور شدہ رکنیت فارم سے منسلک ہے۔'
+          : 'This CNIC already has a pending or approved membership application.'
+      };
+    }
+    let cnicMatch;
+    try {
+      cnicMatch = await findExistingFirestoreUserByCnic(normCnic);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : 'Unable to verify CNIC uniqueness. Check your connection and try again.'
+      };
+    }
+    if (cnicMatch &&
+        cnicMatch.id !== currentUser?.id &&
+        cnicMatch.email?.trim().toLowerCase() !== normEmail) {
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'یہ CNIC پہلے سے کسی دوسرے ممبر کے ساتھ رجسٹرڈ ہے۔'
+          : 'This CNIC is already registered to another member.'
+      };
+    }
 
     const newApp: MembershipApplication = {
       id: `app_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3056,8 +3213,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       oldMembershipNo: payload.oldMembershipNo?.trim()
     };
 
-    setApplications(prev => [newApp, ...prev]);
-    ensureFirebaseAuthSession().then(() => saveApplicationToFirestore(newApp)).catch(() => {});
+    let applicationWrite: { created: boolean; id: string };
+    try {
+      applicationWrite = await createMembershipApplicationToFirestore(newApp);
+    } catch (error) {
+      console.error('Rukniyat application could not be saved to Firestore:', error);
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'درخواست محفوظ نہیں ہو سکی۔ انٹرنیٹ کنکشن چیک کر کے دوبارہ کوشش کریں۔'
+          : 'The application could not be saved. Check your connection and try again.'
+      };
+    }
+    if (!applicationWrite.created) {
+      return {
+        success: false,
+        error: language === 'ur'
+          ? 'یہ CNIC پہلے سے زیرِ التوا یا منظور شدہ رکنیت فارم سے منسلک ہے۔'
+          : 'This CNIC already has a pending or approved membership application.'
+      };
+    }
+    const storedApplication = { ...newApp, id: applicationWrite.id };
+    setApplications(prev => [
+      storedApplication,
+      ...prev.filter(app => normalizeCnicDigits(app.cnic) !== normalizeCnicDigits(storedApplication.cnic))
+    ]);
 
     // Safely fill missing CNIC / Tabar on signed-in applicant without altering approval/role state
     if (currentUser) {
@@ -3093,7 +3273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       message: `${newApp.applicantName} (${newApp.district}) submitted Rukniyat Form #${serialNumber} awaiting approval.`,
       targetRole: 'SUPER_ADMIN',
       linkTab: 'approvals',
-      entityId: newApp.id
+      entityId: storedApplication.id
     });
 
     addNotification({
@@ -3103,10 +3283,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       targetRole: 'ADMIN',
       targetDistrict: newApp.district,
       linkTab: 'approvals',
-      entityId: newApp.id
+      entityId: storedApplication.id
     });
 
-    return { success: true, serialNumber, application: newApp };
+    return { success: true, serialNumber, application: storedApplication };
   };
 
   const createOldPaperRecord: AppContextType['createOldPaperRecord'] = async (data) => {
@@ -3138,6 +3318,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (normEmail && u.email?.trim().toLowerCase() === normEmail) ||
       (data.oldMembershipNo && u.membershipId?.toLowerCase() === data.oldMembershipNo.trim().toLowerCase())
     );
+    let remoteCnicMatch;
+    try {
+      remoteCnicMatch = await findExistingFirestoreUserByCnic(normDigits);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : 'Unable to verify CNIC uniqueness. Check your connection and try again.'
+      };
+    }
+    if (remoteCnicMatch && !matchedUser && remoteCnicMatch.email?.trim().toLowerCase() !== normEmail) {
+      return {
+        success: false,
+        error: 'This CNIC is already registered to an existing member.'
+      };
+    }
 
     const membershipCode = (data.oldMembershipNo && data.oldMembershipNo.trim()) || matchedUser?.membershipId || serialNumber;
     let targetUserId = matchedUser?.id;
@@ -3319,22 +3516,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const formattedCnic = formatCnicDisplay(candidateCnic);
-    if (!isValid13DigitCnic(currentUser.cnic)) {
-      const syncedUser = normalizeUserRecord({
-        ...currentUser,
-        cnic: formattedCnic
-      });
-      setCurrentUserState(syncedUser);
-      persistCurrentUserToStorage(syncedUser);
-      setUsers(prev => prev.map(u => (u.id === currentUser.id ? syncedUser : u)));
-      saveUserToFirestore(syncedUser, { isOnline: true }).catch(() => {});
+    const normalizedCandidateCnic = normalizeCnicDigits(candidateCnic);
+    const normalizedCurrentCnic = normalizeCnicDigits(currentUser.cnic);
+    if (normalizedCurrentCnic && normalizedCandidateCnic !== normalizedCurrentCnic) {
+      return { success: false, error: 'Payer CNIC must match the logged-in member CNIC.' };
     }
 
-    const atomicSerial = await generateAtomicSerialNumber();
     const resolvedDate =
       data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date.trim())
         ? data.date.trim()
         : new Date().toISOString().split('T')[0];
+    let expectedAmount = Number(data.amount);
+    if (data.fundTier === 'MAHANA') {
+      const monthsCount = data.monthsCount;
+      if (typeof monthsCount !== 'number' || !Number.isInteger(monthsCount) || monthsCount < 1 || monthsCount > 11) {
+        return { success: false, error: 'Select a valid monthly contribution period (1-11 months).' };
+      }
+      expectedAmount = monthsCount * DASTOOR_MONTHLY_RATE;
+    } else if (data.fundTier === 'SALANA') {
+      const yearsCount = data.yearsCount;
+      if (typeof yearsCount !== 'number' || !Number.isInteger(yearsCount) || yearsCount < 1 || yearsCount > 50) {
+        return { success: false, error: 'Select a valid annual contribution period (1-50 years).' };
+      }
+      expectedAmount = yearsCount * SALANA_ANNUAL_RATE;
+    } else if (!Number.isSafeInteger(expectedAmount) || expectedAmount <= 0) {
+      return { success: false, error: 'Payment amount is invalid.' };
+    }
+    if (!Number.isSafeInteger(data.amount) || data.amount <= 0 || expectedAmount !== data.amount) {
+      return { success: false, error: 'Payment amount does not match the selected Dastoor period.' };
+    }
+
+    const referenceKey = data.referenceNumber.trim().toLowerCase();
+    const isDastoorPeriod = data.fundTier === 'MAHANA' || data.fundTier === 'SALANA';
+    const duplicatePayment = payments.find(p => {
+      if (p.userId !== currentUser.id || p.status === 'REJECTED') return false;
+      const sameReference = referenceKey.length > 0 &&
+        p.referenceNumber.trim().toLowerCase() === referenceKey;
+      const sameDastoorPeriod = isDastoorPeriod &&
+        p.fundTier === data.fundTier &&
+        p.amount === expectedAmount &&
+        p.date === resolvedDate &&
+        p.startYear === data.startYear &&
+        p.startMonth === data.startMonth &&
+        p.startDay === data.startDay &&
+        (data.fundTier === 'MAHANA'
+          ? p.monthsCount === data.monthsCount
+          : p.yearsCount === data.yearsCount);
+      return sameReference || sameDastoorPeriod;
+    });
+    if (duplicatePayment) {
+      return { success: false, error: 'Duplicate payment submission detected. This payment is already recorded.' };
+    }
+
+    const atomicSerial = await generateAtomicSerialNumber();
 
     const newTx: PaymentTransaction = {
       id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3375,13 +3609,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       receiptImageName: data.receiptImageName
     };
 
-    setPayments(prev => [newTx, ...prev]);
-    savePaymentToFirestore(newTx).catch(() => {});
+    let paymentWrite: { created: boolean; id: string };
+    try {
+      paymentWrite = await createPaymentToFirestore(newTx);
+    } catch (error) {
+      console.error('Payment could not be saved to Firestore:', error);
+      return { success: false, error: 'Payment could not be saved. Check your connection and try again.' };
+    }
+    if (!paymentWrite.created) {
+      return { success: false, error: 'Duplicate payment submission detected. This payment is already recorded.' };
+    }
+    const storedPayment = { ...newTx, id: paymentWrite.id };
+    setPayments(prev => [storedPayment, ...prev]);
+
+    if (!isValid13DigitCnic(currentUser.cnic)) {
+      const syncedUser = normalizeUserRecord({
+        ...currentUser,
+        cnic: formattedCnic
+      });
+      setCurrentUserState(syncedUser);
+      persistCurrentUserToStorage(syncedUser);
+      setUsers(prev => prev.map(u => (u.id === currentUser.id ? syncedUser : u)));
+      saveUserToFirestore(syncedUser, { isOnline: true }).catch(() => {});
+    }
 
     logAudit(
       'PAYMENT_SUBMITTED_FOR_VERIFICATION',
       'FINANCIAL',
-      newTx.receiptNumber,
+      storedPayment.receiptNumber,
       `Member ${currentUser.name} submitted payment of PKR ${data.amount.toLocaleString()} (${data.fundTier || data.fundCategory}) via ${data.paymentMethod}. Serial: ${atomicSerial}.`,
       currentUser.district,
       currentUser.stateProvince
@@ -3393,16 +3648,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       message: `${currentUser.name} submitted PKR ${data.amount.toLocaleString()} (${data.paymentMethod}) — Serial ${atomicSerial}.`,
       targetRole: 'SUPER_ADMIN',
       linkTab: 'funds',
-      entityId: newTx.id
+      entityId: storedPayment.id
     });
 
-    return { success: true, transaction: newTx };
+    return { success: true, transaction: storedPayment };
   };
 
-  const verifyPayment = (txId: string, approved: boolean, reason?: string) => {
-    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') return;
+  const verifyPayment: AppContextType['verifyPayment'] = async (txId, approved, reason) => {
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Only Super Admin can verify payments.' };
+    }
     const tx = payments.find(p => p.id === txId);
-    if (!tx) return;
+    if (!tx) return { success: false, error: 'Payment record not found.' };
 
     const updatedTx: PaymentTransaction = {
       ...tx,
@@ -3413,21 +3670,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rejectionReason: approved ? undefined : reason
     };
 
+    const payer = approved && tx.status !== 'VERIFIED'
+      ? users.find(user => user.id === tx.userId)
+      : undefined;
+    let verificationWrite: { updated: boolean; totalContributed?: number };
+    try {
+      verificationWrite = await verifyPaymentInFirestore(updatedTx);
+    } catch (error) {
+      console.error('Payment verification could not be saved to Firestore:', error);
+      return { success: false, error: 'Payment verification could not be saved. Check your connection and account permissions, then try again.' };
+    }
+    if (!verificationWrite.updated) {
+      return { success: false, error: 'This payment was already processed. Refresh the ledger before trying again.' };
+    }
     setPayments(prev => prev.map(p => p.id === txId ? updatedTx : p));
-    savePaymentToFirestore(updatedTx).catch(() => {});
-
-    if (approved && tx.status !== 'VERIFIED') {
-      setUsers(prev => prev.map(u => {
-        if (u.id === tx.userId) {
-          const updatedUser = {
-            ...u,
-            totalContributed: (u.totalContributed || 0) + tx.amount
-          };
-          saveUserToFirestore(updatedUser).catch(() => {});
-          return updatedUser;
-        }
-        return u;
-      }));
+    if (payer && verificationWrite.totalContributed !== undefined) {
+      const updatedPayer = { ...payer, totalContributed: verificationWrite.totalContributed };
+      setUsers(prev => prev.map(user => user.id === updatedPayer.id ? updatedPayer : user));
     }
 
     logAudit(
@@ -3449,6 +3708,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       linkTab: 'funds',
       entityId: tx.id
     });
+    return { success: true };
   };
 
   const submitComplaint = (data: {
@@ -3675,7 +3935,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Staff & Role Management with Strict 4-Role Quotas + Founder Protection
-  const createOrUpdateStaff = (userData: Partial<User> & { id?: string }): { success: boolean; error?: string } => {
+  const createOrUpdateStaff: AppContextType['createOrUpdateStaff'] = async (userData) => {
     if (!currentUser || (currentUser.role !== 'SUPER_ADMIN' && !currentUser.permissions?.canManageUsers)) {
       return { success: false, error: 'Insufficient authority to manage staff or roles.' };
     }
@@ -3730,18 +3990,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { success: false, error: 'Only the Founder Super Admin can modify another Super Admin.' };
       }
 
+      if (!isFounderUser(currentUser) && requestedRole !== existing.role) {
+        return { success: false, error: 'Only the Founder Super Admin can assign or change member roles.' };
+      }
+
       const safeRole: UserRole = isFounderUser(existing) ? 'SUPER_ADMIN' : requestedRole;
+      const roleChanged = requestedRole !== existing.role;
       const updated: User = {
         ...existing,
         ...userData,
         role: safeRole,
         isFounder: isFounderUser(existing),
-        isSuspended: isFounderUser(existing) ? false : Boolean(userData.isSuspended ?? existing.isSuspended),
+        email: existing.email,
+        isAuditOfficer: Boolean(existing.isAuditOfficer),
+        isSuspended: isFounderUser(existing) ? false : Boolean(existing.isSuspended),
         isStaff: safeRole !== 'MEMBER'
       };
 
+      try {
+        if (roleChanged) await requireVerifiedFounderFirebaseSession();
+        else await ensureFirebaseAuthSession();
+        await saveUserToFirestore(updated);
+      } catch (error) {
+        console.error('Staff role update could not be saved to Firestore:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Staff role update could not be saved.' };
+      }
       setUsers(prev => prev.map(u => u.id === userData.id ? updated : u));
-      saveUserToFirestore(updated).catch(() => {});
 
       logAudit(
         'ROLE_CHANGE_RECORDED',
@@ -3754,6 +4028,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return { success: true };
     } else {
+      if (requestedRole !== 'MEMBER' && !isFounderUser(currentUser)) {
+        return { success: false, error: 'Only the Founder Super Admin can appoint staff roles.' };
+      }
       const exp = new Date();
       exp.setFullYear(exp.getFullYear() + 3);
 
@@ -3790,8 +4067,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notes: `Appointed by ${currentUser.name}.`
       };
 
+      try {
+        if (requestedRole !== 'MEMBER') await requireVerifiedFounderFirebaseSession();
+        else await ensureFirebaseAuthSession();
+        await saveUserToFirestore(newUser);
+      } catch (error) {
+        console.error('Staff appointment could not be saved to Firestore:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Staff appointment could not be saved.' };
+      }
       setUsers(prev => [newUser, ...prev]);
-      saveUserToFirestore(newUser).catch(() => {});
 
       logAudit(
         'STAFF_APPOINTMENT_CREATED',
@@ -3807,10 +4091,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Direct Role Assignment exclusively by Main Super Admin (Founder)
-  const assignMemberRole = (
+  const assignMemberRole: AppContextType['assignMemberRole'] = async (
     userId: string,
     options: { role: UserRole; isAuditOfficer?: boolean }
-  ): { success: boolean; error?: string } => {
+  ) => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return {
         success: false,
@@ -3839,8 +4123,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       membershipStatus: 'ACTIVE'
     });
 
+    try {
+      await requireVerifiedFounderFirebaseSession();
+      await saveUserToFirestore(updated);
+    } catch (error) {
+      console.error('Founder role assignment could not be saved to Firestore:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Role assignment could not be saved.'
+      };
+    }
     setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
-    ensureFirebaseAuthSession().then(() => saveUserToFirestore(updated)).catch(() => {});
 
     const roleDisplay = nextAudit && nextRole === 'MEMBER'
       ? 'Audit Officer'
@@ -3874,7 +4167,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const promoteToSuperAdmin = (userId: string): { success: boolean; error?: string } => {
+  const promoteToSuperAdmin: AppContextType['promoteToSuperAdmin'] = async (userId) => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can promote Additional Super Admins.' };
     }
@@ -3889,8 +4182,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isFounder: false,
       isSuspended: false
     };
+    try {
+      await requireVerifiedFounderFirebaseSession();
+      await saveUserToFirestore(updated);
+    } catch (error) {
+      console.error('Additional Super Admin promotion could not be saved to Firestore:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Role change could not be saved.' };
+    }
     setUsers(prev => prev.map(u => u.id === userId ? updated : u));
-    saveUserToFirestore(updated).catch(() => {});
 
     logAudit(
       'ADDITIONAL_SUPER_ADMIN_PROMOTED',
@@ -3908,7 +4207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const demoteSuperAdmin = (userId: string): { success: boolean; error?: string } => {
+  const demoteSuperAdmin: AppContextType['demoteSuperAdmin'] = async (userId) => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can demote Additional Super Admins.' };
     }
@@ -3924,8 +4223,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isStaff: true,
       isFounder: false
     };
+    try {
+      await requireVerifiedFounderFirebaseSession();
+      await saveUserToFirestore(updated);
+    } catch (error) {
+      console.error('Additional Super Admin demotion could not be saved to Firestore:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Role change could not be saved.' };
+    }
     setUsers(prev => prev.map(u => u.id === userId ? updated : u));
-    saveUserToFirestore(updated).catch(() => {});
 
     logAudit(
       'ADDITIONAL_SUPER_ADMIN_DEMOTED',
@@ -3937,7 +4242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Audit Officer Assignment (Strictly Founder ONLY)
-  const assignAuditOfficer = (userId: string, assigned: boolean): { success: boolean; error?: string } => {
+  const assignAuditOfficer: AppContextType['assignAuditOfficer'] = async (userId, assigned) => {
     if (!currentUser || !isFounderUser(currentUser)) {
       return { success: false, error: 'Founder Protection: Only the Main Super Admin (Founder) can assign or revoke Audit Officer credentials.' };
     }
@@ -3951,8 +4256,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...target,
       isAuditOfficer: assigned
     });
+    try {
+      await requireVerifiedFounderFirebaseSession();
+      await saveUserToFirestore(updated);
+    } catch (error) {
+      console.error('Audit Officer assignment could not be saved to Firestore:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Role change could not be saved.' };
+    }
     setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
-    saveUserToFirestore(updated).catch(() => {});
 
     logAudit(
       assigned ? 'AUDIT_OFFICER_ASSIGNED' : 'AUDIT_OFFICER_REVOKED',
@@ -4067,12 +4378,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAudit('MASTER_NOTIFICATION_BROADCAST', 'SETTINGS', title, `Dispatched live notification alert to ${target}.`);
   };
 
-  // Instant One-Tap Member Approval (0ms Optimistic Update + Background Firestore Sync)
-  const approveMemberAccount = useCallback((
+  const approveMemberAccount = useCallback(async (
     userId: string,
     approved: boolean,
     reason?: string
-  ): { success: boolean; message: string; error?: string } => {
+  ): Promise<{ success: boolean; message: string; error?: string }> => {
     if (!currentUser) {
       return { success: false, message: 'Authentication required.', error: 'Authentication required.' };
     }
@@ -4115,28 +4425,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       verificationStatus: approved ? 'VERIFIED' : 'UNVERIFIED'
     });
 
-    // 0ms Optimistic State Flip
-    setUsers(prev => prev.map(u => (u.id === userId ? updatedUser : u)));
+    const updatedApplications = applications.map<MembershipApplication>(app => {
+      if (app.email.toLowerCase() !== target.email.toLowerCase()) return app;
+      return {
+        ...app,
+        status: approved ? 'ACTIVE' : 'REJECTED',
+        superAdminRemarks: approved
+          ? `Instant approval granted by ${currentUser.name}`
+          : (reason || `Rejected by ${currentUser.name}`),
+        superAdminApprovedAt: approved ? nowIso : app.superAdminApprovedAt,
+        generatedMembershipId: approved ? (target.membershipId || app.generatedMembershipId) : app.generatedMembershipId
+      };
+    });
+    const matchingApplications = updatedApplications.filter((app, index) => app !== applications[index]);
 
-    // Also sync matching membership application optimistically
-    setApplications(prev =>
-      prev.map(app => {
-        if (app.email.toLowerCase() === target.email.toLowerCase()) {
-          const updatedApp: MembershipApplication = {
-            ...app,
-            status: approved ? 'ACTIVE' : 'REJECTED',
-            superAdminRemarks: approved
-              ? `Instant approval granted by ${currentUser.name}`
-              : (reason || `Rejected by ${currentUser.name}`),
-            superAdminApprovedAt: approved ? nowIso : app.superAdminApprovedAt,
-            generatedMembershipId: approved ? (target.membershipId || app.generatedMembershipId) : app.generatedMembershipId
-          };
-          saveApplicationToFirestore(updatedApp).catch(() => {});
-          return updatedApp;
-        }
-        return app;
-      })
-    );
+    try {
+      await ensureFirebaseAuthSession();
+      await approveOrRejectUserInFirestore(updatedUser, {
+        approved,
+        actorName: currentUser.name,
+        reason
+      }, matchingApplications);
+    } catch (error) {
+      console.error('Membership approval could not be saved to Firestore:', error);
+      return {
+        success: false,
+        message: 'Approval could not be saved. Check your connection and account permissions, then try again.',
+        error: 'Approval could not be saved. Check your connection and account permissions, then try again.'
+      };
+    }
+
+    setUsers(prev => prev.map(u => (u.id === userId ? updatedUser : u)));
+    setApplications(updatedApplications);
 
     // Mark related approval_request notifications as read locally + Firestore
     setNotifications(prev =>
@@ -4154,13 +4474,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    // Background Firestore write (non-blocking)
-    approveOrRejectUserInFirestore(updatedUser, {
-      approved,
-      actorName: currentUser.name,
-      reason
-    }).catch(() => {});
-
     logAudit(
       approved ? 'MEMBER_ACCOUNT_INSTANT_APPROVED' : 'MEMBER_ACCOUNT_REJECTED',
       'MEMBERSHIP',
@@ -4174,7 +4487,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: approved ? 'MEMBERSHIP_APPROVED' : 'MEMBERSHIP_REJECTED',
       title: approved ? 'Membership Approved ✅' : 'Membership Application Declined',
       message: approved
-        ? `Congratulations ${target.name}! Your Kifayat Connect profile has been approved by ${currentUser.name}.`
+        ? `Congratulations ${target.name}! Your SUI KHEL ITTEHAD profile has been approved by ${currentUser.name}.`
         : `Your profile review was declined by ${currentUser.name}. ${reason ? `Reason: ${reason}` : ''}`.trim(),
       targetUserId: target.id,
       linkTab: 'dashboard',
@@ -4187,7 +4500,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? `${target.name} approved instantly ✅`
         : `${target.name} marked as rejected`
     };
-  }, [currentUser, users]);
+  }, [applications, currentUser, users]);
 
   const deleteUserPermanently = async (
     userId: string
@@ -4422,6 +4735,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (attachment ? `📎 ${attachment.name}` : '');
     const sortedIds = [currentUser.id, recipientId].sort();
     const chatId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+    const recentDuplicate = chatMessages.find(m =>
+      m.chatId === chatId &&
+      m.senderId === currentUser.id &&
+      m.text === cleanText &&
+      Date.now() - new Date(m.timestamp).getTime() < 2000
+    );
+    if (recentDuplicate) {
+      return { success: false, error: 'Duplicate message blocked.' };
+    }
     const deliveryStatus = isOnline ? 'DELIVERED' : 'QUEUED';
 
     const nowIso = new Date().toISOString();
@@ -4603,6 +4925,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (payload.attachment ? `🖼️ ${payload.attachment.name}` : '');
 
     if (!cleanText) return { success: false, error: 'Cannot send an empty message.' };
+    const recentDuplicate = communityMessages.find(m =>
+      m.chatId === 'community_global_room' &&
+      m.senderId === currentUser.id &&
+      m.text === cleanText &&
+      Date.now() - new Date(m.timestamp).getTime() < 2000
+    );
+    if (recentDuplicate) return { success: false, error: 'Duplicate community message blocked.' };
 
     const nowIso = new Date().toISOString();
     const senderTabbar = resolveUserTabbar(currentUser);
@@ -4620,7 +4949,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderTabbarUrdu: senderTabbar?.urduName ?? currentUser.tabbarUrdu,
       senderTabbarEnglish: senderTabbar?.englishName ?? currentUser.tabbarEnglish,
       recipientId: 'ALL',
-      recipientName: 'Kifayat Community Room',
+      recipientName: 'SKI Community Room',
       text: cleanText,
       timestamp: nowIso,
       createdAt: nowIso,
@@ -4640,7 +4969,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     localRecentSentMsgsRef.current.set(msg.id, Date.now());
     setCommunityMessages(prev => [...prev, msg]);
-    saveCommunityMessageToFirestore(msg).catch(() => {});
+    if (isOnline) {
+      saveCommunityMessageToFirestore(msg).catch(() => {});
+    } else {
+      setOfflineChatQueue(prev => [...prev, msg]);
+    }
     return { success: true };
   };
 
@@ -5127,7 +5460,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     addNotification({
       type: 'APP_UPDATE_AVAILABLE',
-      title: 'Kifayat Connect Update Available',
+      title: 'SUI KHEL ITTEHAD Update Available',
       message: `Version v${newUpdate.version} (${newUpdate.title}) is now available.`,
       targetRole: 'ALL',
       actionUrl: newUpdate.apkDownloadUrl,
@@ -5180,7 +5513,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const triggerShareForIphone = useCallback(async () => {
-    const result = await shareKifayatForIphone(appSettings.webAppLiveUrl);
+    const result = await shareSKIForIphone(appSettings.webAppLiveUrl);
     if (iphoneShareTimerRef.current) {
       window.clearTimeout(iphoneShareTimerRef.current);
     }

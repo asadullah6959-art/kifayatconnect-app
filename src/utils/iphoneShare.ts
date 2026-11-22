@@ -1,4 +1,4 @@
-import { copyToClipboardSafe } from './dastoor';
+﻿import { copyToClipboardSafe } from './dastoor';
 
 export const DEFAULT_IPHONE_LIVE_URL =
   'https://ais-pre-q7z4kzjcy3ymciznhiopmq-425294184532.asia-northeast1.run.app';
@@ -58,11 +58,11 @@ export interface IphoneShareResult {
   method: 'share' | 'clipboard';
 }
 
-export async function shareKifayatForIphone(configuredUrl?: string): Promise<IphoneShareResult> {
+export async function shareSKIForIphone(configuredUrl?: string): Promise<IphoneShareResult> {
   const url = resolveIphoneLiveUrl(configuredUrl);
-  const title = 'Kifayat Connect — iPhone / Web App';
+  const title = 'SUI KHEL ITTEHAD — iPhone / Web App';
   const shareText =
-    `Kifayat Connect (کفایت کنیکٹ) — Together for a Better Tomorrow\n` +
+    `SUI KHEL ITTEHAD (سوئی خیل اتحاد) — Together for a Better Tomorrow\n` +
     `iPhone Safari mein khol kar Share (↑) → "Add to Home Screen" dabayein:\n` +
     `آئی فون Safari میں کھول کر Share (↑) اور "Add to Home Screen" منتخب کریں:`;
 

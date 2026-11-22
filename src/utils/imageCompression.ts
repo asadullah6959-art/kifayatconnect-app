@@ -197,6 +197,39 @@ export interface PreparedAiScanImage {
   base64: string;
   dataUrl: string;
   mimeType: 'image/jpeg';
+  width: number;
+  height: number;
+  sharpnessScore: number;
+}
+
+function calculateSharpnessScore(ctx: CanvasRenderingContext2D, width: number, height: number): number {
+  try {
+    if (width < 160 || height < 160) return 0;
+    const { data } = ctx.getImageData(0, 0, width, height);
+    let sum = 0;
+    let sumSquares = 0;
+    let count = 0;
+    const stride = Math.max(1, Math.floor(Math.max(width, height) / 900));
+    for (let y = stride; y < height - stride; y += stride) {
+      for (let x = stride; x < width - stride; x += stride) {
+        const i = (y * width + x) * 4;
+        const center = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        const left = (data[i - 4] + data[i - 3] + data[i - 2]) / 3;
+        const right = (data[i + 4] + data[i + 5] + data[i + 6]) / 3;
+        const laplacian = center * 4 - left - right -
+          ((data[i - width * 4] + data[i - width * 4 + 1] + data[i - width * 4 + 2]) / 3) -
+          ((data[i + width * 4] + data[i + width * 4 + 1] + data[i + width * 4 + 2]) / 3);
+        sum += laplacian;
+        sumSquares += laplacian * laplacian;
+        count += 1;
+      }
+    }
+    if (count === 0) return 0;
+    const mean = sum / count;
+    return sumSquares / count - mean * mean;
+  } catch {
+    return 0;
+  }
 }
 
 function applySharpenAndLightingFallback(
@@ -276,6 +309,7 @@ function renderEnhancedCanvas(
     ctx.filter = 'brightness(1.18) contrast(1.45)';
   }
   ctx.drawImage(drawable, 0, 0, targetW, targetH);
+  const sharpnessScore = calculateSharpnessScore(ctx, targetW, targetH);
   if (supportsFilter) {
     ctx.filter = 'none';
   }
@@ -288,7 +322,7 @@ function renderEnhancedCanvas(
     dataUrl = canvas.toDataURL('image/jpeg', 0.78);
   }
   const base64 = dataUrl.replace(/^data:image\/[^;]+;base64,/, '').trim();
-  return { base64, dataUrl, mimeType: 'image/jpeg' };
+  return { base64, dataUrl, mimeType: 'image/jpeg', width: targetW, height: targetH, sharpnessScore };
 }
 
 /**
@@ -332,7 +366,7 @@ export async function prepareImageForAiScan(
         onCleanup?.();
         if (typeof source === 'string' && source.startsWith('data:image/')) {
           const base64 = source.replace(/^data:image\/[^;]+;base64,/, '').trim();
-          resolve({ base64, dataUrl: source, mimeType: 'image/jpeg' });
+          resolve({ base64, dataUrl: source, mimeType: 'image/jpeg', width: 0, height: 0, sharpnessScore: 0 });
           return;
         }
         reject(new Error('Could not decode selected photo.'));
@@ -353,7 +387,7 @@ export async function prepareImageForAiScan(
           onCleanup?.();
           if (typeof source === 'string' && source.startsWith('data:image/')) {
             const base64 = source.replace(/^data:image\/[^;]+;base64,/, '').trim();
-            resolve({ base64, dataUrl: source, mimeType: 'image/jpeg' });
+            resolve({ base64, dataUrl: source, mimeType: 'image/jpeg', width: 0, height: 0, sharpnessScore: 0 });
             return;
           }
           reject(err instanceof Error ? err : new Error('Failed to process photo for AI scan.'));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   X,
   FileCheck2,
@@ -97,14 +97,14 @@ export const MemberTutorialModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md overflow-y-auto">
       <div
-        className="w-full max-w-lg kc-modal-panel flex flex-col rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#0B1220] to-[#070D14] border-2 border-[#D4AF37]/55 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden my-auto"
+        className="w-full max-w-lg kc-modal-panel flex flex-col rounded-3xl bg-gradient-to-br from-[#0F1B2E] via-[#0B1220] to-[#071812] border-2 border-[#E5E4E2]/55 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden my-auto"
         dir={isUr ? 'rtl' : 'ltr'}
       >
         {/* Top Bar with Prominent 1-Click Skip */}
-        <div className="flex items-start sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 bg-[#0A1320] border-b border-[#D4AF37]/25 shrink-0">
+        <div className="flex items-start sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 bg-[#0A1320] border-b border-[#E5E4E2]/25 shrink-0">
           <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300 flex-1 min-w-0">
             <Sparkles className="w-4 h-4 shrink-0" />
-            <span className="break-words whitespace-normal leading-snug">{isUr ? 'کفایت کنیکٹ ممبر گائیڈ' : 'Kifayat Connect Member Guide'}</span>
+            <span className="break-words whitespace-normal leading-snug">{isUr ? 'سوئی خیل اتحاد ممبر گائیڈ' : 'SUI KHEL ITTEHAD Member Guide'}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -117,7 +117,7 @@ export const MemberTutorialModal: React.FC = () => {
             <button
               type="button"
               onClick={closeTutorial}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer"
               aria-label="Close Tutorial"
             >
               <X className="w-5 h-5" />
@@ -127,8 +127,8 @@ export const MemberTutorialModal: React.FC = () => {
 
         {/* Step Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 pb-24 sm:pb-6 space-y-5 text-center" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#D4AF37]/25 to-emerald-500/20 border border-[#D4AF37]/55 flex items-center justify-center shadow-lg">
-            <Icon className="w-8 h-8 text-[#FDE047]" />
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#E5E4E2]/25 to-emerald-500/20 border border-[#E5E4E2]/55 flex items-center justify-center shadow-lg">
+            <Icon className="w-8 h-8 text-[#CBD5E1]" />
           </div>
 
           <div className="space-y-2">
@@ -151,7 +151,7 @@ export const MemberTutorialModal: React.FC = () => {
                 type="button"
                 onClick={() => setStep(idx)}
                 className={`h-2 rounded-full transition-all ${
-                  idx === step ? 'w-7 bg-[#FDE047]' : 'w-2 bg-slate-700 hover:bg-slate-500'
+                  idx === step ? 'w-7 bg-[#CBD5E1]' : 'w-2 bg-slate-700 hover:bg-slate-500'
                 }`}
                 aria-label={`Step ${idx + 1}`}
               />
@@ -163,7 +163,7 @@ export const MemberTutorialModal: React.FC = () => {
             <button
               type="button"
               onClick={current.onAction}
-              className="px-4 py-2 rounded-xl bg-[#131C31] border border-[#D4AF37]/40 text-amber-200 text-xs font-bold hover:border-[#FDE047] transition"
+              className="px-4 py-2 rounded-xl bg-[#0D2A1F] border border-[#E5E4E2]/40 text-amber-200 text-xs font-bold hover:border-[#CBD5E1] transition"
             >
               {isUr ? current.actionLabelUr : current.actionLabelEn}
             </button>
@@ -195,7 +195,7 @@ export const MemberTutorialModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
-                className="flex items-center gap-1 px-5 py-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] text-xs font-black shadow-md"
+                className="flex items-center gap-1 px-5 py-2 rounded-xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] text-xs font-black shadow-md"
               >
                 {isUr ? 'اگلا' : 'Next'}
                 <ChevronRight className="w-4 h-4" />

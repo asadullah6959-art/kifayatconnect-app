@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Search, 
@@ -313,7 +313,7 @@ export const GlobalSearchBar: React.FC = () => {
     <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
       {/* Search Input Bar */}
       <div className="relative flex items-center">
-        <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-3.5 h-3.5 text-[#E5E4E2] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -333,7 +333,7 @@ export const GlobalSearchBar: React.FC = () => {
               setQuery('');
               inputRef.current?.focus();
             }}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#F5D061] cursor-pointer"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#E5E4E2] cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -347,23 +347,23 @@ export const GlobalSearchBar: React.FC = () => {
           className="kc-luxury-modal absolute left-0 right-0 mt-2 rounded-2xl z-50 overflow-hidden text-xs max-h-[85vh] flex flex-col"
         >
           {/* Top Scope Status Tag */}
-          <div className="px-3.5 py-2 bg-[#090D16] border-b border-[#D4AF37]/25 flex items-center justify-between text-[11px]">
+          <div className="px-3.5 py-2 bg-[#071812] border-b border-[#E5E4E2]/25 flex items-center justify-between text-[11px]">
             <span className="font-semibold text-emerald-400 flex items-center gap-1.5 truncate">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{getScopeDescription()}</span>
             </span>
             {query.trim() && (
-              <span className="text-[10px] text-[#F5D061] font-mono tabular-nums shrink-0">
+              <span className="text-[10px] text-[#E5E4E2] font-mono tabular-nums shrink-0">
                 {language === 'ur' ? `${totalResultsCount} نتائج` : `${totalResultsCount} results`}
               </span>
             )}
           </div>
 
-          <div className="overflow-y-auto divide-y divide-[#D4AF37]/15 p-2 space-y-2">
+          <div className="overflow-y-auto divide-y divide-[#E5E4E2]/15 p-2 space-y-2">
             {/* If empty query and no typing: Quick Shortcuts */}
             {!query.trim() ? (
               <div className="p-2 space-y-3">
-                <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider block">
+                <span className="text-[10px] uppercase font-bold text-[#E5E4E2] tracking-wider block">
                   {language === 'ur' ? 'فوری رپورٹس اور کھاتے' : 'Quick Access Reports & Ledgers'}
                 </span>
                 <div className="space-y-1">
@@ -384,14 +384,14 @@ export const GlobalSearchBar: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#F5D061] shrink-0 ml-2" />
+                      <ArrowRight className="w-3.5 h-3.5 text-[#E5E4E2] shrink-0 ml-2" />
                     </button>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-[#D4AF37]/20 text-[10px] text-slate-400 flex items-center justify-between gap-2">
+                <div className="pt-2 border-t border-[#E5E4E2]/20 text-[10px] text-slate-400 flex items-center justify-between gap-2">
                   <span>{language === 'ur' ? 'ممبران، رسیدیں یا ریفرنس آئی ڈی تلاش کرنے کے لیے لکھیں' : 'Type to search members, receipt vouchers, or reference IDs'}</span>
-                  <span className="font-mono text-[#F5D061] shrink-0">{language === 'ur' ? 'بند کرنے کے لیے باہر ٹیپ کریں' : 'Tap outside to close'}</span>
+                  <span className="font-mono text-[#E5E4E2] shrink-0">{language === 'ur' ? 'بند کرنے کے لیے باہر ٹیپ کریں' : 'Tap outside to close'}</span>
                 </div>
               </div>
             ) : totalResultsCount === 0 ? (
@@ -413,7 +413,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {/* 1. MEMBERS SECTION (If allowed) */}
                 {memberResults.length > 0 && (
                   <div className="pt-1">
-                    <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
+                    <span className="text-[10px] uppercase font-bold text-[#E5E4E2] tracking-wider px-2 block mb-1">
                       {language === 'ur' ? `ممبران (${memberResults.length})` : `Members (${memberResults.length})`}
                     </span>
                     <div className="space-y-0.5">
@@ -424,7 +424,7 @@ export const GlobalSearchBar: React.FC = () => {
                           className="kc-pressable w-full text-left p-2 rounded-xl hover:bg-[#161F33] transition-colors flex items-center justify-between cursor-pointer"
                         >
                           <div className="flex items-center gap-2.5 truncate">
-                            <div className="w-7 h-7 rounded-full bg-[#131C31] border border-[#38BDF8]/40 text-[#38BDF8] font-bold flex items-center justify-center text-xs shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-[#0D2A1F] border border-[#059669]/40 text-[#059669] font-bold flex items-center justify-center text-xs shrink-0">
                               {member.name.charAt(0)}
                             </div>
                             <div className="truncate">
@@ -438,7 +438,7 @@ export const GlobalSearchBar: React.FC = () => {
                           </div>
 
                           <div className="text-right shrink-0 ml-2">
-                            <span className="font-mono tabular-nums text-[10px] font-bold text-[#F5D061]">
+                            <span className="font-mono tabular-nums text-[10px] font-bold text-[#E5E4E2]">
                               PKR {member.totalContributed.toLocaleString()}
                             </span>
                             <span className="block text-[9px] text-emerald-400">
@@ -454,7 +454,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {/* 2. TRANSACTIONS & RECEIPTS SECTION */}
                 {transactionResults.length > 0 && (
                   <div className="pt-2">
-                    <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
+                    <span className="text-[10px] uppercase font-bold text-[#E5E4E2] tracking-wider px-2 block mb-1">
                       {language === 'ur' ? `ادائیگیاں اور رسیدیں (${transactionResults.length})` : `Transactions & Receipts (${transactionResults.length})`}
                     </span>
                     <div className="space-y-0.5">
@@ -473,8 +473,8 @@ export const GlobalSearchBar: React.FC = () => {
                                 </span>
                                 <span className={`text-[9px] font-semibold px-1.5 rounded border ${
                                   tx.status === 'VERIFIED'
-                                    ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45'
-                                    : 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45'
+                                    ? 'bg-[#0D2A1F] text-[#059669] border-[#059669]/45'
+                                    : 'bg-amber-500/15 text-[#E5E4E2] border-[#E5E4E2]/45'
                                 }`}>
                                   {tx.status}
                                 </span>
@@ -504,7 +504,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {/* 3. REPORTS SECTION */}
                 {reportResults.length > 0 && (
                   <div className="pt-2">
-                    <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
+                    <span className="text-[10px] uppercase font-bold text-[#E5E4E2] tracking-wider px-2 block mb-1">
                       {language === 'ur' ? `رپورٹس اور کھاتے (${reportResults.length})` : `Reports & Ledgers (${reportResults.length})`}
                     </span>
                     <div className="space-y-0.5">
@@ -525,7 +525,7 @@ export const GlobalSearchBar: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">
+                          <span className="text-[9px] text-[#E5E4E2] font-medium shrink-0 ml-2">
                             {language === 'ur' ? 'کھولیں →' : 'Open →'}
                           </span>
                         </button>
@@ -537,7 +537,7 @@ export const GlobalSearchBar: React.FC = () => {
                 {/* 4. APPLICATIONS SECTION (If allowed) */}
                 {applicationResults.length > 0 && (
                   <div className="pt-2">
-                    <span className="text-[10px] uppercase font-bold text-[#F5D061] tracking-wider px-2 block mb-1">
+                    <span className="text-[10px] uppercase font-bold text-[#E5E4E2] tracking-wider px-2 block mb-1">
                       {language === 'ur' ? `ممبرشپ منظوریاں (${applicationResults.length})` : `Membership Approvals (${applicationResults.length})`}
                     </span>
                     <div className="space-y-0.5">
@@ -548,7 +548,7 @@ export const GlobalSearchBar: React.FC = () => {
                           className="kc-pressable w-full text-left p-2 rounded-xl hover:bg-[#161F33] transition-colors flex items-center justify-between cursor-pointer"
                         >
                           <div className="flex items-center gap-2.5 truncate">
-                            <CheckSquare className="w-4 h-4 text-[#F5D061] shrink-0" />
+                            <CheckSquare className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                             <div className="truncate">
                               <p className="font-bold text-white text-xs">
                                 {app.applicantName}
@@ -558,7 +558,7 @@ export const GlobalSearchBar: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9px] text-[#F5D061] font-medium shrink-0 ml-2">
+                          <span className="text-[9px] text-[#E5E4E2] font-medium shrink-0 ml-2">
                             {language === 'ur' ? 'جائزہ لیں →' : 'Review →'}
                           </span>
                         </button>

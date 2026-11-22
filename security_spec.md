@@ -1,4 +1,4 @@
-# Kifayat Connect — Security Specification & Security Matrix
+# SUI KHEL ITTEHAD — Security Specification & Security Matrix
 
 ## 1. Core Data Invariants & Zero-Trust Access Control
 1. **Root Super Admin Invariant**: Only authenticated users with `request.auth.token.email == 'asadullah6959@gmail.com'` and `request.auth.token.email_verified == true` can hold the `SUPER_ADMIN` authority or perform master governance overrides.

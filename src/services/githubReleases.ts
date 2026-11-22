@@ -1,4 +1,4 @@
-export interface GitHubReleaseStatus {
+﻿export interface GitHubReleaseStatus {
   status: 'AVAILABLE' | 'LATEST_INSTALLED' | 'OFFLINE';
   installedVersion: string;
   latestVersion: string;
@@ -16,7 +16,7 @@ import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 
 const GITHUB_REPO = 'asadullah6959-art/kifayatconnect-app';
 const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`;
-const CACHE_KEY = 'kifayat_github_release_cache_v1';
+const CACHE_KEY = 'ski_github_release_cache_v1';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 export const INSTALLED_APP_VERSION = '1.0.0';
 
@@ -83,7 +83,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
         latestVersion: INSTALLED_APP_VERSION,
         tagName: `v${INSTALLED_APP_VERSION}`,
         releaseTitle: 'Latest Version Installed',
-        releaseNotes: ['You are running the latest verified build of Kifayat Connect.'],
+        releaseNotes: ['You are running the latest verified build of SUI KHEL ITTEHAD.'],
         apkUrl: null,
         releasePageUrl: null,
         repoUrl: GITHUB_REPO_URL,
@@ -126,7 +126,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
       latestVersion: tagVersion,
       tagName: rawTag,
       releaseTitle: isNewer && verifiedApkUrl
-        ? release.name || `Kifayat Connect ${rawTag}`
+        ? release.name || `SUI KHEL ITTEHAD ${rawTag}`
         : 'Latest Version Installed',
       releaseNotes:
         releaseNotes.length > 0
@@ -149,7 +149,7 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
       latestVersion: INSTALLED_APP_VERSION,
       tagName: `v${INSTALLED_APP_VERSION}`,
       releaseTitle: 'Latest Version Installed',
-      releaseNotes: ['You are running the latest verified build of Kifayat Connect.'],
+      releaseNotes: ['You are running the latest verified build of SUI KHEL ITTEHAD.'],
       apkUrl: null,
       releasePageUrl: null,
       repoUrl: GITHUB_REPO_URL,

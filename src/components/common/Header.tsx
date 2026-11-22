@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Languages,
@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
     '';
 
   return (
-    <header className="shrink-0 z-40 w-full max-w-[100vw] box-border px-2.5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2 flex items-center justify-between gap-1.5 bg-gradient-to-b from-[#131C31] via-[#0F172A] to-[#090D16] border-b border-slate-400/20 text-[#F8FAFC] shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(56,189,248,0.16)]">
+    <header className="shrink-0 z-40 w-full max-w-[100vw] box-border px-2.5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2 flex items-center justify-between gap-1.5 bg-gradient-to-b from-[#0D2A1F] via-[#0F172A] to-[#071812] border-b border-slate-400/20 text-[#F8FAFC] shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(56,189,248,0.16)]">
       {/* Zone 1: Mobile Hamburger & Compact 3D Brand Emblem */}
       <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
         <button
@@ -105,12 +105,12 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleSidebar}
           aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isSidebarOpen}
-          className="relative z-50 min-w-[44px] min-h-[44px] p-2 rounded-xl text-[#38BDF8] bg-[#131C31] hover:bg-[#1E293B] transition-colors cursor-pointer flex items-center justify-center border border-slate-400/20 shrink-0 kc-pressable"
+          className="relative z-50 min-w-[44px] min-h-[44px] p-2 rounded-xl text-[#059669] bg-[#0D2A1F] hover:bg-[#1E293B] transition-colors cursor-pointer flex items-center justify-center border border-slate-400/20 shrink-0 kc-pressable"
         >
           {isSidebarOpen ? (
-            <X className="w-5 h-5 text-[#F5D061]" />
+            <X className="w-5 h-5 text-[#E5E4E2]" />
           ) : (
-            <Menu className="w-5 h-5 text-[#38BDF8]" />
+            <Menu className="w-5 h-5 text-[#059669]" />
           )}
         </button>
 
@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className={`text-[14px] font-extrabold tracking-tight kc-gold-gradient-text leading-tight truncate block ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
               {displayAppName}
             </span>
-            <span className="text-[9px] text-[#38BDF8] font-semibold tracking-wide truncate block">
+            <span className="text-[9px] text-[#059669] font-semibold tracking-wide truncate block">
               {displayTagline}
             </span>
           </div>
@@ -147,11 +147,11 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={toggleLanguage}
-          className="relative z-50 min-w-[44px] min-h-[44px] flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-[#F5D061] bg-[#131C31] hover:bg-[#1E293B] border border-slate-400/20 rounded-full transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
+          className="relative z-50 min-w-[44px] min-h-[44px] flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-[#E5E4E2] bg-[#0D2A1F] hover:bg-[#1E293B] border border-slate-400/20 rounded-full transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           title="Switch Language (English / اردو)"
           aria-label="Switch Language"
         >
-          <Languages className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
+          <Languages className="w-3.5 h-3.5 text-[#059669] shrink-0" />
           <span>{language === 'en' ? 'اردو' : 'EN'}</span>
         </button>
 
@@ -159,13 +159,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={onOpenNotifications}
-          className="relative z-50 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-slate-200 hover:text-[#38BDF8] bg-[#131C31] hover:bg-[#1E293B] rounded-xl transition-all shrink-0 cursor-pointer border border-slate-400/20 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
+          className="relative z-50 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-slate-200 hover:text-[#059669] bg-[#0D2A1F] hover:bg-[#1E293B] rounded-xl transition-all shrink-0 cursor-pointer border border-slate-400/20 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           title={translate(language, 'notifications')}
           aria-label={translate(language, 'notifications')}
         >
-          <Bell className="w-4 h-4 text-[#F5D061]" />
+          <Bell className="w-4 h-4 text-[#E5E4E2]" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#090D16] bg-[#38BDF8] rounded-full shadow-xs tabular-nums">
+            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-[#071812] bg-[#059669] rounded-full shadow-xs tabular-nums">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
             </span>
           )}
@@ -179,17 +179,17 @@ export const Header: React.FC<HeaderProps> = ({
             aria-expanded={showProfileMenu}
             aria-haspopup="menu"
             aria-label="Account Menu"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 rounded-full bg-[#131C31] hover:bg-[#1E293B] transition-all text-start cursor-pointer border border-slate-400/20 shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 rounded-full bg-[#0D2A1F] hover:bg-[#1E293B] transition-all text-start cursor-pointer border border-slate-400/20 shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)] kc-pressable"
           >
             {avatarSrc && !avatarFailed ? (
               <img
                 src={avatarSrc}
                 alt={currentUser.name}
                 onError={() => setAvatarFailed(true)}
-                className="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/60 shrink-0"
+                className="w-8 h-8 rounded-full object-cover border border-[#E5E4E2]/60 shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#1E293B] text-[#38BDF8] flex items-center justify-center border border-[#38BDF8]/40 shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#1E293B] text-[#059669] flex items-center justify-center border border-[#059669]/40 shrink-0">
                 <UserIcon className="w-4 h-4" />
               </div>
             )}
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="fixed top-[calc(env(safe-area-inset-top,12px)+56px)] right-2.5 w-[272px] max-w-[calc(100vw-20px)] max-h-[80dvh] overflow-y-auto kc-luxury-modal rounded-2xl py-2 z-[90] text-xs text-slate-200"
             >
               {/* User Name, Email & 3D Role Badge */}
-              <div className="px-3.5 py-2.5 border-b border-[#D4AF37]/20">
+              <div className="px-3.5 py-2.5 border-b border-[#E5E4E2]/20">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-bold text-white truncate">{currentUser.name}</p>
                   {isFirebaseLive && (
@@ -229,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setSelectedCardUser(currentUser);
                   setShowProfileMenu(false);
                 }}
-                className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#F5D061] text-start cursor-pointer font-semibold"
+                className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#E5E4E2] text-start cursor-pointer font-semibold"
               >
                 <IdCard className="w-3.5 h-3.5 shrink-0" />
                 <span>{translate(language, 'viewDigitalId')}</span>
@@ -244,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-emerald-300 text-start cursor-pointer font-semibold"
               >
-                <FileCheck2 className="w-3.5 h-3.5 text-[#FDE047] shrink-0" />
+                <FileCheck2 className="w-3.5 h-3.5 text-[#CBD5E1] shrink-0" />
                 <span>{translate(language, 'navRukniyatForm')}</span>
               </button>
 
@@ -255,7 +255,7 @@ export const Header: React.FC<HeaderProps> = ({
                   openTutorial();
                   setShowProfileMenu(false);
                 }}
-                className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#38BDF8] text-start cursor-pointer font-semibold"
+                className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#059669] text-start cursor-pointer font-semibold"
               >
                 <HelpCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{translate(language, 'navMemberGuide')}</span>
@@ -295,18 +295,18 @@ export const Header: React.FC<HeaderProps> = ({
                     setActiveTab('manage_app');
                     setShowProfileMenu(false);
                   }}
-                  className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#F5D061] text-start cursor-pointer font-bold"
+                  className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-[#161D2C] text-[#E5E4E2] text-start cursor-pointer font-bold"
                 >
                   <Crown className="w-3.5 h-3.5 shrink-0" />
                   <span>{translate(language, 'navMasterControl')} 👑</span>
                 </button>
               )}
 
-              <div className="px-3.5 py-2 border-t border-[#D4AF37]/15">
+              <div className="px-3.5 py-2 border-t border-[#E5E4E2]/15">
                 <PWAInstallButton compact />
               </div>
 
-              <div className="border-t border-[#D4AF37]/20 my-1 pt-1 space-y-0.5">
+              <div className="border-t border-[#E5E4E2]/20 my-1 pt-1 space-y-0.5">
                 <button
                   type="button"
                   role="menuitem"
@@ -314,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({
                     onOpenLoginModal();
                     setShowProfileMenu(false);
                   }}
-                  className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-amber-500/10 text-[#F5D061] text-start cursor-pointer font-medium"
+                  className="w-full min-h-[44px] flex items-center gap-2 px-3.5 py-2 hover:bg-amber-500/10 text-[#E5E4E2] text-start cursor-pointer font-medium"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                   <span>{translate(language, 'signInBtn')}</span>

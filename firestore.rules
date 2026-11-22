@@ -29,6 +29,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isMemberIdentitySession() {
+      return isSignedIn() && (
+        request.auth.token.firebase.sign_in_provider == 'anonymous' ||
+        request.auth.token.email_verified == true
+      );
+    }
+
     function isGoogleVerified() {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
@@ -55,6 +62,17 @@ service cloud.firestore {
     function targetIsFounderDoc() {
       return ('email' in existing() && existing().email == 'asadullah6959@gmail.com') ||
         ('isFounder' in existing() && existing().isFounder == true);
+    }
+
+    function roleAndAuthorityFieldsUnchanged() {
+      return incoming().email == existing().email &&
+        incoming().role == existing().role &&
+        ((!('isFounder' in existing()) && (!('isFounder' in incoming()) || incoming().isFounder == false)) ||
+          ('isFounder' in existing() && 'isFounder' in incoming() && incoming().isFounder == existing().isFounder)) &&
+        ((!('isAuditOfficer' in existing()) && (!('isAuditOfficer' in incoming()) || incoming().isAuditOfficer == false)) ||
+          ('isAuditOfficer' in existing() && 'isAuditOfficer' in incoming() && incoming().isAuditOfficer == existing().isAuditOfficer)) &&
+        ((!('isSuspended' in existing()) && (!('isSuspended' in incoming()) || incoming().isSuspended == false)) ||
+          ('isSuspended' in existing() && 'isSuspended' in incoming() && incoming().isSuspended == existing().isSuspended));
     }
 
     // --- VALIDATION HELPERS ---
@@ -124,8 +142,12 @@ service cloud.firestore {
       );
 
       allow update: if isValidUserDocId(userId) && isValidUser(incoming()) && (
-        isFounder() ||
-        isSuperAdmin() ||
+        (isFounder() && !targetIsFounderDoc()) ||
+        (
+          isSuperAdmin() &&
+          !targetIsFounderDoc() &&
+          roleAndAuthorityFieldsUnchanged()
+        ) ||
         (
           !targetIsFounderDoc() &&
           ((!('isFounder' in existing()) && (!('isFounder' in incoming()) || incoming().isFounder != true)) || ('isFounder' in existing() && incoming().isFounder == existing().isFounder)) &&
@@ -134,6 +156,7 @@ service cloud.firestore {
           (!('isAuditOfficer' in existing()) || incoming().isAuditOfficer == existing().isAuditOfficer)
         ) ||
         (
+          isFounder() &&
           targetIsFounderDoc() &&
           incoming().email == 'asadullah6959@gmail.com' &&
           incoming().role == 'SUPER_ADMIN' &&
@@ -153,6 +176,38 @@ service cloud.firestore {
         incoming().keys().hasAll(['id', 'applicantName', 'email', 'status']) &&
         incoming().applicantName is string && incoming().applicantName.size() <= 120;
       allow delete: if isFounder() || isSuperAdmin();
+    }
+
+    // Atomic duplicate-account and duplicate-CNIC identity claims.
+    function isValidIdentityClaim(claimId, data) {
+      return isValidId(claimId) &&
+        data.keys().hasAll(['claimType', 'identity', 'userId']) &&
+        data.identity is string &&
+        data.identity.size() > 0 &&
+        data.identity.size() <= 120 &&
+        data.userId is string &&
+        data.userId.size() > 0 &&
+        data.userId.size() <= 128 &&
+        (
+          (
+            data.claimType == 'CNIC' &&
+            data.identity.matches('^[0-9]{13}$') &&
+            claimId == 'cnic_' + data.identity
+          ) ||
+          (
+            data.claimType == 'EMAIL' &&
+            data.identity.matches('^[^@]+@[^@]+\\.[^@]+$') &&
+            claimId.matches('^email_[a-z0-9_]{1,100}$')
+          )
+        );
+    }
+
+    match /member_identity_claims/{claimId} {
+      allow get: if isMemberIdentitySession() &&
+        (claimId.matches('^cnic_[0-9]{13}$') || claimId.matches('^email_[a-z0-9_]{1,100}$'));
+      allow create: if isMemberIdentitySession() && isValidIdentityClaim(claimId, incoming());
+      allow update, delete: if false;
+      allow list: if false;
     }
 
     // 3. Payments Ledger

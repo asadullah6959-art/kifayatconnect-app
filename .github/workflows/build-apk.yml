@@ -3,6 +3,8 @@ name: Build React to Android APK
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -11,6 +13,12 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_KEYSTORE_FILE: ski-release.jks
 
     steps:
       - name: Checkout repository
@@ -19,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24.12.0'
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -27,27 +35,14 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Ensure Permanent Android Keystore
+      - name: Configure stable release signing
+        id: signing
         run: |
-          if [ ! -f android/app/kifayat-release.jks ]; then
-            mkdir -p android/app
-            keytool -genkeypair -v \
-              -keystore android/app/kifayat-release.jks \
-              -storepass kifayat2026 \
-              -keypass kifayat2026 \
-              -alias kifayatconnect \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Kifayat Connect, OU=Mobile Engineering, O=Kifayat Connect, L=Islamabad, ST=ICT, C=PK"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add android/app/kifayat-release.jks
-            git commit -m "chore(android): commit permanent release keystore [skip ci]"
-            git pull --rebase origin "${{ github.ref_name }}" || true
-            git push origin "HEAD:${{ github.ref_name }}"
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "android/app/$ANDROID_KEYSTORE_FILE"
+            echo "release_enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Permanent keystore android/app/kifayat-release.jks already exists; reusing it."
+            echo "release_enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies and build web app
@@ -60,21 +55,21 @@ jobs:
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
           if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
-            echo '{"appId": "com.kifayatconnect.app", "appName": "Kifayat Connect", "webDir": "dist"}' > capacitor.config.json
+            echo '{"appId": "com.suikhelittehad.app", "appName": "SUI KHEL ITTEHAD", "webDir": "dist"}' > capacitor.config.json
           fi
           if [ ! -f "android/gradlew" ]; then
             mkdir -p /tmp/kc_android_preserve
             if [ -f "android/app/build.gradle" ]; then
               cp android/app/build.gradle /tmp/kc_android_preserve/build.gradle
             fi
-            if [ -f "android/app/kifayat-release.jks" ]; then
-              cp android/app/kifayat-release.jks /tmp/kc_android_preserve/kifayat-release.jks
+            if [ -f "android/app/ski-release.jks" ]; then
+              cp android/app/ski-release.jks /tmp/kc_android_preserve/ski-release.jks
             fi
             if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
               cp android/app/src/main/AndroidManifest.xml /tmp/kc_android_preserve/AndroidManifest.xml
             fi
-            if [ -f "android/app/src/main/java/com/kifayatconnect/app/MainActivity.java" ]; then
-              cp android/app/src/main/java/com/kifayatconnect/app/MainActivity.java /tmp/kc_android_preserve/MainActivity.java
+            if [ -f "android/app/src/main/java/com/suikhelittehad/app/MainActivity.java" ]; then
+              cp android/app/src/main/java/com/suikhelittehad/app/MainActivity.java /tmp/kc_android_preserve/MainActivity.java
             fi
             if ls -d android/app/src/main/res/mipmap-* >/dev/null 2>&1; then
               mkdir -p /tmp/kc_android_preserve/res
@@ -84,20 +79,24 @@ jobs:
               mkdir -p /tmp/kc_android_preserve/res/values
               cp android/app/src/main/res/values/ic_launcher_background.xml /tmp/kc_android_preserve/res/values/ic_launcher_background.xml
             fi
+            if [ -d "android/app/src/main/res/xml" ]; then
+              mkdir -p /tmp/kc_android_preserve/res
+              cp -r android/app/src/main/res/xml /tmp/kc_android_preserve/res/
+            fi
             rm -rf android
             npx cap add android
             if [ -f "/tmp/kc_android_preserve/build.gradle" ]; then
               cp /tmp/kc_android_preserve/build.gradle android/app/build.gradle
             fi
-            if [ -f "/tmp/kc_android_preserve/kifayat-release.jks" ]; then
-              cp /tmp/kc_android_preserve/kifayat-release.jks android/app/kifayat-release.jks
+            if [ -f "/tmp/kc_android_preserve/ski-release.jks" ]; then
+              cp /tmp/kc_android_preserve/ski-release.jks android/app/ski-release.jks
             fi
             if [ -f "/tmp/kc_android_preserve/AndroidManifest.xml" ]; then
               cp /tmp/kc_android_preserve/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
             fi
             if [ -f "/tmp/kc_android_preserve/MainActivity.java" ]; then
-              mkdir -p android/app/src/main/java/com/kifayatconnect/app
-              cp /tmp/kc_android_preserve/MainActivity.java android/app/src/main/java/com/kifayatconnect/app/MainActivity.java
+              mkdir -p android/app/src/main/java/com/suikhelittehad/app
+              cp /tmp/kc_android_preserve/MainActivity.java android/app/src/main/java/com/suikhelittehad/app/MainActivity.java
             fi
             if ls -d /tmp/kc_android_preserve/res/mipmap-* >/dev/null 2>&1; then
               rm -rf android/app/src/main/res/mipmap-*
@@ -106,6 +105,10 @@ jobs:
             if [ -f "/tmp/kc_android_preserve/res/values/ic_launcher_background.xml" ]; then
               mkdir -p android/app/src/main/res/values
               cp /tmp/kc_android_preserve/res/values/ic_launcher_background.xml android/app/src/main/res/values/ic_launcher_background.xml
+            fi
+            if [ -d "/tmp/kc_android_preserve/res/xml" ]; then
+              mkdir -p android/app/src/main/res
+              cp -r /tmp/kc_android_preserve/res/xml android/app/src/main/res/
             fi
             rm -rf /tmp/kc_android_preserve
           fi
@@ -119,20 +122,29 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
           cd ..
-          mv android/app/build/outputs/apk/debug/app-debug.apk "KifayatConnect-v1.0.${{ github.run_number }}.apk"
+          mv android/app/build/outputs/apk/debug/app-debug.apk "SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KifayatConnect-v1.0.${{ github.run_number }}
-          path: KifayatConnect-v1.0.${{ github.run_number }}.apk
+          name: SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}
+          path: SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}.apk
+
+      - name: Build signed release APK
+        if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          cd android
+          ./gradlew assembleRelease
+          cd ..
+          mv android/app/build/outputs/apk/release/app-release.apk "SUI-KHEL-ITTEHAD-v1.0.${{ github.run_number }}.apk"
 
       - name: Publish APK to GitHub Releases
+        if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Kifayat Connect v1.0.${{ github.run_number }}
+          name: SUI KHEL ITTEHAD v1.0.${{ github.run_number }}
           body: |
-            Automated Android APK release for Kifayat Connect (v1.0.${{ github.run_number }}).
+            Automated Android APK release for SUI KHEL ITTEHAD (v1.0.${{ github.run_number }}).
             Built from commit ${{ github.sha }}.
-          files: KifayatConnect-v1.0.${{ github.run_number }}.apk
+          files: SUI-KHEL-ITTEHAD-v1.0.${{ github.run_number }}.apk

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Coins,
@@ -117,6 +117,7 @@ export const FundsAndPayments: React.FC = () => {
   const [receiptImageName, setReceiptImageName] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const lastActionTsRef = useRef<number>(0);
@@ -328,11 +329,12 @@ export const FundsAndPayments: React.FC = () => {
     }
   };
 
-  const handleDebouncedVerify = (txId: string, approved: boolean) => {
+  const handleDebouncedVerify = async (txId: string, approved: boolean) => {
     const now = Date.now();
     if (now - lastActionTsRef.current < 500) return;
     lastActionTsRef.current = now;
-    verifyPayment(txId, approved);
+    const result = await verifyPayment(txId, approved);
+    setVerificationError(result.success ? null : (result.error || 'Payment verification failed.'));
   };
 
   const handleExportCSV = () => {
@@ -345,13 +347,22 @@ export const FundsAndPayments: React.FC = () => {
     setTimeout(() => setDownloadToast(false), 2500);
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = async () => {
     const now = Date.now();
     if (now - lastActionTsRef.current < 500 || !rejectTxId) return;
     lastActionTsRef.current = now;
-    verifyPayment(rejectTxId, false, rejectReason.trim() || (isUr ? 'رسید کی تصدیق نہیں ہو سکی۔' : 'Receipt could not be verified.'));
-    setRejectTxId(null);
-    setRejectReason('');
+    const result = await verifyPayment(
+      rejectTxId,
+      false,
+      rejectReason.trim() || (isUr ? 'رسید کی تصدیق نہیں ہو سکی۔' : 'Receipt could not be verified.')
+    );
+    if (result.success) {
+      setVerificationError(null);
+      setRejectTxId(null);
+      setRejectReason('');
+    } else {
+      setVerificationError(result.error || (isUr ? 'ادائیگی کی تصدیق محفوظ نہیں ہو سکی۔' : 'Payment verification could not be saved.'));
+    }
   };
 
   const localizeMethod = (m: string) => {
@@ -363,7 +374,7 @@ export const FundsAndPayments: React.FC = () => {
   const renderStatusPill = (status: PaymentTransaction['status']) => {
     if (status === 'VERIFIED') {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/45">
+        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#0D2A1F] text-[#059669] border border-[#059669]/45">
           <CheckCircle2 className="w-3 h-3" />
           {isUr ? 'منظور شدہ ✓' : 'Approved ✓'}
         </span>
@@ -371,7 +382,7 @@ export const FundsAndPayments: React.FC = () => {
     }
     if (status === 'PENDING_VERIFICATION') {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/45">
+        <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-[#E5E4E2]/15 text-[#E5E4E2] border border-[#E5E4E2]/45">
           <Clock className="w-3 h-3" />
           {isUr ? 'جمع شدہ / زیرِ جائزہ' : 'Under Review'}
         </span>
@@ -389,7 +400,7 @@ export const FundsAndPayments: React.FC = () => {
     <div className="space-y-5 max-w-full pb-[100px]">
       {downloadToast && (
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
-          <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
+          <div className="bg-[#071812] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#E5E4E2]/50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span className="font-semibold">
               {isUr ? 'مالیاتی لیجر CSV ڈاؤن لوڈ ہو گیا!' : 'Financial ledger CSV downloaded!'}
@@ -397,12 +408,17 @@ export const FundsAndPayments: React.FC = () => {
           </div>
         </div>
       )}
+      {verificationError && (
+        <div role="alert" className="rounded-xl border border-rose-500/45 bg-rose-950/60 p-3 text-xs text-rose-200">
+          {verificationError}
+        </div>
+      )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25 no-print">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25 no-print">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {isAuditOfficer && !isSuperAdmin
                 ? (isUr ? 'آڈٹ آفیسر تصدیقی لیجر (صرف پڑھنے کے لیے)' : 'Audit Officer Verification Ledger (Read-Only)')
                 : isMember
@@ -413,13 +429,13 @@ export const FundsAndPayments: React.FC = () => {
                 ? (isUr ? `${currentUser.assignedStateProvince || currentUser.stateProvince} فنڈز` : `${currentUser.assignedStateProvince || currentUser.stateProvince} Funds`)
                 : (isUr ? 'مرکزی خزانہ لیجر' : 'Central Treasury Ledger')}
             </span>
-            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-[#E5E4E2]/50">·</span>
             <span className="text-xs text-slate-400">
               {isUr ? 'آڈٹ شدہ فلاحی عطیات و چندہ' : 'Audited Welfare Contributions'}
             </span>
           </div>
           <h1 className={`text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2 ${isUr ? 'kc-font-urdu' : ''}`}>
-            <Coins className="w-6 h-6 text-[#F5D061] shrink-0" />
+            <Coins className="w-6 h-6 text-[#E5E4E2] shrink-0" />
             <span>{isUr ? 'فنڈز اور ادائیگیاں' : 'Funds & Contributions'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -436,9 +452,9 @@ export const FundsAndPayments: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsOldPaperModalOpen(true)}
-              className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#064E3B]/75 hover:bg-[#065F46] text-[#FEF08A] border border-[#D4AF37]/55 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#064E3B]/75 hover:bg-[#065F46] text-[#E5E4E2] border border-[#E5E4E2]/55 text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
-              <FilePlus2 className="w-3.5 h-3.5 text-[#FDE047]" />
+              <FilePlus2 className="w-3.5 h-3.5 text-[#CBD5E1]" />
               <span>
                 {isUr
                   ? '+ پرانا دستی ریکارڈ شامل کریں'
@@ -449,7 +465,7 @@ export const FundsAndPayments: React.FC = () => {
 
           <button
             onClick={handleExportCSV}
-            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#0D2A1F] hover:bg-[#1A233A] text-slate-200 border border-[#E5E4E2]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <FileDown className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isUr ? 'CSV برآمد کریں' : 'Export CSV'}</span>
@@ -457,9 +473,9 @@ export const FundsAndPayments: React.FC = () => {
 
           <button
             onClick={() => window.print()}
-            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-200 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-3 py-2 bg-[#0D2A1F] hover:bg-[#1A233A] text-slate-200 border border-[#E5E4E2]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5 text-[#F5D061]" />
+            <Printer className="w-3.5 h-3.5 text-[#E5E4E2]" />
             <span>{isUr ? 'پرنٹ' : 'Print'}</span>
           </button>
 
@@ -538,15 +554,15 @@ export const FundsAndPayments: React.FC = () => {
           </p>
         </div>
 
-        <div className="kc-obsidian-card kc-gold-touch p-4 rounded-2xl !border-[#F5D061]/55">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#F5D061] block">
+        <div className="kc-obsidian-card kc-gold-touch p-4 rounded-2xl !border-[#E5E4E2]/55">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#E5E4E2] block">
             {isUr ? 'تصدیق کے منتظر' : 'Pending Verification'}
           </span>
           <div className="mt-2 flex items-baseline justify-between gap-2">
-            <span className="text-xl sm:text-2xl font-extrabold text-[#F5D061] font-mono tabular-nums">
+            <span className="text-xl sm:text-2xl font-extrabold text-[#E5E4E2] font-mono tabular-nums">
               PKR {pendingSum.toLocaleString()}
             </span>
-            <span className="text-[11px] text-[#F5D061] font-bold font-mono tabular-nums">
+            <span className="text-[11px] text-[#E5E4E2] font-bold font-mono tabular-nums">
               {isUr ? `${pendingPayments.length} قطار میں` : `${pendingPayments.length} Queue`}
             </span>
           </div>
@@ -565,7 +581,7 @@ export const FundsAndPayments: React.FC = () => {
             <span className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums">
               {visibleTransactions.length}
             </span>
-            <span className="text-[11px] text-[#F5D061] font-bold flex items-center gap-1">
+            <span className="text-[11px] text-[#E5E4E2] font-bold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
               {isUr ? 'آڈٹ شدہ' : 'Audited'}
             </span>
@@ -578,9 +594,9 @@ export const FundsAndPayments: React.FC = () => {
 
       {/* Filters + Ledger */}
       <div className="report-print-area kc-obsidian-card rounded-2xl p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/20 no-print">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#E5E4E2]/20 no-print">
           <div>
-            <h3 className="text-sm font-bold text-[#F5D061]">
+            <h3 className="text-sm font-bold text-[#E5E4E2]">
               {isUr ? 'لیجر لین دین' : 'Ledger Transactions'}
             </h3>
             <p className="text-xs text-slate-400">
@@ -590,7 +606,7 @@ export const FundsAndPayments: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 sm:flex-initial">
-              <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#E5E4E2] absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder={isUr ? 'حوالہ، ممبر، ضلع تلاش کریں...' : 'Search ref, member, district...'}
@@ -687,22 +703,22 @@ export const FundsAndPayments: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 rounded-xl kc-glass-bevel bg-[#090D16]/90 space-y-2.5"
+                  className="p-3.5 rounded-xl kc-glass-bevel bg-[#071812]/90 space-y-2.5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="font-mono tabular-nums font-bold text-xs text-[#F5D061] block">
+                      <span className="font-mono tabular-nums font-bold text-xs text-[#E5E4E2] block">
                         {tx.serialNumber || tx.receiptNumber}
                       </span>
                       <span className="text-xs font-semibold text-white flex items-center gap-1 truncate mt-0.5">
-                        <MapPin className="w-3 h-3 text-[#D4AF37] shrink-0" />
+                        <MapPin className="w-3 h-3 text-[#E5E4E2] shrink-0" />
                         <span className="truncate">{tx.userName} · {dist}, {prov}</span>
                       </span>
                     </div>
                     {renderStatusPill(tx.status)}
                   </div>
 
-                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#D4AF37]/15">
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#E5E4E2]/15">
                     <div className="min-w-0 pr-2">
                       <span className="text-emerald-300 font-semibold text-[11px] block truncate">
                         {isUr ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}
@@ -723,12 +739,12 @@ export const FundsAndPayments: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#D4AF37]/15">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E5E4E2]/15">
                     {tx.receiptImageUrl ? (
                       <button
                         type="button"
                         onClick={() => setPreviewTx(tx)}
-                        className="min-h-[44px] inline-flex items-center gap-1.5 px-2 text-xs font-semibold text-[#F5D061] hover:underline cursor-pointer"
+                        className="min-h-[44px] inline-flex items-center gap-1.5 px-2 text-xs font-semibold text-[#E5E4E2] hover:underline cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>{isUr ? 'رسید کی تصویر دیکھیں' : 'View Receipt Photo'}</span>
@@ -740,7 +756,7 @@ export const FundsAndPayments: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         onClick={() => setSelectedReceipt(tx)}
-                        className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#141B2D] border border-[#D4AF37]/40 text-slate-100 rounded-xl font-semibold cursor-pointer"
+                        className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#0D2A1F] border border-[#E5E4E2]/40 text-slate-100 rounded-xl font-semibold cursor-pointer"
                       >
                         <Printer className="w-3.5 h-3.5 text-emerald-400" />
                         <span>{isUr ? 'ڈیجیٹل رسید' : 'Digital Receipt'}</span>
@@ -749,7 +765,7 @@ export const FundsAndPayments: React.FC = () => {
                         <>
                           <button
                             onClick={() => handleDebouncedVerify(tx.id, true)}
-                            className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-[#0284C7] to-[#0EA5E9] border border-[#38BDF8]/60 text-white rounded-xl font-bold cursor-pointer"
+                            className="kc-pressable min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-[#0284C7] to-[#059669] border border-[#059669]/60 text-white rounded-xl font-bold cursor-pointer"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 text-[#F8FAFC]" />
                             <span>{isUr ? 'منظور کریں' : 'Approve'}</span>
@@ -781,9 +797,9 @@ export const FundsAndPayments: React.FC = () => {
             className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#D4AF37]/25">
+            <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#E5E4E2]/25">
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061] block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#E5E4E2] block">
                   {isUr ? `مرحلہ ${step} از 3` : `Step ${step} of 3`}
                 </span>
                 <h3 className="text-base font-bold text-white break-words whitespace-normal leading-snug mt-0.5">
@@ -794,7 +810,7 @@ export const FundsAndPayments: React.FC = () => {
                 type="button"
                 onClick={resetPaymentModal}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] transition-colors cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-[#E5E4E2] transition-colors cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -811,10 +827,10 @@ export const FundsAndPayments: React.FC = () => {
                   key={item.num}
                   className={`py-1.5 px-2 rounded-lg text-center text-[11px] font-bold border ${
                     step === item.num
-                      ? 'bg-[#D4AF37]/20 text-[#F5D061] border-[#D4AF37]'
+                      ? 'bg-[#E5E4E2]/20 text-[#E5E4E2] border-[#E5E4E2]'
                       : step > item.num
-                      ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45'
-                      : 'bg-[#090D16] text-slate-400 border-[#D4AF37]/20'
+                      ? 'bg-[#0D2A1F] text-[#059669] border-[#059669]/45'
+                      : 'bg-[#071812] text-slate-400 border-[#E5E4E2]/20'
                   }`}
                 >
                   {item.num}. {item.label}
@@ -879,8 +895,8 @@ export const FundsAndPayments: React.FC = () => {
                           onClick={() => setPayMethod(m.id)}
                           className={`kc-pressable p-3 rounded-xl border text-left transition-all cursor-pointer ${
                             payMethod === m.id
-                              ? 'bg-[#D4AF37]/15 border-[#F5D061] text-[#F5D061]'
-                              : 'bg-[#090D16] border-[#D4AF37]/25 text-slate-200 hover:border-[#D4AF37]/55'
+                              ? 'bg-[#E5E4E2]/15 border-[#E5E4E2] text-[#E5E4E2]'
+                              : 'bg-[#071812] border-[#E5E4E2]/25 text-slate-200 hover:border-[#E5E4E2]/55'
                           }`}
                         >
                           <div className="text-xs font-bold">{isUr ? m.labelUr : m.label}</div>
@@ -920,7 +936,7 @@ export const FundsAndPayments: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#E5E4E2] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>{isUr ? 'واپس' : 'Back'}</span>
@@ -939,7 +955,7 @@ export const FundsAndPayments: React.FC = () => {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/35 flex items-center justify-between gap-2 text-xs">
+                  <div className="p-3 rounded-xl bg-[#071812] border border-[#E5E4E2]/35 flex items-center justify-between gap-2 text-xs">
                     <div className="min-w-0">
                       <span className="text-slate-400 block truncate">
                         {fundTier === 'MAHANA'
@@ -949,7 +965,7 @@ export const FundsAndPayments: React.FC = () => {
                           : 'ہنگامی فنڈ / Hangami Fund'}{' '}
                         · {localizeMethod(payMethod)}
                       </span>
-                      <span className="font-mono tabular-nums font-bold text-[#F5D061]">
+                      <span className="font-mono tabular-nums font-bold text-[#E5E4E2]">
                         PKR {Math.round(numericPayAmount || 0).toLocaleString()}
                         {fundTier === 'MAHANA' && (
                           <span className="text-emerald-300 font-sans ml-1.5">
@@ -963,7 +979,7 @@ export const FundsAndPayments: React.FC = () => {
                         )}
                       </span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#F5D061] border border-[#D4AF37]/35 font-bold shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#E5E4E2]/15 text-[#E5E4E2] border border-[#E5E4E2]/35 font-bold shrink-0">
                       {isUr ? 'ایڈمن منظوری زیرِ التواء' : 'Pending Admin Approval'}
                     </span>
                   </div>
@@ -981,8 +997,8 @@ export const FundsAndPayments: React.FC = () => {
                     </label>
 
                     <div className="grid grid-cols-2 gap-2.5">
-                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#D4AF37]/55 hover:border-[#FDE047] bg-[#090D16] cursor-pointer transition-colors text-center">
-                        <Camera className="w-5 h-5 text-[#FDE047] mb-1" />
+                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#E5E4E2]/55 hover:border-[#CBD5E1] bg-[#071812] cursor-pointer transition-colors text-center">
+                        <Camera className="w-5 h-5 text-[#CBD5E1] mb-1" />
                         <span className="text-xs font-extrabold text-white">
                           {isUr ? '📷 کیمرہ سے تصویر لیں' : '📷 Take Photo'}
                         </span>
@@ -999,8 +1015,8 @@ export const FundsAndPayments: React.FC = () => {
                         />
                       </label>
 
-                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#38BDF8]/50 hover:border-[#38BDF8] bg-[#090D16] cursor-pointer transition-colors text-center">
-                        <Upload className="w-5 h-5 text-[#38BDF8] mb-1" />
+                      <label className="kc-pressable flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-[#059669]/50 hover:border-[#059669] bg-[#071812] cursor-pointer transition-colors text-center">
+                        <Upload className="w-5 h-5 text-[#059669] mb-1" />
                         <span className="text-xs font-extrabold text-white">
                           {isUr ? '🖼️ گیلری سے منتخب کریں' : '🖼️ Choose Gallery'}
                         </span>
@@ -1023,7 +1039,7 @@ export const FundsAndPayments: React.FC = () => {
 
                     {receiptImageUrl && (
                       <div className="mt-3 p-2.5 rounded-xl kc-emerald-panel space-y-2">
-                        <div className="relative rounded-xl overflow-hidden bg-[#070D14] border border-[#D4AF37]/45">
+                        <div className="relative rounded-xl overflow-hidden bg-[#071812] border border-[#E5E4E2]/45">
                           <img
                             src={receiptImageUrl}
                             alt="Receipt preview"
@@ -1035,7 +1051,7 @@ export const FundsAndPayments: React.FC = () => {
                             aria-label="Remove uploaded receipt image"
                             title={isUr ? 'رسید کی تصویر ہٹائیں' : 'Remove receipt image'}
                             style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                            className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                            className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                           >
                             <X className="w-4 h-4 stroke-[2.75]" />
                           </button>
@@ -1052,11 +1068,11 @@ export const FundsAndPayments: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#D4AF37]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#E5E4E2]/20">
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#F5D061] cursor-pointer"
+                      className="kc-pressable flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-[#E5E4E2] cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>{isUr ? 'واپس' : 'Back'}</span>
@@ -1092,10 +1108,10 @@ export const FundsAndPayments: React.FC = () => {
       {previewTx && (
         <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
           <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-md w-full p-4 sm:p-5 pb-24 sm:pb-5 space-y-3 my-auto overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/25">
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#E5E4E2]/25">
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5 break-words whitespace-normal leading-snug">
-                  <ImageIcon className="w-4 h-4 text-[#F5D061] shrink-0" />
+                  <ImageIcon className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                   <span>{previewTx.receiptNumber} {isUr ? 'ثبوت' : 'Proof'}</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 tabular-nums break-words whitespace-normal leading-snug mt-0.5">
@@ -1106,7 +1122,7 @@ export const FundsAndPayments: React.FC = () => {
                 type="button"
                 onClick={() => setPreviewTx(null)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-[#E5E4E2] cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1115,7 +1131,7 @@ export const FundsAndPayments: React.FC = () => {
               <img
                 src={previewTx.receiptImageUrl}
                 alt="Payment proof"
-                className="w-full max-h-[60vh] object-contain rounded-xl bg-[#090D16] border border-[#D4AF37]/25"
+                className="w-full max-h-[60vh] object-contain rounded-xl bg-[#071812] border border-[#E5E4E2]/25"
               />
             )}
           </div>
@@ -1137,7 +1153,7 @@ export const FundsAndPayments: React.FC = () => {
                   setRejectReason('');
                 }}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-[#E5E4E2] cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>

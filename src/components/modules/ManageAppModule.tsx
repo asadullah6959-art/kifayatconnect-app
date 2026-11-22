@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+﻿import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   Settings,
@@ -85,37 +85,37 @@ const THEME_PRESET_OPTIONS: Array<{
     id: 'OBSIDIAN_GOLD',
     name: 'Fintech Slate & Royal Gold',
     nameUr: 'فن ٹیک سلیٹ اور شاہی گولڈ',
-    bg: '#090D16',
-    surface: '#131C31',
-    accent: '#38BDF8',
-    emerald: '#D4AF37'
+    bg: '#071812',
+    surface: '#0D2A1F',
+    accent: '#059669',
+    emerald: '#E5E4E2'
   },
   {
     id: 'EMERALD_GOLD',
     name: 'Cyan Slate & Champagne',
     nameUr: 'سیان سلیٹ اور شیمپین گولڈ',
-    bg: '#090D16',
+    bg: '#071812',
     surface: '#0F172A',
-    accent: '#0EA5E9',
-    emerald: '#F59E0B'
+    accent: '#059669',
+    emerald: '#CBD5E1'
   },
   {
     id: 'MIDNIGHT_ROYAL',
     name: 'Midnight Sapphire & Gold',
     nameUr: 'مڈ نائٹ رائل اور گولڈ',
-    bg: '#090D16',
-    surface: '#131C31',
-    accent: '#38BDF8',
-    emerald: '#EAB308'
+    bg: '#071812',
+    surface: '#0D2A1F',
+    accent: '#059669',
+    emerald: '#CBD5E1'
   },
   {
     id: 'IMPERIAL_ONYX',
     name: 'Imperial Onyx Velvet',
     nameUr: 'امپیریل اونکس مخملی',
-    bg: '#090D16',
-    surface: '#131C31',
-    accent: '#D4AF37',
-    emerald: '#38BDF8'
+    bg: '#071812',
+    surface: '#0D2A1F',
+    accent: '#E5E4E2',
+    emerald: '#059669'
   }
 ];
 
@@ -197,7 +197,7 @@ export const ManageAppModule: React.FC = () => {
 
   // 2. Branding & Logo
   const [appName, setAppName] = useState(appSettings.appName);
-  const [appNameUr, setAppNameUr] = useState(appSettings.appNameUr || 'کفایت کنیکٹ');
+  const [appNameUr, setAppNameUr] = useState(appSettings.appNameUr || 'سوئی خیل اتحاد');
   const [tagline, setTagline] = useState(appSettings.tagline);
   const [taglineUr, setTaglineUr] = useState(appSettings.taglineUr || 'بہتر کل کے لیے ایک ساتھ');
   const [primaryColor, setPrimaryColor] = useState(appSettings.primaryColor);
@@ -205,8 +205,8 @@ export const ManageAppModule: React.FC = () => {
 
   // 4. EN / UR Text Overrides
   const [copyOverrides, setCopyOverrides] = useState<CustomCopyOverrides>({
-    welcomeHeadlineEn: appSettings.textOverrides?.welcomeHeadlineEn || 'Sign In to Kifayat Connect',
-    welcomeHeadlineUr: appSettings.textOverrides?.welcomeHeadlineUr || 'کفایت کنیکٹ میں سائن ان کریں',
+    welcomeHeadlineEn: appSettings.textOverrides?.welcomeHeadlineEn || 'Sign In to SUI KHEL ITTEHAD',
+    welcomeHeadlineUr: appSettings.textOverrides?.welcomeHeadlineUr || 'سوئی خیل اتحاد میں سائن ان کریں',
     maintenanceMessageEn:
       appSettings.textOverrides?.maintenanceMessageEn ||
       'System upgrade in progress. Please check back shortly.',
@@ -272,9 +272,9 @@ export const ManageAppModule: React.FC = () => {
 
   // 10. APK & Locations
   const [version, setVersion] = useState('1.1.0');
-  const [title, setTitle] = useState('Kifayat Connect — Release');
+  const [title, setTitle] = useState('SUI KHEL ITTEHAD — Release');
   const [description, setDescription] = useState(
-    'Kifayat Connect ka naya update aa chuka hai. Behtar performance aur naye features ke liye app update karein.'
+    'SUI KHEL ITTEHAD ka naya update aa chuka hai. Behtar performance aur naye features ke liye app update karein.'
   );
   const [releaseNotesText, setReleaseNotesText] = useState(
     'Verified Android APK release\nObsidian Black & Royal Gold luxury interface\nReal-time sync and offline message queue'
@@ -322,7 +322,7 @@ export const ManageAppModule: React.FC = () => {
 
   if (!currentIsFounder) {
     return (
-      <div className="p-8 text-center bg-[#111622] rounded-2xl border border-[#D4AF37]/25">
+      <div className="p-8 text-center bg-[#111622] rounded-2xl border border-[#E5E4E2]/25">
         <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-2" />
         <h2 className="text-base font-bold text-white">
           {isUr ? 'محدود ماسٹر کنٹرول' : 'Restricted Master Control'}
@@ -457,10 +457,10 @@ export const ManageAppModule: React.FC = () => {
   // PIN Lock Gate UI
   if (!isUnlocked) {
     return (
-      <div className="max-w-md mx-auto my-8 bg-[#111622] border border-[#D4AF37]/35 rounded-2xl p-6 shadow-2xl space-y-5">
+      <div className="max-w-md mx-auto my-8 bg-[#111622] border border-[#E5E4E2]/35 rounded-2xl p-6 shadow-2xl space-y-5">
         <div className="flex flex-col items-center text-center space-y-2">
           <BrandEmblem3D size="md" />
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-[#E5E4E2]/40 text-[#E5E4E2] text-[10px] font-bold uppercase tracking-wider">
             <Lock className="w-3 h-3" />
             <span>{hasConfiguredPin ? translate(language, 'masterPinLockedTitle') : translate(language, 'masterPinCreateTitle')}</span>
           </div>
@@ -501,7 +501,7 @@ export const ManageAppModule: React.FC = () => {
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#F5D061]"
+                className="w-full px-3 py-2.5 rounded-xl border border-[#E5E4E2]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#E5E4E2]"
               />
             </div>
             <div>
@@ -516,7 +516,7 @@ export const ManageAppModule: React.FC = () => {
                 value={pinConfirmInput}
                 onChange={(e) => setPinConfirmInput(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#F5D061]"
+                className="w-full px-3 py-2.5 rounded-xl border border-[#E5E4E2]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#E5E4E2]"
               />
             </div>
             <button
@@ -542,7 +542,7 @@ export const ManageAppModule: React.FC = () => {
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••••"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#F5D061]"
+                className="w-full px-3 py-2.5 rounded-xl border border-[#E5E4E2]/30 bg-[#0A0D12] text-white font-mono text-center tracking-[0.5em] text-base focus:outline-hidden focus:border-[#E5E4E2]"
               />
             </div>
             <button
@@ -563,14 +563,14 @@ export const ManageAppModule: React.FC = () => {
                   void handleSendPinResetOtp();
                 }
               }}
-              className="w-full py-1.5 text-[11px] font-semibold text-[#F5D061] hover:underline cursor-pointer"
+              className="w-full py-1.5 text-[11px] font-semibold text-[#E5E4E2] hover:underline cursor-pointer"
             >
               {translate(language, 'masterPinResetOtp')}
             </button>
           </form>
         ) : (
           <form onSubmit={handleConfirmPinReset} className="space-y-3 text-xs">
-            <div className="p-2.5 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[11px] text-[#059669] flex items-center gap-2">
               <Mail className="w-4 h-4 shrink-0" />
               <span className="truncate">
                 {isUr
@@ -590,7 +590,7 @@ export const ManageAppModule: React.FC = () => {
                 value={pinOtpInput}
                 onChange={(e) => setPinOtpInput(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••••"
-                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/40 bg-[#0A0D12] text-[#F5D061] font-mono text-center tracking-[0.5em] text-base font-bold focus:border-[#F5D061] outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-[#E5E4E2]/40 bg-[#0A0D12] text-[#E5E4E2] font-mono text-center tracking-[0.5em] text-base font-bold focus:border-[#E5E4E2] outline-none"
               />
             </div>
             <div>
@@ -605,7 +605,7 @@ export const ManageAppModule: React.FC = () => {
                 value={newResetPin}
                 onChange={(e) => setNewResetPin(e.target.value.replace(/\D/g, ''))}
                 placeholder="••••"
-                className="w-full px-3 py-2 rounded-xl border border-[#D4AF37]/30 bg-[#0A0D12] text-white font-mono text-center tracking-widest focus:border-[#F5D061] outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-[#E5E4E2]/30 bg-[#0A0D12] text-white font-mono text-center tracking-widest focus:border-[#E5E4E2] outline-none"
               />
             </div>
             <div className="flex items-center justify-between text-[11px]">
@@ -627,7 +627,7 @@ export const ManageAppModule: React.FC = () => {
                 type="button"
                 disabled={pinOtpCooldown > 0 || pinBusy}
                 onClick={() => void handleSendPinResetOtp()}
-                className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
+                className="text-[#E5E4E2] hover:underline disabled:opacity-50 cursor-pointer"
               >
                 {pinOtpCooldown > 0 ? `${pinOtpCooldown}s` : translate(language, 'resendOtpBtn')}
               </button>
@@ -675,7 +675,7 @@ export const ManageAppModule: React.FC = () => {
     e.preventDefault();
     updateAppSettings({
       appName: appName.trim() || 'SUI KHEL ITTEHAD',
-      appNameUr: appNameUr.trim() || 'کفایت کنیکٹ',
+      appNameUr: appNameUr.trim() || 'سوئی خیل اتحاد',
       tagline: tagline.trim() || 'Together for a Better Tomorrow',
       taglineUr: taglineUr.trim() || 'بہتر کل کے لیے ایک ساتھ',
       primaryColor,
@@ -704,11 +704,11 @@ export const ManageAppModule: React.FC = () => {
     showNotice('success', isUr ? 'ضلعی اور صوبائی ایڈمن کوٹہ اپ ڈیٹ ہو گیا۔' : 'District/State admin quotas updated.');
   };
 
-  const handleCreateStaff = (e: React.FormEvent) => {
+  const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setStaffQuotaError(null);
 
-    const res = createOrUpdateStaff({
+    const res = await createOrUpdateStaff({
       name: staffName,
       email: staffEmail,
       phone: staffPhone,
@@ -732,9 +732,9 @@ export const ManageAppModule: React.FC = () => {
     }
   };
 
-  const handlePromoteSuperAdmin = () => {
+  const handlePromoteSuperAdmin = async () => {
     if (!superAdminCandidateId) return;
-    const res = promoteToSuperAdmin(superAdminCandidateId);
+    const res = await promoteToSuperAdmin(superAdminCandidateId);
     if (res.success) {
       setSuperAdminCandidateId('');
       showNotice('success', isUr ? 'ممبر کو اضافی سپر ایڈمن 👑 بنا دیا گیا۔' : 'Member promoted to Additional Super Admin 👑.');
@@ -743,8 +743,8 @@ export const ManageAppModule: React.FC = () => {
     }
   };
 
-  const handleDemoteSuperAdmin = (uid: string) => {
-    const res = demoteSuperAdmin(uid);
+  const handleDemoteSuperAdmin = async (uid: string) => {
+    const res = await demoteSuperAdmin(uid);
     if (res.success) {
       showNotice('success', isUr ? 'اضافی سپر ایڈمن کو ضلعی ایڈمن بنا دیا گیا۔' : 'Additional Super Admin demoted to Admin.');
     } else {
@@ -834,9 +834,9 @@ export const ManageAppModule: React.FC = () => {
   return (
     <div className="space-y-5 max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
-          <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-[11px] font-bold text-[#E5E4E2] uppercase tracking-wider flex items-center gap-1.5">
             <Crown className="w-3.5 h-3.5" />
             <span>{isUr ? 'بانی اور ایگزیکٹو گورننس' : 'Founder & Executive Governance'}</span>
           </span>
@@ -860,14 +860,14 @@ export const ManageAppModule: React.FC = () => {
             className={`text-[11px] px-3 py-1.5 rounded-lg font-extrabold flex items-center gap-1.5 border cursor-pointer transition ${
               activeTab === 'MEMBERS' && memberApprovalFilter === 'PENDING'
                 ? 'bg-amber-500 text-[#0A0D12] border-amber-400'
-                : 'bg-[#161D2C] text-[#F5D061] border-[#D4AF37]/40 hover:border-[#F5D061]'
+                : 'bg-[#161D2C] text-[#E5E4E2] border-[#E5E4E2]/40 hover:border-[#E5E4E2]'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
             <span>{isUr ? `زیرِ التواء منظوریاں (${pendingApprovalsCount})` : `Pending Approvals (${pendingApprovalsCount})`}</span>
           </button>
           {currentIsFounder && (
-            <span className="text-[11px] px-3 py-1.5 bg-[#131C31] border border-[#D4AF37]/50 text-[#F5D061] rounded-lg font-bold flex items-center gap-1.5">
+            <span className="text-[11px] px-3 py-1.5 bg-[#0D2A1F] border border-[#E5E4E2]/50 text-[#E5E4E2] rounded-lg font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
               <span>{isUr ? 'بانی روٹ فعال ہے' : 'Founder Root Active'}</span>
             </span>
@@ -875,9 +875,9 @@ export const ManageAppModule: React.FC = () => {
           <button
             type="button"
             onClick={handleLockPanel}
-            className="text-xs px-3 py-1.5 bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-slate-200 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer"
+            className="text-xs px-3 py-1.5 bg-[#161D2C] hover:bg-slate-800 border border-[#E5E4E2]/30 text-slate-200 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer"
           >
-            <Lock className="w-3.5 h-3.5 text-[#F5D061]" />
+            <Lock className="w-3.5 h-3.5 text-[#E5E4E2]" />
             <span>{isUr ? 'پینل مقفل کریں' : 'Lock Panel'}</span>
           </button>
         </div>
@@ -901,7 +901,7 @@ export const ManageAppModule: React.FC = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-[#D4AF37]/20 text-xs">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-[#E5E4E2]/20 text-xs">
         {tabs.map(t => {
           const Icon = t.icon;
           const active = activeTab === t.id;
@@ -913,7 +913,7 @@ export const ManageAppModule: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 active
                   ? 'kc-gold-button font-extrabold'
-                  : 'bg-[#111622] text-slate-300 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50'
+                  : 'bg-[#111622] text-slate-300 border border-[#E5E4E2]/20 hover:border-[#E5E4E2]/50'
               }`}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -925,7 +925,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 1. GENERAL & MAINTENANCE */}
       {activeTab === 'GENERAL' && (
-        <form onSubmit={handleSaveGeneral} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-5 text-xs">
+        <form onSubmit={handleSaveGeneral} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
               <h3 className="text-base font-bold text-white">
@@ -1018,11 +1018,11 @@ export const ManageAppModule: React.FC = () => {
           </div>
 
           <div
-            className="p-4 rounded-xl border border-[#38BDF8]/40 space-y-2"
-            style={{ background: 'linear-gradient(135deg, #131C31 0%, #0F172A 100%)' }}
+            className="p-4 rounded-xl border border-[#059669]/40 space-y-2"
+            style={{ background: 'linear-gradient(135deg, #0D2A1F 0%, #0F172A 100%)' }}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <label className="font-bold text-[#38BDF8] flex items-center gap-1.5">
+              <label className="font-bold text-[#059669] flex items-center gap-1.5">
                 <Share2 className="w-3.5 h-3.5 shrink-0" />
                 <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک (iPhone / Web App Live Link)' : 'iPhone / Web App Live Link'}</span>
               </label>
@@ -1035,7 +1035,7 @@ export const ManageAppModule: React.FC = () => {
               value={webAppLiveUrl}
               onChange={(e) => setWebAppLiveUrl(e.target.value)}
               placeholder="https://your-app.vercel.app"
-              className="w-full px-3 py-2 rounded-xl border border-slate-400/25 bg-[#090D16] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#38BDF8]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-400/25 bg-[#071812] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#059669]"
             />
             <p className="text-[11px] text-[#94A3B8]">
               {isUr
@@ -1054,9 +1054,9 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 2. BRAND & LOGO */}
       {activeTab === 'BRANDING' && (
-        <form onSubmit={handleSaveBranding} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-5 text-xs">
+        <form onSubmit={handleSaveBranding} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-5 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-4 border-b border-slate-800">
-            <div className="p-3 rounded-2xl bg-[#0A0D12] border border-[#D4AF37]/40 self-start">
+            <div className="p-3 rounded-2xl bg-[#0A0D12] border border-[#E5E4E2]/40 self-start">
               <BrandEmblem3D size="lg" />
             </div>
             <div>
@@ -1142,7 +1142,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 3. THEME PRESETS */}
       {activeTab === 'THEMES' && (
-        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div>
             <h3 className="text-base font-bold text-white">{isUr ? 'شاہی لائیو تھیم پری سیٹس (4)' : 'Luxury Live Theme Presets (4)'}</h3>
             <p className="text-slate-400">{isUr ? 'ری لوڈ کیے بغیر فوری طور پر پوری ایپ کا رنگ تبدیل کریں۔' : 'Apply a palette across the entire application immediately without reload.'}</p>
@@ -1158,8 +1158,8 @@ export const ManageAppModule: React.FC = () => {
                   onClick={() => handleSelectTheme(preset.id)}
                   className={`p-4 rounded-2xl border text-left transition-transform active:scale-[0.99] cursor-pointer space-y-3 ${
                     isSelected
-                      ? 'border-[#F5D061] bg-[#161D2C] shadow-[0_0_24px_rgba(212,175,55,0.2)]'
-                      : 'border-slate-800 bg-[#0A0D12] hover:border-[#D4AF37]/40'
+                      ? 'border-[#E5E4E2] bg-[#161D2C] shadow-[0_0_24px_rgba(212,175,55,0.2)]'
+                      : 'border-slate-800 bg-[#0A0D12] hover:border-[#E5E4E2]/40'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -1168,7 +1168,7 @@ export const ManageAppModule: React.FC = () => {
                       <span className="text-[11px] text-slate-400">{isUr ? preset.name : preset.nameUr}</span>
                     </div>
                     {isSelected && (
-                      <span className="px-2 py-0.5 rounded-md bg-[#F5D061] text-[#0A0D12] text-[10px] font-extrabold">
+                      <span className="px-2 py-0.5 rounded-md bg-[#E5E4E2] text-[#0A0D12] text-[10px] font-extrabold">
                         {isUr ? 'فعال' : 'ACTIVE'}
                       </span>
                     )}
@@ -1188,7 +1188,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 4. EN / UR COPY OVERRIDES */}
       {activeTab === 'COPY' && (
-        <form onSubmit={handleSaveCopyOverrides} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <form onSubmit={handleSaveCopyOverrides} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div>
             <h3 className="text-base font-bold text-white">
               {isUr ? 'لائیو انگریزی و اردو متن کی ترتیبات' : 'Live English & Urdu Text Overrides'}
@@ -1267,11 +1267,11 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'ROLES' && (
         <div className="space-y-5 text-xs">
           {/* Multi-Super Admin Manager with Founder Protection */}
-          <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/30 space-y-4">
+          <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/30 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-[#F5D061]" />
+                  <Crown className="w-5 h-5 text-[#E5E4E2]" />
                   <span>{isUr ? 'ملٹی سپر ایڈمن گورننس اور بانی کا تحفظ' : 'Multi-Super Admin Governance & Founder Protection'}</span>
                 </h3>
                 <p className="text-slate-400 mt-0.5">
@@ -1280,13 +1280,13 @@ export const ManageAppModule: React.FC = () => {
                     : 'Strict 4-Role Hierarchy: Super Admin · Admin · Co-Admin · Member. The Founder account cannot be edited, demoted, or suspended by any Additional Super Admin.'}
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-lg bg-[#131C31] border border-[#D4AF37]/40 text-[#F5D061] font-bold self-start">
+              <span className="px-2.5 py-1 rounded-lg bg-[#0D2A1F] border border-[#E5E4E2]/40 text-[#E5E4E2] font-bold self-start">
                 {translate(language, 'founderProtected')}
               </span>
             </div>
 
             {currentIsFounder && (
-              <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/25">
+              <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-xl bg-[#0A0D12] border border-[#E5E4E2]/25">
                 <div className="flex-1 min-w-0">
                   <LuxurySelect
                     compact
@@ -1319,7 +1319,7 @@ export const ManageAppModule: React.FC = () => {
                 return (
                   <div
                     key={sa.id}
-                    className="p-3 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    className="p-3 rounded-xl bg-[#0A0D12] border border-[#E5E4E2]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1330,7 +1330,7 @@ export const ManageAppModule: React.FC = () => {
                     </div>
 
                     {saIsFounder ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#E5E4E2]/40 text-[#E5E4E2] text-[10px] font-bold shrink-0">
                         <Lock className="w-3 h-3" />
                         <span>{isUr ? 'بانی ناقابلِ تبدیلی' : 'Founder Immutable'}</span>
                       </span>
@@ -1352,7 +1352,7 @@ export const ManageAppModule: React.FC = () => {
           </div>
 
           {/* Quotas & District/State Appointments */}
-          <form onSubmit={handleSaveQuotas} className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4">
+          <form onSubmit={handleSaveQuotas} className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-sm text-white">{isUr ? 'آئینی عہدوں کا کوٹہ' : 'Constitutional Role Quotas'}</h3>
@@ -1394,14 +1394,14 @@ export const ManageAppModule: React.FC = () => {
             </div>
 
             <div className="flex justify-end">
-              <button type="submit" className="px-4 py-2 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/40 text-[#38BDF8] font-bold cursor-pointer">
+              <button type="submit" className="px-4 py-2 rounded-xl bg-[#0D2A1F] hover:bg-[#1E293B] border border-[#059669]/40 text-[#059669] font-bold cursor-pointer">
                 {isUr ? 'کوٹہ محفوظ کریں' : 'Save Role Quotas'}
               </button>
             </div>
           </form>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
+            <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-400" />
@@ -1428,7 +1428,7 @@ export const ManageAppModule: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
+            <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-emerald-400" />
@@ -1460,7 +1460,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 6. MEMBER APPROVAL, SUSPENSION & GRANULAR PERMISSIONS */}
       {activeTab === 'MEMBERS' && (
-        <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-white">
@@ -1486,8 +1486,8 @@ export const ManageAppModule: React.FC = () => {
               onClick={() => setMemberApprovalFilter('ALL')}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition cursor-pointer ${
                 memberApprovalFilter === 'ALL'
-                  ? 'kc-gold-button border-[#F5D061]'
-                  : 'bg-[#0A0D12] text-slate-300 border-[#D4AF37]/25 hover:border-[#D4AF37]/60'
+                  ? 'kc-gold-button border-[#E5E4E2]'
+                  : 'bg-[#0A0D12] text-slate-300 border-[#E5E4E2]/25 hover:border-[#E5E4E2]/60'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -1499,7 +1499,7 @@ export const ManageAppModule: React.FC = () => {
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition cursor-pointer ${
                 memberApprovalFilter === 'PENDING'
                   ? 'bg-amber-500 text-[#0A0D12] border-amber-400'
-                  : 'bg-[#0A0D12] text-[#F5D061] border-[#D4AF37]/35 hover:border-[#F5D061]'
+                  : 'bg-[#0A0D12] text-[#E5E4E2] border-[#E5E4E2]/35 hover:border-[#E5E4E2]'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -1507,7 +1507,7 @@ export const ManageAppModule: React.FC = () => {
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   memberApprovalFilter === 'PENDING'
-                    ? 'bg-[#0A0D12] text-[#F5D061]'
+                    ? 'bg-[#0A0D12] text-[#E5E4E2]'
                     : pendingApprovalsCount > 0
                     ? 'bg-rose-600 text-white'
                     : 'bg-slate-800 text-slate-400'
@@ -1539,7 +1539,7 @@ export const ManageAppModule: React.FC = () => {
                           <span className="font-bold text-white truncate">{u.name}</span>
                           <RoleBadge role={u.role} isFounder={targetIsFounder} isAuditOfficer={Boolean(u.isAuditOfficer)} compact />
                           {approvalState === 'pending' && !targetIsFounder && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#F5D061] text-[10px] font-extrabold">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 text-[#E5E4E2] text-[10px] font-extrabold">
                               <Clock className="w-3 h-3" />
                               <span>
                                 {u.profileCompleted === false
@@ -1572,7 +1572,7 @@ export const ManageAppModule: React.FC = () => {
                       </div>
 
                       {targetIsFounder ? (
-                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-bold flex items-center gap-1 self-start">
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-[#E5E4E2]/40 text-[#E5E4E2] text-[10px] font-bold flex items-center gap-1 self-start">
                           <Lock className="w-3 h-3" />
                           <span>{translate(language, 'founderProtected')}</span>
                         </span>
@@ -1581,8 +1581,8 @@ export const ManageAppModule: React.FC = () => {
                           {approvalState !== 'approved' && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const res = approveMemberAccount(u.id, true);
+                              onClick={async () => {
+                                const res = await approveMemberAccount(u.id, true);
                                 showNotice(res.success ? 'success' : 'error', res.message);
                               }}
                               className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 cursor-pointer"
@@ -1594,8 +1594,8 @@ export const ManageAppModule: React.FC = () => {
                           {approvalState !== 'approved' && approvalState !== 'rejected' && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const res = approveMemberAccount(u.id, false);
+                              onClick={async () => {
+                                const res = await approveMemberAccount(u.id, false);
                                 showNotice(res.success ? 'success' : 'error', res.message);
                               }}
                               className="px-2.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-bold flex items-center gap-1 cursor-pointer"
@@ -1608,7 +1608,7 @@ export const ManageAppModule: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setRoleModalUser(u)}
-                              className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-[#231D0B] hover:bg-[#332A10] border border-[#E5E4E2]/55 text-[#E5E4E2] font-extrabold flex items-center gap-1 cursor-pointer"
                             >
                               <Crown className="w-3.5 h-3.5" />
                               <span>{isUr ? 'عہدہ تفویض کریں' : 'Assign Role'}</span>
@@ -1617,9 +1617,9 @@ export const ManageAppModule: React.FC = () => {
                           {currentIsFounder && (
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 const nextVal = !u.isAuditOfficer;
-                                const res = assignAuditOfficer(u.id, nextVal);
+                                const res = await assignAuditOfficer(u.id, nextVal);
                                 if (res.success) {
                                   showNotice(
                                     'success',
@@ -1648,7 +1648,7 @@ export const ManageAppModule: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setEditingPermUserId(isEditing ? null : u.id)}
-                            className="px-2.5 py-1.5 rounded-lg bg-[#161D2C] hover:bg-slate-800 border border-[#D4AF37]/30 text-[#F5D061] font-semibold cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-[#161D2C] hover:bg-slate-800 border border-[#E5E4E2]/30 text-[#E5E4E2] font-semibold cursor-pointer"
                           >
                             {isEditing
                               ? (isUr ? 'اجازتیں چھپائیں' : 'Hide Permissions')
@@ -1764,10 +1764,10 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 7. LIVE NOTIFICATION BROADCAST */}
       {activeTab === 'BROADCAST' && (
-        <form onSubmit={handleBroadcastSubmit} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <form onSubmit={handleBroadcastSubmit} className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Megaphone className="w-5 h-5 text-[#F5D061]" />
+              <Megaphone className="w-5 h-5 text-[#E5E4E2]" />
               <span>{isUr ? 'لائیو سسٹم نوٹیفکیشن براڈکاسٹ' : 'Live System Notification Broadcast'}</span>
             </h3>
             <p className="text-slate-400">
@@ -1824,7 +1824,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 8. DASHBOARD SECTION VISIBILITY */}
       {activeTab === 'VISIBILITY' && (
-        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div>
             <h3 className="text-base font-bold text-white">{isUr ? 'ڈیش بورڈ کے حصوں کی نمائش کا کنٹرول' : 'Dashboard Section Visibility Controls'}</h3>
             <p className="text-slate-400">{isUr ? 'ممبر اور افسر ڈیش بورڈز پر مختلف حصے لائیو دکھائیں یا چھپائیں۔' : 'Show or hide dashboard widgets across Member and Officer dashboards live.'}</p>
@@ -1867,7 +1867,7 @@ export const ManageAppModule: React.FC = () => {
 
       {/* 9. FEATURE TOGGLES */}
       {activeTab === 'FEATURES' && (
-        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4 text-xs">
+        <div className="p-5 sm:p-6 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4 text-xs">
           <div>
             <h3 className="text-base font-bold text-white">{isUr ? 'عالمی فیچر کنٹرولز' : 'Global Feature Toggles'}</h3>
             <p className="text-slate-400">{isUr ? 'ایپ کے بنیادی ماڈیولز کو حقیقی وقت میں فعال یا معطل کریں۔' : 'Enable or disable core modules in real time.'}</p>
@@ -1911,17 +1911,17 @@ export const ManageAppModule: React.FC = () => {
       {activeTab === 'APK_LOCATIONS' && (
         <div className="space-y-6 text-xs">
           {/* Live GitHub Releases Sync Card (PRESERVED) */}
-          <div className="p-5 bg-[#111622] text-white rounded-2xl border border-[#D4AF37]/35 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 bg-[#111622] text-white rounded-2xl border border-[#E5E4E2]/35 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#F5D061]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#E5E4E2]">
                   {isUr ? 'GitHub ریلیزز آٹو سنک' : 'GitHub Releases Auto-Sync'}
                 </span>
                 <a
                   href="https://github.com/asadullah6959-art/kifayatconnect-app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-mono text-slate-300 hover:text-[#F5D061] hover:underline inline-flex items-center gap-1"
+                  className="text-[10px] font-mono text-slate-300 hover:text-[#E5E4E2] hover:underline inline-flex items-center gap-1"
                 >
                   <span>asadullah6959-art/kifayatconnect-app</span>
                   <ExternalLink className="w-3 h-3" />
@@ -1934,7 +1934,7 @@ export const ManageAppModule: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-300">
                 {isUr ? 'انسٹال شدہ بلڈ:' : 'Installed Build:'}{' '}
-                <strong className="font-mono text-[#F5D061]">v{githubRelease?.installedVersion || '1.0.0'}</strong>
+                <strong className="font-mono text-[#E5E4E2]">v{githubRelease?.installedVersion || '1.0.0'}</strong>
                 {githubRelease?.apkUrl
                   ? (isUr ? ` · GitHub ریلیزز سے مصدقہ Android APK (${githubRelease.tagName}) تیار ہے۔` : ` · Verified Android APK (${githubRelease.tagName}) ready from GitHub Releases.`)
                   : (isUr ? ' · تازہ ترین ورژن انسٹال ہے۔ GitHub ریلیز شائع ہوتے ہی APK ڈاؤن لوڈ خودکار فعال ہو جائے گا۔' : ' · Latest Version Installed. APK download activates automatically once a GitHub Release is published.')}
@@ -1957,9 +1957,9 @@ export const ManageAppModule: React.FC = () => {
                 type="button"
                 onClick={handleCheckGitHub}
                 disabled={checkingGitHub}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A0D12] hover:bg-slate-800 text-white border border-[#D4AF37]/30 font-semibold text-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A0D12] hover:bg-slate-800 text-white border border-[#E5E4E2]/30 font-semibold text-xs cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#F5D061] ${checkingGitHub ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-[#E5E4E2] ${checkingGitHub ? 'animate-spin' : ''}`} />
                 <span>{checkingGitHub ? (isUr ? 'جانچ جاری ہے...' : 'Checking...') : (isUr ? 'ریلیزز چیک کریں' : 'Check Releases')}</span>
               </button>
             </div>
@@ -1968,15 +1968,15 @@ export const ManageAppModule: React.FC = () => {
           {/* iPhone / Web App Live Link Setting */}
           <form
             onSubmit={handleSaveLiveLink}
-            className="p-5 rounded-2xl border-[1.5px] border-[#38BDF8]/45 space-y-3"
-            style={{ background: 'linear-gradient(135deg, #131C31 0%, #0F172A 55%, #090D16 100%)' }}
+            className="p-5 rounded-2xl border-[1.5px] border-[#059669]/45 space-y-3"
+            style={{ background: 'linear-gradient(135deg, #0D2A1F 0%, #0F172A 55%, #071812 100%)' }}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-[#38BDF8] flex items-center gap-2">
+              <h3 className="font-bold text-sm text-[#059669] flex items-center gap-2">
                 <Share2 className="w-4 h-4 shrink-0" />
                 <span>{isUr ? 'آئی فون / ویب ایپ لائیو لنک' : 'iPhone / Web App Live Link'}</span>
               </h3>
-              <span className="text-[10px] font-mono text-[#94A3B8] bg-[#090D16] px-2 py-0.5 rounded border border-slate-400/20 truncate max-w-xs">
+              <span className="text-[10px] font-mono text-[#94A3B8] bg-[#071812] px-2 py-0.5 rounded border border-slate-400/20 truncate max-w-xs">
                 {resolveIphoneLiveUrl(webAppLiveUrl)}
               </span>
             </div>
@@ -1986,7 +1986,7 @@ export const ManageAppModule: React.FC = () => {
                 value={webAppLiveUrl}
                 onChange={(e) => setWebAppLiveUrl(e.target.value)}
                 placeholder="https://your-app.vercel.app"
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-400/25 bg-[#090D16] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#38BDF8]"
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-400/25 bg-[#071812] text-[#F8FAFC] font-mono text-[11px] focus:outline-none focus:border-[#059669]"
               />
               <button
                 type="submit"
@@ -1998,9 +1998,9 @@ export const ManageAppModule: React.FC = () => {
           </form>
 
           {/* Manual APK Override */}
-          <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-4">
+          <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-4">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Upload className="w-4 h-4 text-[#F5D061]" />
+              <Upload className="w-4 h-4 text-[#E5E4E2]" />
               <span>{isUr ? 'دستی APK ریلیز اپ لوڈ' : 'Manual APK Release Override'}</span>
             </h3>
 
@@ -2077,7 +2077,7 @@ export const ManageAppModule: React.FC = () => {
                 {appUpdates.map(upd => (
                   <div key={upd.id} className="p-3 rounded-xl bg-[#0A0D12] border border-slate-800 flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="font-mono font-bold text-[#F5D061]">v{upd.version}</span>{' '}
+                      <span className="font-mono font-bold text-[#E5E4E2]">v{upd.version}</span>{' '}
                       <span className="text-white font-semibold">{upd.title}</span>
                     </div>
                     <button
@@ -2096,9 +2096,9 @@ export const ManageAppModule: React.FC = () => {
           </div>
 
           {/* Location Master */}
-          <form onSubmit={handleAddLocation} className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
+          <form onSubmit={handleAddLocation} className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-3">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#F5D061]" />
+              <MapPin className="w-4 h-4 text-[#E5E4E2]" />
               <span>
                 {isUr
                   ? `پاکستان کے اضلاع و شہروں کا ماسٹر (${getAllDistricts().length} رجسٹرڈ)`
@@ -2137,16 +2137,16 @@ export const ManageAppModule: React.FC = () => {
           </form>
 
           {/* Recent Audit Logs Preview */}
-          <div className="p-5 bg-[#111622] rounded-2xl border border-[#D4AF37]/25 space-y-3">
+          <div className="p-5 bg-[#111622] rounded-2xl border border-[#E5E4E2]/25 space-y-3">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <FileClock className="w-4 h-4 text-[#F5D061]" />
+              <FileClock className="w-4 h-4 text-[#E5E4E2]" />
               <span>{isUr ? `حالیہ سیکیورٹی و کردار آڈٹ لاگز (${auditLogs.length})` : `Recent Security & Role Audit Logs (${auditLogs.length})`}</span>
             </h3>
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {auditLogs.slice(0, 12).map(log => (
                 <div key={log.id} className="p-2.5 rounded-xl bg-[#0A0D12] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <div className="min-w-0">
-                    <span className="font-bold text-[#F5D061]">{log.action}</span>{' '}
+                    <span className="font-bold text-[#E5E4E2]">{log.action}</span>{' '}
                     <span className="text-slate-300">— {log.details}</span>
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono shrink-0">
@@ -2163,12 +2163,12 @@ export const ManageAppModule: React.FC = () => {
       {staffModalOpen && (
         <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
           <div
-            className="bg-[#111622] kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full border border-[#D4AF37]/35 shadow-2xl space-y-4 my-auto overflow-y-auto"
+            className="bg-[#111622] kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full border border-[#E5E4E2]/35 shadow-2xl space-y-4 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#E5E4E2]/20">
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold text-[#F5D061] uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-[#E5E4E2] uppercase tracking-wider block">
                   {isUr ? 'سپر ایڈمن تقرری' : 'Super Admin Appointment'}
                 </span>
                 <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
@@ -2184,7 +2184,7 @@ export const ManageAppModule: React.FC = () => {
                 type="button"
                 onClick={() => setStaffModalOpen(false)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>

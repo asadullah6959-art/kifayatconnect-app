@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   User as UserIcon,
@@ -205,10 +205,10 @@ export const ProfileSettings: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {language === 'ur' ? 'شناخت اور پروفائل' : 'Identity & Profile'}
             </span>
             <RoleBadge
@@ -219,7 +219,7 @@ export const ProfileSettings: React.FC = () => {
             />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <UserIcon className="w-6 h-6 text-[#F5D061]" />
+            <UserIcon className="w-6 h-6 text-[#E5E4E2]" />
             <span>{t('navProfile')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -233,9 +233,9 @@ export const ProfileSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#131C31] hover:bg-[#1E293B] text-[#F5D061] text-xs font-bold rounded-xl border border-slate-400/20 shadow-md transition-colors cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#0D2A1F] hover:bg-[#1E293B] text-[#E5E4E2] text-xs font-bold rounded-xl border border-slate-400/20 shadow-md transition-colors cursor-pointer"
           >
-            <IdCard className="w-3.5 h-3.5 text-[#38BDF8]" />
+            <IdCard className="w-3.5 h-3.5 text-[#059669]" />
             <span>{t('viewDigitalId')}</span>
           </button>
         </div>
@@ -252,7 +252,7 @@ export const ProfileSettings: React.FC = () => {
             : undefined
         }
         className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-          isFaizKhelUser(currentUser) ? 'border-[1.5px] border-[#FDE047]' : 'kc-obsidian-card'
+          isFaizKhelUser(currentUser) ? 'border-[1.5px] border-[#CBD5E1]' : 'kc-obsidian-card'
         }`}
       >
         <div className="flex items-center gap-4">
@@ -263,7 +263,7 @@ export const ProfileSettings: React.FC = () => {
                   src={avatarUrl}
                   alt={currentUser.name}
                   className={`w-20 h-20 rounded-2xl object-cover border-2 ${
-                    isFaizKhelUser(currentUser) ? 'border-[#FDE047]' : 'border-[#38BDF8]/65'
+                    isFaizKhelUser(currentUser) ? 'border-[#CBD5E1]' : 'border-[#059669]/65'
                   }`}
                 />
                 <button
@@ -272,7 +272,7 @@ export const ProfileSettings: React.FC = () => {
                   aria-label="Remove profile photo"
                   title={language === 'ur' ? 'تصویر ہٹائیں' : 'Remove photo'}
                   style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                  className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5 stroke-[2.75]" />
                 </button>
@@ -281,14 +281,14 @@ export const ProfileSettings: React.FC = () => {
               <div
                 className={`w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-2xl border-2 ${
                   isFaizKhelUser(currentUser)
-                    ? 'bg-[#1C1404] text-[#FEF08A] border-[#FDE047]'
-                    : 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/55'
+                    ? 'bg-[#1C1404] text-[#E5E4E2] border-[#CBD5E1]'
+                    : 'bg-[#0D2A1F] text-[#059669] border-[#059669]/55'
                 }`}
               >
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <label className="kc-pressable absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] text-[#090D16] flex items-center justify-center cursor-pointer shadow-md border-2 border-[#0F172A]">
+            <label className="kc-pressable absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#FCE38A] via-[#E5E4E2] to-[#8A6218] text-[#071812] flex items-center justify-center cursor-pointer shadow-md border-2 border-[#0F172A]">
               <Camera className="w-3.5 h-3.5" />
               <input ref={avatarBadgeInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
             </label>
@@ -297,12 +297,12 @@ export const ProfileSettings: React.FC = () => {
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-6 h-6" />}
-              <h2 className={`text-base font-bold truncate ${isFaizKhelUser(currentUser) ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
+              <h2 className={`text-base font-bold truncate ${isFaizKhelUser(currentUser) ? 'text-[#E5E4E2]' : 'text-[#F8FAFC]'}`}>
                 {currentUser.name}
               </h2>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs font-mono text-[#F5D061] font-semibold">
+              <p className="text-xs font-mono text-[#E5E4E2] font-semibold">
                 {currentUser.membershipId || 'KC-PENDING'}
               </p>
               <TabbarBadge user={currentUser} language={language} compact />
@@ -311,13 +311,13 @@ export const ProfileSettings: React.FC = () => {
               {language === 'ur' ? 'کیمرہ یا گیلری سے تصویر اپ لوڈ کریں' : 'Capture from camera or choose a photo from gallery'}
             </p>
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/45 text-[#FDE047] text-[11px] font-bold cursor-pointer">
+              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#E5E4E2]/20 hover:bg-[#E5E4E2]/30 border border-[#E5E4E2]/45 text-[#CBD5E1] text-[11px] font-bold cursor-pointer">
                 <Camera className="w-3.5 h-3.5" />
                 <span>{language === 'ur' ? 'کیمرہ' : 'Camera'}</span>
                 <input ref={avatarCameraInputRef} type="file" accept="image/*" capture="user" onChange={handleAvatarUpload} className="hidden" />
               </label>
-              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/35 text-slate-200 text-[11px] font-bold cursor-pointer">
-                <ImageIcon className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <label className="kc-pressable inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#071812] hover:bg-[#161F33] border border-[#E5E4E2]/35 text-slate-200 text-[11px] font-bold cursor-pointer">
+                <ImageIcon className="w-3.5 h-3.5 text-[#059669]" />
                 <span>{language === 'ur' ? 'گیلری' : 'Gallery'}</span>
                 <input ref={avatarGalleryInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </label>
@@ -327,7 +327,7 @@ export const ProfileSettings: React.FC = () => {
         </div>
 
         <div className="kc-emerald-panel flex items-start gap-2 p-3 rounded-xl text-[11px] text-[#F8FAFC] max-w-xs">
-          <Lock className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+          <Lock className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
           <span>
             {language === 'ur'
               ? 'شناختی کارڈ اور ممبرشپ آئی ڈی آڈٹ کے تحت محفوظ اور قیادت سے تصدیق شدہ ہیں۔'
@@ -373,7 +373,7 @@ export const ProfileSettings: React.FC = () => {
               placeholder="e.g. 00000-0000000-0"
               className={`w-full px-3 py-2.5 font-mono rounded-xl text-xs ${
                 currentUser.cnic
-                  ? 'border border-[#D4AF37]/20 bg-[#090D16]/75 text-slate-400 cursor-not-allowed'
+                  ? 'border border-[#E5E4E2]/20 bg-[#071812]/75 text-slate-400 cursor-not-allowed'
                   : 'kc-luxury-input'
               }`}
             />
@@ -422,9 +422,9 @@ export const ProfileSettings: React.FC = () => {
         </div>
 
         {/* Tabbar / Branch / Clan Selection */}
-        <div className="p-3.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 space-y-3">
+        <div className="p-3.5 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <label className="font-bold text-[#F5D061] text-xs">
+            <label className="font-bold text-[#E5E4E2] text-xs">
               {t('tabbarLabel')}
             </label>
             <TabbarBadge
@@ -487,7 +487,7 @@ export const ProfileSettings: React.FC = () => {
                   value={customTabbarUrdu}
                   onChange={(e) => setCustomTabbarUrdu(e.target.value)}
                   placeholder="مثال: یوسفزئی"
-                  className="kc-luxury-input w-full px-3 py-2 rounded-xl text-xs text-[#F5D061] font-urdu-auto"
+                  className="kc-luxury-input w-full px-3 py-2 rounded-xl text-xs text-[#E5E4E2] font-urdu-auto"
                 />
               </div>
             </div>
@@ -503,7 +503,7 @@ export const ProfileSettings: React.FC = () => {
           />
 
           <div>
-            <label className="block text-[11px] font-bold text-[#F5D061] mb-1 uppercase tracking-wider">
+            <label className="block text-[11px] font-bold text-[#E5E4E2] mb-1 uppercase tracking-wider">
               {language === 'ur' ? 'یونین کونسل / سیکٹر' : 'Union Council / Sector'}
             </label>
             <input
@@ -528,7 +528,7 @@ export const ProfileSettings: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#D4AF37]/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#E5E4E2]/20">
           <div>
             <label className="font-semibold text-slate-200 block mb-1">
               {language === 'ur' ? 'ماہانہ فلاحی عہد (PKR)' : 'Monthly Welfare Pledge (PKR)'}
@@ -558,7 +558,7 @@ export const ProfileSettings: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-end pt-3 border-t border-[#D4AF37]/20">
+        <div className="flex items-center justify-end pt-3 border-t border-[#E5E4E2]/20">
           <button
             type="submit"
             className="kc-pressable kc-gold-button flex items-center gap-1.5 px-5 py-2.5 font-extrabold rounded-xl cursor-pointer"
@@ -574,14 +574,14 @@ export const ProfileSettings: React.FC = () => {
         onSubmit={handlePasswordSubmit}
         className="kc-obsidian-card rounded-2xl p-5 sm:p-6 space-y-4 text-xs"
       >
-        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#D4AF37]/20">
+        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#E5E4E2]/20">
           <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-[#F5D061]" />
+            <KeyRound className="w-4 h-4 text-[#E5E4E2]" />
             <h3 className="text-sm font-bold text-white">
               {language === 'ur' ? 'اکاؤنٹ پاس ورڈ سیکیورٹی' : 'Account Password Security'}
             </h3>
           </div>
-          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[#F5D061]">
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-[#E5E4E2]/15 border border-[#E5E4E2]/35 text-[#E5E4E2]">
             {currentUser.hasPassword
               ? (language === 'ur' ? 'پاس ورڈ مقرر ہے' : 'Password Set')
               : (language === 'ur' ? 'ابھی پاس ورڈ نہیں' : 'No Password Yet')}
@@ -647,7 +647,7 @@ export const ProfileSettings: React.FC = () => {
           <button
             type="submit"
             disabled={isUpdatingPwd}
-            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#090D16] hover:bg-[#161F33] text-[#F5D061] border border-[#D4AF37]/45 font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+            className="kc-pressable flex items-center gap-1.5 px-4 py-2 bg-[#071812] hover:bg-[#161F33] text-[#E5E4E2] border border-[#E5E4E2]/45 font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
           >
             <KeyRound className="w-3.5 h-3.5" />
             <span>

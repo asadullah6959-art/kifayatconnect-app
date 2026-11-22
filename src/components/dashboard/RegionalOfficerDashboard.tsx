@@ -31,6 +31,18 @@ export const RegionalOfficerDashboard: React.FC = () => {
     language 
   } = useApp();
 
+  const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
+  const [recommendation, setRecommendation] = useState<'APPROVE' | 'REJECT'>('APPROVE');
+  const [remarks, setRemarks] = useState<string>('');
+  const [activeComplaintId, setActiveComplaintId] = useState<string | null>(null);
+  const [complaintNote, setComplaintNote] = useState<string>('');
+  const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementContent, setAnnouncementContent] = useState('');
+  const [announcementUrgency, setAnnouncementUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
+
+  if (!currentUser) return null;
+
   // Strict District & Regional Scoping:
   const locFallback = mapLegacyRegionToHierarchy(currentUser.region);
   const assignedDistrict = currentUser.district || locFallback.district;
@@ -63,20 +75,6 @@ export const RegionalOfficerDashboard: React.FC = () => {
   });
 
   // Review interaction state
-  const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
-  const [recommendation, setRecommendation] = useState<'APPROVE' | 'REJECT'>('APPROVE');
-  const [remarks, setRemarks] = useState<string>('');
-
-  // Complaint response state
-  const [activeComplaintId, setActiveComplaintId] = useState<string | null>(null);
-  const [complaintNote, setComplaintNote] = useState<string>('');
-
-  // New regional bulletin state
-  const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
-  const [announcementTitle, setAnnouncementTitle] = useState('');
-  const [announcementContent, setAnnouncementContent] = useState('');
-  const [announcementUrgency, setAnnouncementUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
-
   const handleSubmitRecommendation = (appId: string) => {
     if (!remarks.trim()) return;
     recommendApplication(appId, recommendation, remarks);
@@ -90,7 +88,10 @@ export const RegionalOfficerDashboard: React.FC = () => {
     publishAnnouncement({
       title: announcementTitle,
       content: announcementContent,
-      targetRegion: assignedRegion,
+      announcementType: 'COMMUNITY',
+      targetScope: 'DISTRICT',
+      targetStateProvince: assignedProvince,
+      targetDistrict: assignedDistrict,
       urgency: announcementUrgency,
       isPinned: false
     });

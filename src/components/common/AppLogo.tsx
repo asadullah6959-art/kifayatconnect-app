@@ -1,10 +1,4 @@
-// CRITICAL: DO NOT REPLACE, MODIFY, OR OVERWRITE THIS LOGO IN ANY FUTURE UPDATE
-// Permanently locked official Kifayat Connect circular Gold & Emerald Royal Crown Unity logo.
-// Single source of truth used across Top Header, Mobile Menu / Side Drawer, Login Screen,
-// Splash Screen, Digital ID Cards, Official Receipts, Rukniyat Forms, and Live Community Room.
-
 import React from 'react';
-import kcUnityEmblem from '../../assets/images/kc-unity-emblem.png';
 
 export interface AppLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -30,7 +24,7 @@ export const AppLogo: React.FC<AppLogoProps> = React.memo(({
   const showHalo = halo || animated;
   return (
     <div
-      data-locked-logo="kifayat-connect-unity"
+      data-locked-logo="sui-khel-ittehad-unity"
       className={`kc-app-logo-locked relative inline-flex items-center justify-center select-none shrink-0 rounded-full ${SIZE_MAP[size]} ${
         animated ? 'kc-animate-crown-float' : ''
       } ${className}`}
@@ -39,7 +33,7 @@ export const AppLogo: React.FC<AppLogoProps> = React.memo(({
         WebkitFilter: 'none',
         mixBlendMode: 'normal',
       }}
-      aria-label="Kifayat Connect Unity"
+      aria-label="SUI KHEL ITTEHAD (SKI) Unity"
     >
       {showHalo && (
         <span
@@ -48,10 +42,10 @@ export const AppLogo: React.FC<AppLogoProps> = React.memo(({
         />
       )}
       <img
-        src={kcUnityEmblem}
-        alt="Kifayat Connect Unity"
+        src="/kc-emblem.svg"
+        alt="SUI KHEL ITTEHAD Unity"
         draggable={false}
-        className="kc-app-logo-locked relative z-10 w-full h-full rounded-full object-contain ring-1 ring-[#D4AF37]/45 drop-shadow-[0_6px_14px_rgba(212,175,55,0.34)]"
+        className="kc-app-logo-locked relative z-10 w-full h-full rounded-full object-contain ring-1 ring-[#E5E4E2]/55 drop-shadow-[0_6px_14px_rgba(5,150,105,0.38)]"
         style={{
           filter: 'none',
           WebkitFilter: 'none',

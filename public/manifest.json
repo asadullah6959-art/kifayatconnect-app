@@ -1,13 +1,13 @@
 {
   "id": "./",
-  "name": "Kifayat Connect",
-  "short_name": "Kifayat",
+  "name": "SUI KHEL ITTEHAD",
+  "short_name": "SKI",
   "description": "Role-Based Governance, Office-Bearer Appointments, and Welfare Management System in Pakistan",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#070D14",
-  "theme_color": "#070D14",
+  "background_color": "#071812",
+  "theme_color": "#046307",
   "orientation": "portrait",
   "categories": ["social", "governance", "productivity"],
   "icons": [

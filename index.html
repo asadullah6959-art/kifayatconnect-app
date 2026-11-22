@@ -1,20 +1,20 @@
-<!doctype html>
-<html lang="en" class="dark" style="background-color:#070D14;">
+﻿<!doctype html>
+<html lang="en" class="dark" style="background-color:#071812;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Kifayat Connect – Luxury Community Governance & Welfare System</title>
-    <meta name="description" content="Multi-tier role-based governance system for Kifayat Connect with Super Admin, Admin, Co-Admin, and Member dashboards, Office-Bearers, VIP Digital ID, and Real-Time Chat." />
-    <meta property="og:title" content="Kifayat Connect – Luxury Community Governance & Welfare System" />
+    <title>SUI KHEL ITTEHAD (SKI) – Community Governance & Welfare System</title>
+    <meta name="description" content="SUI KHEL ITTEHAD role-based community governance, welfare management, payments, and digital identity system." />
+    <meta property="og:title" content="SUI KHEL ITTEHAD (SKI)" />
     <meta property="og:description" content="Together for a Better Tomorrow — Community Governance and Welfare Management for Pakistan." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#070D14" />
+    <meta name="theme-color" content="#046307" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Kifayat Connect" />
+    <meta name="apple-mobile-web-app-title" content="SUI KHEL ITTEHAD" />
     <meta name="format-detection" content="telephone=no" />
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" type="image/svg+xml" href="./kc-emblem.svg" />
@@ -30,7 +30,7 @@
         width: 100%;
         min-height: 100vh;
         min-height: 100dvh;
-        background-color: #070D14;
+        background-color: #071812;
         color: #F8FAFC;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -43,19 +43,19 @@
         align-items: center;
         justify-content: center;
         padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
-        background: radial-gradient(circle at 50% 22%, rgba(56, 189, 248, 0.12) 0%, #0D1624 48%, #070D14 100%);
+        background: radial-gradient(circle at 50% 22%, rgba(5, 150, 105, 0.28) 0%, #0D2A1F 48%, #071812 100%);
         font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
         text-align: center;
       }
     </style>
   </head>
-  <body class="bg-[#070D14] text-[#F8FAFC] antialiased selection:bg-[#38BDF8] selection:text-[#070D14]">
+  <body class="bg-[#071812] text-[#F8FAFC] antialiased selection:bg-[#059669] selection:text-[#FFFFFF]">
     <div id="root">
-      <!-- Instant (<50ms) Fintech Dark Obsidian Slate & Royal Gold Shell before JS mounts -->
-      <div class="kc-boot-shell" aria-label="Kifayat Connect">
-        <img src="./pwa-192x192.png" width="96" height="96" alt="Kifayat Connect" style="border-radius:9999px;display:block;filter:drop-shadow(0 8px 22px rgba(212,175,55,0.34));" />
-        <div style="margin-top:16px;font-size:18px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#F8FAFC;">KIFAYAT CONNECT</div>
-        <div style="margin-top:6px;font-size:12px;font-weight:600;color:#38BDF8;">Together for a Better Tomorrow</div>
+      <!-- Instant Emerald & Platinum brand shell before React mounts -->
+      <div class="kc-boot-shell" aria-label="SUI KHEL ITTEHAD">
+        <img src="./kc-emblem.svg" width="96" height="96" alt="SUI KHEL ITTEHAD SKI" style="border-radius:9999px;display:block;filter:drop-shadow(0 8px 22px rgba(5,150,105,0.34));" />
+        <div style="margin-top:16px;font-size:18px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#E5E4E2;">SUI KHEL ITTEHAD</div>
+        <div style="margin-top:6px;font-size:12px;font-weight:600;color:#7DD3A7;">SUI KHEL ITTEHAD (SKI)</div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
@@ -67,7 +67,7 @@
             if ('caches' in window) {
               caches.keys().then(function (keys) {
                 keys.forEach(function (k) {
-                  if (k.indexOf('kifayat-connect-v') === 0) {
+                  if (k.indexOf('ski-connect-v') === 0) {
                     caches.delete(k).catch(function () {});
                   }
                 });

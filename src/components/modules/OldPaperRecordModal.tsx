@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import {
   X,
   Camera,
@@ -381,13 +381,13 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
   };
 
   const inputCls =
-    'w-full px-3 py-2 bg-[#0A111D] border border-[#D4AF37]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FDE047]';
+    'w-full px-3 py-2 bg-[#0D2A1F] border border-[#E5E4E2]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#CBD5E1]';
 
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-[calc(100vw-20px)] sm:max-w-2xl kc-modal-panel flex flex-col bg-[#070D14] border border-[#D4AF37]/55 rounded-3xl shadow-2xl overflow-hidden box-border my-auto">
+      <div className="w-full max-w-[calc(100vw-20px)] sm:max-w-2xl kc-modal-panel flex flex-col bg-[#071812] border border-[#E5E4E2]/55 rounded-3xl shadow-2xl overflow-hidden box-border my-auto">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2.5 px-3.5 sm:px-5 py-3.5 bg-[#0D1726] border-b border-[#D4AF37]/30 shrink-0">
+        <div className="flex items-start justify-between gap-2.5 px-3.5 sm:px-5 py-3.5 bg-[#0D1726] border-b border-[#E5E4E2]/30 shrink-0">
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
               <FileText className="w-5 h-5" />
@@ -407,7 +407,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
             type="button"
             onClick={handleResetAndClose}
             aria-label={isUr ? 'بند کریں' : 'Close modal'}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#D4AF37]/30 text-slate-200 hover:text-white shrink-0 cursor-pointer kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 border border-[#E5E4E2]/30 text-slate-200 hover:text-white shrink-0 cursor-pointer kc-pressable"
           >
             <X className="w-5 h-5" />
           </button>
@@ -425,14 +425,14 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   ? 'رکن کی پروفائل اور رسید مہر کے ساتھ فعال کر دی گئی ہے۔'
                   : 'Member record is ACTIVE and the Official Mohar Receipt is ready immediately.'}
               </p>
-              <div className="inline-block px-4 py-2 rounded-xl bg-[#070D14] border border-[#D4AF37]/50 font-mono text-lg font-black text-[#FDE047]">
+              <div className="inline-block px-4 py-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/50 font-mono text-lg font-black text-[#CBD5E1]">
                 {savedSerial}
               </div>
               <div>
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] font-extrabold text-sm"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] font-extrabold text-sm"
                 >
                   {isUr ? 'مکمل / بند کریں' : 'Done'}
                 </button>
@@ -447,8 +447,8 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   onClick={() => setEntryMode('SCAN')}
                   className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
                     entryMode === 'SCAN'
-                      ? 'bg-amber-500/15 border-[#FDE047] text-amber-200'
-                      : 'bg-[#11192C] border-slate-700 text-slate-300'
+                      ? 'bg-amber-500/15 border-[#CBD5E1] text-amber-200'
+                      : 'bg-[#0D2A1F] border-slate-700 text-slate-300'
                   }`}
                 >
                   <Camera className="w-5 h-5 text-amber-300 shrink-0" />
@@ -463,7 +463,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                   className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
                     entryMode === 'MANUAL'
                       ? 'bg-emerald-500/15 border-emerald-400 text-emerald-200'
-                      : 'bg-[#11192C] border-slate-700 text-slate-300'
+                      : 'bg-[#0D2A1F] border-slate-700 text-slate-300'
                   }`}
                 >
                   <Edit3 className="w-5 h-5 text-emerald-300 shrink-0" />
@@ -475,7 +475,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
               </div>
 
               {/* Photo Upload + AI Scan Box */}
-              <div className="p-4 rounded-2xl bg-[#11192C] border border-[#D4AF37]/35 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#0D2A1F] border border-[#E5E4E2]/35 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
                     {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
@@ -511,8 +511,8 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                       className="hidden"
                     />
                   </label>
-                  <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A111D] hover:bg-[#161F33] border border-[#D4AF37]/40 text-slate-200 text-xs font-bold cursor-pointer">
-                    <ImageIcon className="w-4 h-4 text-[#FDE047] shrink-0" />
+                  <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#0D2A1F] hover:bg-[#161F33] border border-[#E5E4E2]/40 text-slate-200 text-xs font-bold cursor-pointer">
+                    <ImageIcon className="w-4 h-4 text-[#CBD5E1] shrink-0" />
                     <span>{isUr ? '🖼️ گیلری' : '🖼️ Choose from Gallery'}</span>
                     <input
                       ref={galleryInputRef}
@@ -526,7 +526,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                     type="button"
                     disabled={isScanning}
                     onClick={handleAiAutoClick}
-                    className="kc-pressable min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] text-xs font-black shadow-md hover:brightness-110 disabled:opacity-60 cursor-pointer"
+                    className="kc-pressable min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] text-xs font-black shadow-md hover:brightness-110 disabled:opacity-60 cursor-pointer"
                   >
                     {isScanning ? (
                       <Loader2 className="w-4 h-4 animate-spin shrink-0" />
@@ -549,7 +549,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                 </div>
 
                 {paperPhotoUrl && (
-                  <div className="relative rounded-xl overflow-hidden bg-[#070D14] border border-[#D4AF37]/40">
+                  <div className="relative rounded-xl overflow-hidden bg-[#071812] border border-[#E5E4E2]/40">
                     <img
                       src={paperPhotoUrl}
                       alt="Old paper proof"
@@ -561,7 +561,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                       aria-label="Remove uploaded image"
                       title={isUr ? 'تصویر ہٹائیں' : 'Remove image'}
                       style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                      className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                      className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                     >
                       <X className="w-4 h-4 stroke-[2.75]" />
                     </button>
@@ -730,7 +730,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                     value={amount}
                     onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
                     placeholder="e.g. 1200"
-                    className={`${inputCls} font-mono font-bold text-[#FDE047]`}
+                    className={`${inputCls} font-mono font-bold text-[#CBD5E1]`}
                   />
                 </div>
 
@@ -824,7 +824,7 @@ export const OldPaperRecordModal: React.FC<OldPaperRecordModalProps> = ({ isOpen
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] text-xs font-black shadow-lg disabled:opacity-50 cursor-pointer"
+                  className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] text-xs font-black shadow-lg disabled:opacity-50 cursor-pointer"
                 >
                   {isSaving
                     ? isUr
