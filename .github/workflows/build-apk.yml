@@ -47,16 +47,10 @@ jobs:
           if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "android/app/$ANDROID_KEYSTORE_FILE"
             echo "release_enabled=true" >> "$GITHUB_OUTPUT"
+            echo "signing_mode=release-keystore" >> "$GITHUB_OUTPUT"
           else
             echo "release_enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Require existing signing key for app-update releases
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [ "${{ steps.signing.outputs.release_enabled }}" != "true" ]; then
-            echo "Configure the original Android signing key as repository Actions secrets before publishing an in-place app update."
-            exit 1
+            echo "signing_mode=debug-keystore" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies and build web app
@@ -138,13 +132,17 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
           cd ..
-          mv android/app/build/outputs/apk/debug/app-debug.apk "SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}
           path: SUI-KHEL-ITTEHAD-debug-v1.0.${{ github.run_number }}.apk
+
+      - name: Prepare debug-signed APK for latest release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk SUI-KHEL-ITTEHAD.apk
 
       - name: Build signed release APK
         if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -157,15 +155,17 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk SUI-KHEL-ITTEHAD.apk
 
       - name: Publish APK to GitHub Releases
-        if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: SUI KHEL ITTEHAD Latest APK
           body: |
             APK version: ${{ steps.build-version.outputs.version }}
+            Signing mode: ${{ steps.signing.outputs.signing_mode }}
 
-            Automated signed Android APK release for SUI KHEL ITTEHAD.
+            Automated Android APK release for SUI KHEL ITTEHAD.
+            If signed with the GitHub Actions debug keystore, this APK may not update an installation signed by a different key.
             Built from commit ${{ github.sha }}.
           files: SUI-KHEL-ITTEHAD.apk
           fail_on_unmatched_files: true
