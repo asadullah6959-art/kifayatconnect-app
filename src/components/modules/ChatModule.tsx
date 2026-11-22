@@ -1377,7 +1377,7 @@ const ChatModuleContent: React.FC = () => {
   const actorRank = getRoleHierarchyRank(currentUser.role, isFounder);
 
   return (
-    <div className="space-y-4 w-full max-w-full overflow-x-hidden box-border">
+    <div className="ski-chat-preserve space-y-4 w-full max-w-full overflow-x-hidden box-border">
       {/* Header + Dual Mode Switcher (shown in Direct Messages view) */}
       {chatMode === 'DIRECT' && (
         <>
@@ -1470,7 +1470,7 @@ const ChatModuleContent: React.FC = () => {
           MODE 1: FULL-SCREEN ULTRA-LUXURY LIVE COMMUNITY ROOM (PORTAL)
           ============================================================ */}
       {chatMode === 'COMMUNITY' && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] w-full max-w-[100vw] h-[100dvh] flex flex-col overflow-hidden bg-[#090D16] overscroll-none touch-pan-y">
+        <div className="ski-chat-preserve fixed inset-0 z-[9999] w-full max-w-[100vw] h-[100dvh] flex flex-col overflow-hidden bg-[#090D16] overscroll-none touch-pan-y">
           {/* Live Scenic GPU-Only SVG/CSS Wallpaper Background */}
           <ScenicChatBackground
             themeId={activeThemeId}

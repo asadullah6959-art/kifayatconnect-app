@@ -197,15 +197,15 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
 
   return (
     <div
-      className="relative min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#F8FAFC] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="ski-auth-screen relative min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#102338] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
       style={{
-        backgroundColor: '#071812',
+        backgroundColor: '#E6F2FA',
         backgroundImage:
-          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #071812 100%)'
+          'radial-gradient(circle at 50% 8%, rgba(255,255,255,0.96) 0%, rgba(203,227,245,0.88) 36%, rgba(250,246,238,0.96) 100%)'
       }}
     >
-      {/* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */}
-      <div aria-hidden="true" className="fixed inset-0 kc-geo-watermark pointer-events-none z-0" />
+      {/* Subtle sky-and-champagne geometric watermark */}
+      <div aria-hidden="true" className="fixed inset-0 kc-geo-watermark ski-geo-watermark pointer-events-none z-0" />
 
       {/* Top Bar */}
       <div className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-1">
@@ -231,9 +231,9 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
         </button>
       </div>
 
-      {/* Main Fintech Wallet Dark Slate & Gold Card */}
+      {/* Frosted sky-and-ivory sign-in card */}
       <div className="relative z-10 w-full max-w-md mx-auto my-5 kc-obsidian-card rounded-2xl overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-[#059669] via-[#E5E4E2] to-[#CBD5E1]" />
+        <div className="h-1.5 bg-gradient-to-r from-[#102338] via-[#C8A45D] to-[#CBE3F5]" />
 
         <div className="p-5 sm:p-6 space-y-5">
           <div className="text-center space-y-2">

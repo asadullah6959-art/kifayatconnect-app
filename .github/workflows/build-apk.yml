@@ -45,6 +45,14 @@ jobs:
             echo "release_enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Require existing signing key for app-update releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ "${{ steps.signing.outputs.release_enabled }}" != "true" ]; then
+            echo "Configure the original Android signing key as repository Actions secrets before publishing an in-place app update."
+            exit 1
+          fi
+
       - name: Install dependencies and build web app
         run: |
           npm install --legacy-peer-deps
@@ -55,7 +63,7 @@ jobs:
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
           if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
-            echo '{"appId": "com.suikhelittehad.app", "appName": "SUI KHEL ITTEHAD", "webDir": "dist"}' > capacitor.config.json
+            echo '{"appId": "com.kifayatconnect.app", "appName": "SUI KHEL ITTEHAD", "webDir": "dist"}' > capacitor.config.json
           fi
           if [ ! -f "android/gradlew" ]; then
             mkdir -p /tmp/kc_android_preserve
@@ -68,8 +76,8 @@ jobs:
             if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
               cp android/app/src/main/AndroidManifest.xml /tmp/kc_android_preserve/AndroidManifest.xml
             fi
-            if [ -f "android/app/src/main/java/com/suikhelittehad/app/MainActivity.java" ]; then
-              cp android/app/src/main/java/com/suikhelittehad/app/MainActivity.java /tmp/kc_android_preserve/MainActivity.java
+            if [ -f "android/app/src/main/java/com/kifayatconnect/app/MainActivity.java" ]; then
+              cp android/app/src/main/java/com/kifayatconnect/app/MainActivity.java /tmp/kc_android_preserve/MainActivity.java
             fi
             if ls -d android/app/src/main/res/mipmap-* >/dev/null 2>&1; then
               mkdir -p /tmp/kc_android_preserve/res
@@ -95,8 +103,8 @@ jobs:
               cp /tmp/kc_android_preserve/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
             fi
             if [ -f "/tmp/kc_android_preserve/MainActivity.java" ]; then
-              mkdir -p android/app/src/main/java/com/suikhelittehad/app
-              cp /tmp/kc_android_preserve/MainActivity.java android/app/src/main/java/com/suikhelittehad/app/MainActivity.java
+              mkdir -p android/app/src/main/java/com/kifayatconnect/app
+              cp /tmp/kc_android_preserve/MainActivity.java android/app/src/main/java/com/kifayatconnect/app/MainActivity.java
             fi
             if ls -d /tmp/kc_android_preserve/res/mipmap-* >/dev/null 2>&1; then
               rm -rf android/app/src/main/res/mipmap-*

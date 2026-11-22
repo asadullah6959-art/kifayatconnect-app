@@ -251,14 +251,14 @@ const MainLayout: React.FC = () => {
 
   return (
     <div
-      className="relative h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-[100vw] overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC] box-border"
+      className="relative h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-[100vw] overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#102338] box-border"
       style={{
-        backgroundColor: 'var(--kc-bg, #071812)',
+        backgroundColor: 'var(--kc-bg, #E6F2FA)',
         backgroundImage:
-          'radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.10), transparent 44%), radial-gradient(circle at 12% 88%, rgba(212, 175, 55, 0.08), transparent 54%)'
+          'radial-gradient(circle at 82% 6%, rgba(203, 227, 245, 0.55), transparent 44%), radial-gradient(circle at 12% 88%, rgba(200, 164, 93, 0.12), transparent 54%)'
       }}
     >
-      {/* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */}
+      {/* Subtle sky-blue geometric lattice watermark */}
       <div aria-hidden="true" className="absolute inset-0 kc-geo-watermark pointer-events-none z-0" />
 
       {/* Fixed Mobile Top Navigation Bar */}

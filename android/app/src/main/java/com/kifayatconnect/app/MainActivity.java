@@ -1,4 +1,4 @@
-package com.suikhelittehad.app;
+package com.kifayatconnect.app;
 
 import android.Manifest;
 import android.content.Context;
@@ -18,9 +18,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
+import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
-    private static final int REQ_RECORD_AUDIO = 4001;
+    private static final int REQ_WEB_MEDIA = 4001;
     private static final int REQ_GALLERY_MEDIA = 4002;
 
     private PermissionRequest pendingPermissionRequest;
@@ -28,6 +29,35 @@ public class MainActivity extends BridgeActivity {
     private ValueCallback<Uri[]> pendingFilePathCallback;
     private WebChromeClient.FileChooserParams pendingFileChooserParams;
     private SKIWebChromeClient customChromeClient;
+
+    private ArrayList<String> getRequiredMediaPermissions(PermissionRequest request) {
+        ArrayList<String> required = new ArrayList<>();
+        String[] resources = request.getResources();
+        if (resources == null) return required;
+
+        for (String resource : resources) {
+            String permission = null;
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
+                permission = Manifest.permission.CAMERA;
+            } else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
+                permission = Manifest.permission.RECORD_AUDIO;
+            }
+            if (permission != null && !required.contains(permission)) {
+                required.add(permission);
+            }
+        }
+        return required;
+    }
+
+    private String[] getMissingMediaPermissions(PermissionRequest request) {
+        ArrayList<String> missing = new ArrayList<>();
+        for (String permission : getRequiredMediaPermissions(request)) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(permission);
+            }
+        }
+        return missing.toArray(new String[0]);
+    }
 
     private class SKIWebChromeClient extends BridgeWebChromeClient {
         SKIWebChromeClient() {
@@ -45,21 +75,8 @@ public class MainActivity extends BridgeActivity {
         @Override
         public void onPermissionRequest(final PermissionRequest request) {
             if (request == null) return;
-            boolean wantsAudio = false;
-            String[] resources = request.getResources();
-            if (resources != null) {
-                for (String res : resources) {
-                    if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)) {
-                        wantsAudio = true;
-                        break;
-                    }
-                }
-            }
-
-            if (wantsAudio && ContextCompat.checkSelfPermission(
-                    MainActivity.this,
-                    Manifest.permission.RECORD_AUDIO
-                ) != PackageManager.PERMISSION_GRANTED) {
+            String[] missingPermissions = getMissingMediaPermissions(request);
+            if (missingPermissions.length > 0) {
                 runOnUiThread(() -> {
                     if (pendingPermissionRequest != null && pendingPermissionRequest != request) {
                         try {
@@ -70,8 +87,8 @@ public class MainActivity extends BridgeActivity {
                     pendingPermissionRequest = request;
                     ActivityCompat.requestPermissions(
                         MainActivity.this,
-                        new String[]{ Manifest.permission.RECORD_AUDIO },
-                        REQ_RECORD_AUDIO
+                        missingPermissions,
+                        REQ_WEB_MEDIA
                     );
                 });
                 return;
@@ -189,11 +206,10 @@ public class MainActivity extends BridgeActivity {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQ_RECORD_AUDIO && pendingPermissionRequest != null) {
+        if (requestCode == REQ_WEB_MEDIA && pendingPermissionRequest != null) {
             final PermissionRequest req = pendingPermissionRequest;
             pendingPermissionRequest = null;
-            final boolean granted = grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            final boolean granted = getMissingMediaPermissions(req).length == 0;
             runOnUiThread(() -> {
                 try {
                     if (granted) {
