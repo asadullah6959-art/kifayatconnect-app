@@ -1,7 +1,9 @@
 package com.kifayatconnect.app;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
@@ -13,6 +15,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -21,6 +24,8 @@ import com.getcapacitor.BridgeWebChromeClient;
 import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
+    private static final String LATEST_APK_DOWNLOAD_URL =
+        "https://github.com/asadullah6959-art/kifayatconnect-app/releases/latest/download/SUI-KHEL-ITTEHAD.apk";
     private static final int REQ_WEB_MEDIA = 4001;
     private static final int REQ_GALLERY_MEDIA = 4002;
 
@@ -172,6 +177,25 @@ public class MainActivity extends BridgeActivity {
                 if (bridge != null && bridge.getWebView() != null) {
                     // Clears ONLY HTTP disk cache (JS/CSS/HTML), leaving localStorage & IndexedDB auth sessions untouched
                     bridge.getWebView().clearCache(false);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openExternalUrl(String url) {
+            if (!LATEST_APK_DOWNLOAD_URL.equals(url)) return;
+            Uri uri = Uri.parse(LATEST_APK_DOWNLOAD_URL);
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            runOnUiThread(() -> {
+                try {
+                    startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(
+                        MainActivity.this,
+                        "No browser is available to download the APK.",
+                        Toast.LENGTH_LONG
+                    ).show();
                 }
             });
         }

@@ -35,6 +35,12 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Set build version
+        id: build-version
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: echo "version=1.0.$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_OUTPUT"
+
       - name: Configure stable release signing
         id: signing
         run: |
@@ -54,6 +60,8 @@ jobs:
           fi
 
       - name: Install dependencies and build web app
+        env:
+          VITE_APP_VERSION: ${{ steps.build-version.outputs.version }}
         run: |
           npm install --legacy-peer-deps
           npm install react-is --legacy-peer-deps
@@ -140,19 +148,26 @@ jobs:
 
       - name: Build signed release APK
         if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           cd android
           ./gradlew assembleRelease
           cd ..
-          mv android/app/build/outputs/apk/release/app-release.apk "SUI-KHEL-ITTEHAD-v1.0.${{ github.run_number }}.apk"
+          mv android/app/build/outputs/apk/release/app-release.apk SUI-KHEL-ITTEHAD.apk
 
       - name: Publish APK to GitHub Releases
         if: steps.signing.outputs.release_enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: SUI KHEL ITTEHAD v1.0.${{ github.run_number }}
+          tag_name: latest
+          name: SUI KHEL ITTEHAD Latest APK
           body: |
-            Automated Android APK release for SUI KHEL ITTEHAD (v1.0.${{ github.run_number }}).
+            APK version: ${{ steps.build-version.outputs.version }}
+
+            Automated signed Android APK release for SUI KHEL ITTEHAD.
             Built from commit ${{ github.sha }}.
-          files: SUI-KHEL-ITTEHAD-v1.0.${{ github.run_number }}.apk
+          files: SUI-KHEL-ITTEHAD.apk
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          make_latest: true
