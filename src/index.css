@@ -8,17 +8,18 @@
 }
 
 :root {
-  --kc-bg: #071812;
-  --kc-surface: #0D2A1F;
-  --kc-surface-elevated: rgba(30, 41, 59, 0.82);
-  --kc-border: rgba(148, 163, 184, 0.18);
-  --kc-accent: #059669;
-  --kc-accent-deep: #046307;
-  --kc-silver: #E5E4E2;
-  --kc-silver-bright: #CBD5E1;
-  --kc-emerald: #046307;
-  --kc-emerald-deep: #071812;
-  --kc-emerald-elevated: #0D2A1F;
+  color-scheme: light;
+  --kc-bg: #E6F2FA;
+  --kc-surface: #FAF6EE;
+  --kc-surface-elevated: rgba(250, 246, 238, 0.9);
+  --kc-border: rgba(200, 164, 93, 0.3);
+  --kc-accent: #CBE3F5;
+  --kc-accent-deep: #102338;
+  --kc-silver: #C8A45D;
+  --kc-silver-bright: #F2E8D5;
+  --kc-emerald: #102338;
+  --kc-emerald-deep: #E6F2FA;
+  --kc-emerald-elevated: #FAF6EE;
 }
 
 *,
@@ -76,8 +77,8 @@ body,
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--kc-bg, #071812);
-  color: #F8FAFC;
+  background-color: var(--kc-bg, #E6F2FA);
+  color: #102338;
 }
 
 body {
@@ -265,9 +266,9 @@ svg {
 .kc-unity-halo {
   background: radial-gradient(
     circle,
-    rgba(229, 228, 226, 0.42) 0%,
-    rgba(5, 150, 105, 0.18) 48%,
-    rgba(5, 150, 105, 0) 74%
+    rgba(200, 164, 93, 0.34) 0%,
+    rgba(203, 227, 245, 0.48) 48%,
+    rgba(203, 227, 245, 0) 74%
   );
   animation: kcHaloGlow 3.6s ease-in-out infinite;
   will-change: transform, opacity;
@@ -298,20 +299,20 @@ svg {
 }
 
 .kc-gold-gradient-text {
-  background: linear-gradient(135deg, #046307 0%, #059669 42%, #CBD5E1 76%, #E5E4E2 100%);
+  background: linear-gradient(135deg, #102338 0%, #315c7c 42%, #C8A45D 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .kc-gold-button {
-  background: linear-gradient(135deg, #046307 0%, #059669 100%);
-  color: #F8FAFC;
-  border: 1px solid rgba(229, 228, 226, 0.85);
+  background: linear-gradient(135deg, #E6F2FA 0%, #CBE3F5 54%, #FAF6EE 100%);
+  color: #102338;
+  border: 1px solid rgba(200, 164, 93, 0.85);
   box-shadow:
-    0 6px 18px rgba(5, 150, 105, 0.28),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.32),
-    inset 0 1px 0 rgba(229, 228, 226, 0.22);
+    0 6px 18px rgba(16, 35, 56, 0.12),
+    inset 0 0 0 1px rgba(200, 164, 93, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
   transform: translate3d(0, 0, 0);
   transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1), opacity 110ms ease, box-shadow 140ms ease;
   will-change: transform, opacity;
@@ -325,74 +326,74 @@ svg {
 .kc-gold-button:active {
   transform: translate3d(0, 0, 0) scale3d(0.96, 0.96, 1);
   box-shadow:
-    0 0 20px rgba(229, 228, 226, 0.35),
-    0 4px 12px rgba(5, 150, 105, 0.35),
-    inset 0 1px 0 rgba(229, 228, 226, 0.42);
+    0 0 20px rgba(200, 164, 93, 0.3),
+    0 4px 12px rgba(16, 35, 56, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-/* Emerald and platinum glass surfaces */
+/* Frosted sky and ivory surfaces with champagne detailing */
 .kc-obsidian-card {
-  background: linear-gradient(165deg, rgba(28, 39, 60, 0.78) 0%, rgba(16, 25, 45, 0.86) 56%, rgba(10, 16, 30, 0.92) 100%);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(230, 242, 250, 0.94) 56%, rgba(250, 246, 238, 0.96) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(229, 228, 226, 0.24);
+  border: 1px solid rgba(200, 164, 93, 0.36);
   box-shadow:
-    0 14px 34px -10px rgba(0, 0, 0, 0.8),
-    0 4px 12px rgba(0, 0, 0, 0.46),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.12),
-    inset 0 1px 0 rgba(229, 228, 226, 0.22);
+    0 14px 34px -10px rgba(16, 35, 56, 0.2),
+    0 4px 12px rgba(16, 35, 56, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .kc-glass-bevel {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(229, 228, 226, 0.32);
+  border: 1px solid rgba(200, 164, 93, 0.46);
   box-shadow:
-    0 14px 34px -10px rgba(0, 0, 0, 0.8),
-    0 4px 12px rgba(0, 0, 0, 0.46),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.16),
-    inset 0 1px 0 rgba(229, 228, 226, 0.28);
+    0 14px 34px -10px rgba(16, 35, 56, 0.2),
+    0 4px 12px rgba(16, 35, 56, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .kc-luxury-modal {
-  background: linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, #0D2A1F 48%, #0F172A 100%);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.98) 0%, #E6F2FA 48%, #FAF6EE 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(229, 228, 226, 0.32);
+  border: 1px solid rgba(200, 164, 93, 0.55);
   box-shadow:
-    0 24px 56px -12px rgba(0, 0, 0, 0.88),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.14),
-    inset 0 1px 0 rgba(229, 228, 226, 0.24);
+    0 24px 56px -12px rgba(16, 35, 56, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 .kc-emerald-panel {
-  background: linear-gradient(135deg, rgba(4, 99, 7, 0.3) 0%, rgba(13, 42, 31, 0.88) 58%, rgba(7, 24, 18, 0.94) 100%);
+  background: linear-gradient(135deg, rgba(203, 227, 245, 0.86) 0%, rgba(230, 242, 250, 0.92) 58%, rgba(250, 246, 238, 0.96) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(229, 228, 226, 0.32);
+  border: 1px solid rgba(200, 164, 93, 0.42);
   box-shadow:
-    0 14px 32px -8px rgba(0, 0, 0, 0.74),
-    0 0 18px rgba(5, 150, 105, 0.12),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.12),
-    inset 0 1px 0 rgba(229, 228, 226, 0.2);
+    0 14px 32px -8px rgba(16, 35, 56, 0.16),
+    0 0 18px rgba(200, 164, 93, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .kc-faiz-vip-surface {
-  background: linear-gradient(135deg, #071812 0%, #0D2A1F 52%, #046307 100%);
-  border: 1.5px solid #E5E4E2;
+  background: linear-gradient(135deg, #102338 0%, #315c7c 52%, #C8A45D 100%);
+  border: 1.5px solid #C8A45D;
   box-shadow:
-    0 10px 28px rgba(5, 150, 105, 0.28),
-    0 0 16px rgba(229, 228, 226, 0.16),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.18),
-    inset 0 1px 0 rgba(229, 228, 226, 0.28);
+    0 10px 28px rgba(16, 35, 56, 0.24),
+    0 0 16px rgba(200, 164, 93, 0.2),
+    inset 0 0 0 1px rgba(250, 246, 238, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 /* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */
 .kc-geo-watermark {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23059669' stroke-opacity='0.04' stroke-width='0.9'%3E%3Cpath d='M32 2L62 32L32 62L2 32Z'/%3E%3Cpath d='M12 12H52V52H12Z'/%3E%3Ccircle cx='32' cy='32' r='6' stroke='%23E5E4E2' stroke-opacity='0.035'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23315C7C' stroke-opacity='0.04' stroke-width='0.9'%3E%3Cpath d='M32 2L62 32L32 62L2 32Z'/%3E%3Cpath d='M12 12H52V52H12Z'/%3E%3Ccircle cx='32' cy='32' r='6' stroke='%23C8A45D' stroke-opacity='0.035'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 64px 64px;
   background-repeat: repeat;
 }
@@ -444,8 +445,8 @@ svg {
 .kc-gold-touch:active {
   transform: translate3d(0, 0, 0) scale3d(0.97, 0.97, 1);
   box-shadow:
-    0 0 22px rgba(5, 150, 105, 0.36),
-    inset 0 0 0 1px rgba(229, 228, 226, 0.32);
+    0 0 22px rgba(200, 164, 93, 0.36),
+    inset 0 0 0 1px rgba(200, 164, 93, 0.38);
 }
 
 /* Lightweight GPU-only Scenic Live Chat & Voice Animations (transform + opacity ONLY) */
@@ -540,11 +541,288 @@ svg {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(5, 150, 105, 0.5);
+  background: rgba(200, 164, 93, 0.48);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(229, 228, 226, 0.7);
+  background: rgba(16, 35, 56, 0.38);
+}
+
+/* Accessible sky, ivory and champagne light theme. The live chat keeps its own colors. */
+#root {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(145deg, #E6F2FA 0%, #F7F9FA 52%, #FAF6EE 100%);
+  color: #102338;
+}
+
+#root main {
+  color: #102338;
+}
+
+body [class*="bg-[#071812]"]:not(.ski-chat-preserve *),
+body [class*="bg-[#0D2A1F]"]:not(.ski-chat-preserve *),
+body [class*="bg-[#0F172A]"]:not(.ski-chat-preserve *),
+body [class*="bg-[#0A0D12]"]:not(.ski-chat-preserve *),
+body [class*="bg-[#111622]"]:not(.ski-chat-preserve *),
+body [class*="bg-[#131C31]"]:not(.ski-chat-preserve *),
+body [class*="bg-slate-900"]:not(.ski-chat-preserve *) {
+  background-color: #FAF6EE !important;
+}
+
+body [class*="text-white"]:not(.ski-chat-preserve *),
+body [class*="text-[#F8FAFC]"]:not(.ski-chat-preserve *),
+body [class*="text-[#E5E4E2]"]:not(.ski-chat-preserve *),
+body [class*="text-slate-100"]:not(.ski-chat-preserve *),
+body [class*="text-slate-200"]:not(.ski-chat-preserve *),
+body [class*="text-slate-300"]:not(.ski-chat-preserve *) {
+  color: #102338 !important;
+}
+
+body [class*="text-slate-400"]:not(.ski-chat-preserve *),
+body [class*="text-slate-500"]:not(.ski-chat-preserve *) {
+  color: #456278 !important;
+}
+
+body [class*="text-[#059669]"]:not(.ski-chat-preserve *),
+body [class*="text-emerald-"]:not(.ski-chat-preserve *) {
+  color: #315c7c !important;
+}
+
+body [class*="border-[#059669]"]:not(.ski-chat-preserve *),
+body [class*="border-[#E5E4E2]"]:not(.ski-chat-preserve *),
+body [class*="border-slate-400"]:not(.ski-chat-preserve *) {
+  border-color: rgba(200, 164, 93, 0.48) !important;
+}
+
+body input:not(.ski-chat-preserve *),
+body textarea:not(.ski-chat-preserve *),
+body select:not(.ski-chat-preserve *) {
+  background-color: rgba(255, 255, 255, 0.82);
+  color: #102338;
+  border-color: rgba(200, 164, 93, 0.48);
+}
+
+body input:not(.ski-chat-preserve *)::placeholder,
+body textarea:not(.ski-chat-preserve *)::placeholder {
+  color: #607789;
+}
+
+.ski-chat-preserve .kc-gold-button {
+  background: linear-gradient(135deg, #046307 0%, #059669 100%);
+  color: #F8FAFC;
+  border: 1px solid rgba(229, 228, 226, 0.85);
+  box-shadow:
+    0 6px 18px rgba(5, 150, 105, 0.28),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.32),
+    inset 0 1px 0 rgba(229, 228, 226, 0.22);
+}
+
+.ski-chat-preserve .kc-gold-button:active {
+  box-shadow:
+    0 0 20px rgba(229, 228, 226, 0.35),
+    0 4px 12px rgba(5, 150, 105, 0.35),
+    inset 0 1px 0 rgba(229, 228, 226, 0.42);
+}
+
+.ski-chat-preserve .kc-luxury-modal {
+  background: linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, #0D2A1F 48%, #0F172A 100%);
+  border: 1px solid rgba(229, 228, 226, 0.32);
+  box-shadow:
+    0 24px 56px -12px rgba(0, 0, 0, 0.88),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.14),
+    inset 0 1px 0 rgba(229, 228, 226, 0.24);
+}
+
+.ski-light-header {
+  color: #102338 !important;
+  background: linear-gradient(110deg, rgba(230, 242, 250, 0.94), rgba(250, 246, 238, 0.94)) !important;
+  border-bottom: 1px solid rgba(200, 164, 93, 0.42) !important;
+  box-shadow: 0 8px 24px rgba(16, 35, 56, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.ski-light-sidebar {
+  color: #102338 !important;
+  background: linear-gradient(165deg, rgba(230, 242, 250, 0.98), rgba(250, 246, 238, 0.98)) !important;
+  border-color: rgba(200, 164, 93, 0.42) !important;
+  box-shadow: 12px 0 36px rgba(16, 35, 56, 0.16);
+}
+
+.ski-auth-screen {
+  color: #102338;
+}
+
+.ski-auth-screen input,
+.ski-auth-screen textarea,
+.ski-auth-screen select {
+  color: #102338 !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(200, 164, 93, 0.5) !important;
+}
+
+.ski-auth-screen input::placeholder {
+  color: #607789 !important;
+}
+
+.ski-geo-watermark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23102338' stroke-opacity='0.035' stroke-width='0.9'%3E%3Cpath d='M32 2L62 32L32 62L2 32Z'/%3E%3Cpath d='M12 12H52V52H12Z'/%3E%3Ccircle cx='32' cy='32' r='6' stroke='%23C8A45D' stroke-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ski-splash {
+  color: #102338;
+  background: #E6F2FA;
+  perspective: 1200px;
+}
+
+.ski-splash-backdrop {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.96), rgba(230, 242, 250, 0.72) 42%, transparent 72%),
+    linear-gradient(145deg, #E6F2FA 0%, #FAF6EE 54%, #F2E8D5 100%);
+}
+
+.ski-splash-particles {
+  overflow: hidden;
+}
+
+.ski-splash-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: #C8A45D;
+  box-shadow: 0 0 12px rgba(200, 164, 93, 0.72);
+  opacity: 0;
+  animation: skiParticleFloat 5s ease-in-out infinite;
+}
+
+.ski-splash-stage-0 .ski-splash-particle,
+.ski-splash-stage-1 .ski-splash-particle,
+.ski-splash-stage-2 .ski-splash-particle,
+.ski-splash-stage-3 .ski-splash-particle {
+  opacity: 0.7;
+}
+
+.ski-splash-crest-wrap {
+  transform-style: preserve-3d;
+}
+
+.ski-splash-logo {
+  position: relative;
+  z-index: 1;
+  border-radius: 9999px;
+  box-shadow: 0 24px 60px rgba(16, 35, 56, 0.28), 0 0 32px rgba(200, 164, 93, 0.22);
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.18, 0.78, 0.2, 1), opacity 650ms ease;
+}
+
+.ski-splash-logo::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(112deg, transparent 22%, rgba(255, 255, 255, 0.78) 48%, rgba(200, 164, 93, 0.5) 52%, transparent 72%);
+  transform: translateX(-140%) rotate(8deg);
+}
+
+.ski-splash-stage-0 .ski-splash-logo {
+  opacity: 0;
+  transform: perspective(900px) rotateY(-100deg) rotateX(18deg) scale(0.58);
+}
+
+.ski-splash-stage-1 .ski-splash-logo,
+.ski-splash-stage-2 .ski-splash-logo,
+.ski-splash-stage-3 .ski-splash-logo {
+  opacity: 1;
+  transform: perspective(900px) rotateY(0) rotateX(0) scale(1);
+}
+
+.ski-splash-stage-1 .ski-splash-logo::after,
+.ski-splash-stage-2 .ski-splash-logo::after {
+  animation: skiMetalSweep 1100ms ease-out 1 both;
+}
+
+.ski-splash-aura,
+.ski-splash-aura-inner {
+  border: 1px solid rgba(200, 164, 93, 0.64);
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.ski-splash-stage-2 .ski-splash-aura,
+.ski-splash-stage-3 .ski-splash-aura {
+  animation: skiAuraPulse 2.4s ease-out infinite;
+}
+
+.ski-splash-stage-2 .ski-splash-aura-inner,
+.ski-splash-stage-3 .ski-splash-aura-inner {
+  animation: skiAuraPulse 2.4s ease-out 550ms infinite;
+}
+
+.ski-splash-title,
+.ski-splash-tagline {
+  color: #102338;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.ski-splash-stage-3 .ski-splash-title {
+  animation: skiTitleReveal 850ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  background: linear-gradient(100deg, #102338 8%, #315c7c 40%, #C8A45D 58%, #102338 82%);
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.ski-splash-stage-3 .ski-splash-tagline {
+  animation: skiTitleReveal 850ms cubic-bezier(0.2, 0.8, 0.2, 1) 130ms both;
+  color: #315c7c;
+}
+
+@keyframes skiParticleFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(0.7); }
+  50% { transform: translate3d(10px, -20px, 0) scale(1.25); }
+}
+
+@keyframes skiMetalSweep {
+  0% { opacity: 0; transform: translateX(-140%) rotate(8deg); }
+  24% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(140%) rotate(8deg); }
+}
+
+@keyframes skiAuraPulse {
+  0% { opacity: 0; transform: scale(0.82); }
+  34% { opacity: 0.78; }
+  100% { opacity: 0; transform: scale(1.26); }
+}
+
+@keyframes skiTitleReveal {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ski-splash-particle,
+  .ski-splash-stage-1 .ski-splash-logo::after,
+  .ski-splash-stage-2 .ski-splash-logo::after,
+  .ski-splash-stage-2 .ski-splash-aura,
+  .ski-splash-stage-3 .ski-splash-aura,
+  .ski-splash-stage-2 .ski-splash-aura-inner,
+  .ski-splash-stage-3 .ski-splash-aura-inner {
+    animation: none !important;
+  }
+
+  .ski-splash-logo,
+  .ski-splash-title,
+  .ski-splash-tagline {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
 }
 
 /* Print to PDF Brand Formatting */

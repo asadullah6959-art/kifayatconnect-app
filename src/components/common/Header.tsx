@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
     '';
 
   return (
-    <header className="shrink-0 z-40 w-full max-w-[100vw] box-border px-2.5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2 flex items-center justify-between gap-1.5 bg-gradient-to-b from-[#0D2A1F] via-[#0F172A] to-[#071812] border-b border-slate-400/20 text-[#F8FAFC] shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(56,189,248,0.16)]">
+    <header className="ski-light-header shrink-0 z-40 w-full max-w-[100vw] box-border px-2.5 pt-[calc(env(safe-area-inset-top,12px)+8px)] pb-2 flex items-center justify-between gap-1.5 bg-gradient-to-b from-[#0D2A1F] via-[#0F172A] to-[#071812] border-b border-slate-400/20 text-[#F8FAFC] shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(56,189,248,0.16)]">
       {/* Zone 1: Mobile Hamburger & Compact 3D Brand Emblem */}
       <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
         <button

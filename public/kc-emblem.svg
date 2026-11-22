@@ -1,25 +1,79 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SUI KHEL ITTEHAD SKI unity emblem">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SUI KHEL ITTEHAD royal crest">
   <defs>
-    <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#059669"/>
-      <stop offset="1" stop-color="#046307"/>
+    <radialGradient id="sky" cx="38%" cy="28%" r="78%">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset=".34" stop-color="#e6f2fa"/>
+      <stop offset=".72" stop-color="#cbe3f5"/>
+      <stop offset="1" stop-color="#8db9dc"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2c7"/>
+      <stop offset=".2" stop-color="#c8a45d"/>
+      <stop offset=".42" stop-color="#fff0bd"/>
+      <stop offset=".64" stop-color="#a77c37"/>
+      <stop offset=".82" stop-color="#f6df9c"/>
+      <stop offset="1" stop-color="#8c682e"/>
     </linearGradient>
-    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.55" stop-color="#E5E4E2"/>
-      <stop offset="1" stop-color="#CBD5E1"/>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#173851"/>
+      <stop offset=".5" stop-color="#102338"/>
+      <stop offset="1" stop-color="#071624"/>
     </linearGradient>
+    <linearGradient id="letter" x1="0" y1="0" x2=".15" y2="1">
+      <stop offset="0" stop-color="#fff4cc"/>
+      <stop offset=".22" stop-color="#d8b972"/>
+      <stop offset=".48" stop-color="#fff0bc"/>
+      <stop offset=".73" stop-color="#b78a40"/>
+      <stop offset="1" stop-color="#805c27"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="9"/>
+      <feOffset dy="9"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="textDepth" x="-20%" y="-30%" width="140%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="blur"/>
+      <feOffset in="blur" dx="2" dy="4" result="offset"/>
+      <feFlood flood-color="#4f391d" flood-opacity=".68" result="shade"/>
+      <feComposite in="shade" in2="offset" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="ringArc" d="M75 256a181 181 0 1 1 362 0 181 181 0 1 1-362 0"/>
   </defs>
-  <circle cx="256" cy="256" r="244" fill="#071812" stroke="url(#silver)" stroke-width="18"/>
-  <circle cx="256" cy="256" r="218" fill="none" stroke="url(#emerald)" stroke-width="10"/>
-  <g transform="translate(256 248)">
-    <circle cx="-88" cy="-82" r="44" fill="url(#silver)" stroke="#FFFFFF" stroke-width="8"/>
-    <circle cx="88" cy="-82" r="44" fill="url(#emerald)" stroke="#E5E4E2" stroke-width="8"/>
-    <path d="M-174 116 C-174 34-138-8-88-8 C-38-8-18 24-18 68 L-18 150 L-174 150Z" fill="url(#silver)" stroke="#FFFFFF" stroke-width="8"/>
-    <path d="M174 116 C174 34 138-8 88-8 C38-8 18 24 18 68 L18 150 L174 150Z" fill="url(#emerald)" stroke="#E5E4E2" stroke-width="8"/>
-    <path d="M-88 74 C-54 38-22 24 18 34 C48 42 72 62 94 86" fill="none" stroke="url(#silver)" stroke-width="32" stroke-linecap="round"/>
-    <path d="M88 74 C54 38 22 24-18 34 C-48 42-72 62-94 86" fill="none" stroke="url(#emerald)" stroke-width="32" stroke-linecap="round"/>
-    <path d="M-94 86 C-54 58-26 54 12 66 C48 78 72 98 94 126" fill="none" stroke="#046307" stroke-width="18" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="256" r="245" fill="#102338" stroke="url(#gold)" stroke-width="14"/>
+    <circle cx="256" cy="256" r="228" fill="url(#gold)"/>
+    <circle cx="256" cy="256" r="214" fill="#102338"/>
+    <circle cx="256" cy="256" r="198" fill="url(#sky)" stroke="#fff4d2" stroke-width="3"/>
+    <circle cx="256" cy="256" r="205" fill="none" stroke="#8e6a31" stroke-width="2"/>
+    <circle cx="256" cy="256" r="220" fill="none" stroke="#f8e6b5" stroke-width="2"/>
+    <circle cx="256" cy="256" r="232" fill="none" stroke="#89632d" stroke-width="2"/>
   </g>
-  <text x="256" y="468" fill="#E5E4E2" font-family="Arial, sans-serif" font-size="54" font-weight="800" letter-spacing="10" text-anchor="middle">SKI</text>
+  <g fill="url(#gold)" stroke="#805d2b" stroke-width="1.5">
+    <circle cx="256" cy="34" r="5"/><circle cx="256" cy="478" r="5"/>
+    <circle cx="34" cy="256" r="5"/><circle cx="478" cy="256" r="5"/>
+    <circle cx="99" cy="99" r="5"/><circle cx="413" cy="99" r="5"/>
+    <circle cx="99" cy="413" r="5"/><circle cx="413" cy="413" r="5"/>
+  </g>
+  <g fill="none" stroke="url(#gold)" stroke-width="4">
+    <path d="M128 92q-14 19 0 38 14-19 0-38Zm256 0q-14 19 0 38 14-19 0-38ZM128 382q-14 19 0 38 14-19 0-38Zm256 0q-14 19 0 38 14-19 0-38Z"/>
+    <path d="M256 47c-9 13-9 27 0 39 9-12 9-26 0-39Zm0 340c-9 13-9 27 0 39 9-12 9-26 0-39Z"/>
+  </g>
+  <g aria-hidden="true">
+    <path d="M252 63c-31 0-56 24-56 54 0 31 25 56 56 56 15 0 29-6 39-16-6 2-12 3-18 3-30 0-55-25-55-55 0-17 8-32 20-42-2 0-4 0-6 0Z" fill="url(#gold)" stroke="#9a7436" stroke-width="3"/>
+    <path d="m316 79 8 17 19 3-14 13 3 19-16-9-17 9 4-19-14-13 19-3Z" fill="url(#gold)" stroke="#9a7436" stroke-width="2"/>
+  </g>
+  <g fill="none" stroke="#a27c3e" stroke-width="3" opacity=".8">
+    <path d="M113 209q21-24 43 0t43 0M313 209q21-24 43 0t43 0"/>
+    <path d="M116 222q19-19 38 0t38 0M320 222q19-19 38 0t38 0"/>
+  </g>
+  <text fill="url(#letter)" font-family="Georgia,serif" font-size="118" font-weight="700" letter-spacing="-8" text-anchor="middle" x="256" y="306" filter="url(#textDepth)" stroke="#8a672f" stroke-width="1">SKI</text>
+  <path d="M82 337 108 319h296l26 18-21 77H103Z" fill="#8d682e"/>
+  <path d="M72 328 101 309h310l29 19-24 76H96Z" fill="url(#gold)" stroke="#fff0c1" stroke-width="3"/>
+  <path d="M95 329 113 318h286l18 11-17 54H112Z" fill="url(#ribbon)" stroke="#f2dfa9" stroke-width="2"/>
+  <path d="m72 328 28-19-7 32-22 8Zm368 0-29-19 7 32 22 8Z" fill="#a57c39" stroke="#f2dfa9" stroke-width="2"/>
+  <text x="256" y="355" fill="#f3d996" font-family="Georgia,serif" font-size="19" font-weight="700" letter-spacing="1.1" text-anchor="middle">SUI KHEL ITTEHAD</text>
+  <path d="M160 406h192" stroke="url(#gold)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="145" cy="406" r="5" fill="#c8a45d"/><circle cx="367" cy="406" r="5" fill="#c8a45d"/>
 </svg>

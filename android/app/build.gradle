@@ -6,10 +6,10 @@ def hasReleaseSigning = System.getenv("ANDROID_KEYSTORE_FILE") &&
     System.getenv("ANDROID_KEY_PASSWORD")
 
 android {
-    namespace = "com.suikhelittehad.app"
+    namespace = "com.kifayatconnect.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.suikhelittehad.app"
+        applicationId "com.kifayatconnect.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode = ((System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 1) + 100)

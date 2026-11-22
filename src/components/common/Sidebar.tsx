@@ -190,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, isMobileDrawer }) => 
     : (appSettings.tagline || translate('en', 'tagline'));
 
   return (
-    <div className="w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#071812] overflow-hidden overscroll-none touch-pan-y">
+    <div className="ski-light-sidebar w-full h-full flex flex-col select-none text-[#94A3B8] bg-[#071812] overflow-hidden overscroll-none touch-pan-y">
       {/* Mobile Drawer Header */}
       {(isMobileDrawer || onClose) && (
         <div className="flex items-center justify-between gap-2 px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 border-b border-slate-400/20 bg-[#0D2A1F] shrink-0 shadow-[inset_0_1px_0_rgba(248,250,252,0.08)]">
