@@ -1,5 +1,7 @@
 ﻿import React from 'react';
-import { RefreshCw, Sparkles, X } from 'lucide-react';
+import { Download, RefreshCw, Sparkles, X } from 'lucide-react';
+import { LATEST_APK_DOWNLOAD_URL } from '../../services/githubReleases';
+import { openLatestApkDownload } from '../../utils/apkDownload';
 interface LiveUpdateBannerProps {
   visible: boolean;
   versionLabel: string;
@@ -61,6 +63,21 @@ export const LiveUpdateBanner: React.FC<LiveUpdateBannerProps> = ({
           <span>{isUr ? 'ریفریش' : 'Refresh'}</span>
         </span>
       </button>
+
+      <a
+        href={LATEST_APK_DOWNLOAD_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={isUr ? 'ڈاؤن لوڈ کریں' : 'Update Now'}
+        onClick={event => {
+          event.preventDefault();
+          openLatestApkDownload();
+        }}
+        className="shrink-0 px-2.5 py-1.5 rounded-xl kc-gold-button text-[10px] sm:text-[11px] font-black inline-flex items-center gap-1"
+      >
+        <Download className="w-3 h-3" />
+        <span className="hidden sm:inline">{isUr ? 'اپڈیٹ کریں' : 'Update Now'}</span>
+      </a>
 
       <button
         type="button"

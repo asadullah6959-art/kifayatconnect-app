@@ -7,8 +7,13 @@ import {
   CheckCircle, 
   X 
 } from 'lucide-react';
-import { compareVersions, INSTALLED_APP_VERSION } from '../../services/githubReleases';
+import {
+  compareVersions,
+  INSTALLED_APP_VERSION,
+  LATEST_APK_DOWNLOAD_URL
+} from '../../services/githubReleases';
 import { applyOtaCacheBustAndReload } from '../../utils/otaUpdate';
+import { openLatestApkDownload } from '../../utils/apkDownload';
 
 export const AppUpdateModal: React.FC = () => {
   const { 
@@ -38,9 +43,7 @@ export const AppUpdateModal: React.FC = () => {
     return null;
   }
 
-  const apkUrl = hasAdminUpdate && latestPublishedUpdate?.apkDownloadUrl
-    ? latestPublishedUpdate.apkDownloadUrl
-    : githubRelease?.apkUrl || null;
+  const apkUrl = LATEST_APK_DOWNLOAD_URL;
 
   const title = hasAdminUpdate && latestPublishedUpdate
     ? latestPublishedUpdate.title
@@ -141,6 +144,10 @@ export const AppUpdateModal: React.FC = () => {
                 href={apkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={event => {
+                  event.preventDefault();
+                  openLatestApkDownload();
+                }}
                 className="w-full py-3 px-4 rounded-xl kc-gold-button font-extrabold text-xs flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />

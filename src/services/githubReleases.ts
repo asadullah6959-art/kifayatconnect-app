@@ -16,9 +16,11 @@ import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 
 const GITHUB_REPO = 'asadullah6959-art/kifayatconnect-app';
 const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`;
-const CACHE_KEY = 'ski_github_release_cache_v1';
+const CACHE_KEY = 'ski_github_release_cache_v2';
 const CACHE_TTL_MS = 15 * 60 * 1000;
-export const INSTALLED_APP_VERSION = '1.0.0';
+export const LATEST_APK_DOWNLOAD_URL =
+  'https://github.com/asadullah6959-art/kifayatconnect-app/releases/latest/download/SUI-KHEL-ITTEHAD.apk';
+export const INSTALLED_APP_VERSION = import.meta.env.VITE_APP_VERSION?.trim() || '1.0.0';
 
 function normalizeVersion(v: string): string {
   return v.replace(/^v/i, '').trim();
@@ -105,25 +107,30 @@ export async function fetchLatestGitHubRelease(forceRefresh = false): Promise<Gi
     const apkAsset = assets.find(
       a =>
         typeof a?.name === 'string' &&
-        a.name.toLowerCase().endsWith('.apk') &&
+        a.name.toLowerCase() === 'sui-khel-ittehad.apk' &&
         typeof a?.browser_download_url === 'string' &&
         a.browser_download_url.startsWith('https://')
     );
 
-    const isNewer = compareVersions(tagVersion, INSTALLED_APP_VERSION) > 0;
     const notesRaw = typeof release.body === 'string' ? release.body : '';
+    const releaseVersionMatch = notesRaw.match(
+      /(?:^|\n)\s*APK version:\s*v?([\d]+(?:\.[\d]+)*)\s*(?:\r?\n|$)/i
+    );
+    const latestVersion = releaseVersionMatch?.[1] ||
+      (/^\d+(?:\.\d+)*$/.test(tagVersion) ? tagVersion : INSTALLED_APP_VERSION);
+    const isNewer = compareVersions(latestVersion, INSTALLED_APP_VERSION) > 0;
     const releaseNotes = notesRaw
       .split('\n')
       .map((line: string) => line.replace(/^[-*•]\s*/, '').trim())
-      .filter(Boolean)
+      .filter((line: string) => Boolean(line) && !/^APK version:/i.test(line))
       .slice(0, 6);
 
-    const verifiedApkUrl = apkAsset?.browser_download_url || null;
+    const verifiedApkUrl = apkAsset ? LATEST_APK_DOWNLOAD_URL : null;
 
     const result: GitHubReleaseStatus = {
       status: isNewer && verifiedApkUrl ? 'AVAILABLE' : 'LATEST_INSTALLED',
       installedVersion: INSTALLED_APP_VERSION,
-      latestVersion: tagVersion,
+      latestVersion,
       tagName: rawTag,
       releaseTitle: isNewer && verifiedApkUrl
         ? release.name || `SUI KHEL ITTEHAD ${rawTag}`

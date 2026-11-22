@@ -19,7 +19,10 @@ import {
   Smartphone,
   Copy
 } from 'lucide-react';
-import { INSTALLED_APP_VERSION } from '../../services/githubReleases';
+import {
+  INSTALLED_APP_VERSION,
+  LATEST_APK_DOWNLOAD_URL
+} from '../../services/githubReleases';
 import {
   clearPendingPasswordReset,
   getPendingPasswordReset,
@@ -30,6 +33,7 @@ import {
 import { AppLogo } from '../common/AppLogo';
 import { translate } from '../../data/translations';
 import { resolveIphoneLiveUrl, shareSKIForIphone } from '../../utils/iphoneShare';
+import { openLatestApkDownload } from '../../utils/apkDownload';
 
 interface AuthWelcomeGateProps {
   onOpenRegisterModal: () => void;
@@ -45,7 +49,6 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
     toggleLanguage,
     isOnline,
     githubRelease,
-    latestPublishedUpdate,
     appSettings
   } = useApp();
 
@@ -614,13 +617,8 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
       {/* Startup Share & Mobile Download Hub (Android APK + iPhone iOS Link) */}
       <div className="w-full max-w-md mx-auto pb-4 space-y-2.5">
         {(() => {
-          const overrideUrl = latestPublishedUpdate?.isPublished && latestPublishedUpdate?.apkDownloadUrl
-            ? latestPublishedUpdate.apkDownloadUrl
-            : null;
-          const resolvedApkUrl = overrideUrl || githubRelease?.apkUrl || null;
-          const resolvedTag = overrideUrl && latestPublishedUpdate
-            ? `v${latestPublishedUpdate.version.replace(/^v/i, '')}`
-            : (githubRelease?.tagName || `v${INSTALLED_APP_VERSION}`);
+          const resolvedApkUrl = LATEST_APK_DOWNLOAD_URL;
+          const resolvedTag = `v${githubRelease?.latestVersion || INSTALLED_APP_VERSION}`;
           const iphoneUrl = resolveIphoneLiveUrl(appSettings?.webAppLiveUrl);
 
           const androidShareText = resolvedApkUrl
@@ -653,34 +651,19 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {/* Android APK Download + WhatsApp Share */}
                 <div className="flex items-stretch gap-1.5">
-                  {resolvedApkUrl ? (
-                    <a
-                      href={resolvedApkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl kc-gold-button text-[11px] font-extrabold"
-                    >
-                      <Download className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{language === 'ur' ? 'Android APK ڈاؤن لوڈ' : 'Android APK'}</span>
-                    </a>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await shareSKIForIphone(appSettings?.webAppLiveUrl);
-                        setStartupShareFeedback(
-                          language === 'ur'
-                            ? 'ایپ لنک کاپی ہو گیا!'
-                            : 'App link copied for Android / Web!'
-                        );
-                        setTimeout(() => setStartupShareFeedback(null), 3500);
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl kc-gold-button text-[11px] font-extrabold cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{language === 'ur' ? 'Android لنک' : 'Android App'}</span>
-                    </button>
-                  )}
+                  <a
+                    href={resolvedApkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={event => {
+                      event.preventDefault();
+                      openLatestApkDownload();
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl kc-gold-button text-[11px] font-extrabold"
+                  >
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{language === 'ur' ? 'Android APK ڈاؤن لوڈ' : 'Android APK'}</span>
+                  </a>
                   <a
                     href={whatsappAndroidHref}
                     target="_blank"
