@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
@@ -154,14 +154,14 @@ const MainLayout: React.FC = () => {
       <div
         className="min-h-[100dvh] w-full text-[#F8FAFC] flex flex-col items-center justify-center p-6 kc-safe-top kc-safe-bottom text-center"
         style={{
-          backgroundColor: '#090D16',
+          backgroundColor: '#071812',
           backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), transparent 55%), radial-gradient(circle at 15% 85%, rgba(212, 175, 55, 0.08), transparent 52%)'
         }}
       >
         <div className="max-w-md w-full kc-luxury-modal rounded-2xl p-6 sm:p-8 space-y-5">
           <div className="flex flex-col items-center gap-3">
             <AppLogo size="lg" halo />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#131C31] border border-[#38BDF8]/35 text-[#38BDF8] text-[11px] font-bold uppercase shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0D2A1F] border border-[#059669]/35 text-[#059669] text-[11px] font-bold uppercase shadow-sm">
               <Wrench className="w-3.5 h-3.5" />
               <span>{translate(language, 'maintenanceTitle')}</span>
             </span>
@@ -175,9 +175,9 @@ const MainLayout: React.FC = () => {
           <button
             type="button"
             onClick={logoutFirebaseAuth}
-            className="w-full py-2.5 rounded-xl bg-[#090D16] hover:bg-[#161F33] border border-[#D4AF37]/30 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer kc-pressable"
+            className="w-full py-2.5 rounded-xl bg-[#071812] hover:bg-[#161F33] border border-[#E5E4E2]/30 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer kc-pressable"
           >
-            <LogOut className="w-4 h-4 text-[#F5D061]" />
+            <LogOut className="w-4 h-4 text-[#E5E4E2]" />
             <span>{translate(language, 'logout')}</span>
           </button>
         </div>
@@ -253,7 +253,7 @@ const MainLayout: React.FC = () => {
     <div
       className="relative h-[100vh] h-[100dvh] min-h-[100dvh] w-full max-w-[100vw] overflow-hidden overscroll-none touch-pan-y flex flex-col font-sans text-[#F8FAFC] box-border"
       style={{
-        backgroundColor: 'var(--kc-bg, #070D14)',
+        backgroundColor: 'var(--kc-bg, #071812)',
         backgroundImage:
           'radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.10), transparent 44%), radial-gradient(circle at 12% 88%, rgba(212, 175, 55, 0.08), transparent 54%)'
       }}
@@ -276,7 +276,7 @@ const MainLayout: React.FC = () => {
         <div className="overscroll-none touch-pan-y">
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className={`fixed inset-0 bg-[#090D16]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
+            className={`fixed inset-0 bg-[#071812]/85 z-50 transition-opacity duration-200 cursor-pointer overscroll-none touch-pan-y ${
               isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isMobileSidebarOpen}
@@ -314,11 +314,11 @@ const MainLayout: React.FC = () => {
             {liveApprovalAlert && (
               <div className="p-3.5 rounded-xl kc-emerald-panel flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#090D16] border border-[#D4AF37]/50 flex items-center justify-center shrink-0 shadow-inner">
-                    <UserCheck className="w-4 h-4 text-[#F5D061]" />
+                  <div className="w-8 h-8 rounded-lg bg-[#071812] border border-[#E5E4E2]/50 flex items-center justify-center shrink-0 shadow-inner">
+                    <UserCheck className="w-4 h-4 text-[#E5E4E2]" />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-extrabold text-[#F5D061] truncate">
+                    <div className="font-extrabold text-[#E5E4E2] truncate">
                       {liveApprovalAlert.title}
                     </div>
                     <div className="text-[11px] text-slate-200 truncate">
@@ -342,7 +342,7 @@ const MainLayout: React.FC = () => {
                     type="button"
                     onClick={() => markNotificationAsRead(liveApprovalAlert.id)}
                     aria-label={language === 'ur' ? 'منظوری الرٹ بند کریں' : 'Dismiss approval alert'}
-                    className="p-1.5 rounded-lg bg-[#090D16]/80 hover:bg-[#161F33] border border-[#D4AF37]/25 text-slate-300 cursor-pointer kc-pressable"
+                    className="p-1.5 rounded-lg bg-[#071812]/80 hover:bg-[#161F33] border border-[#E5E4E2]/25 text-slate-300 cursor-pointer kc-pressable"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -360,7 +360,7 @@ const MainLayout: React.FC = () => {
       {/* Fixed Mobile Bottom Navigation Bar with Android/iPhone Gesture Safe-Area Inset */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="shrink-0 w-full max-w-[100vw] box-border bg-gradient-to-t from-[#090D16] to-[#131C31] border-t border-slate-400/20 px-1.5 pt-1.5 pb-[calc(env(safe-area-inset-bottom,12px)+8px)] z-50 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(148,163,184,0.14)]"
+        className="shrink-0 w-full max-w-[100vw] box-border bg-gradient-to-t from-[#071812] to-[#0D2A1F] border-t border-slate-400/20 px-1.5 pt-1.5 pb-[calc(env(safe-area-inset-bottom,12px)+8px)] z-50 flex items-center justify-around select-none overscroll-none touch-pan-y shadow-[0_-8px_24px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(148,163,184,0.14)]"
       >
         {mobileNavTabs.map(tab => {
           const Icon = tab.icon;
@@ -375,14 +375,14 @@ const MainLayout: React.FC = () => {
               }}
               className={`relative z-50 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-transform cursor-pointer kc-pressable ${
                 isActive
-                  ? 'text-[#38BDF8] bg-[#1E293B] border border-[#38BDF8]/45 shadow-[0_4px_14px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(56,189,248,0.22)]'
+                  ? 'text-[#059669] bg-[#1E293B] border border-[#059669]/45 shadow-[0_4px_14px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(56,189,248,0.22)]'
                   : 'text-[#94A3B8] hover:text-[#F8FAFC] border border-transparent'
               }`}
             >
               <div className="relative">
                 <Icon className="w-4 h-4 mb-0.5" />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#D4AF37] text-[#090D16] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#E5E4E2] text-[#071812] text-[9px] font-extrabold flex items-center justify-center leading-none tabular-nums">
                     {tab.badge > 9 ? '9+' : tab.badge}
                   </span>
                 ) : null}
@@ -427,17 +427,17 @@ const MainLayout: React.FC = () => {
 
       {/* Floating Golden Chat Bubble when Live Chat is Minimized */}
       {liveChatDisplayMode === 'MINIMIZED' && activeTab !== 'chat' && (
-        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,12px))] right-3 z-40 flex items-center rounded-full bg-[#111726] border border-[#D4AF37]/70 shadow-[0_12px_32px_rgba(0,0,0,0.75),0_4px_18px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(252,227,138,0.22)] overflow-hidden">
+        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,12px))] right-3 z-40 flex items-center rounded-full bg-[#0D2A1F] border border-[#E5E4E2]/70 shadow-[0_12px_32px_rgba(0,0,0,0.75),0_4px_18px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(252,227,138,0.22)] overflow-hidden">
           <button
             type="button"
             onClick={restoreLiveChat}
-            className="min-h-[44px] flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#F5D061] hover:bg-[#161F33] cursor-pointer kc-pressable"
+            className="min-h-[44px] flex items-center gap-2 pl-3.5 pr-2.5 py-2 text-xs font-extrabold text-[#E5E4E2] hover:bg-[#161F33] cursor-pointer kc-pressable"
             title="Restore Live Chat Room"
           >
             <span className="relative flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-[#F5D061]" />
+              <MessageSquare className="w-4 h-4 text-[#E5E4E2]" />
               {unreadCommunityCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-[#090D16] tabular-nums">
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center leading-none border border-[#071812] tabular-nums">
                   {unreadCommunityCount > 99 ? '99+' : unreadCommunityCount}
                 </span>
               )}
@@ -452,7 +452,7 @@ const MainLayout: React.FC = () => {
             }}
             aria-label={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
             title={language === 'ur' ? 'لائیو چیٹ ببل چھپائیں' : 'Hide Live Chat bubble'}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#D4AF37]/30 cursor-pointer kc-pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center px-2.5 py-2 text-slate-400 hover:text-white hover:bg-rose-950/60 border-l border-[#E5E4E2]/30 cursor-pointer kc-pressable"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -481,19 +481,19 @@ const MainLayout: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top)+3.75rem))] inset-x-3 sm:inset-x-auto sm:right-5 z-[90] sm:max-w-md rounded-2xl p-3.5 border border-[#38BDF8]/45 shadow-[0_14px_34px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(56,189,248,0.22)] text-[#F8FAFC]"
+          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top)+3.75rem))] inset-x-3 sm:inset-x-auto sm:right-5 z-[90] sm:max-w-md rounded-2xl p-3.5 border border-[#059669]/45 shadow-[0_14px_34px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(56,189,248,0.22)] text-[#F8FAFC]"
           style={{
-            background: 'linear-gradient(135deg, #131C31 0%, #1E293B 58%, #0F172A 100%)',
+            background: 'linear-gradient(135deg, #0D2A1F 0%, #1E293B 58%, #0F172A 100%)',
           }}
         >
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2.5 min-w-0">
-              <CheckCircle2 className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
               <div className="min-w-0 space-y-1 text-xs">
                 <p className="font-extrabold text-[#F8FAFC] leading-snug">
                   Link copied! Send it on WhatsApp to iPhone users.
                 </p>
-                <p className="font-bold text-[#38BDF8] font-urdu-auto leading-snug" dir="rtl">
+                <p className="font-bold text-[#059669] font-urdu-auto leading-snug" dir="rtl">
                   لنک کاپی ہو گیا! آئی فون ممبران کو واٹس ایپ پر بھیج دیں۔
                 </p>
                 <p className="text-[10px] font-mono text-[#94A3B8] truncate pt-0.5">
@@ -505,7 +505,7 @@ const MainLayout: React.FC = () => {
               type="button"
               onClick={dismissIphoneShareNotice}
               aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-              className="p-1 rounded-lg bg-[#090D16]/80 border border-slate-400/25 text-slate-300 hover:text-white shrink-0 cursor-pointer"
+              className="p-1 rounded-lg bg-[#071812]/80 border border-slate-400/25 text-slate-300 hover:text-white shrink-0 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

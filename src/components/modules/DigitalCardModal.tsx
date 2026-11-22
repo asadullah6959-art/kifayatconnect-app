@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { User } from '../../types';
 import { X, Printer, ShieldCheck, QrCode, RefreshCw, Download, CheckCircle2 } from 'lucide-react';
@@ -99,8 +99,8 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
 
       // Double metallic gold border
       const goldGrad = ctx.createLinearGradient(0, 0, width, height);
-      goldGrad.addColorStop(0, '#F5D061');
-      goldGrad.addColorStop(0.5, '#D4AF37');
+      goldGrad.addColorStop(0, '#E5E4E2');
+      goldGrad.addColorStop(0.5, '#E5E4E2');
       goldGrad.addColorStop(1, '#8A6218');
       ctx.strokeStyle = goldGrad;
       ctx.lineWidth = 6;
@@ -109,20 +109,20 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       ctx.strokeRect(30, 30, width - 60, height - 60);
 
       // Top Header
-      ctx.fillStyle = '#F5D061';
+      ctx.fillStyle = '#E5E4E2';
       ctx.font = 'bold 34px sans-serif';
-      ctx.fillText('👑 KIFAYAT CONNECT', 56, 86);
+      ctx.fillText('👑 SUI KHEL ITTEHAD', 56, 86);
       ctx.fillStyle = '#34D399';
       ctx.font = 'bold 18px sans-serif';
       ctx.fillText('VERIFIED PREMIUM DIGITAL IDENTITY', 58, 114);
 
       // Photo Box / Initials
-      ctx.fillStyle = isFaizKhel ? '#2B1F06' : '#131C31';
+      ctx.fillStyle = isFaizKhel ? '#2B1F06' : '#0D2A1F';
       ctx.fillRect(58, 162, 180, 210);
-      ctx.strokeStyle = isFaizKhel ? '#FDE047' : '#38BDF8';
+      ctx.strokeStyle = isFaizKhel ? '#CBD5E1' : '#059669';
       ctx.lineWidth = 4;
       ctx.strokeRect(58, 162, 180, 210);
-      ctx.fillStyle = '#F5D061';
+      ctx.fillStyle = '#E5E4E2';
       ctx.font = 'bold 64px sans-serif';
       const initials = user.name
         .split(' ')
@@ -138,7 +138,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       ctx.font = 'bold 40px sans-serif';
       ctx.fillText(user.name, 274, 206);
 
-      ctx.fillStyle = '#F5D061';
+      ctx.fillStyle = '#E5E4E2';
       ctx.font = 'bold 20px sans-serif';
       ctx.fillText(`★ PREMIUM MEMBER  ·  ${user.role.replace('_', ' ')}`, 274, 242);
 
@@ -173,7 +173,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       ctx.fillStyle = '#94A3B8';
       ctx.font = 'bold 16px monospace';
       ctx.fillText('MEMBER ID', 58, 478);
-      ctx.fillStyle = '#F5D061';
+      ctx.fillStyle = '#E5E4E2';
       ctx.font = 'bold 30px monospace';
       ctx.fillText(memberIdStr, 58, 518);
 
@@ -187,11 +187,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       const qrY = 460;
       ctx.fillStyle = '#0A0D12';
       ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
-      ctx.strokeStyle = '#D4AF37';
+      ctx.strokeStyle = '#E5E4E2';
       ctx.lineWidth = 2;
       ctx.strokeRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
       const cell = qrSize / qrMatrix.length;
-      ctx.fillStyle = '#F5D061';
+      ctx.fillStyle = '#E5E4E2';
       qrMatrix.forEach((row, r) => {
         row.forEach((on, c) => {
           if (on) ctx.fillRect(qrX + c * cell, qrY + r * cell, cell - 1, cell - 1);
@@ -199,7 +199,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
       });
 
       const link = document.createElement('a');
-      link.download = `KifayatConnect-ID-${memberIdStr}.png`;
+      link.download = `SKIConnect-ID-${memberIdStr}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } finally {
@@ -210,7 +210,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
   return (
     <div className="fixed inset-0 z-[10000] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#0A0D12]/90 overflow-y-auto">
       <div
-        className="kc-modal-panel relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#D4AF37]/35 p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
+        className="kc-modal-panel relative w-full max-w-lg bg-[#111622] rounded-2xl shadow-2xl border border-[#E5E4E2]/35 p-4 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header */}
@@ -220,7 +220,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               {translate(language, 'vipCardTitle')}
             </h3>
             <p className="text-xs text-slate-400 break-words whitespace-normal leading-snug mt-0.5">
-              {user.name} · <span className="font-mono text-[#F5D061]">{memberIdStr}</span>
+              {user.name} · <span className="font-mono text-[#E5E4E2]">{memberIdStr}</span>
             </p>
           </div>
           <button
@@ -247,14 +247,14 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               style={{
                 background: isFaizKhel
                   ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
-                  : 'linear-gradient(145deg, #090D16 0%, #131C31 55%, #0F172A 100%)',
-                border: isFaizKhel ? '2px solid #FDE047' : '1.5px solid #D4AF37'
+                  : 'linear-gradient(145deg, #071812 0%, #0D2A1F 55%, #0F172A 100%)',
+                border: isFaizKhel ? '2px solid #CBD5E1' : '1.5px solid #E5E4E2'
               }}
             >
               {/* Holographic Gold Foil Shimmer Sweep (60FPS GPU-composited) */}
               <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
 
-              {/* Embossed "KIFAYAT CONNECT UNITY" Circular Vector Crest Watermark */}
+              {/* Embossed "SUI KHEL ITTEHAD UNITY" Circular Vector Crest Watermark */}
               <svg
                 aria-hidden="true"
                 viewBox="0 0 180 180"
@@ -264,23 +264,23 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                   <path id="kcCardCrestPath" d="M 90, 90 m -66, 0 a 66,66 0 1,1 132,0 a 66,66 0 1,1 -132,0" />
                 </defs>
                 <circle cx="90" cy="90" r="82" fill="none" stroke="#F9E29C" strokeWidth="1.5" strokeDasharray="3 3" />
-                <circle cx="90" cy="90" r="52" fill="none" stroke="#D4AF37" strokeWidth="1.5" />
+                <circle cx="90" cy="90" r="52" fill="none" stroke="#E5E4E2" strokeWidth="1.5" />
                 <text fill="#F9E29C" fontSize="10.5" fontWeight="800" letterSpacing="3.4">
                   <textPath href="#kcCardCrestPath" startOffset="4%">
-                    ★ KIFAYAT CONNECT UNITY ★ OFFICIAL VIP
+                    ★ SUI KHEL ITTEHAD UNITY ★ OFFICIAL VIP
                   </textPath>
                 </text>
-                <text x="90" y="96" textAnchor="middle" fill="#D4AF37" fontSize="18" fontWeight="900">
+                <text x="90" y="96" textAnchor="middle" fill="#E5E4E2" fontSize="18" fontWeight="900">
                   KC
                 </text>
               </svg>
 
               {/* Inner Gold Trim + 3D Gold Corner Accents */}
-              <div className="absolute inset-1.5 rounded-xl border border-[#F5D061]/35 pointer-events-none" />
-              <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-[#F5D061] rounded-tl-lg pointer-events-none" />
-              <div className="absolute top-1.5 right-1.5 w-4 h-4 border-t-2 border-r-2 border-[#F5D061] rounded-tr-lg pointer-events-none" />
-              <div className="absolute bottom-1.5 left-1.5 w-4 h-4 border-b-2 border-l-2 border-[#F5D061] rounded-bl-lg pointer-events-none" />
-              <div className="absolute bottom-1.5 right-1.5 w-4 h-4 border-b-2 border-r-2 border-[#F5D061] rounded-br-lg pointer-events-none" />
+              <div className="absolute inset-1.5 rounded-xl border border-[#E5E4E2]/35 pointer-events-none" />
+              <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-[#E5E4E2] rounded-tl-lg pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-4 h-4 border-t-2 border-r-2 border-[#E5E4E2] rounded-tr-lg pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-4 h-4 border-b-2 border-l-2 border-[#E5E4E2] rounded-bl-lg pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-4 h-4 border-b-2 border-r-2 border-[#E5E4E2] rounded-br-lg pointer-events-none" />
 
               {/* Top Header */}
               <div className="relative z-10 flex items-center justify-between gap-2">
@@ -288,9 +288,9 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                   <BrandEmblem3D size="xs" halo />
                   <div className="min-w-0">
                     <h4 className="font-extrabold text-xs sm:text-sm tracking-[0.14em] uppercase kc-gold-gradient-text truncate">
-                      KIFAYAT CONNECT 👑
+                      SUI KHEL ITTEHAD 👑
                     </h4>
-                    <span className="text-[9px] text-[#38BDF8] font-semibold tracking-wider uppercase block">
+                    <span className="text-[9px] text-[#059669] font-semibold tracking-wider uppercase block">
                       {translate(language, 'vipPremiumMember')}
                     </span>
                   </div>
@@ -298,9 +298,9 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isFaizKhel && <FaizKhelVipCrownIcon className="w-6 h-6" />}
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#059669] bg-[#071812] px-2 py-0.5 rounded-md border border-[#059669]/40 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 kc-live-pulse" />
-                    <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
+                    <ShieldCheck className="w-3 h-3 text-[#E5E4E2]" />
                     <span>ACTIVE</span>
                   </span>
                 </div>
@@ -313,10 +313,10 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                     <img
                       src={user.avatarUrl || user.avatar}
                       alt={user.name}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border-2 border-[#F5D061] shadow-md"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border-2 border-[#E5E4E2] shadow-md"
                     />
                   ) : (
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#131C31] to-[#090D16] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-xl shadow-md">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#0D2A1F] to-[#071812] border-2 border-[#E5E4E2] flex items-center justify-center text-[#E5E4E2] font-extrabold text-xl shadow-md">
                       {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -351,12 +351,12 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               </div>
 
               {/* Bottom Strip: Member ID + Footer Tagline + Golden SVG QR */}
-              <div className="relative z-10 pt-2 border-t border-[#D4AF37]/30 flex items-end justify-between gap-2">
+              <div className="relative z-10 pt-2 border-t border-[#E5E4E2]/30 flex items-end justify-between gap-2">
                 <div className="min-w-0">
                   <span className="text-[8px] font-mono tabular-nums text-slate-400 uppercase block">
                     {translate(language, 'vipMemberIdPrefix')} · VALID {user.validUntil || '2028-12-31'}
                   </span>
-                  <span className="text-xs font-mono tabular-nums font-extrabold text-[#F5D061] block truncate">
+                  <span className="text-xs font-mono tabular-nums font-extrabold text-[#E5E4E2] block truncate">
                     {memberIdStr}
                   </span>
                   <span className="text-[8px] font-bold tracking-wider uppercase text-slate-300 block truncate mt-0.5">
@@ -365,11 +365,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 </div>
 
                 {/* Deterministic Golden SVG QR Code */}
-                <div className="p-1 rounded-lg bg-[#0A0D12] border border-[#D4AF37]/60 shrink-0">
+                <div className="p-1 rounded-lg bg-[#0A0D12] border border-[#E5E4E2]/60 shrink-0">
                   <svg viewBox="0 0 11 11" className="w-10 h-10 sm:w-11 sm:h-11" shapeRendering="crispEdges">
                     {qrMatrix.map((row, r) =>
                       row.map((on, c) =>
-                        on ? <rect key={`${r}-${c}`} x={c} y={r} width="0.88" height="0.88" fill="#F5D061" /> : null
+                        on ? <rect key={`${r}-${c}`} x={c} y={r} width="0.88" height="0.88" fill="#E5E4E2" /> : null
                       )
                     )}
                   </svg>
@@ -382,13 +382,13 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               className="absolute inset-0 w-full h-full rounded-2xl p-4 sm:p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between backface-hidden rotate-y-180 overflow-hidden"
               style={{
                 background: 'linear-gradient(145deg, #06130F 0%, #0A0D12 55%, #141821 100%)',
-                border: '2px solid #D4AF37'
+                border: '2px solid #E5E4E2'
               }}
             >
               <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
-              <div className="relative z-10 flex items-center justify-between border-b border-[#D4AF37]/30 pb-2">
+              <div className="relative z-10 flex items-center justify-between border-b border-[#E5E4E2]/30 pb-2">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold text-[#F5D061] tracking-wider block">
+                  <span className="text-[10px] uppercase font-extrabold text-[#E5E4E2] tracking-wider block">
                     {translate(language, 'vipBackTitle')}
                   </span>
                   <p className="text-[9px] text-emerald-300">{translate(language, 'vipIssuedBy')}</p>
@@ -397,11 +397,11 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
               </div>
 
               <div className="flex items-center gap-4 my-auto">
-                <div className="p-2 bg-[#0A0D12] border border-[#F5D061]/60 rounded-xl shrink-0">
+                <div className="p-2 bg-[#0A0D12] border border-[#E5E4E2]/60 rounded-xl shrink-0">
                   <svg viewBox="0 0 11 11" className="w-16 h-16" shapeRendering="crispEdges">
                     {qrMatrix.map((row, r) =>
                       row.map((on, c) =>
-                        on ? <rect key={`${r}-${c}`} x={c} y={r} width="0.88" height="0.88" fill="#F5D061" /> : null
+                        on ? <rect key={`${r}-${c}`} x={c} y={r} width="0.88" height="0.88" fill="#E5E4E2" /> : null
                       )
                     )}
                   </svg>
@@ -412,7 +412,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>{translate(language, 'vipVerifiedAuthentic')}</span>
                   </p>
-                  <p className="font-mono text-[9px] text-[#F5D061] truncate">
+                  <p className="font-mono text-[9px] text-[#E5E4E2] truncate">
                     {verifyHash}
                   </p>
                   <p className="text-slate-400 text-[9px] truncate">
@@ -421,13 +421,13 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
                 </div>
               </div>
 
-              <div className="text-[8px] text-slate-400 border-t border-[#D4AF37]/25 pt-1.5 leading-tight flex items-center justify-between gap-2">
+              <div className="text-[8px] text-slate-400 border-t border-[#E5E4E2]/25 pt-1.5 leading-tight flex items-center justify-between gap-2">
                 <span>
                   {language === 'ur'
-                    ? 'کفایت کنیکٹ کمیونٹی گورننس ٹرسٹ کی امانت۔'
-                    : 'Property of Kifayat Connect Community Governance Trust.'}
+                    ? 'سوئی خیل اتحاد کمیونٹی گورننس ٹرسٹ کی امانت۔'
+                    : 'Property of SUI KHEL ITTEHAD Community Governance Trust.'}
                 </span>
-                <span className="font-mono text-[#F5D061]">{memberIdStr}</span>
+                <span className="font-mono text-[#E5E4E2]">{memberIdStr}</span>
               </div>
             </div>
           </div>
@@ -444,7 +444,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             onClick={() => setIsFlipped(prev => !prev)}
             className="flex items-center gap-1.5 px-3 py-2 text-slate-200 bg-[#0A0D12] hover:bg-slate-800 border border-slate-700 rounded-xl font-semibold cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-[#F5D061]" />
+            <RefreshCw className="w-3.5 h-3.5 text-[#E5E4E2]" />
             <span>{language === 'ur' ? 'کارڈ پلٹیں' : 'Flip'}</span>
           </button>
 
@@ -452,7 +452,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             <button
               type="button"
               onClick={() => setShowQrVerifyModal(prev => !prev)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/40 text-[#38BDF8] rounded-xl font-bold cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0D2A1F] hover:bg-[#1E293B] border border-[#059669]/40 text-[#059669] rounded-xl font-bold cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>{translate(language, 'vipVerifyQrBtn')}</span>
@@ -487,10 +487,10 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
 
         {/* Interactive QR Verification Panel */}
         {showQrVerifyModal && (
-          <div className="mt-4 p-4 rounded-xl bg-[#0A0D12] border border-[#D4AF37]/45 space-y-2 text-xs">
+          <div className="mt-4 p-4 rounded-xl bg-[#0A0D12] border border-[#E5E4E2]/45 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#F5D061]" />
+                <ShieldCheck className="w-4 h-4 text-[#E5E4E2]" />
                 <span>{translate(language, 'vipVerifiedAuthentic')}</span>
               </span>
               <button type="button" onClick={() => setShowQrVerifyModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
@@ -499,7 +499,7 @@ export const DigitalCardModal: React.FC<DigitalCardModalProps> = ({ user, onClos
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
               <div><span className="text-slate-400">{language === 'ur' ? 'نام:' : 'Name:'}</span> <strong className="text-white">{user.name}</strong></div>
-              <div><span className="text-slate-400">{language === 'ur' ? 'آئی ڈی:' : 'ID:'}</span> <strong className="font-mono text-[#F5D061]">{memberIdStr}</strong></div>
+              <div><span className="text-slate-400">{language === 'ur' ? 'آئی ڈی:' : 'ID:'}</span> <strong className="font-mono text-[#E5E4E2]">{memberIdStr}</strong></div>
               <div><span className="text-slate-400">{language === 'ur' ? 'عہدہ:' : 'Role:'}</span> <strong className="text-white">{user.role}</strong></div>
               <div><span className="text-slate-400">{language === 'ur' ? 'ضلع:' : 'District:'}</span> <strong className="text-emerald-300">{dist}</strong></div>
             </div>

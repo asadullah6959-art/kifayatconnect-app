@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Command, Navigation, Zap } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -55,9 +55,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
       <div className="kc-luxury-modal kc-modal-panel relative w-full max-w-2xl rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto text-xs">
-        <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#D4AF37]/25">
+        <div className="flex items-start justify-between gap-2.5 pb-3 border-b border-[#E5E4E2]/25">
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
-            <div className="p-2 bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] rounded-lg shrink-0">
+            <div className="p-2 bg-[#0D2A1F] border border-[#059669]/40 text-[#E5E4E2] rounded-lg shrink-0">
               <Command className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
@@ -74,7 +74,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
             type="button"
             onClick={onClose}
             aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-            className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] hover:bg-[#161F33] cursor-pointer shrink-0"
+            className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-[#E5E4E2] hover:bg-[#161F33] cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -86,10 +86,10 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
             return (
               <div 
                 key={section.title}
-                className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-2.5"
+                className="p-3.5 rounded-xl border border-[#E5E4E2]/25 bg-[#071812] space-y-2.5"
               >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#F5D061] border-b border-[#D4AF37]/20 pb-1.5">
-                  <Icon className="w-3.5 h-3.5 text-[#F5D061]" />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#E5E4E2] border-b border-[#E5E4E2]/20 pb-1.5">
+                  <Icon className="w-3.5 h-3.5 text-[#E5E4E2]" />
                   <span>{section.title}</span>
                 </div>
 
@@ -103,7 +103,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                         {sc.keys.map((k, idx) => (
                           <kbd 
                             key={idx}
-                            className="px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#F5D061] bg-[#141B2D] border border-[#D4AF37]/35 rounded shadow-2xs"
+                            className="px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#E5E4E2] bg-[#0D2A1F] border border-[#E5E4E2]/35 rounded shadow-2xs"
                           >
                             {k}
                           </kbd>
@@ -117,12 +117,12 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
           })}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-[#D4AF37]/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+        <div className="mt-4 pt-3 border-t border-[#E5E4E2]/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
           <span>
-            {language === 'ur' ? 'فعال عہدہ:' : 'Active Role:'} <strong className="text-[#F5D061]">{currentUser.role}</strong> ({currentUser.district || (language === 'ur' ? 'پاکستان' : 'Pakistan')})
+            {language === 'ur' ? 'فعال عہدہ:' : 'Active Role:'} <strong className="text-[#E5E4E2]">{currentUser.role}</strong> ({currentUser.district || (language === 'ur' ? 'پاکستان' : 'Pakistan')})
           </span>
           <span className="font-mono text-[10px]">
-            {language === 'ur' ? 'بند کرنے کے لیے Esc دبائیں' : <>Press <kbd className="px-1 py-0.5 bg-[#141B2D] border border-[#D4AF37]/35 rounded text-[#F5D061]">Esc</kbd> to close</>}
+            {language === 'ur' ? 'بند کرنے کے لیے Esc دبائیں' : <>Press <kbd className="px-1 py-0.5 bg-[#0D2A1F] border border-[#E5E4E2]/35 rounded text-[#E5E4E2]">Esc</kbd> to close</>}
           </span>
         </div>
       </div>

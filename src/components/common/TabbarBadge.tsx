@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+﻿import React, { useId } from 'react';
 import type { User } from '../../types';
 import { resolveUserTabbar } from '../../data/tabbars';
 
@@ -32,17 +32,17 @@ export const FaizKhelVipCrownIcon: React.FC<{ className?: string }> = ({ classNa
       <defs>
         <linearGradient id={goldFaceId} x1="3" y1="4" x2="29" y2="26" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#FEF9C3" />
-          <stop offset="35%" stopColor="#FDE047" />
-          <stop offset="70%" stopColor="#F59E0B" />
+          <stop offset="35%" stopColor="#CBD5E1" />
+          <stop offset="70%" stopColor="#CBD5E1" />
           <stop offset="100%" stopColor="#B45309" />
         </linearGradient>
         <linearGradient id={goldDarkId} x1="16" y1="6" x2="16" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#D4AF37" />
+          <stop offset="0%" stopColor="#E5E4E2" />
           <stop offset="100%" stopColor="#78350F" />
         </linearGradient>
         <linearGradient id={goldRimId} x1="5" y1="22" x2="27" y2="27" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FEF08A" />
-          <stop offset="50%" stopColor="#D4AF37" />
+          <stop offset="0%" stopColor="#E5E4E2" />
+          <stop offset="50%" stopColor="#E5E4E2" />
           <stop offset="100%" stopColor="#92400E" />
         </linearGradient>
       </defs>
@@ -83,14 +83,14 @@ export const FaizKhelVipCrownIcon: React.FC<{ className?: string }> = ({ classNa
       <line x1="7" y1="23.4" x2="25" y2="23.4" stroke="#FEF9C3" strokeWidth="0.7" strokeOpacity="0.75" />
 
       {/* Tip Jewels */}
-      <circle cx="3.8" cy="10.2" r="1.9" fill="#FEF08A" stroke="#78350F" strokeWidth="0.8" />
+      <circle cx="3.8" cy="10.2" r="1.9" fill="#E5E4E2" stroke="#78350F" strokeWidth="0.8" />
       <circle cx="16" cy="5.6" r="2.3" fill="#FEF9C3" stroke="#78350F" strokeWidth="0.8" />
-      <circle cx="28.2" cy="10.2" r="1.9" fill="#FEF08A" stroke="#78350F" strokeWidth="0.8" />
+      <circle cx="28.2" cy="10.2" r="1.9" fill="#E5E4E2" stroke="#78350F" strokeWidth="0.8" />
 
       {/* Center Faceted Royal Jewels */}
-      <path d="M16 14.5L18.1 17.3L16 20.1L13.9 17.3L16 14.5Z" fill="#E11D48" stroke="#FEF08A" strokeWidth="0.7" />
-      <circle cx="10.3" cy="18.6" r="1.15" fill="#38BDF8" stroke="#FEF08A" strokeWidth="0.5" />
-      <circle cx="21.7" cy="18.6" r="1.15" fill="#38BDF8" stroke="#FEF08A" strokeWidth="0.5" />
+      <path d="M16 14.5L18.1 17.3L16 20.1L13.9 17.3L16 14.5Z" fill="#E11D48" stroke="#E5E4E2" strokeWidth="0.7" />
+      <circle cx="10.3" cy="18.6" r="1.15" fill="#059669" stroke="#E5E4E2" strokeWidth="0.5" />
+      <circle cx="21.7" cy="18.6" r="1.15" fill="#059669" stroke="#E5E4E2" strokeWidth="0.5" />
     </svg>
   );
 };
@@ -156,8 +156,8 @@ export const TabbarBadge: React.FC<TabbarBadgeProps> = React.memo(
         className={`relative overflow-hidden inline-flex items-center gap-1.5 rounded-lg border-solid font-bold tracking-wide select-none align-middle ${
           isFlagship
             ? compact
-              ? 'px-2 py-0.5 text-[11px] leading-tight ring-1 ring-[#FDE047]/45'
-              : 'px-3 py-1 text-xs leading-tight ring-1 ring-[#FDE047]/55'
+              ? 'px-2 py-0.5 text-[11px] leading-tight ring-1 ring-[#CBD5E1]/45'
+              : 'px-3 py-1 text-xs leading-tight ring-1 ring-[#CBD5E1]/55'
             : compact
             ? 'px-1.5 py-0.5 text-[10px] leading-tight'
             : 'px-2.5 py-0.5 text-[11px] leading-tight'
@@ -166,7 +166,7 @@ export const TabbarBadge: React.FC<TabbarBadgeProps> = React.memo(
         {isFlagship && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-transparent via-[#FEF08A]/25 to-transparent kc-animate-shimmer"
+            className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-transparent via-[#E5E4E2]/25 to-transparent kc-animate-shimmer"
           />
         )}
 
@@ -193,7 +193,7 @@ export const TabbarBadge: React.FC<TabbarBadgeProps> = React.memo(
         )}
 
         {isFlagship && (
-          <span className="relative z-10 shrink-0 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[8px] font-black px-1 py-0 tracking-wider uppercase leading-none shadow-xs">
+          <span className="relative z-10 shrink-0 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#E5E4E2] via-[#CBD5E1] to-[#E5E4E2] text-[#1C1404] text-[8px] font-black px-1 py-0 tracking-wider uppercase leading-none shadow-xs">
             VIP
           </span>
         )}

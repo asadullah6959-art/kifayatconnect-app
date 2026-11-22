@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { repairCorruptedLocalCachePreserveSession } from '../../utils/cacheRecovery';
 
@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[Kifayat Connect ErrorBoundary]', error, errorInfo);
+    console.error('[SUI KHEL ITTEHAD ErrorBoundary]', error, errorInfo);
     const repaired = repairCorruptedLocalCachePreserveSession();
 
     if (this.props.isRoot && !this.state.autoRecoveryAttempted && repaired.length > 0) {
@@ -72,13 +72,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       const isUr = typeof document !== 'undefined' && document.documentElement.dataset.lang === 'ur';
       const wrapperClass = this.props.isRoot
-        ? 'min-h-[100dvh] w-full flex items-center justify-center p-5 bg-[#090D16] text-[#F8FAFC]'
+        ? 'min-h-[100dvh] w-full flex items-center justify-center p-5 bg-[#071812] text-[#F8FAFC]'
         : 'my-6 px-3';
 
       return (
         <div className={wrapperClass}>
           <div className="kc-obsidian-card rounded-2xl p-6 text-center max-w-md w-full mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-[#131C31] border border-[#38BDF8]/45 text-[#F5D061] flex items-center justify-center mx-auto mb-3 shadow-md">
+            <div className="w-12 h-12 rounded-2xl bg-[#0D2A1F] border border-[#059669]/45 text-[#E5E4E2] flex items-center justify-center mx-auto mb-3 shadow-md">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h3 className="text-base font-black text-[#F8FAFC]">

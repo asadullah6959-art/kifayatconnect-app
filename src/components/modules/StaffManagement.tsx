@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import {
   ShieldCheck,
@@ -70,7 +70,7 @@ export const StaffManagement: React.FC = () => {
         <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
           {language === 'ur'
             ? 'صرف سپر ایڈمن کو انتظامی عملے کی تقرری، عہدہ تبدیلی یا معطلی کا اختیار ہے۔'
-            : 'Under Kifayat Connect governance bylaws, only a Super Admin can appoint, promote, suspend, or reassign administrative leadership roles.'}
+            : 'Under SUI KHEL ITTEHAD governance bylaws, only a Super Admin can appoint, promote, suspend, or reassign administrative leadership roles.'}
         </p>
       </div>
     );
@@ -124,7 +124,7 @@ export const StaffManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     if (!formName.trim() || !formEmail.trim()) return;
@@ -141,7 +141,7 @@ export const StaffManagement: React.FC = () => {
       region: `${formDistrict}, ${formStateProvince}` as any
     };
 
-    const res = createOrUpdateStaff({
+    const res = await createOrUpdateStaff({
       ...(editingStaff ? { id: editingStaff.id } : {}),
       name: formName.trim(),
       email: formEmail.trim(),
@@ -166,14 +166,14 @@ export const StaffManagement: React.FC = () => {
     );
   };
 
-  const handlePromote = (staff: User) => {
-    const res = promoteToSuperAdmin(staff.id);
+  const handlePromote = async (staff: User) => {
+    const res = await promoteToSuperAdmin(staff.id);
     if (!res.success) showToast('err', res.error || (isUr ? 'سپر ایڈمن پر ترقی نہیں دی جا سکی۔' : 'Could not promote to Super Admin.'));
     else showToast('ok', isUr ? `${staff.name} کو اضافی سپر ایڈمن بنا دیا گیا۔` : `${staff.name} promoted to Additional Super Admin.`);
   };
 
-  const handleDemote = (staff: User) => {
-    const res = demoteSuperAdmin(staff.id);
+  const handleDemote = async (staff: User) => {
+    const res = await demoteSuperAdmin(staff.id);
     if (!res.success) showToast('err', res.error || (isUr ? 'سپر ایڈمن سے عہدہ کم نہیں کیا جا سکا۔' : 'Could not demote Super Admin.'));
     else showToast('ok', isUr ? `${staff.name} کو دوبارہ ضلعی ایڈمن بنا دیا گیا۔` : `${staff.name} reassigned to District Admin.`);
   };
@@ -192,19 +192,19 @@ export const StaffManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {language === 'ur' ? 'قیادت اور رسائی کا اختیار' : 'Governance & Access Delegation'}
             </span>
-            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-[#E5E4E2]/50">·</span>
             <span className="text-xs text-slate-300">
               {language === 'ur' ? '4-سطحی نظام' : 'Strict 4-Role Hierarchy'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#F5D061]" />
+            <ShieldCheck className="w-6 h-6 text-[#E5E4E2]" />
             <span>{t('navStaff')}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -242,9 +242,9 @@ export const StaffManagement: React.FC = () => {
 
       {/* Security Principles Banner */}
       <div className="kc-emerald-panel p-4 text-white rounded-2xl flex items-start gap-3">
-        <Lock className="w-5 h-5 text-[#F5D061] shrink-0 mt-0.5" />
+        <Lock className="w-5 h-5 text-[#E5E4E2] shrink-0 mt-0.5" />
         <div className="text-xs">
-          <span className="font-bold text-[#F5D061]">
+          <span className="font-bold text-[#E5E4E2]">
             {language === 'ur'
               ? 'بانی کا تحفظ اور 4-سطحی کردار'
               : 'Founder Protection & Strict 4-Role Governance'}
@@ -268,7 +268,7 @@ export const StaffManagement: React.FC = () => {
               key={staff.id}
               className={`kc-obsidian-card p-4 rounded-2xl flex flex-col justify-between space-y-3 ${
                 staffIsFounder
-                  ? '!border-[#F5D061]/70'
+                  ? '!border-[#E5E4E2]/70'
                   : staff.isSuspended
                   ? '!border-rose-500/45 opacity-80'
                   : ''
@@ -284,7 +284,7 @@ export const StaffManagement: React.FC = () => {
                       {staffIsFounder && (
                         <span
                           title={isUr ? 'مرکزی سپر ایڈمن (بانی) — محفوظ شدہ' : 'Main Super Admin (Founder) — Protected'}
-                          className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#F5D061] border border-[#D4AF37]/45 shrink-0"
+                          className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#E5E4E2]/20 text-[#E5E4E2] border border-[#E5E4E2]/45 shrink-0"
                         >
                           <Crown className="w-2.5 h-2.5" />
                           {isUr ? 'بانی' : 'Founder'}
@@ -310,9 +310,9 @@ export const StaffManagement: React.FC = () => {
                   />
                 </div>
 
-                <div className="mt-3 space-y-1 text-xs text-slate-300 border-t border-[#D4AF37]/20 pt-2.5">
+                <div className="mt-3 space-y-1 text-xs text-slate-300 border-t border-[#E5E4E2]/20 pt-2.5">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-[#E5E4E2] shrink-0" />
                     <span>
                       {isUr ? 'دائرہ اختیار:' : 'Jurisdiction:'}{' '}
                       <strong className="text-white">
@@ -336,19 +336,19 @@ export const StaffManagement: React.FC = () => {
                 </div>
 
                 {staff.notes && (
-                  <p className="text-[11px] text-slate-300 italic mt-2 bg-[#090D16] p-2.5 rounded-xl border border-[#D4AF37]/20">
+                  <p className="text-[11px] text-slate-300 italic mt-2 bg-[#071812] p-2.5 rounded-xl border border-[#E5E4E2]/20">
                     "{staff.notes}"
                   </p>
                 )}
               </div>
 
-              <div className="pt-2.5 border-t border-[#D4AF37]/20 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-[10px] font-mono text-[#F5D061]/80">
+              <div className="pt-2.5 border-t border-[#E5E4E2]/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-[10px] font-mono text-[#E5E4E2]/80">
                   {staff.membershipId || 'KC-STF'}
                 </span>
 
                 {lockedByFounder ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#F5D061]">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#E5E4E2]">
                     <Lock className="w-3 h-3" />
                     {isUr ? 'بانی محفوظ' : 'Founder Protected'}
                   </span>
@@ -360,7 +360,7 @@ export const StaffManagement: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => openEditModal(staff)}
-                      className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-[#F5D061] hover:text-white cursor-pointer"
+                      className="kc-pressable flex items-center gap-1 text-[11px] font-semibold text-[#E5E4E2] hover:text-white cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>{isUr ? 'ترمیم' : 'Edit'}</span>
@@ -390,8 +390,8 @@ export const StaffManagement: React.FC = () => {
 
                     {currentIsFounder && !staffIsFounder && (
                       <button
-                        onClick={() => {
-                          const res = assignAuditOfficer(staff.id, !staff.isAuditOfficer);
+                        onClick={async () => {
+                          const res = await assignAuditOfficer(staff.id, !staff.isAuditOfficer);
                           if (!res.success) showToast('err', res.error || (isUr ? 'آڈٹ آفیسر کا عہدہ تبدیل نہیں ہو سکا۔' : 'Could not update Audit Officer role.'));
                           else showToast(
                             'ok',
@@ -445,8 +445,8 @@ export const StaffManagement: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-black/85 overflow-y-auto">
           <div className="kc-luxury-modal kc-modal-panel relative w-full max-w-lg rounded-2xl my-auto flex flex-col overflow-hidden text-white">
-            <div className="px-4 sm:px-6 py-3.5 border-b border-[#D4AF37]/25 bg-[#090D16] flex items-start justify-between gap-2.5 shrink-0">
-              <h3 className="text-base font-bold text-[#F5D061] flex-1 min-w-0 break-words whitespace-normal leading-snug pt-1">
+            <div className="px-4 sm:px-6 py-3.5 border-b border-[#E5E4E2]/25 bg-[#071812] flex items-start justify-between gap-2.5 shrink-0">
+              <h3 className="text-base font-bold text-[#E5E4E2] flex-1 min-w-0 break-words whitespace-normal leading-snug pt-1">
                 {editingStaff
                   ? (isUr ? `عہدیدار میں ترمیم: ${editingStaff.name}` : `Modify Official: ${editingStaff.name}`)
                   : (isUr ? 'نیا عہدیدار مقرر کریں' : 'Appoint New Official')}
@@ -455,7 +455,7 @@ export const StaffManagement: React.FC = () => {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#0D2A1F] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -493,7 +493,7 @@ export const StaffManagement: React.FC = () => {
                     required
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
-                    placeholder="official@kifayatconnect.org"
+                    placeholder="official@suikhelittehad.org"
                     className="kc-luxury-input w-full text-xs px-3 py-2.5 rounded-xl"
                   />
                 </div>
@@ -611,7 +611,7 @@ export const StaffManagement: React.FC = () => {
             </form>
             </div>
 
-            <div className="px-6 py-3.5 border-t border-[#D4AF37]/25 bg-[#090D16] flex items-center justify-end gap-3 shrink-0">
+            <div className="px-6 py-3.5 border-t border-[#E5E4E2]/25 bg-[#071812] flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}

@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,7 +59,7 @@ async function startServer() {
   };
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, service: 'kifayat-connect-server' });
+    res.json({ ok: true, service: 'sui-khel-ittehad-server' });
   });
 
   app.get('/api/version', (_req, res) => {
@@ -125,9 +125,9 @@ async function startServer() {
       });
 
       const prompt = [
-        'You are a high-precision bilingual (Urdu Nastaliq & English) OCR assistant for "سوئی خیل قومی اتحاد / Sui Khel Qaumi Ittehad / Kifayat Connect".',
+        'You are a high-precision bilingual (Urdu Nastaliq & English) OCR assistant for "سوئی خیل اتحاد / SUI KHEL ITTEHAD / SUI KHEL ITTEHAD".',
         'CRITICAL RULE: Even if this image is blurry, dark, low-resolution, shadowed, faded, rotated, or taken on an old phone camera, NEVER refuse or ask for a clearer photo. Carefully decipher every visible Urdu Nastaliq and English word, handwritten pen ink, stamp, number, CNIC, phone number, Tabar, district, date, and amount, and return the JSON so all fields auto-fill into the form boxes below.',
-        'Use the exact spatial layout map of our paper "رکنیت فارم - سوئی خیل قومی اتحاد" (Rukniyat Form) OR "رسید وصولی - سوئی خیل قومی اتحاد" (Raseed Wasooli Receipt).',
+        'Use the exact spatial layout map of our paper "رکنیت فارم - سوئی خیل اتحاد" (Rukniyat Form) OR "رسید وصولی - سوئی خیل اتحاد" (Raseed Wasooli Receipt).',
         'Convert any Urdu/Arabic-Indic numerals (۰-۹, ٠-٩) into ASCII digits (0-9).',
         'EXACT SPATIAL & FIELD MAP (RUKNIYAT FORM & RASEED WASOOLI):',
         'Top Meta Row: date (تاریخ, prefer YYYY-MM-DD), serialNo (رکنیت نمبر / سیریل نمبر), oldReceiptSerialNo (رسید نمبر — e.g. printed black receipt serial number like 4200), district (یونٹ / ضلع out of Pakistan districts), unit (یونٹ).',
@@ -404,7 +404,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Kifayat Connect server running on http://0.0.0.0:${PORT}`);
+    console.log(`SUI KHEL ITTEHAD server running on http://0.0.0.0:${PORT}`);
   });
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Clock, 
@@ -74,13 +74,13 @@ export const AuditLogsView: React.FC = () => {
       case 'FINANCIAL':
         return 'bg-sky-950/60 text-sky-300 border-sky-500/40';
       case 'MEMBERSHIP':
-        return 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/45';
+        return 'bg-[#0D2A1F] text-[#059669] border-[#059669]/45';
       case 'REGIONAL':
-        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
+        return 'bg-amber-500/15 text-[#E5E4E2] border-[#E5E4E2]/45';
       case 'SECURITY':
         return 'bg-rose-950/60 text-rose-300 border-rose-500/45';
       default:
-        return 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25';
+        return 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25';
     }
   };
 
@@ -97,13 +97,13 @@ export const AuditLogsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {isUr ? 'نگرانی اور جوابدہی' : 'Compliance & Accountability'}
             </span>
-            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-[#E5E4E2]/50">·</span>
             <span className="text-xs text-slate-300">
               {isSuperAdmin
                 ? (isUr ? 'مرکزی تنظیمی آڈٹ ریکارڈ' : 'Master Organization Audit Trail')
@@ -117,7 +117,7 @@ export const AuditLogsView: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <Clock className="w-6 h-6 text-[#F5D061]" />
+            <Clock className="w-6 h-6 text-[#E5E4E2]" />
             <span>{isUr ? 'ناقابلِ تبدیلی گورننس آڈٹ لاگ' : 'Immutable Governance Audit Log'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -134,7 +134,7 @@ export const AuditLogsView: React.FC = () => {
         {/* Search & Filter */}
         <div className="flex flex-wrap items-center gap-2 w-full">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 text-[#F5D061] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#E5E4E2] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder={isUr ? 'آڈٹ ریکارڈ تلاش کریں...' : 'Search audit trail...'}
@@ -175,11 +175,11 @@ export const AuditLogsView: React.FC = () => {
           filteredLogs.map(log => (
             <div
               key={log.id}
-              className="kc-obsidian-card rounded-2xl p-3.5 space-y-2 text-xs border border-[#D4AF37]/25"
+              className="kc-obsidian-card rounded-2xl p-3.5 space-y-2 text-xs border border-[#E5E4E2]/25"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="font-mono font-bold text-[#F5D061] block break-all">
+                  <span className="font-mono font-bold text-[#E5E4E2] block break-all">
                     {log.action}
                   </span>
                   <span className="text-[10px] font-mono tabular-nums text-slate-400 block mt-0.5">
@@ -191,14 +191,14 @@ export const AuditLogsView: React.FC = () => {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[#E5E4E2]/15">
                 <div className="min-w-0">
                   <span className="font-semibold text-white block truncate">{log.actorName}</span>
                   <span className="text-[10px] text-slate-400 block truncate">
                     {log.actorRole} {log.district ? `· ${log.district}, ${log.stateProvince || 'Pakistan'}` : log.region ? `· ${log.region}` : ''}
                   </span>
                 </div>
-                <span className="text-[11px] font-medium text-slate-200 bg-[#090D16] px-2 py-0.5 rounded border border-[#D4AF37]/20 truncate max-w-full">
+                <span className="text-[11px] font-medium text-slate-200 bg-[#071812] px-2 py-0.5 rounded border border-[#E5E4E2]/20 truncate max-w-full">
                   {log.targetEntity}
                 </span>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -1331,6 +1331,13 @@ const ChatModuleContent: React.FC = () => {
         </span>
       );
     }
+    if (msg.deliveryStatus === 'DELIVERED') {
+      return (
+        <span className="inline-flex items-center gap-1 text-slate-300" title={translate(language, 'statusDelivered')}>
+          <CheckCheck className="w-3.5 h-3.5" />
+        </span>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1 text-slate-400" title={translate(language, 'statusDelivered')}>
         <Check className="w-3 h-3" />
@@ -1377,7 +1384,7 @@ const ChatModuleContent: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#D4AF37]/25">
             <div className="min-w-0">
               <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
-                {language === 'ur' ? 'کفایت کنیکٹ · لائیو اور براہ راست نیٹ ورک' : 'Kifayat Connect · Live & Direct Network'}
+                {language === 'ur' ? 'سوئی خیل اتحاد · لائیو اور براہ راست نیٹ ورک' : 'SUI KHEL ITTEHAD · Live & Direct Network'}
               </span>
               <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 flex items-center gap-2">
                 <MessageSquare className="w-6 h-6 text-[#F5D061] shrink-0" />

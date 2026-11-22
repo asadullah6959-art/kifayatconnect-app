@@ -1,4 +1,4 @@
-package com.kifayatconnect.app;
+package com.suikhelittehad.app;
 
 import android.Manifest;
 import android.content.Context;
@@ -27,10 +27,10 @@ public class MainActivity extends BridgeActivity {
     private WebView pendingFileWebView;
     private ValueCallback<Uri[]> pendingFilePathCallback;
     private WebChromeClient.FileChooserParams pendingFileChooserParams;
-    private KifayatWebChromeClient customChromeClient;
+    private SKIWebChromeClient customChromeClient;
 
-    private class KifayatWebChromeClient extends BridgeWebChromeClient {
-        KifayatWebChromeClient() {
+    private class SKIWebChromeClient extends BridgeWebChromeClient {
+        SKIWebChromeClient() {
             super(MainActivity.this.bridge);
         }
 
@@ -148,7 +148,7 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private class KifayatOtaBridge {
+    private class SKIOtaBridge {
         @JavascriptInterface
         public void clearWebViewHttpCache() {
             runOnUiThread(() -> {
@@ -173,9 +173,9 @@ public class MainActivity extends BridgeActivity {
                         : WebSettings.LOAD_CACHE_ELSE_NETWORK
                 );
             }
-            webView.addJavascriptInterface(new KifayatOtaBridge(), "KifayatOtaNative");
+            webView.addJavascriptInterface(new SKIOtaBridge(), "SKIOtaNative");
             if (customChromeClient == null) {
-                customChromeClient = new KifayatWebChromeClient();
+                customChromeClient = new SKIWebChromeClient();
             }
             webView.setWebChromeClient(customChromeClient);
         }

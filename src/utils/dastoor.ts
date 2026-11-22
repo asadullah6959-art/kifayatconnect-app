@@ -1,4 +1,4 @@
-import type { User } from '../types';
+﻿import type { User } from '../types';
 import { resolveUserTabbar } from '../data/tabbars';
 
 export const DASTOOR_MONTHLY_RATE = 100;
@@ -146,7 +146,7 @@ export const DEFAULT_TREASURY_ACCOUNTS: TreasuryAccountItem[] = [
     id: 'easypaisa',
     methodEn: 'EasyPaisa',
     methodUr: 'ایزی پیسہ',
-    accountTitle: 'Kifayat Connect Treasury',
+    accountTitle: 'SUI KHEL ITTEHAD Treasury',
     accountNumber: '03008492019',
     bankOrProviderEn: 'EasyPaisa Official Wallet',
     bankOrProviderUr: 'آفیشل ایزی پیسہ اکاؤنٹ',
@@ -155,7 +155,7 @@ export const DEFAULT_TREASURY_ACCOUNTS: TreasuryAccountItem[] = [
     id: 'jazzcash',
     methodEn: 'JazzCash',
     methodUr: 'جاز کیش',
-    accountTitle: 'Kifayat Connect Treasury',
+    accountTitle: 'SUI KHEL ITTEHAD Treasury',
     accountNumber: '03018492019',
     bankOrProviderEn: 'JazzCash Official Wallet',
     bankOrProviderUr: 'آفیشل جاز کیش اکاؤنٹ',
@@ -164,7 +164,7 @@ export const DEFAULT_TREASURY_ACCOUNTS: TreasuryAccountItem[] = [
     id: 'bank',
     methodEn: 'Bank / IBAN',
     methodUr: 'بینک اکاؤنٹ / IBAN',
-    accountTitle: 'Kifayat Connect Welfare Trust',
+    accountTitle: 'SUI KHEL ITTEHAD Welfare Trust',
     accountNumber: 'PK42MEZN0002810104892019',
     bankOrProviderEn: 'Meezan Bank (Raast / IBFT)',
     bankOrProviderUr: 'میزان بینک (راست / آئی بی ایف ٹی)',

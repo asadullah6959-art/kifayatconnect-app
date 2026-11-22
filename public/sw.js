@@ -1,6 +1,6 @@
-// Kifayat Connect Auto-Updating Service Worker (Zero-Reinstall OTA Updates + Offline Resilience)
+// SUI KHEL ITTEHAD Auto-Updating Service Worker (Zero-Reinstall OTA Updates + Offline Resilience)
 const BUILD_STAMP = '__KC_SW_BUILD_ID__';
-const CACHE_NAME = `kifayat-connect-ota-${BUILD_STAMP}`;
+const CACHE_NAME = `ski-connect-ota-${BUILD_STAMP}`;
 const STATIC_ASSETS = [
   './manifest.json',
   './kc-emblem.svg',

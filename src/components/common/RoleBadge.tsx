@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { UserRole } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { getRoleDisplayLabel } from '../../data/translations';
@@ -30,7 +30,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({
           className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(212,175,55,0.28),inset_0_1px_0_rgba(255,245,190,0.45)] shrink-0 ${sizeCls}`}
           style={{
             background: 'linear-gradient(135deg, #3A2A0A 0%, #7A5816 50%, #2A1D06 100%)',
-            borderColor: '#F5D061',
+            borderColor: '#E5E4E2',
             color: '#FFF2B2'
           }}
         >
@@ -46,11 +46,11 @@ export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({
           className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(37,99,235,0.25),inset_0_1px_0_rgba(191,219,254,0.3)] shrink-0 ${sizeCls}`}
           style={{
             background: 'linear-gradient(135deg, #0E234E 0%, #1E40AF 55%, #0B1B3B 100%)',
-            borderColor: '#D4AF37',
+            borderColor: '#E5E4E2',
             color: '#DBEAFE'
           }}
         >
-          <span aria-hidden="true" className="text-[#F5D061] leading-none">★</span>
+          <span aria-hidden="true" className="text-[#E5E4E2] leading-none">★</span>
           <span>{label}</span>
         </span>
       );
@@ -66,7 +66,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({
             color: '#D1FAE5'
           }}
         >
-          <span aria-hidden="true" className="text-[#F5D061] leading-none">✦</span>
+          <span aria-hidden="true" className="text-[#E5E4E2] leading-none">✦</span>
           <span>{label}</span>
         </span>
       );
@@ -103,11 +103,11 @@ export const RoleBadge: React.FC<RoleBadgeProps> = React.memo(({
       className={`inline-flex items-center font-extrabold uppercase tracking-wider rounded-lg border shadow-[0_2px_8px_rgba(14,165,233,0.22),inset_0_1px_0_rgba(186,230,253,0.35)] shrink-0 ${sizeCls}`}
       style={{
         background: 'linear-gradient(135deg, #072A3E 0%, #0369A1 55%, #061D2C 100%)',
-        borderColor: '#38BDF8',
+        borderColor: '#059669',
         color: '#E0F2FE'
       }}
     >
-      <span aria-hidden="true" className="text-[#F5D061] leading-none">🛡️</span>
+      <span aria-hidden="true" className="text-[#E5E4E2] leading-none">🛡️</span>
       <span>{language === 'ur' ? 'آڈٹ آفیسر' : 'AUDIT OFFICER'}</span>
     </span>
   );

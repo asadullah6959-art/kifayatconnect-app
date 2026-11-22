@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   CheckSquare, 
@@ -234,10 +234,10 @@ export const ApprovalWorkflow: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Module Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[#E5E4E2] uppercase tracking-wider">
               {isUr ? 'گورننس اور تصدیقی پائپ لائن' : 'Governance & Verification Pipeline'}
             </span>
             <span className="text-slate-500">·</span>
@@ -246,7 +246,7 @@ export const ApprovalWorkflow: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-[#F5D061]" />
+            <CheckSquare className="w-6 h-6 text-[#E5E4E2]" />
             <span>{isUr ? 'ممبرشپ کثیر الجہتی منظوری مرکز' : 'Membership Multi-Tier Approval Center'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -261,9 +261,9 @@ export const ApprovalWorkflow: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsOldPaperModalOpen(true)}
-              className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#064E3B]/80 hover:bg-[#065F46] text-[#FEF08A] border border-[#D4AF37]/60 text-xs font-bold rounded-xl cursor-pointer"
+              className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#064E3B]/80 hover:bg-[#065F46] text-[#E5E4E2] border border-[#E5E4E2]/60 text-xs font-bold rounded-xl cursor-pointer"
             >
-              <FilePlus2 className="w-4 h-4 text-[#FDE047]" />
+              <FilePlus2 className="w-4 h-4 text-[#CBD5E1]" />
               <span>
                 {isUr
                   ? '+ پرانا دستی ریکارڈ شامل کریں'
@@ -273,24 +273,24 @@ export const ApprovalWorkflow: React.FC = () => {
           )}
 
           {/* Workflow Diagram Banner */}
-          <div className="hidden lg:flex items-center gap-2 bg-[#111726] p-2.5 rounded-xl border border-[#D4AF37]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
+          <div className="hidden lg:flex items-center gap-2 bg-[#0D2A1F] p-2.5 rounded-xl border border-[#E5E4E2]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.12)]">
             <div className="flex items-center gap-1.5 font-medium text-slate-200">
-              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">1</span>
+              <span className="w-5 h-5 rounded-full bg-[#071812] border border-[#E5E4E2]/30 text-[#E5E4E2] flex items-center justify-center text-[10px] font-bold tabular-nums">1</span>
               <span>{isUr ? 'رجسٹریشن' : 'Registration'}</span>
             </div>
-            <span className="text-[#D4AF37]/60">→</span>
-            <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-[#F5D061] font-bold' : 'text-slate-300'}`}>
-              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] flex items-center justify-center text-[10px] font-bold tabular-nums">2</span>
+            <span className="text-[#E5E4E2]/60">→</span>
+            <div className={`flex items-center gap-1.5 font-medium ${isDistrictAdmin ? 'text-[#E5E4E2] font-bold' : 'text-slate-300'}`}>
+              <span className="w-5 h-5 rounded-full bg-[#071812] border border-[#E5E4E2]/40 text-[#E5E4E2] flex items-center justify-center text-[10px] font-bold tabular-nums">2</span>
               <span>{isUr ? 'ضلعی تصدیق' : 'District Verify'}</span>
             </div>
-            <span className="text-[#D4AF37]/60">→</span>
-            <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-[#38BDF8] font-bold' : 'text-slate-300'}`}>
-              <span className="w-5 h-5 rounded-full bg-[#131C31] border border-[#38BDF8]/45 text-[#38BDF8] flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
+            <span className="text-[#E5E4E2]/60">→</span>
+            <div className={`flex items-center gap-1.5 font-medium ${isSuperAdmin ? 'text-[#059669] font-bold' : 'text-slate-300'}`}>
+              <span className="w-5 h-5 rounded-full bg-[#0D2A1F] border border-[#059669]/45 text-[#059669] flex items-center justify-center text-[10px] font-bold tabular-nums">3</span>
               <span>{isUr ? 'سپر ایڈمن دستخط' : 'Super Admin Sign'}</span>
             </div>
-            <span className="text-[#D4AF37]/60">→</span>
+            <span className="text-[#E5E4E2]/60">→</span>
             <div className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-5 h-5 rounded-full bg-[#090D16] border border-[#D4AF37]/30 text-slate-200 flex items-center justify-center text-[10px] font-bold tabular-nums">4</span>
+              <span className="w-5 h-5 rounded-full bg-[#071812] border border-[#E5E4E2]/30 text-slate-200 flex items-center justify-center text-[10px] font-bold tabular-nums">4</span>
               <span>{isUr ? 'آئی ڈی کارڈ جاری' : 'ID Card Issued'}</span>
             </div>
           </div>
@@ -305,7 +305,7 @@ export const ApprovalWorkflow: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable tabular-nums ${
               activeTabFilter === 'PENDING_REGIONAL'
                 ? 'kc-gold-button font-bold'
-                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+                : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
             }`}
           >
             {isUr
@@ -318,7 +318,7 @@ export const ApprovalWorkflow: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable tabular-nums ${
               activeTabFilter === 'RECOMMENDED'
                 ? 'kc-gold-button font-bold'
-                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+                : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
             }`}
           >
             {isUr
@@ -331,7 +331,7 @@ export const ApprovalWorkflow: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable ${
               activeTabFilter === 'ACTIVE'
                 ? 'kc-gold-button font-bold'
-                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+                : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
             }`}
           >
             {isUr ? 'منظور شدہ و فعال' : 'Approved & Active'}
@@ -342,7 +342,7 @@ export const ApprovalWorkflow: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer kc-pressable ${
               activeTabFilter === 'REJECTED'
                 ? 'kc-gold-button font-bold'
-                : 'text-slate-300 hover:text-white hover:bg-[#141B2D]'
+                : 'text-slate-300 hover:text-white hover:bg-[#0D2A1F]'
             }`}
           >
             {isUr ? 'مسترد شدہ' : 'Rejected'}
@@ -390,13 +390,13 @@ export const ApprovalWorkflow: React.FC = () => {
       <div className="space-y-4">
         {/* Select All Bulk Toolbar Header */}
         {actionableVisibleApps.length > 0 && (
-          <div className="flex items-center justify-between bg-[#111726] px-4 py-2.5 rounded-xl border border-[#D4AF37]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.1)]">
+          <div className="flex items-center justify-between bg-[#0D2A1F] px-4 py-2.5 rounded-xl border border-[#E5E4E2]/30 text-xs shadow-[inset_0_1px_0_rgba(252,227,138,0.1)]">
             <label className="flex items-center gap-2.5 font-medium text-slate-200 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-[#D4AF37]/50 bg-[#090D16] accent-[#D4AF37] cursor-pointer"
+                className="w-4 h-4 rounded border-[#E5E4E2]/50 bg-[#071812] accent-[#E5E4E2] cursor-pointer"
               />
               <span className="tabular-nums">
                 {isUr
@@ -407,7 +407,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-[#F5D061] tabular-nums">
+                <span className="text-[11px] font-semibold text-[#E5E4E2] tabular-nums">
                   {isUr
                     ? `${actionableVisibleApps.length} میں سے ${selectedIds.length} منتخب`
                     : `${selectedIds.length} of ${actionableVisibleApps.length} selected`}
@@ -446,7 +446,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 key={app.id}
                 className={`p-5 kc-obsidian-card rounded-2xl transition-all space-y-3 ${
                   isSelected 
-                    ? 'border-[#F5D061] ring-2 ring-[#F5D061]/30' 
+                    ? 'border-[#E5E4E2] ring-2 ring-[#E5E4E2]/30'
                     : ''
                 }`}
               >
@@ -458,7 +458,7 @@ export const ApprovalWorkflow: React.FC = () => {
                         checked={isSelected}
                         onChange={() => toggleSelectOne(app.id)}
                         aria-label={`Select ${app.applicantName}`}
-                        className="w-4 h-4 rounded border-[#D4AF37]/50 bg-[#090D16] accent-[#D4AF37] cursor-pointer"
+                        className="w-4 h-4 rounded border-[#E5E4E2]/50 bg-[#071812] accent-[#E5E4E2] cursor-pointer"
                       />
                     </div>
                   )}
@@ -470,7 +470,7 @@ export const ApprovalWorkflow: React.FC = () => {
                           {app.applicantName}
                         </h3>
                         {app.serialNumber && (
-                          <span className="text-[10px] font-mono font-extrabold text-[#FDE047] bg-[#070D14] px-2 py-0.5 rounded-lg border border-[#D4AF37]/50">
+                          <span className="text-[10px] font-mono font-extrabold text-[#CBD5E1] bg-[#071812] px-2 py-0.5 rounded-lg border border-[#E5E4E2]/50">
                             {app.serialNumber}
                           </span>
                         )}
@@ -481,12 +481,12 @@ export const ApprovalWorkflow: React.FC = () => {
                           compact
                           language={language}
                         />
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-medium bg-[#131C31] border border-[#38BDF8]/35 text-[#F8FAFC] text-xs">
-                          <MapPin className="w-3 h-3 text-[#38BDF8] shrink-0" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-medium bg-[#0D2A1F] border border-[#059669]/35 text-[#F8FAFC] text-xs">
+                          <MapPin className="w-3 h-3 text-[#059669] shrink-0" />
                           <span>{dist}, {prov}</span>
                         </div>
                         {app.isOldMemberVerification && (
-                          <span className="text-[10px] font-semibold text-[#F5D061] bg-[#090D16] px-2 py-0.5 rounded-lg border border-[#D4AF37]/35">
+                          <span className="text-[10px] font-semibold text-[#E5E4E2] bg-[#071812] px-2 py-0.5 rounded-lg border border-[#E5E4E2]/35">
                             {isUr ? 'پرانا ممبر نمبر:' : 'Legacy ID:'} {app.oldMembershipNo}
                           </span>
                         )}
@@ -495,12 +495,12 @@ export const ApprovalWorkflow: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-lg ${
                           app.status === 'ACTIVE'
-                            ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
+                            ? 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/40'
                             : (app.status as any) === 'RECOMMENDED_BY_REGION' || (app.status as any) === 'RECOMMENDED_BY_DISTRICT'
-                            ? 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/45'
+                            ? 'bg-[#071812] text-[#E5E4E2] border border-[#E5E4E2]/45'
                             : app.status === 'REJECTED'
                             ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
-                            : 'bg-[#090D16] text-sky-300 border border-sky-500/40'
+                            : 'bg-[#071812] text-sky-300 border border-sky-500/40'
                         }`}>
                           {localizeAppStatus(app.status)}
                         </span>
@@ -508,8 +508,8 @@ export const ApprovalWorkflow: React.FC = () => {
                     </div>
 
                     {/* Administrative Location Hierarchy Breadcrumb */}
-                    <div className="px-3 py-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/20 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
-                      <span className="text-[10px] uppercase font-bold text-[#D4AF37]">{isUr ? 'دائرہ کار:' : 'Jurisdiction:'}</span>
+                    <div className="px-3 py-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/20 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
+                      <span className="text-[10px] uppercase font-bold text-[#E5E4E2]">{isUr ? 'دائرہ کار:' : 'Jurisdiction:'}</span>
                       <span className="font-semibold text-white">{app.country || 'Pakistan'}</span>
                       <span className="text-slate-500">→</span>
                       <span className="font-semibold text-white">{prov}</span>
@@ -524,7 +524,7 @@ export const ApprovalWorkflow: React.FC = () => {
                     </div>
 
                     {/* Applicant Credentials Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-[#071812] p-3.5 rounded-xl border border-[#E5E4E2]/20">
                       <div>
                         <span className="text-[10px] text-slate-400 block uppercase">{isUr ? 'قومی شناختی کارڈ (CNIC)' : 'National ID (CNIC)'}</span>
                         <span className="font-mono text-white font-semibold tabular-nums">{app.cnic}</span>
@@ -549,10 +549,10 @@ export const ApprovalWorkflow: React.FC = () => {
                     </p>
 
                     {/* Workflow Audit Stamp Section */}
-                    <div className="pt-2 border-t border-[#D4AF37]/15 space-y-1.5 text-xs">
+                    <div className="pt-2 border-t border-[#E5E4E2]/15 space-y-1.5 text-xs">
                       {(app.districtRemarks || app.regionalRemarks) && (
-                        <div className="p-2.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/30">
-                          <span className="font-semibold text-[#F5D061]">
+                        <div className="p-2.5 rounded-xl bg-[#071812] border border-[#E5E4E2]/30">
+                          <span className="font-semibold text-[#E5E4E2]">
                             {isUr
                               ? `ضلعی سفارش (${app.districtAdminName || app.regionalOfficerName || 'ضلعی ایڈمن'}):`
                               : `District Recommendation (${app.districtAdminName || app.regionalOfficerName || 'District Admin'}):`}
@@ -564,22 +564,22 @@ export const ApprovalWorkflow: React.FC = () => {
                       )}
 
                       {app.superAdminRemarks && (
-                        <div className="p-2.5 rounded-xl bg-[#131C31]/90 border border-[#38BDF8]/35">
-                          <span className="font-semibold text-[#38BDF8]">
+                        <div className="p-2.5 rounded-xl bg-[#0D2A1F]/90 border border-[#059669]/35">
+                          <span className="font-semibold text-[#059669]">
                             {isUr ? 'سپر ایڈمن حتمی منظوری:' : 'Super Admin Final Sign-Off:'}
                           </span>
                           <p className="text-slate-200 mt-0.5">
-                            {app.superAdminRemarks} · {isUr ? 'جاری کردہ ممبرشپ آئی ڈی:' : 'Issued Membership ID:'} <span className="font-mono font-bold text-[#F5D061] tabular-nums">{app.generatedMembershipId}</span>
+                            {app.superAdminRemarks} · {isUr ? 'جاری کردہ ممبرشپ آئی ڈی:' : 'Issued Membership ID:'} <span className="font-mono font-bold text-[#E5E4E2] tabular-nums">{app.generatedMembershipId}</span>
                           </p>
                         </div>
                       )}
                     </div>
 
                     {/* Supporting Documents Dossier Section */}
-                    <div className="pt-2 border-t border-[#D4AF37]/15 flex flex-wrap items-center justify-between gap-2">
+                    <div className="pt-2 border-t border-[#E5E4E2]/15 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
-                          <Paperclip className="w-3 h-3 text-[#F5D061]" />
+                          <Paperclip className="w-3 h-3 text-[#E5E4E2]" />
                           <span>{isUr ? 'معاون دستاویزات:' : 'Supporting Files:'}</span>
                         </span>
 
@@ -592,10 +592,10 @@ export const ApprovalWorkflow: React.FC = () => {
                                 onClick={() => setActiveDocAppId(app.id)}
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer kc-pressable ${
                                   doc.verificationStatus === 'VERIFIED'
-                                    ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/40'
+                                    ? 'bg-[#0D2A1F] text-[#059669] border-[#059669]/40'
                                     : doc.verificationStatus === 'FLAGGED'
                                     ? 'bg-rose-950/70 text-rose-200 border-rose-500/40'
-                                    : 'bg-[#090D16] text-[#F5D061] border-[#D4AF37]/35'
+                                    : 'bg-[#071812] text-[#E5E4E2] border-[#E5E4E2]/35'
                                 }`}
                                 title={isUr ? `${doc.name} - معائنے کے لیے کلک کریں` : `${doc.name} (${doc.type}) - Click to inspect`}
                               >
@@ -615,9 +615,9 @@ export const ApprovalWorkflow: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActiveDocAppId(app.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#090D16] hover:bg-[#161F33] text-[#F5D061] border border-[#D4AF37]/40 transition-colors cursor-pointer kc-pressable"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#071812] hover:bg-[#161F33] text-[#E5E4E2] border border-[#E5E4E2]/40 transition-colors cursor-pointer kc-pressable"
                       >
-                        <Paperclip className="w-3.5 h-3.5 text-[#F5D061]" />
+                        <Paperclip className="w-3.5 h-3.5 text-[#E5E4E2]" />
                         <span>
                           {app.supportingDocuments && app.supportingDocuments.length > 0 
                             ? (isUr ? `ڈوزیئر منظم کریں (${app.supportingDocuments.length})` : `Manage Dossier (${app.supportingDocuments.length})`)
@@ -631,9 +631,9 @@ export const ApprovalWorkflow: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openRukniyatForm(app)}
-                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-[#022C22]/80 hover:bg-[#064E3B] text-[#FEF08A] border border-[#D4AF37]/50 cursor-pointer kc-pressable"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-[#022C22]/80 hover:bg-[#064E3B] text-[#E5E4E2] border border-[#E5E4E2]/50 cursor-pointer kc-pressable"
                       >
-                        <FileCheck2 className="w-3.5 h-3.5 text-[#FDE047]" />
+                        <FileCheck2 className="w-3.5 h-3.5 text-[#CBD5E1]" />
                         <span>{isUr ? 'مکمل رکنیت فارم / مہر دیکھیں' : 'View Full Rukniyat Form / Mohar'}</span>
                       </button>
 
@@ -669,7 +669,7 @@ export const ApprovalWorkflow: React.FC = () => {
                           <button
                             onClick={() => {
                               setFinalApprovingApp(app);
-                              setAdminNotes(isUr ? 'کفایت کنیکٹ کے قواعد کے تحت حتمی منظوری دے دی گئی۔' : 'Final approval granted under Kifayat Connect bylaws.');
+                              setAdminNotes(isUr ? 'سوئی خیل اتحاد کے قواعد کے تحت حتمی منظوری دے دی گئی۔' : 'Final approval granted under SUI KHEL ITTEHAD bylaws.');
                             }}
                             className="flex items-center gap-1.5 px-4 py-2 kc-gold-button text-xs font-bold rounded-xl cursor-pointer"
                           >
@@ -689,14 +689,14 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: DISTRICT ADMIN RECOMMENDATION DIALOG */}
       {reviewingApp && (
-        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#071812]/85 overflow-y-auto">
           <div
             className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="flex items-start justify-between gap-2.5">
               <div className="flex-1 min-w-0">
-                <span className="text-xs text-[#F5D061] uppercase font-bold tracking-wide block break-words whitespace-normal">
+                <span className="text-xs text-[#E5E4E2] uppercase font-bold tracking-wide block break-words whitespace-normal">
                   {isUr ? 'مرحلہ 1 جائزہ:' : 'Stage 1 Review:'} {reviewingApp.district || currentUser.district || (isUr ? 'ضلع دائرہ اختیار' : 'District Jurisdiction')} ({reviewingApp.stateProvince || currentUser.stateProvince || 'Pakistan'})
                 </span>
                 <h3 className="text-base font-bold text-white mt-0.5 break-words whitespace-normal leading-snug">
@@ -710,23 +710,23 @@ export const ApprovalWorkflow: React.FC = () => {
                 type="button"
                 onClick={() => setReviewingApp(null)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Supporting Dossier Quick Check */}
-            <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 space-y-2">
+            <div className="p-3 rounded-xl bg-[#071812] border border-[#E5E4E2]/25 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <Paperclip className="w-3.5 h-3.5 text-[#F5D061]" />
+                  <Paperclip className="w-3.5 h-3.5 text-[#E5E4E2]" />
                   <span>{isUr ? 'معاون دستاویزات:' : 'Supporting Documents:'}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveDocAppId(reviewingApp.id)}
-                  className="text-[#F5D061] font-bold hover:underline text-[11px] cursor-pointer"
+                  className="text-[#E5E4E2] font-bold hover:underline text-[11px] cursor-pointer"
                 >
                   {isUr ? `ڈوزیئر دیکھیں (${reviewingApp.supportingDocuments?.length || 0})` : `Manage Dossier (${reviewingApp.supportingDocuments?.length || 0})`}
                 </button>
@@ -742,11 +742,11 @@ export const ApprovalWorkflow: React.FC = () => {
                     <span 
                       key={doc.id}
                       onClick={() => setActiveDocAppId(reviewingApp.id)}
-                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#111726] border border-[#D4AF37]/30 text-slate-200 flex items-center gap-1 hover:border-[#F5D061]"
+                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#0D2A1F] border border-[#E5E4E2]/30 text-slate-200 flex items-center gap-1 hover:border-[#E5E4E2]"
                     >
                       <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : '🧾'}</span>
                       <span className="truncate max-w-[100px]">{doc.name}</span>
-                      <span className={`w-1.5 h-1.5 rounded-full ${doc.verificationStatus === 'VERIFIED' ? 'bg-emerald-400' : 'bg-[#F5D061]'}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${doc.verificationStatus === 'VERIFIED' ? 'bg-emerald-400' : 'bg-[#E5E4E2]'}`} />
                     </span>
                   ))}
                 </div>
@@ -763,8 +763,8 @@ export const ApprovalWorkflow: React.FC = () => {
                   onClick={() => setRecommendationChoice('APPROVE')}
                   className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-colors flex items-center justify-center gap-1.5 cursor-pointer kc-pressable ${
                     recommendationChoice === 'APPROVE'
-                      ? 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/60'
-                      : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+                      ? 'bg-[#0D2A1F] text-[#059669] border-[#059669]/60'
+                      : 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25 hover:border-[#E5E4E2]/50'
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -777,7 +777,7 @@ export const ApprovalWorkflow: React.FC = () => {
                   className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-colors flex items-center justify-center gap-1.5 cursor-pointer kc-pressable ${
                     recommendationChoice === 'REJECT'
                       ? 'bg-rose-950 text-rose-300 border-rose-500/60'
-                      : 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
+                      : 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25 hover:border-[#E5E4E2]/50'
                   }`}
                 >
                   <XCircle className="w-4 h-4" />
@@ -800,11 +800,11 @@ export const ApprovalWorkflow: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E5E4E2]/20">
               <button
                 type="button"
                 onClick={() => setReviewingApp(null)}
-                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 cursor-pointer kc-pressable"
+                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#071812] border border-[#E5E4E2]/20 cursor-pointer kc-pressable"
               >
                 {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
@@ -822,7 +822,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: SUPER ADMIN FINAL APPROVAL DIALOG */}
       {finalApprovingApp && (
-        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#071812]/85 overflow-y-auto">
           <div
             className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-md w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
@@ -845,14 +845,14 @@ export const ApprovalWorkflow: React.FC = () => {
                 type="button"
                 onClick={() => setFinalApprovingApp(null)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 text-xs">
-              <span className="font-semibold text-[#F5D061]">
+            <div className="p-3 bg-[#071812] rounded-xl border border-[#E5E4E2]/30 text-xs">
+              <span className="font-semibold text-[#E5E4E2]">
                 {isUr ? 'ریکارڈ پر ضلعی سفارش:' : 'District Recommendation On File:'}
               </span>
               <p className="italic text-slate-200 mt-0.5">
@@ -864,16 +864,16 @@ export const ApprovalWorkflow: React.FC = () => {
             </div>
 
             {/* Supporting Dossier Quick Check */}
-            <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 space-y-2">
+            <div className="p-3 rounded-xl bg-[#071812] border border-[#E5E4E2]/25 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#F5D061]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#E5E4E2]" />
                   <span>{isUr ? 'ڈوزیئر تصدیقی آڈٹ:' : 'Dossier Verification Audit:'}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveDocAppId(finalApprovingApp.id)}
-                  className="text-[#F5D061] font-bold hover:underline text-[11px] cursor-pointer"
+                  className="text-[#E5E4E2] font-bold hover:underline text-[11px] cursor-pointer"
                 >
                   {isUr ? `سب دیکھیں (${finalApprovingApp.supportingDocuments?.length || 0})` : `Inspect All (${finalApprovingApp.supportingDocuments?.length || 0})`}
                 </button>
@@ -889,11 +889,11 @@ export const ApprovalWorkflow: React.FC = () => {
                     <span 
                       key={doc.id}
                       onClick={() => setActiveDocAppId(finalApprovingApp.id)}
-                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#111726] border border-[#D4AF37]/30 text-slate-200 flex items-center gap-1 hover:border-[#F5D061]"
+                      className="cursor-pointer text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#0D2A1F] border border-[#E5E4E2]/30 text-slate-200 flex items-center gap-1 hover:border-[#E5E4E2]"
                     >
                       <span>{doc.type === 'IDENTIFICATION_CNIC' ? '🪪' : '🧾'}</span>
                       <span className="truncate max-w-[120px]">{doc.name}</span>
-                      <span className={`text-[9px] font-bold ${doc.verificationStatus === 'VERIFIED' ? 'text-emerald-300' : 'text-[#F5D061]'}`}>
+                      <span className={`text-[9px] font-bold ${doc.verificationStatus === 'VERIFIED' ? 'text-emerald-300' : 'text-[#E5E4E2]'}`}>
                         ({doc.verificationStatus || 'PENDING'})
                       </span>
                     </span>
@@ -915,11 +915,11 @@ export const ApprovalWorkflow: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E5E4E2]/20">
               <button
                 type="button"
                 onClick={() => setFinalApprovingApp(null)}
-                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 cursor-pointer kc-pressable"
+                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#071812] border border-[#E5E4E2]/20 cursor-pointer kc-pressable"
               >
                 {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>
@@ -942,7 +942,7 @@ export const ApprovalWorkflow: React.FC = () => {
           className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-1.5rem)] kc-luxury-modal text-white rounded-2xl px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#131C31] text-[#38BDF8] font-bold text-xs border border-[#38BDF8]/50 tabular-nums">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#0D2A1F] text-[#059669] font-bold text-xs border border-[#059669]/50 tabular-nums">
               {selectedIds.length}
             </div>
             <div>
@@ -985,7 +985,7 @@ export const ApprovalWorkflow: React.FC = () => {
                 setBulkRemarks(
                   isDistrictAdmin 
                     ? (isUr ? 'اجتماعی ضلعی سفارش: پتہ اور کوائف کی تصدیق ہو گئی۔' : 'Bulk district recommendation: Address and credentials verified.')
-                    : (isUr ? 'کفایت کنیکٹ کے قواعد کے تحت اجتماعی حتمی منظوری دے دی گئی۔' : 'Bulk final approval granted under Kifayat Connect bylaws.')
+                    : (isUr ? 'سوئی خیل اتحاد کے قواعد کے تحت اجتماعی حتمی منظوری دے دی گئی۔' : 'Bulk final approval granted under SUI KHEL ITTEHAD bylaws.')
                 );
                 setBulkAction('APPROVE');
               }}
@@ -1004,7 +1004,7 @@ export const ApprovalWorkflow: React.FC = () => {
 
       {/* MODAL: BULK APPROVE / REJECT CONFIRMATION */}
       {bulkAction && (
-        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#090D16]/85 overflow-y-auto">
+        <div className="fixed inset-0 z-[95] kc-modal-backdrop flex items-start sm:items-center justify-center bg-[#071812]/85 overflow-y-auto">
           <div
             className="kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 max-w-lg w-full space-y-4 my-auto overflow-y-auto text-slate-100"
             style={{ WebkitOverflowScrolling: 'touch' }}
@@ -1035,15 +1035,15 @@ export const ApprovalWorkflow: React.FC = () => {
                 type="button"
                 onClick={() => setBulkAction(null)}
                 aria-label={isUr ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="max-h-36 overflow-y-auto p-2.5 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 space-y-1 text-xs">
+            <div className="max-h-36 overflow-y-auto p-2.5 rounded-xl bg-[#071812] border border-[#E5E4E2]/25 space-y-1 text-xs">
               {applications.filter(a => selectedIds.includes(a.id)).map(a => (
-                <div key={a.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-[#111726] border border-[#D4AF37]/20">
+                <div key={a.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-[#0D2A1F] border border-[#E5E4E2]/20">
                   <span className="font-semibold text-white">{a.applicantName}</span>
                   <span className="text-[10px] text-slate-300 font-mono tabular-nums">{a.cnic} · {a.district || a.region}</span>
                 </div>
@@ -1065,12 +1065,12 @@ export const ApprovalWorkflow: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E5E4E2]/20">
               <button
                 type="button"
                 disabled={isProcessingBulk}
                 onClick={() => setBulkAction(null)}
-                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#090D16] border border-[#D4AF37]/20 disabled:opacity-50 cursor-pointer kc-pressable"
+                className="px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-xl bg-[#071812] border border-[#E5E4E2]/20 disabled:opacity-50 cursor-pointer kc-pressable"
               >
                 {isUr ? 'منسوخ کریں' : 'Cancel'}
               </button>

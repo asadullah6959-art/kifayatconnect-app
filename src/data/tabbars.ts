@@ -1,4 +1,4 @@
-import type { User } from '../types';
+﻿import type { User } from '../types';
 
 export interface TabbarClan {
   id: string;
@@ -21,8 +21,8 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'فیض خیل',
     emblem: '👑',
     gradientBg: 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)',
-    borderColor: '#FDE047',
-    textColor: '#FEF08A',
+    borderColor: '#CBD5E1',
+    textColor: '#E5E4E2',
     glowColor: 'rgba(253, 224, 71, 0.58)',
     isFlagship: true,
   },
@@ -32,7 +32,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'سواتی خیل',
     emblem: '🛡️',
     gradientBg: 'linear-gradient(135deg, #0F2D5C 0%, #1D4ED8 55%, #1E3A8A 100%)',
-    borderColor: '#D4AF37',
+    borderColor: '#E5E4E2',
     textColor: '#FDE68A',
     glowColor: 'rgba(29, 78, 216, 0.42)',
   },
@@ -52,7 +52,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'ملخان خیل',
     emblem: '⚔️',
     gradientBg: 'linear-gradient(135deg, #4C0519 0%, #9F1239 55%, #881337 100%)',
-    borderColor: '#D4AF37',
+    borderColor: '#E5E4E2',
     textColor: '#FDE68A',
     glowColor: 'rgba(159, 18, 57, 0.42)',
   },
@@ -62,7 +62,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'سرجام خیل',
     emblem: '🦁',
     gradientBg: 'linear-gradient(135deg, #451A03 0%, #B45309 55%, #78350F 100%)',
-    borderColor: '#F5D061',
+    borderColor: '#E5E4E2',
     textColor: '#FEF3C7',
     glowColor: 'rgba(180, 83, 9, 0.42)',
   },
@@ -72,7 +72,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'اکھار خیل',
     emblem: '💠',
     gradientBg: 'linear-gradient(135deg, #042F2E 0%, #0F766E 55%, #115E59 100%)',
-    borderColor: '#D4AF37',
+    borderColor: '#E5E4E2',
     textColor: '#FDE68A',
     glowColor: 'rgba(15, 118, 110, 0.42)',
   },
@@ -102,7 +102,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'زینور خیل',
     emblem: '🌿',
     gradientBg: 'linear-gradient(135deg, #1A2E05 0%, #3F6212 55%, #365314 100%)',
-    borderColor: '#D4AF37',
+    borderColor: '#E5E4E2',
     textColor: '#FEF3C7',
     glowColor: 'rgba(63, 98, 18, 0.42)',
   },
@@ -112,7 +112,7 @@ export const TABBAR_CLANS: TabbarClan[] = [
     urduName: 'میر باز خیل',
     emblem: '🦅',
     gradientBg: 'linear-gradient(135deg, #3B0A16 0%, #701A2B 55%, #4C0D1C 100%)',
-    borderColor: '#D4AF37',
+    borderColor: '#E5E4E2',
     textColor: '#FDE68A',
     glowColor: 'rgba(112, 26, 43, 0.42)',
   },
@@ -133,9 +133,9 @@ export const CUSTOM_TABBAR_STYLE: TabbarClan = {
   englishName: 'Other Tabbar',
   urduName: 'دیگر ٹبر',
   emblem: '🏛️',
-  gradientBg: 'linear-gradient(135deg, #111726 0%, #1F2937 55%, #090D16 100%)',
-  borderColor: '#D4AF37',
-  textColor: '#F5D061',
+  gradientBg: 'linear-gradient(135deg, #0D2A1F 0%, #1F2937 55%, #071812 100%)',
+  borderColor: '#E5E4E2',
+  textColor: '#E5E4E2',
   glowColor: 'rgba(212, 175, 55, 0.30)',
 };
 

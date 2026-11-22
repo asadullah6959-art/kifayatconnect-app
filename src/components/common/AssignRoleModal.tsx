@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Crown, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
 import { User, UserRole } from '../../types';
 import { useApp, isFounderUser } from '../../context/AppContext';
@@ -30,7 +30,7 @@ const ROLE_OPTIONS: RolePresetOption[] = [
     subtitleUr: 'مکمل مرکزی قیادت اور ماسٹر کنٹرول رسائی',
     role: 'SUPER_ADMIN',
     isAuditOfficer: false,
-    accent: 'border-[#F5D061]/60 bg-[#231D0B]/70 text-[#F5D061]'
+    accent: 'border-[#E5E4E2]/60 bg-[#231D0B]/70 text-[#E5E4E2]'
   },
   {
     id: 'ADMIN',
@@ -81,29 +81,40 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
 }) => {
   const { currentUser, assignMemberRole, language } = useApp();
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  if (!targetUser || !currentUser || !(isFounderUser(currentUser) || currentUser.role === 'SUPER_ADMIN')) return null;
+  if (!targetUser || !currentUser || !isFounderUser(currentUser)) return null;
 
   const targetIsFounder = isFounderUser(targetUser);
 
-  const handleSelectRole = (opt: RolePresetOption) => {
+  const handleSelectRole = async (opt: RolePresetOption) => {
+    if (isSaving) return;
     setError(null);
-    const res = assignMemberRole(targetUser.id, {
-      role: opt.role,
-      isAuditOfficer: opt.isAuditOfficer
-    });
-    if (!res.success) {
-      setError(res.error || (language === 'ur' ? 'عہدہ تفویض نہیں کیا جا سکا۔' : 'Unable to assign role.'));
-      return;
+    setIsSaving(true);
+    let closeOnSuccess = false;
+    try {
+      const res = await assignMemberRole(targetUser.id, {
+        role: opt.role,
+        isAuditOfficer: opt.isAuditOfficer
+      });
+      if (!res.success) {
+        setError(res.error || (language === 'ur' ? 'عہدہ تفویض نہیں کیا جا سکا۔' : 'Unable to assign role.'));
+        return;
+      }
+      if (onAssigned) {
+        onAssigned(
+          language === 'ur'
+            ? `${targetUser.name} کو اب ${opt.labelUr} مقرر کر دیا گیا ہے۔`
+            : `${targetUser.name} is now assigned as ${opt.label}.`
+        );
+      }
+      closeOnSuccess = true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Role assignment could not be completed.');
+    } finally {
+      setIsSaving(false);
     }
-    if (onAssigned) {
-      onAssigned(
-        language === 'ur'
-          ? `${targetUser.name} کو اب ${opt.labelUr} مقرر کر دیا گیا ہے۔`
-          : `${targetUser.name} is now assigned as ${opt.label}.`
-      );
-    }
-    onClose();
+    if (closeOnSuccess) onClose();
   };
 
   return (
@@ -116,9 +127,9 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
         style={{ WebkitOverflowScrolling: 'touch' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-2.5 border-b border-[#D4AF37]/25 pb-3">
+        <div className="flex items-start justify-between gap-2.5 border-b border-[#E5E4E2]/25 pb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-extrabold text-[#F5D061] flex items-center gap-1.5 break-words whitespace-normal leading-snug">
+            <h3 className="text-sm font-extrabold text-[#E5E4E2] flex items-center gap-1.5 break-words whitespace-normal leading-snug">
               <Crown className="w-4 h-4 shrink-0" />
               <span>{language === 'ur' ? 'براہ راست عہدہ تفویض کریں' : 'Assign Role Directly'}</span>
             </h3>
@@ -130,13 +141,13 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-            className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-[#F5D061] cursor-pointer shrink-0"
+            className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-[#E5E4E2] cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#090D16] border border-[#D4AF37]/25 flex items-center justify-between gap-2">
+        <div className="p-3 rounded-xl bg-[#071812] border border-[#E5E4E2]/25 flex items-center justify-between gap-2">
           <span className="text-[11px] text-slate-400">
             {language === 'ur' ? 'موجودہ عہدہ:' : 'Current Role:'}
           </span>
@@ -166,8 +177,9 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => handleSelectRole(opt)}
-                className={`kc-pressable w-full p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-colors hover:border-[#F5D061] cursor-pointer ${opt.accent}`}
+                onClick={() => void handleSelectRole(opt)}
+                disabled={isSaving}
+                className={`kc-pressable w-full p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-colors hover:border-[#E5E4E2] disabled:opacity-50 cursor-pointer ${opt.accent}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -179,7 +191,7 @@ export const AssignRoleModal: React.FC<AssignRoleModalProps> = ({
                   </p>
                 </div>
                 {isCurrent && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5D061] text-[#090D16] text-[10px] font-extrabold shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E5E4E2] text-[#071812] text-[10px] font-extrabold shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
                     <span>{language === 'ur' ? 'فعال' : 'Active'}</span>
                   </span>

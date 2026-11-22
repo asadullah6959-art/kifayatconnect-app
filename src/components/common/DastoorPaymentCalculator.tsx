@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   Calendar,
   Check,
@@ -54,13 +54,13 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
       <div
         className="rounded-2xl p-3.5 sm:p-4 border border-slate-400/20 space-y-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(248,250,252,0.08)]"
         style={{
-          background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, #131C31 55%, #0F172A 100%)',
+          background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, #0D2A1F 55%, #0F172A 100%)',
         }}
       >
         <div className="flex items-center justify-between gap-2 flex-wrap border-b border-slate-400/20 pb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-[#090D16] border border-[#38BDF8]/50 flex items-center justify-center shrink-0">
-              <Building2 className="w-4 h-4 text-[#38BDF8]" />
+            <div className="w-7 h-7 rounded-lg bg-[#071812] border border-[#059669]/50 flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4 text-[#059669]" />
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-extrabold text-[#F8FAFC] truncate">
@@ -74,7 +74,7 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
             </div>
           </div>
           {contactHelpline && (
-            <span className="text-[10px] font-mono text-[#38BDF8] bg-[#090D16]/85 border border-[#38BDF8]/30 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-mono text-[#059669] bg-[#071812]/85 border border-[#059669]/30 px-2 py-0.5 rounded-md">
               {contactHelpline}
             </span>
           )}
@@ -86,11 +86,11 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
             return (
               <div
                 key={acc.id}
-                className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-[#090D16]/90 border border-slate-400/20"
+                className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-[#071812]/90 border border-slate-400/20"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-extrabold text-[#F5D061]">
+                    <span className="text-[11px] font-extrabold text-[#E5E4E2]">
                       {isUr ? acc.methodUr : acc.methodEn}
                     </span>
                     <span className="text-[10px] text-[#94A3B8] truncate">
@@ -110,8 +110,8 @@ export const AdminPaymentAccountCard: React.FC<AdminPaymentAccountCardProps> = R
                   onClick={() => handleCopy(acc.id, acc.accountNumber)}
                   className={`kc-pressable relative z-50 shrink-0 min-w-[48px] min-h-[48px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-colors cursor-pointer ${
                     isCopied
-                      ? 'bg-[#0EA5E9] border-[#38BDF8] text-[#090D16]'
-                      : 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#A17419] border-[#FEF08A]/75 text-[#090D16]'
+                      ? 'bg-[#059669] border-[#059669] text-[#071812]'
+                      : 'bg-gradient-to-br from-[#CBD5E1] via-[#E5E4E2] to-[#A17419] border-[#E5E4E2]/75 text-[#071812]'
                   }`}
                 >
                   {isCopied ? (
@@ -371,11 +371,11 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
       {/* TIER 1: MAHANA FUND (1 to 11 Months @ Rs. 100/Month) */}
       {fundTier === 'MAHANA' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px]">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[11px]">
             <span className="font-bold text-[#94A3B8]">
               {isUr ? 'ماہانہ فنڈ ریٹ (۱ تا ۱۱ مہینے):' : 'Mahana Fund Rate (1–11 Months):'}
             </span>
-            <span className="font-mono font-extrabold text-[#38BDF8] tabular-nums">
+            <span className="font-mono font-extrabold text-[#059669] tabular-nums">
               {isUr
                 ? `۱۰۰ روپے فی مہینہ (PKR ${DASTOOR_MONTHLY_RATE})`
                 : `Rs. ${DASTOOR_MONTHLY_RATE} / Month`}
@@ -383,7 +383,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-[#F5D061] block mb-1.5 uppercase tracking-wider">
+            <label className="text-[11px] font-bold text-[#E5E4E2] block mb-1.5 uppercase tracking-wider">
               {isUr ? 'مدت منتخب کریں (۱ تا ۱۱ مہینے)' : 'Select Months (1 to 11 Months)'}
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -400,8 +400,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     }}
                     className={`kc-pressable p-2 rounded-xl border text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#A17419] border-[#FEF08A] text-[#090D16] shadow-[0_4px_14px_rgba(212,175,55,0.3)]'
-                        : 'bg-[#0F172A] border-slate-400/20 text-[#F8FAFC] hover:border-[#38BDF8]'
+                        ? 'bg-gradient-to-br from-[#CBD5E1] via-[#E5E4E2] to-[#A17419] border-[#E5E4E2] text-[#071812] shadow-[0_4px_14px_rgba(212,175,55,0.3)]'
+                        : 'bg-[#0F172A] border-slate-400/20 text-[#F8FAFC] hover:border-[#059669]'
                     }`}
                   >
                     <div className="text-[11px] font-extrabold leading-tight">
@@ -411,7 +411,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     </div>
                     <div
                       className={`text-[11px] font-mono tabular-nums font-black mt-0.5 ${
-                        isSelected ? 'text-[#090D16]' : 'text-[#F5D061]'
+                        isSelected ? 'text-[#071812]' : 'text-[#E5E4E2]'
                       }`}
                     >
                       {isUr ? formatRupeesUr(amt) : `Rs. ${amt.toLocaleString()}`}
@@ -448,7 +448,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     onMonthsCountChange(valid);
                   }}
                   placeholder="1–11"
-                  className="mt-1 w-full bg-[#131C31] border border-slate-400/25 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#38BDF8]"
+                  className="mt-1 w-full bg-[#0D2A1F] border border-slate-400/25 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#059669]"
                 />
               </div>
             </div>
@@ -457,13 +457,13 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           {renderStartingDatePicker()}
 
           <div
-            className="rounded-xl p-3 border border-[#38BDF8]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            className="rounded-xl p-3 border border-[#059669]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
             style={{
-              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, #131C31 55%, #0F172A 100%)',
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, #0D2A1F 55%, #0F172A 100%)',
             }}
           >
             <div className="min-w-0 space-y-0.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#38BDF8]">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#059669]">
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {isUr
@@ -483,7 +483,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">
                 {isUr ? 'کل واجب الادا رقم' : 'Total Payable'}
               </span>
-              <span className="text-lg font-black font-mono tabular-nums text-[#F5D061]">
+              <span className="text-lg font-black font-mono tabular-nums text-[#E5E4E2]">
                 PKR {mahanaPeriod.totalAmount.toLocaleString()}
               </span>
               <span className="block text-[11px] font-bold text-[#F8FAFC] font-urdu-auto">
@@ -497,11 +497,11 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
       {/* TIER 2: SALANA FUND (Yearly @ Rs. 1,200/Year, Smoothly Editable Input) */}
       {fundTier === 'SALANA' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#131C31] border border-[#D4AF37]/40 text-[11px]">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#0D2A1F] border border-[#E5E4E2]/40 text-[11px]">
             <span className="font-bold text-[#94A3B8]">
               {isUr ? 'سالانہ فنڈ ریٹ (Salana Fund):' : 'Salana Fund Rate (Annual):'}
             </span>
-            <span className="font-mono font-extrabold text-[#FDE047] tabular-nums">
+            <span className="font-mono font-extrabold text-[#CBD5E1] tabular-nums">
               {isUr
                 ? `۱,۲۰۰ روپے فی سال (PKR ${SALANA_ANNUAL_RATE})`
                 : `Rs. ${SALANA_ANNUAL_RATE.toLocaleString()} / Year`}
@@ -509,7 +509,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-[#F5D061] block mb-1.5 uppercase tracking-wider">
+            <label className="text-[11px] font-bold text-[#E5E4E2] block mb-1.5 uppercase tracking-wider">
               {isUr ? 'سال منتخب کریں یا درج کریں' : 'Select or Enter Years (1, 2, 3, 5, 10+)'}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -526,8 +526,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     }}
                     className={`kc-pressable p-2 rounded-xl border text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-gradient-to-br from-[#FDE047] via-[#D4AF37] to-[#A17419] border-[#FEF08A] text-[#090D16] shadow-[0_4px_14px_rgba(212,175,55,0.3)]'
-                        : 'bg-[#0F172A] border-slate-400/20 text-[#F8FAFC] hover:border-[#D4AF37]'
+                        ? 'bg-gradient-to-br from-[#CBD5E1] via-[#E5E4E2] to-[#A17419] border-[#E5E4E2] text-[#071812] shadow-[0_4px_14px_rgba(212,175,55,0.3)]'
+                        : 'bg-[#0F172A] border-slate-400/20 text-[#F8FAFC] hover:border-[#E5E4E2]'
                     }`}
                   >
                     <div className="text-[11px] font-extrabold leading-tight">
@@ -535,7 +535,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     </div>
                     <div
                       className={`text-[11px] font-mono tabular-nums font-black mt-0.5 ${
-                        isSelected ? 'text-[#090D16]' : 'text-[#F5D061]'
+                        isSelected ? 'text-[#071812]' : 'text-[#E5E4E2]'
                       }`}
                     >
                       {isUr ? formatRupeesUr(amt) : `Rs. ${amt.toLocaleString()}`}
@@ -545,8 +545,8 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               })}
 
               {/* Freely Editable Years Input (supports full backspace to '') */}
-              <div className="p-2 rounded-xl border border-[#D4AF37]/35 bg-[#0F172A] flex flex-col justify-between">
-                <label className="text-[10px] font-bold text-[#F5D061] block leading-tight">
+              <div className="p-2 rounded-xl border border-[#E5E4E2]/35 bg-[#0F172A] flex flex-col justify-between">
+                <label className="text-[10px] font-bold text-[#E5E4E2] block leading-tight">
                   {isUr ? 'اپنے سال لکھیں' : 'Edit Years'}
                 </label>
                 <input
@@ -571,7 +571,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
                     onYearsCountChange(valid);
                   }}
                   placeholder={isUr ? 'مثال: 1, 2, 10' : 'e.g. 1, 2, 10'}
-                  className="mt-1 w-full bg-[#131C31] border border-[#D4AF37]/40 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#FDE047]"
+                  className="mt-1 w-full bg-[#0D2A1F] border border-[#E5E4E2]/40 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#CBD5E1]"
                 />
               </div>
             </div>
@@ -580,13 +580,13 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
           {renderStartingDatePicker()}
 
           <div
-            className="rounded-xl p-3 border border-[#D4AF37]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            className="rounded-xl p-3 border border-[#E5E4E2]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
             style={{
-              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.14) 0%, #131C31 55%, #0F172A 100%)',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.14) 0%, #0D2A1F 55%, #0F172A 100%)',
             }}
           >
             <div className="min-w-0 space-y-0.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#FDE047]">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#CBD5E1]">
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {effectiveYears > 0
@@ -614,7 +614,7 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
               <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">
                 {isUr ? 'کل واجب الادا رقم' : 'Total Payable'}
               </span>
-              <span className="text-lg font-black font-mono tabular-nums text-[#F5D061]">
+              <span className="text-lg font-black font-mono tabular-nums text-[#E5E4E2]">
                 PKR {(effectiveYears * SALANA_ANNUAL_RATE).toLocaleString()}
               </span>
               <span className="block text-[11px] font-bold text-[#F8FAFC] font-urdu-auto">
@@ -628,9 +628,9 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
       {/* TIER 3: ہنگامی فنڈ / HANGAMI FUND (Custom PKR Amount) */}
       {fundTier === 'HANGAMI' && (
         <div className="space-y-3">
-          <div className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#022C22] via-[#064E3B]/75 to-[#0F172A] border border-[#D4AF37]/45 flex items-center justify-between gap-2">
+          <div className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#022C22] via-[#064E3B]/75 to-[#0F172A] border border-[#E5E4E2]/45 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-extrabold text-[#FDE047]">
+              <p className="text-xs font-extrabold text-[#CBD5E1]">
                 ہنگامی فنڈ / Hangami Fund
               </p>
               <p className="text-[10px] text-emerald-100/85">
@@ -679,11 +679,11 @@ export const DastoorPaymentCalculator: React.FC<DastoorPaymentCalculatorProps> =
       )}
 
       {/* MANDATORY 13-DIGIT CNIC LOCK & OPTIONAL UNIT */}
-      <div className="p-3 rounded-xl bg-[#070D14] border border-[#D4AF37]/40 space-y-2.5">
+      <div className="p-3 rounded-xl bg-[#071812] border border-[#E5E4E2]/40 space-y-2.5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <div className="flex items-center justify-between gap-1 mb-1">
-              <label className="text-[11px] font-extrabold text-[#FDE047] flex items-center gap-1">
+              <label className="text-[11px] font-extrabold text-[#CBD5E1] flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>{isUr ? 'شناختی کارڈ نمبر (13 ہندسے لازمی) *' : '13-Digit CNIC (Mandatory) *'}</span>
               </label>

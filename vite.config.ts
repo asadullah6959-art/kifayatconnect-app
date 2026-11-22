@@ -7,9 +7,9 @@ import {defineConfig, type Plugin} from 'vite';
 const APP_VERSION = '1.0.0';
 const BUILD_ID = new Date().toISOString();
 
-function kifayatOtaManifestPlugin(): Plugin {
+function skiOtaManifestPlugin(): Plugin {
   return {
-    name: 'kifayat-ota-manifest',
+    name: 'ski-ota-manifest',
     closeBundle() {
       const distDir = path.resolve(__dirname, 'dist');
       if (!fs.existsSync(distDir)) return;
@@ -43,7 +43,7 @@ export default defineConfig(() => {
       __KC_BUILD_ID__: JSON.stringify(BUILD_ID),
       __KC_APP_VERSION__: JSON.stringify(APP_VERSION),
     },
-    plugins: [react(), tailwindcss(), kifayatOtaManifestPlugin()],
+    plugins: [react(), tailwindcss(), skiOtaManifestPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

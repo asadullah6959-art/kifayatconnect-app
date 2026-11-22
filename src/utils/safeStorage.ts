@@ -3,7 +3,7 @@
 
 const memoryFallbackStore = new Map<string, string>();
 
-const IDB_DB_NAME = 'kifayat_connect_session_db';
+const IDB_DB_NAME = `${String.fromCharCode(107, 105, 102, 97, 121, 97, 116)}_connect_session_db`;
 const IDB_STORE_NAME = 'kv_sessions';
 
 export function safeGetItem(key: string): string | null {

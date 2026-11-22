@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface OfficialMoharStampProps {
   variant?: 'OFFICIAL' | 'VERIFIED';
@@ -16,14 +16,14 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
     const uid = React.useId().replace(/:/g, '');
     const bottomText =
       variant === 'VERIFIED'
-        ? 'KIFAYAT CONNECT · VERIFIED SEAL'
-        : 'KIFAYAT CONNECT · OFFICIAL SEAL';
+        ? 'SUI KHEL ITTEHAD · VERIFIED SEAL'
+        : 'SUI KHEL ITTEHAD · OFFICIAL SEAL';
 
     return (
       <div
         className={`inline-flex items-center justify-center select-none shrink-0 ${className}`}
         style={{ width: size, height: size }}
-        aria-label="Official Sui Khel Qaumi Ittehad / Kifayat Connect Seal"
+        aria-label="Official SUI KHEL ITTEHAD / SUI KHEL ITTEHAD Seal"
       >
         <svg
           viewBox="0 0 220 220"
@@ -38,9 +38,9 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
               <stop offset="100%" stopColor="#021D15" />
             </radialGradient>
             <linearGradient id={`kcMoharGold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FEF08A" />
-              <stop offset="38%" stopColor="#F59E0B" />
-              <stop offset="72%" stopColor="#D4AF37" />
+              <stop offset="0%" stopColor="#E5E4E2" />
+              <stop offset="38%" stopColor="#CBD5E1" />
+              <stop offset="72%" stopColor="#E5E4E2" />
               <stop offset="100%" stopColor="#92600A" />
             </linearGradient>
             <path
@@ -83,20 +83,20 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
 
           {/* Curved Top Urdu Organization Text */}
           <text
-            fill="#FEF08A"
+            fill="#E5E4E2"
             fontSize="14.5"
             fontWeight="800"
             letterSpacing="0.5"
             textAnchor="middle"
           >
             <textPath href={`#kcTopArc_${uid}`} startOffset="50%">
-              ★ مہر سوئی خیل قومی اتحاد ★
+              ★ مہر سوئی خیل اتحاد ★
             </textPath>
           </text>
 
           {/* Curved Bottom Official / Verified Seal Text */}
           <text
-            fill="#FDE047"
+            fill="#CBD5E1"
             fontSize="9.8"
             fontWeight="800"
             letterSpacing="1.35"
@@ -114,9 +114,9 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
             stroke="#FEF9C3"
             strokeWidth="0.9"
           />
-          <circle cx="95" cy="70" r="2.3" fill="#FEF08A" />
-          <circle cx="110" cy="67" r="2.8" fill="#FEF08A" />
-          <circle cx="125" cy="70" r="2.3" fill="#FEF08A" />
+          <circle cx="95" cy="70" r="2.3" fill="#E5E4E2" />
+          <circle cx="110" cy="67" r="2.8" fill="#E5E4E2" />
+          <circle cx="125" cy="70" r="2.3" fill="#E5E4E2" />
 
           <text
             x="110"
@@ -147,7 +147,7 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
               x="110"
               y="147"
               textAnchor="middle"
-              fill="#FDE047"
+              fill="#CBD5E1"
               fontSize="8.8"
               fontWeight="800"
               fontFamily="JetBrains Mono, monospace"
@@ -159,7 +159,7 @@ export const OfficialMoharStamp: React.FC<OfficialMoharStampProps> = React.memo(
               x="110"
               y="147"
               textAnchor="middle"
-              fill="#FDE047"
+              fill="#CBD5E1"
               fontSize="8.2"
               fontWeight="700"
               letterSpacing="1"
@@ -196,9 +196,9 @@ export function drawMoharStampOnCanvas(
   bgGrad.addColorStop(1, '#021D15');
 
   const goldGrad = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
-  goldGrad.addColorStop(0, '#FEF08A');
-  goldGrad.addColorStop(0.4, '#F59E0B');
-  goldGrad.addColorStop(0.75, '#D4AF37');
+  goldGrad.addColorStop(0, '#E5E4E2');
+  goldGrad.addColorStop(0.4, '#CBD5E1');
+  goldGrad.addColorStop(0.75, '#E5E4E2');
   goldGrad.addColorStop(1, '#92600A');
 
   ctx.beginPath();
@@ -215,7 +215,7 @@ export function drawMoharStampOnCanvas(
   ctx.beginPath();
   ctx.arc(cx, cy, radius * 0.89, 0, Math.PI * 2);
   ctx.lineWidth = Math.max(1.5, radius * 0.018);
-  ctx.strokeStyle = '#FDE047';
+  ctx.strokeStyle = '#CBD5E1';
   ctx.stroke();
   ctx.restore();
 
@@ -229,16 +229,16 @@ export function drawMoharStampOnCanvas(
   ctx.stroke();
 
   // Top & Bottom Seal Captions
-  ctx.fillStyle = '#FEF08A';
+  ctx.fillStyle = '#E5E4E2';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `800 ${Math.round(radius * 0.155)}px "Noto Nastaliq Urdu", "Plus Jakarta Sans", sans-serif`;
-  ctx.fillText('مہر سوئی خیل قومی اتحاد', cx, cy - radius * 0.72);
+  ctx.fillText('مہر سوئی خیل اتحاد', cx, cy - radius * 0.72);
 
-  ctx.fillStyle = '#FDE047';
+  ctx.fillStyle = '#CBD5E1';
   ctx.font = `800 ${Math.round(radius * 0.115)}px "Plus Jakarta Sans", sans-serif`;
   ctx.fillText(
-    variant === 'VERIFIED' ? 'KIFAYAT CONNECT · VERIFIED' : 'KIFAYAT CONNECT · OFFICIAL',
+    variant === 'VERIFIED' ? 'SUI KHEL ITTEHAD · VERIFIED' : 'SUI KHEL ITTEHAD · OFFICIAL',
     cx,
     cy + radius * 0.74
   );
@@ -253,7 +253,7 @@ export function drawMoharStampOnCanvas(
   ctx.fillText(variant === 'VERIFIED' ? 'تصدیق شدہ' : 'منظور شدہ', cx, cy + radius * 0.2);
 
   if (serialNumber) {
-    ctx.fillStyle = '#FDE047';
+    ctx.fillStyle = '#CBD5E1';
     ctx.font = `800 ${Math.round(radius * 0.115)}px monospace`;
     ctx.fillText(serialNumber.slice(0, 16), cx, cy + radius * 0.42);
   }

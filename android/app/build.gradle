@@ -1,10 +1,15 @@
 apply plugin: 'com.android.application'
 
+def hasReleaseSigning = System.getenv("ANDROID_KEYSTORE_FILE") &&
+    System.getenv("ANDROID_KEYSTORE_PASSWORD") &&
+    System.getenv("ANDROID_KEY_ALIAS") &&
+    System.getenv("ANDROID_KEY_PASSWORD")
+
 android {
-    namespace = "com.kifayatconnect.app"
+    namespace = "com.suikhelittehad.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.kifayatconnect.app"
+        applicationId "com.suikhelittehad.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode = ((System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 1) + 100)
@@ -17,25 +22,20 @@ android {
         }
     }
     signingConfigs {
-        debug {
-            storeFile file("kifayat-release.jks")
-            storePassword "kifayat2026"
-            keyAlias "kifayatconnect"
-            keyPassword "kifayat2026"
-        }
-        release {
-            storeFile file("kifayat-release.jks")
-            storePassword "kifayat2026"
-            keyAlias "kifayatconnect"
-            keyPassword "kifayat2026"
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(System.getenv("ANDROID_KEYSTORE_FILE"))
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
         }
     }
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
         release {
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

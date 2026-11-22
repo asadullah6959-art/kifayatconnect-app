@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, Check, Share, PlusSquare, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -54,8 +54,8 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
   if (isInstalled) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35">
-        <Check className="w-3.5 h-3.5 text-[#F5D061]" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#0D2A1F] text-[#059669] border border-[#059669]/35">
+        <Check className="w-3.5 h-3.5 text-[#E5E4E2]" />
         <span>{language === 'ur' ? 'انسٹال شدہ' : 'PWA Ready'}</span>
       </span>
     );
@@ -65,10 +65,10 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
     <>
       <button
         onClick={handleInstallClick}
-        title={language === 'ur' ? 'کفایت کنیکٹ ایپ انسٹال کریں' : 'Install Kifayat Connect App'}
+        title={language === 'ur' ? 'سوئی خیل اتحاد ایپ انسٹال کریں' : 'Install SUI KHEL ITTEHAD App'}
         className={`inline-flex items-center gap-1.5 rounded-xl font-bold kc-pressable cursor-pointer ${
           compact
-            ? 'px-2.5 py-1.5 text-xs bg-[#141B2D] text-[#F5D061] hover:bg-[#1A233A] border border-[#D4AF37]/40'
+            ? 'px-2.5 py-1.5 text-xs bg-[#0D2A1F] text-[#E5E4E2] hover:bg-[#1A233A] border border-[#E5E4E2]/40'
             : 'px-3.5 py-2 text-xs kc-gold-button font-extrabold'
         }`}
       >
@@ -82,16 +82,16 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
           <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-sm w-full p-5 pb-24 sm:pb-5 relative text-white my-auto overflow-y-auto">
             <div className="flex items-start justify-between gap-2.5 mb-3">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Smartphone className="w-5 h-5 text-[#F5D061] shrink-0" />
+                <Smartphone className="w-5 h-5 text-[#E5E4E2] shrink-0" />
                 <h4 className="font-extrabold text-sm text-white break-words whitespace-normal leading-snug">
-                  {language === 'ur' ? 'کفایت کنیکٹ انسٹال کریں' : 'Install Kifayat Connect'}
+                  {language === 'ur' ? 'سوئی خیل اتحاد انسٹال کریں' : 'Install SUI KHEL ITTEHAD'}
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowIosModal(false)}
                 aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] hover:bg-[#1A233A] border border-[#E5E4E2]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -99,13 +99,13 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               {language === 'ur'
-                ? 'تیز رفتار رسائی اور آف لائن استعمال کے لیے کفایت کنیکٹ کو اپنی ہوم اسکرین پر شامل کریں:'
-                : 'Install Kifayat Connect on your home screen for quick offline access and fast native performance:'}
+                ? 'تیز رفتار رسائی اور آف لائن استعمال کے لیے سوئی خیل اتحاد کو اپنی ہوم اسکرین پر شامل کریں:'
+                : 'Install SUI KHEL ITTEHAD on your home screen for quick offline access and fast native performance:'}
             </p>
 
-            <div className="space-y-2.5 text-xs text-slate-200 bg-[#090D16] p-3.5 rounded-xl border border-[#D4AF37]/30">
+            <div className="space-y-2.5 text-xs text-slate-200 bg-[#071812] p-3.5 rounded-xl border border-[#E5E4E2]/30">
               <div className="flex items-center gap-2.5">
-                <Share className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <Share className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                 <span>
                   {language === 'ur'
                     ? '1. براؤزر ٹول بار میں Share بٹن پر کلک کریں'
@@ -122,7 +122,7 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#D4AF37]/25 flex justify-end">
+            <div className="mt-4 pt-3 border-t border-[#E5E4E2]/25 flex justify-end">
               <button
                 onClick={() => setShowIosModal(false)}
                 className="px-4 py-2 rounded-xl kc-gold-button font-extrabold text-xs cursor-pointer"

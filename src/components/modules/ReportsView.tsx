@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   FileText, 
@@ -245,8 +245,8 @@ export const ReportsView: React.FC = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#090D16] text-white p-3 rounded-xl border border-[#D4AF37]/45 shadow-2xl text-xs space-y-1.5 min-w-[180px]">
-          <p className="font-bold text-[#F5D061] border-b border-[#D4AF37]/25 pb-1">{label}</p>
+        <div className="bg-[#071812] text-white p-3 rounded-xl border border-[#E5E4E2]/45 shadow-2xl text-xs space-y-1.5 min-w-[180px]">
+          <p className="font-bold text-[#E5E4E2] border-b border-[#E5E4E2]/25 pb-1">{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center justify-between gap-3 text-[11px]">
               <span style={{ color: entry.color }} className="font-medium">
@@ -280,7 +280,7 @@ export const ReportsView: React.FC = () => {
       {/* Download Toast Notification */}
       {downloadSuccessToast && (
         <div className="fixed top-5 right-5 z-50 pointer-events-none no-print">
-          <div className="bg-[#090D16] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex items-center gap-2">
+          <div className="bg-[#071812] text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-[#E5E4E2]/50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span className="font-semibold">
               {isUr ? 'آفیشل CSV رپورٹ کامیابی سے ڈاؤن لوڈ ہو گئی!' : 'Branded CSV report downloaded successfully!'}
@@ -290,13 +290,13 @@ export const ReportsView: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25 no-print">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25 no-print">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
               {isUr ? 'آڈٹ شدہ مالیاتی اور علاقائی تجزیات' : 'Audited Financial & Regional Analytics'}
             </span>
-            <span className="text-[#D4AF37]/50">·</span>
+            <span className="text-[#E5E4E2]/50">·</span>
             <span className="text-xs text-slate-300">
               {isSuperAdmin
                 ? (isUr ? 'مرکزی تنظیمی رپورٹ' : 'Master Organization Report')
@@ -310,7 +310,7 @@ export const ReportsView: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-[#F5D061]" />
+            <FileText className="w-6 h-6 text-[#E5E4E2]" />
             <span>{isUr ? 'سرکاری اسٹیٹمنٹس اور فلاحی رپورٹس' : 'Official Statements & Welfare Reports'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -323,8 +323,8 @@ export const ReportsView: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleExportCSV}
-            className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#141B2D] hover:bg-[#1A233A] text-slate-100 border border-[#D4AF37]/40 text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-            title={isUr ? 'کفایت کنیکٹ ہیڈرز کے ساتھ CSV اسپریڈشیٹ ڈاؤن لوڈ کریں' : 'Download CSV spreadsheet formatted with Kifayat Connect headers'}
+            className="kc-pressable flex items-center gap-1.5 px-3.5 py-2 bg-[#0D2A1F] hover:bg-[#1A233A] text-slate-100 border border-[#E5E4E2]/40 text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+            title={isUr ? 'سوئی خیل اتحاد ہیڈرز کے ساتھ CSV اسپریڈشیٹ ڈاؤن لوڈ کریں' : 'Download CSV spreadsheet formatted with SUI KHEL ITTEHAD headers'}
           >
             <FileDown className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isUr ? 'CSV برآمد کریں' : 'Export to CSV'}</span>
@@ -349,12 +349,12 @@ export const ReportsView: React.FC = () => {
           style={{ backgroundImage: `url('/src/assets/images/receipt_watermark_seal_1794225904149.jpg')` }}
         />
         {/* Statement Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
           <div className="flex items-center gap-3">
             <BrandEmblem3D size="md" className="shrink-0" />
             <div>
               <h2 className="text-base font-bold text-white uppercase tracking-tight">
-                {isUr ? 'کفایت کنیکٹ ویلفیئر ٹرسٹ' : 'Kifayat Connect Welfare Trust'}
+                {isUr ? 'سوئی خیل اتحاد ویلفیئر ٹرسٹ' : 'SUI KHEL ITTEHAD Welfare Trust'}
               </h2>
               <p className="text-xs text-slate-300">
                 {isUr ? 'آڈٹ شدہ فلاحی کھاتہ اور رسیدوں کی مطابقت کا بیان' : 'Audited Welfare Ledger & Receipts Reconciliation Statement'}
@@ -369,7 +369,7 @@ export const ReportsView: React.FC = () => {
 
           <div className="text-right">
             <span className="text-[10px] text-slate-400 uppercase font-mono block">{isUr ? 'دستاویز ہیش:' : 'Document Hash:'}</span>
-            <span className="font-mono text-xs font-bold text-[#F5D061] block">
+            <span className="font-mono text-xs font-bold text-[#E5E4E2] block">
               STMT-2026-KC{Date.now().toString().slice(-6)}
             </span>
             <span className="text-[10px] text-slate-400 font-mono block">
@@ -380,7 +380,7 @@ export const ReportsView: React.FC = () => {
 
         {/* Aggregate Balance Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#071812] rounded-xl border border-[#E5E4E2]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
               {isUr ? 'کل تصدیق شدہ وصولیاں' : 'Total Verified Collections'}
             </span>
@@ -392,11 +392,11 @@ export const ReportsView: React.FC = () => {
             </span>
           </div>
 
-          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#071812] rounded-xl border border-[#E5E4E2]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
               {isUr ? 'ماہانہ سبسکرپشن پول' : 'Monthly Subscription Pool'}
             </span>
-            <span className="text-xl font-bold font-mono text-[#F5D061] tabular-nums block mt-1">
+            <span className="text-xl font-bold font-mono text-[#E5E4E2] tabular-nums block mt-1">
               PKR {monthlyAmount.toLocaleString()}
             </span>
             <span className="text-[10px] text-slate-400">
@@ -404,7 +404,7 @@ export const ReportsView: React.FC = () => {
             </span>
           </div>
 
-          <div className="p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
+          <div className="p-4 bg-[#071812] rounded-xl border border-[#E5E4E2]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)]">
             <span className="text-[11px] font-semibold text-slate-400 block uppercase">
               {isUr ? 'سالانہ فلاحی و امدادی فنڈ' : 'Annual Welfare & Relief Fund'}
             </span>
@@ -418,11 +418,11 @@ export const ReportsView: React.FC = () => {
         </div>
 
         {/* VISUAL ANALYTICS SECTION (RECHARTS INTEGRATION) */}
-        <div className="pt-3 border-t border-[#D4AF37]/20 space-y-6">
+        <div className="pt-3 border-t border-[#E5E4E2]/20 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#F5D061]" />
+                <BarChart3 className="w-4 h-4 text-[#E5E4E2]" />
                 <span>{isUr ? 'ایگزیکٹو فلاحی تجزیات اور مالیاتی رجحانات' : 'Executive Welfare Analytics & Financial Trends'}</span>
               </h3>
               <p className="text-xs text-slate-400">
@@ -457,9 +457,9 @@ export const ReportsView: React.FC = () => {
           {/* Chart Display Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Main Area / Bar Chart (8 Columns on desktop) */}
-            <div className="lg:col-span-8 p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/25">
+            <div className="lg:col-span-8 p-4 bg-[#071812] rounded-xl border border-[#E5E4E2]/25">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wide">
+                <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wide">
                   {activeChartTab === 'TRENDS' 
                     ? (isUr ? '6 ماہ کی وصولیوں کی رفتار (PKR)' : '6-Month Contribution Velocity (PKR)')
                     : (isUr ? 'ضلعی وصولیاں بمقابلہ ہدف' : 'District Collection Milestones vs Targets')}
@@ -479,8 +479,8 @@ export const ReportsView: React.FC = () => {
                           <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
                         </linearGradient>
                         <linearGradient id="colorAnnual" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.45}/>
-                          <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0}/>
+                          <stop offset="5%" stopColor="#E5E4E2" stopOpacity={0.45}/>
+                          <stop offset="95%" stopColor="#E5E4E2" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(212,175,55,0.14)" />
@@ -514,7 +514,7 @@ export const ReportsView: React.FC = () => {
                         type="monotone" 
                         dataKey="annualFund" 
                         name={isUr ? 'سالانہ فلاح و امداد' : 'Annual Welfare & Relief'} 
-                        stroke="#F5D061" 
+                        stroke="#E5E4E2"
                         strokeWidth={2.5}
                         fillOpacity={1} 
                         fill="url(#colorAnnual)" 
@@ -549,7 +549,7 @@ export const ReportsView: React.FC = () => {
                       <Bar 
                         dataKey="targetQuota" 
                         name={isUr ? 'سالانہ ہدف (PKR)' : 'Annual Target Quota (PKR)'} 
-                        fill="#D4AF37" 
+                        fill="#E5E4E2"
                         radius={[4, 4, 0, 0]} 
                       />
                     </BarChart>
@@ -559,9 +559,9 @@ export const ReportsView: React.FC = () => {
             </div>
 
             {/* Supplementary KPI / Growth Metrics (4 Columns on desktop) */}
-            <div className="lg:col-span-4 p-4 bg-[#090D16] rounded-xl border border-[#D4AF37]/25 flex flex-col justify-between space-y-4">
+            <div className="lg:col-span-4 p-4 bg-[#071812] rounded-xl border border-[#E5E4E2]/25 flex flex-col justify-between space-y-4">
               <div>
-                <span className="text-xs font-bold text-[#F5D061] uppercase tracking-wide block mb-2">
+                <span className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wide block mb-2">
                   {isUr ? 'فنڈز کی تقسیم کی تفصیل' : 'Fund Distribution Breakdown'}
                 </span>
                 <p className="text-[11px] text-slate-400 mb-3">
@@ -613,14 +613,14 @@ export const ReportsView: React.FC = () => {
                       </span>
                     </div>
                     <div className="w-full h-2 bg-[#161F33] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#F5D061] rounded-full transition-all" style={{ width: `${calcPct(zakatAmount)}%` }} />
+                      <div className="h-full bg-[#E5E4E2] rounded-full transition-all" style={{ width: `${calcPct(zakatAmount)}%` }} />
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="p-3 kc-emerald-panel rounded-xl text-[11px]">
-                <span className="font-bold text-[#F5D061] block mb-0.5">
+                <span className="font-bold text-[#E5E4E2] block mb-0.5">
                   {isUr ? 'آڈٹ شدہ خزانہ کی حیثیت' : 'Audited Treasury Status'}
                 </span>
                 <p className="text-slate-200">
@@ -640,7 +640,7 @@ export const ReportsView: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
-                <h3 className="text-xs font-bold text-[#F5D061] uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-[#E5E4E2] uppercase tracking-wider">
                   {isUr ? 'انتظامی کارکردگی کا جدول (ضلع و صوبہ)' : 'Administrative Hierarchy Performance Matrix (District & Province)'}
                 </h3>
                 <p className="text-[11px] text-slate-400">
@@ -688,7 +688,7 @@ export const ReportsView: React.FC = () => {
 
             <div className="space-y-2.5">
               {liveDistrictRows.length === 0 ? (
-                <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#D4AF37]/25 bg-[#090D16]">
+                <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#E5E4E2]/25 bg-[#071812]">
                   {isUr
                     ? 'ابھی تک کوئی ضلعی ریکارڈ موجود نہیں۔ تصدیق شدہ اراکین اور رسیدیں یہاں خودکار ظاہر ہوں گی۔'
                     : 'No district records recorded yet. Verified members and treasury receipts will appear here automatically.'}
@@ -702,7 +702,7 @@ export const ReportsView: React.FC = () => {
                   return (
                     <div
                       key={sDist ? `${sProv}-${sDist}` : `rep-${idx}`}
-                      className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-2 text-xs"
+                      className="p-3.5 rounded-xl border border-[#E5E4E2]/25 bg-[#071812] space-y-2 text-xs"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -717,13 +717,13 @@ export const ReportsView: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D4AF37]/15">
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#E5E4E2]/15">
                         <div className="min-w-0">
                           <span className="text-[10px] text-slate-400 block">{isUr ? 'نگران افسر' : 'Officer in Charge'}</span>
                           <span className="font-medium text-slate-200 truncate block">{stat.officerInCharge}</span>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-mono tabular-nums font-bold text-[#F5D061] block">
+                          <span className="font-mono tabular-nums font-bold text-[#E5E4E2] block">
                             PKR {stat.totalCollected.toLocaleString()}
                           </span>
                           <span className="text-[10px] font-mono tabular-nums text-slate-300">
@@ -740,12 +740,12 @@ export const ReportsView: React.FC = () => {
         )}
 
         {/* Legal Signatures block */}
-        <div className="pt-6 border-t border-[#D4AF37]/25 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="pt-6 border-t border-[#E5E4E2]/25 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-3">
             <img 
               src="/src/assets/images/receipt_watermark_seal_1794225904149.jpg" 
               alt="Seal" 
-              className="w-12 h-12 rounded-full object-cover border border-[#D4AF37]/60"
+              className="w-12 h-12 rounded-full object-cover border border-[#E5E4E2]/60"
             />
             <div>
               <p className="font-semibold text-white">{isUr ? 'مرکزی آڈٹ بورڈ' : 'Central Audit Board'}</p>
@@ -755,7 +755,7 @@ export const ReportsView: React.FC = () => {
 
           <div className="text-right text-[10px] text-slate-400">
             <p>{isUr ? 'چارٹرڈ مالیاتی اکاؤنٹنٹس کی جانب سے آزادانہ تصدیق شدہ۔' : 'Verified independently by Chartered Financial Accountants.'}</p>
-            <p className="font-mono text-[#F5D061]">Govt Trust Reg # ICT-8841-KC</p>
+            <p className="font-mono text-[#E5E4E2]">Govt Trust Reg # ICT-8841-KC</p>
           </div>
         </div>
       </div>

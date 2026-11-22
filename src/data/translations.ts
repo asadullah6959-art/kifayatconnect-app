@@ -1,4 +1,4 @@
-import { CustomCopyOverrides, UserRole } from '../types';
+﻿import { CustomCopyOverrides, UserRole } from '../types';
 
 export type AppLanguage = 'en' | 'ur';
 
@@ -7,11 +7,10 @@ export const TRANSLATIONS = {
     // Brand & Splash
     appName: 'SUI KHEL ITTEHAD',
      appTitleShort: 'SUI KHEL ITTEHAD',
-    appTitleShort: 'Kifayat Connect',
     tagline: 'Together for a Better Tomorrow',
     loadingWorkspace: 'Preparing Luxury Governance Suite...',
     maintenanceTitle: 'Scheduled System Maintenance',
-    maintenanceDesc: 'Kifayat Connect is currently undergoing maintenance by the Founder Super Admin. Please check back shortly.',
+    maintenanceDesc: 'SUI KHEL ITTEHAD is currently undergoing maintenance by the Founder Super Admin. Please check back shortly.',
     founderProtected: 'Founder Protected',
 
     // Roles
@@ -24,7 +23,7 @@ export const TRANSLATIONS = {
     revokeAuditOfficer: 'Revoke Audit Officer',
 
     // Auth & Gate
-    welcomeSignInTitle: 'Sign In to Kifayat Connect',
+    welcomeSignInTitle: 'Sign In to SUI KHEL ITTEHAD',
     welcomeSubtitle: 'Secure Community Governance, Payments & VIP Digital Identity',
     signInBtn: 'Sign In',
     registerBtn: 'Create Account',
@@ -184,7 +183,7 @@ export const TRANSLATIONS = {
     vipDownloadBtn: 'Download ID Card',
     vipVerifyQrBtn: 'Verify QR Code',
     vipPrintBtn: 'Print Card',
-    vipVerifiedAuthentic: 'Verified Authentic Kifayat Connect Member',
+    vipVerifiedAuthentic: 'Verified Authentic SUI KHEL ITTEHAD Member',
     vipBackTitle: 'OFFICIAL VERIFICATION SEAL',
     vipIssuedBy: 'Authorized by Central Executive Council',
 
@@ -229,11 +228,11 @@ export const TRANSLATIONS = {
   ur: {
     // Brand & Splash
     appName: 'سوئی خیل اتحاد',
-    appTitleShort: 'کفایت کنیکٹ',
+    appTitleShort: 'سوئی خیل اتحاد',
     tagline: 'بہتر کل کے لیے ایک ساتھ',
     loadingWorkspace: 'لگژری گورننس پینل لوڈ ہو رہا ہے...',
     maintenanceTitle: 'سسٹم کی مرمت اور اپڈیٹ جاری ہے',
-    maintenanceDesc: 'کفایت کنیکٹ اس وقت بانی سپر ایڈمن کی جانب سے مرمت کے مرحلے میں ہے۔ براہ کرم کچھ دیر بعد کوشش کریں۔',
+    maintenanceDesc: 'سوئی خیل اتحاد اس وقت بانی سپر ایڈمن کی جانب سے مرمت کے مرحلے میں ہے۔ براہ کرم کچھ دیر بعد کوشش کریں۔',
     founderProtected: 'بانی تحفظ فعال',
 
     // Roles
@@ -246,7 +245,7 @@ export const TRANSLATIONS = {
     revokeAuditOfficer: 'آڈٹ آفیسر ختم کریں',
 
     // Auth & Gate
-    welcomeSignInTitle: 'کفایت کنیکٹ میں سائن ان کریں',
+    welcomeSignInTitle: 'سوئی خیل اتحاد میں سائن ان کریں',
     welcomeSubtitle: 'محفوظ کمیونٹی گورننس، ادائیگیاں اور وی آئی پی ڈیجیٹل شناخت',
     signInBtn: 'سائن ان',
     registerBtn: 'نیا اکاؤنٹ بنائیں',
@@ -406,7 +405,7 @@ export const TRANSLATIONS = {
     vipDownloadBtn: 'آئی ڈی کارڈ ڈاؤن لوڈ کریں',
     vipVerifyQrBtn: 'کیو آر کوڈ تصدیق',
     vipPrintBtn: 'کارڈ پرنٹ کریں',
-    vipVerifiedAuthentic: 'کفایت کنیکٹ کا تصدیق شدہ مستند ممبر',
+    vipVerifiedAuthentic: 'سوئی خیل اتحاد کا تصدیق شدہ مستند ممبر',
     vipBackTitle: 'آفیشل تصدیقی مہر',
     vipIssuedBy: 'مرکزی ایگزیکٹو کونسل سے مجاز',
 

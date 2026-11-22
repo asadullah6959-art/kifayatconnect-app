@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Mail, 
@@ -29,7 +29,7 @@ import {
 } from '../../services/firebase';
 import { AppLogo } from '../common/AppLogo';
 import { translate } from '../../data/translations';
-import { resolveIphoneLiveUrl, shareKifayatForIphone } from '../../utils/iphoneShare';
+import { resolveIphoneLiveUrl, shareSKIForIphone } from '../../utils/iphoneShare';
 
 interface AuthWelcomeGateProps {
   onOpenRegisterModal: () => void;
@@ -199,9 +199,9 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
     <div
       className="relative min-h-[100vh] min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto text-[#F8FAFC] flex flex-col justify-between px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
       style={{
-        backgroundColor: '#070D14',
+        backgroundColor: '#071812',
         backgroundImage:
-          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #070D14 100%)'
+          'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(15, 23, 42, 0.72) 48%, #071812 100%)'
       }}
     >
       {/* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */}
@@ -213,9 +213,9 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
           <AppLogo size="sm" halo />
           <div>
             <span className={`font-extrabold text-sm tracking-tight kc-gold-gradient-text block leading-none ${language === 'ur' ? 'kc-font-urdu' : ''}`}>
-              {language === 'ur' ? (appSettings.appNameUr || 'کفایت کنیکٹ') : (appSettings.appName || 'Kifayat Connect')}
+              {language === 'ur' ? (appSettings.appNameUr || 'سوئی خیل اتحاد') : (appSettings.appName || 'SUI KHEL ITTEHAD')}
             </span>
-            <span className="text-[10px] text-[#38BDF8] font-semibold">
+            <span className="text-[10px] text-[#059669] font-semibold">
               {translate(language, 'tagline', appSettings.textOverrides)}
             </span>
           </div>
@@ -224,16 +224,16 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
         <button
           type="button"
           onClick={toggleLanguage}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#F5D061] bg-[#131C31] border border-slate-400/20 hover:bg-[#1E293B] rounded-xl transition-colors cursor-pointer kc-pressable"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#E5E4E2] bg-[#0D2A1F] border border-slate-400/20 hover:bg-[#1E293B] rounded-xl transition-colors cursor-pointer kc-pressable"
         >
-          <Languages className="w-3.5 h-3.5 text-[#38BDF8]" />
+          <Languages className="w-3.5 h-3.5 text-[#059669]" />
           <span>{translate(language, 'languageToggle')}</span>
         </button>
       </div>
 
       {/* Main Fintech Wallet Dark Slate & Gold Card */}
       <div className="relative z-10 w-full max-w-md mx-auto my-5 kc-obsidian-card rounded-2xl overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-[#0EA5E9] via-[#D4AF37] to-[#F59E0B]" />
+        <div className="h-1.5 bg-gradient-to-r from-[#059669] via-[#E5E4E2] to-[#CBD5E1]" />
 
         <div className="p-5 sm:p-6 space-y-5">
           <div className="text-center space-y-2">
@@ -258,7 +258,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
           {isForgotMode ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#F5D061] flex items-center gap-1.5">
+                <span className="text-xs font-bold text-[#E5E4E2] flex items-center gap-1.5">
                   <KeyRound className="w-4 h-4" />
                   <span>{translate(language, 'resetPasswordTitle')}</span>
                 </span>
@@ -304,7 +304,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                       placeholder="name@gmail.com / 00000-0000000-0"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                     />
                   </div>
                   <button
@@ -318,7 +318,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                 </form>
               ) : (
                 <form onSubmit={handleVerifyReset} className="space-y-3">
-                  <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/35 text-[11px] text-[#38BDF8] flex items-center gap-2">
+                  <div className="p-3 rounded-xl bg-[#0D2A1F] border border-[#059669]/35 text-[11px] text-[#059669] flex items-center gap-2">
                     <Mail className="w-4 h-4 shrink-0" />
                     <span>
                       {language === 'ur'
@@ -337,7 +337,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                       placeholder="••••••"
                       value={resetCode}
                       onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
-                      className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/50 rounded-xl text-[#F5D061] outline-none font-bold"
+                      className="w-full text-center tracking-[0.5em] text-lg font-mono px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/50 rounded-xl text-[#E5E4E2] outline-none font-bold"
                     />
                   </div>
                   <div>
@@ -351,7 +351,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                         minLength={6}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white outline-none focus:border-[#F5D061]"
+                        className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white outline-none focus:border-[#E5E4E2]"
                       />
                       <button
                         type="button"
@@ -378,7 +378,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                       type="button"
                       disabled={resetCooldown > 0 || resetLoading}
                       onClick={handleRequestReset}
-                      className="text-[#F5D061] hover:underline disabled:opacity-50 cursor-pointer"
+                      className="text-[#E5E4E2] hover:underline disabled:opacity-50 cursor-pointer"
                     >
                       {resetCooldown > 0 ? `${resetCooldown}s` : translate(language, 'resendOtpBtn')}
                     </button>
@@ -398,7 +398,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
             <>
               {/* Method Switcher (Web only shows Google option alongside Direct Password Login) */}
               {!isNativeMobile && (
-                <div className="grid grid-cols-2 p-1 bg-[#0A0D12] rounded-xl border border-[#D4AF37]/25 gap-1">
+                <div className="grid grid-cols-2 p-1 bg-[#0A0D12] rounded-xl border border-[#E5E4E2]/25 gap-1">
                   <button
                     type="button"
                     onClick={() => setAuthTab('PASSWORD')}
@@ -426,8 +426,8 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
               {(authTab === 'PASSWORD' || isNativeMobile) && (
                 <form onSubmit={handlePasswordSubmit} className="space-y-3">
                   {needsDirectPwdSetup && (
-                    <div className="p-3 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F8FAFC] text-xs space-y-1">
-                      <div className="font-bold text-[#F5D061] flex items-center gap-1.5">
+                    <div className="p-3 rounded-xl bg-[#0D2A1F] border border-[#059669]/40 text-[#F8FAFC] text-xs space-y-1">
+                      <div className="font-bold text-[#E5E4E2] flex items-center gap-1.5">
                         <KeyRound className="w-3.5 h-3.5" />
                         <span>{translate(language, 'existingAccountSetPwdTitle')}</span>
                       </div>
@@ -458,7 +458,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                         setPwdEmail(e.target.value);
                         if (needsDirectPwdSetup) setNeedsDirectPwdSetup(false);
                       }}
-                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                      className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                     />
                   </div>
 
@@ -477,7 +477,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                             setResetSuccess('');
                             setIsForgotMode(true);
                           }}
-                          className="text-[11px] text-[#F5D061] hover:underline font-semibold cursor-pointer"
+                          className="text-[11px] text-[#E5E4E2] hover:underline font-semibold cursor-pointer"
                         >
                           {translate(language, 'forgotPasswordLink')}
                         </button>
@@ -490,7 +490,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                         placeholder="••••••••"
                         value={pwdValue}
                         onChange={(e) => setPwdValue(e.target.value)}
-                        className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                        className="w-full px-3 py-2.5 pe-9 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                       />
                       <button
                         type="button"
@@ -514,7 +514,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                         placeholder="••••••••"
                         value={confirmSetupPwd}
                         onChange={(e) => setConfirmSetupPwd(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#D4AF37]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#F5D061] outline-none"
+                        className="w-full px-3 py-2.5 bg-[#0A0D12] border border-[#E5E4E2]/30 rounded-xl text-xs text-white placeholder-slate-500 focus:border-[#E5E4E2] outline-none"
                       />
                     </div>
                   )}
@@ -565,11 +565,11 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                     type="button"
                     onClick={handleGoogleSignIn}
                     disabled={isGoogleLoading || !isOnline}
-                    className="w-full py-3 px-4 rounded-xl bg-[#141B2D] hover:bg-[#1A233A] text-white border border-[#D4AF37]/45 hover:border-[#F5D061]/70 font-bold text-xs flex items-center justify-center gap-3 transition-colors shadow-lg shadow-black/40 kc-pressable cursor-pointer disabled:opacity-50"
+                    className="w-full py-3 px-4 rounded-xl bg-[#0D2A1F] hover:bg-[#1A233A] text-white border border-[#E5E4E2]/45 hover:border-[#E5E4E2]/70 font-bold text-xs flex items-center justify-center gap-3 transition-colors shadow-lg shadow-black/40 kc-pressable cursor-pointer disabled:opacity-50"
                   >
                     {isGoogleLoading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#F5D061]" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#E5E4E2]" />
                         <span>{language === 'ur' ? 'تصدیق ہو رہی ہے...' : 'Authenticating...'}</span>
                       </>
                     ) : (
@@ -588,19 +588,19 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
               )}
 
               {/* Persistent Session Notice */}
-              <div className="px-3 py-2 rounded-xl bg-[#0F172A] border border-[#38BDF8]/30 text-[10px] text-[#38BDF8] text-center font-medium">
+              <div className="px-3 py-2 rounded-xl bg-[#0F172A] border border-[#059669]/30 text-[10px] text-[#059669] text-center font-medium">
                 {translate(language, 'rememberSessionBadge')}
               </div>
 
               {/* New Member Registration CTA */}
               <div className="pt-3 border-t border-slate-400/20 flex items-center justify-between gap-2">
                 <span className="text-[11px] text-[#94A3B8]">
-                  {language === 'ur' ? 'نئے ممبر ہیں؟' : 'New to Kifayat Connect?'}
+                  {language === 'ur' ? 'نئے ممبر ہیں؟' : 'New to SUI KHEL ITTEHAD?'}
                 </span>
                 <button
                   type="button"
                   onClick={onOpenRegisterModal}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#131C31] hover:bg-[#1E293B] text-[#38BDF8] hover:text-[#F5D061] font-bold text-xs border border-[#38BDF8]/35 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0D2A1F] hover:bg-[#1E293B] text-[#059669] hover:text-[#E5E4E2] font-bold text-xs border border-[#059669]/35 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>{translate(language, 'registerBtn')}</span>
@@ -624,20 +624,20 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
           const iphoneUrl = resolveIphoneLiveUrl(appSettings?.webAppLiveUrl);
 
           const androidShareText = resolvedApkUrl
-            ? `Kifayat Connect (کفایت کنیکٹ) Android APK (${resolvedTag}) ڈاؤن لوڈ لنک:\n${resolvedApkUrl}`
-            : `Kifayat Connect (کفایت کنیکٹ) ایپ لنک:\n${iphoneUrl}`;
+            ? `SUI KHEL ITTEHAD (سوئی خیل اتحاد) Android APK (${resolvedTag}) ڈاؤن لوڈ لنک:\n${resolvedApkUrl}`
+            : `SUI KHEL ITTEHAD (سوئی خیل اتحاد) ایپ لنک:\n${iphoneUrl}`;
           const whatsappAndroidHref = `https://wa.me/?text=${encodeURIComponent(androidShareText)}`;
 
           const iosShareText =
-            `Kifayat Connect (کفایت کنیکٹ) — iPhone / Safari App Link:\n` +
+            `SUI KHEL ITTEHAD (سوئی خیل اتحاد) — iPhone / Safari App Link:\n` +
             `iPhone Safari mein khol kar Share (↑) → "Add to Home Screen" dabayein:\n${iphoneUrl}`;
           const whatsappIosHref = `https://wa.me/?text=${encodeURIComponent(iosShareText)}`;
 
           return (
             <div className="kc-obsidian-card rounded-2xl p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-2 text-[11px]">
-                <span className="font-extrabold text-[#F5D061] flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
+                <span className="font-extrabold text-[#E5E4E2] flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-[#059669]" />
                   <span>{language === 'ur' ? 'موبائل ایپ ڈاؤن لوڈ اور شیئر' : 'Download & Share Mobile App'}</span>
                 </span>
                 <span className="font-mono text-[10px] text-emerald-400 font-bold">{resolvedTag}</span>
@@ -667,7 +667,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                     <button
                       type="button"
                       onClick={async () => {
-                        await shareKifayatForIphone(appSettings?.webAppLiveUrl);
+                        await shareSKIForIphone(appSettings?.webAppLiveUrl);
                         setStartupShareFeedback(
                           language === 'ur'
                             ? 'ایپ لنک کاپی ہو گیا!'
@@ -698,7 +698,7 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                   <button
                     type="button"
                     onClick={async () => {
-                      await shareKifayatForIphone(appSettings?.webAppLiveUrl);
+                      await shareSKIForIphone(appSettings?.webAppLiveUrl);
                       setStartupShareFeedback(
                         language === 'ur'
                           ? 'آئی فون Safari لنک کاپی ہو گیا! واٹس ایپ پر بھیجیں۔'
@@ -706,9 +706,9 @@ export const AuthWelcomeGate: React.FC<AuthWelcomeGateProps> = ({ onOpenRegister
                       );
                       setTimeout(() => setStartupShareFeedback(null), 4000);
                     }}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/50 text-[#38BDF8] text-[11px] font-extrabold cursor-pointer kc-pressable"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#0D2A1F] hover:bg-[#1E293B] border border-[#059669]/50 text-[#059669] text-[11px] font-extrabold cursor-pointer kc-pressable"
                   >
-                    <Copy className="w-3.5 h-3.5 text-[#F5D061] shrink-0" />
+                    <Copy className="w-3.5 h-3.5 text-[#E5E4E2] shrink-0" />
                     <span className="truncate">{language === 'ur' ? 'iPhone لنک کاپی' : 'iPhone (iOS) Link'}</span>
                   </button>
                   <a

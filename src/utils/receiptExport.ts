@@ -1,4 +1,4 @@
-import type { PaymentTransaction, User } from '../types';
+﻿import type { PaymentTransaction, User } from '../types';
 import { drawMoharStampOnCanvas } from '../components/common/OfficialMoharStamp';
 import { formatRupeesUr } from './dastoor';
 
@@ -142,14 +142,14 @@ export async function downloadOfficialReceiptPdf(
 
   // Luxury dark parchment-midnight background
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, '#070D14');
+  bg.addColorStop(0, '#071812');
   bg.addColorStop(0.5, '#0F172A');
-  bg.addColorStop(1, '#070D14');
+  bg.addColorStop(1, '#071812');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
   // Outer Royal Gold Double Frame
-  ctx.strokeStyle = '#D4AF37';
+  ctx.strokeStyle = '#E5E4E2';
   ctx.lineWidth = 8;
   drawRoundedRect(ctx, 32, 32, width - 64, height - 64, 28);
   ctx.stroke();
@@ -167,29 +167,29 @@ export async function downloadOfficialReceiptPdf(
   ctx.fillStyle = hdrGrad;
   drawRoundedRect(ctx, 64, 64, width - 128, 240, 18);
   ctx.fill();
-  ctx.strokeStyle = '#D4AF37';
+  ctx.strokeStyle = '#E5E4E2';
   ctx.lineWidth = 3;
   ctx.stroke();
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FEF08A';
+  ctx.fillStyle = '#E5E4E2';
   ctx.font = '800 54px "Noto Nastaliq Urdu", "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('سوئی خیل قومی اتحاد', width / 2, 140);
+  ctx.fillText('سوئی خیل اتحاد', width / 2, 140);
 
   ctx.fillStyle = '#E2E8F0';
   ctx.font = '700 22px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('SUI KHEL QAUMI ITTEHAD · KIFAYAT CONNECT', width / 2, 195);
+  ctx.fillText('SUI KHEL ITTEHAD · SUI KHEL ITTEHAD', width / 2, 195);
 
   // Badge: رسید وصولی
-  ctx.fillStyle = '#D4AF37';
+  ctx.fillStyle = '#E5E4E2';
   drawRoundedRect(ctx, width / 2 - 170, 218, 340, 56, 14);
   ctx.fill();
-  ctx.fillStyle = '#070D14';
+  ctx.fillStyle = '#071812';
   ctx.font = '900 28px "Noto Nastaliq Urdu", "Plus Jakarta Sans", sans-serif';
   ctx.fillText('رسید وصولی · OFFICIAL RASEED', width / 2, 255);
 
   // Meta Strip: Serial Number, Date, Unit
-  ctx.fillStyle = '#131C31';
+  ctx.fillStyle = '#0D2A1F';
   drawRoundedRect(ctx, 64, 330, width - 128, 125, 16);
   ctx.fill();
   ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
@@ -200,7 +200,7 @@ export async function downloadOfficialReceiptPdf(
   ctx.fillStyle = '#94A3B8';
   ctx.font = '700 18px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('SERIAL NO. / سیریل نمبر', 96, 372);
-  ctx.fillStyle = '#FDE047';
+  ctx.fillStyle = '#CBD5E1';
   ctx.font = '900 32px "JetBrains Mono", monospace';
   ctx.fillText(serial, 96, 418);
 
@@ -216,7 +216,7 @@ export async function downloadOfficialReceiptPdf(
   ctx.fillStyle = '#94A3B8';
   ctx.font = '700 18px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('UNIT / یونٹ', width - 96, 372);
-  ctx.fillStyle = '#38BDF8';
+  ctx.fillStyle = '#059669';
   ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(String(unitLabel).slice(0, 28), width - 96, 418);
 
@@ -224,12 +224,12 @@ export async function downloadOfficialReceiptPdf(
   ctx.fillStyle = '#0B1424';
   drawRoundedRect(ctx, 64, 480, width - 128, 190, 18);
   ctx.fill();
-  ctx.strokeStyle = '#D4AF37';
+  ctx.strokeStyle = '#E5E4E2';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FEF08A';
+  ctx.fillStyle = '#E5E4E2';
   ctx.font = '700 32px "Noto Nastaliq Urdu", serif';
   ctx.fillText(
     `محترم جناب ${receipt.userName} صاحب کی جانب سے`,
@@ -245,7 +245,7 @@ export async function downloadOfficialReceiptPdf(
   );
 
   // Structured Details Grid
-  ctx.fillStyle = '#131C31';
+  ctx.fillStyle = '#0D2A1F';
   drawRoundedRect(ctx, 64, 695, width - 128, 410, 18);
   ctx.fill();
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
@@ -274,7 +274,7 @@ export async function downloadOfficialReceiptPdf(
     ctx.fillText(label, 98, rowY);
 
     ctx.textAlign = 'right';
-    ctx.fillStyle = label.includes('Amount') ? '#FDE047' : '#F8FAFC';
+    ctx.fillStyle = label.includes('Amount') ? '#CBD5E1' : '#F8FAFC';
     ctx.font = label.includes('Amount') ? '900 24px "JetBrains Mono", monospace' : '700 21px "Plus Jakarta Sans", sans-serif';
     ctx.fillText(String(value).slice(0, 58), width - 98, rowY);
 
@@ -303,16 +303,16 @@ export async function downloadOfficialReceiptPdf(
 
   // Left signature block: دستخط پرانا مالیات
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#38BDF8';
+  ctx.fillStyle = '#059669';
   ctx.font = '700 20px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(receipt.verifiedBy || 'Approved Leadership', 240, 1275);
-  ctx.strokeStyle = '#D4AF37';
+  ctx.strokeStyle = '#E5E4E2';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(110, 1315);
   ctx.lineTo(370, 1315);
   ctx.stroke();
-  ctx.fillStyle = '#FEF08A';
+  ctx.fillStyle = '#E5E4E2';
   ctx.font = '800 24px "Noto Nastaliq Urdu", serif';
   ctx.fillText('دستخط پرانا مالیات', 240, 1365);
   ctx.fillStyle = '#94A3B8';
@@ -320,15 +320,15 @@ export async function downloadOfficialReceiptPdf(
   ctx.fillText('Finance Verification Signature', 240, 1400);
 
   // Right signature block: دستخط وصول کنندہ
-  ctx.fillStyle = '#38BDF8';
+  ctx.fillStyle = '#059669';
   ctx.font = '700 20px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('Kifayat Connect Treasury', width - 240, 1275);
-  ctx.strokeStyle = '#D4AF37';
+  ctx.fillText('SUI KHEL ITTEHAD Treasury', width - 240, 1275);
+  ctx.strokeStyle = '#E5E4E2';
   ctx.beginPath();
   ctx.moveTo(width - 370, 1315);
   ctx.lineTo(width - 110, 1315);
   ctx.stroke();
-  ctx.fillStyle = '#FEF08A';
+  ctx.fillStyle = '#E5E4E2';
   ctx.font = '800 24px "Noto Nastaliq Urdu", serif';
   ctx.fillText('دستخط وصول کنندہ', width - 240, 1365);
   ctx.fillStyle = '#94A3B8';
@@ -358,7 +358,7 @@ export async function downloadOfficialReceiptPdf(
   pdfCopy.set(pdfBytes);
   const blob = new Blob([pdfCopy], { type: 'application/pdf' });
   const safeSerial = serial.replace(/[^a-zA-Z0-9_-]/g, '_');
-  triggerBlobDownload(blob, `Kifayat_Raseed_${safeSerial}.pdf`);
+  triggerBlobDownload(blob, `SKI_Raseed_${safeSerial}.pdf`);
 }
 
 function escapeXml(val: unknown): string {
@@ -386,7 +386,7 @@ export function downloadOfficialReceiptExcel(
   const unitLabel = receipt.unit || receipt.unionCouncil || receipt.district || payer?.district || 'Central Unit';
 
   const rows: Array<[string, string]> = [
-    ['Organization / تنظیم', 'سوئی خیل قومی اتحاد — Kifayat Connect Welfare Organization'],
+    ['Organization / تنظیم', 'سوئی خیل اتحاد — SUI KHEL ITTEHAD Welfare Organization'],
     ['Document / دستاویز', 'رسید وصولی — Official Verified Payment Receipt'],
     ['Serial Number / سیریل نمبر', serial],
     ['Receipt Reference / حوالہ', receipt.receiptNumber],
@@ -406,7 +406,7 @@ export function downloadOfficialReceiptExcel(
     ['Verified By / دستخط پرانا مالیات و منظوری', receipt.verifiedBy || 'Super Admin / Founder'],
     ['Verified At / منظوری کا وقت', receipt.verifiedAt ? new Date(receipt.verifiedAt).toLocaleString() : receipt.date],
     ['Official Statement', `محترم جناب ${receipt.userName} صاحب کی جانب سے مبلغ ${receipt.amount.toLocaleString()} روپے سکہ رائج الوقت وصول پائے۔`],
-    ['Official Seal / مہر', 'KIFAYAT CONNECT · مہر سوئی خیل قومی اتحاد · VERIFIED SEAL'],
+    ['Official Seal / مہر', 'SUI KHEL ITTEHAD · مہر سوئی خیل اتحاد · VERIFIED SEAL'],
   ];
 
   if (options?.allowCnic && (receipt.payerCnic || payer?.cnic)) {
@@ -451,7 +451,7 @@ export function downloadOfficialReceiptExcel(
       <Column ss:Width="220"/>
       <Column ss:Width="440"/>
       <Row ss:Height="28">
-        <Cell ss:MergeAcross="1" ss:StyleID="TitleCell"><Data ss:Type="String">سوئی خیل قومی اتحاد · Kifayat Connect — Official Raseed (${escapeXml(serial)})</Data></Cell>
+        <Cell ss:MergeAcross="1" ss:StyleID="TitleCell"><Data ss:Type="String">سوئی خیل اتحاد · SUI KHEL ITTEHAD — Official Raseed (${escapeXml(serial)})</Data></Cell>
       </Row>
       ${xmlRows}
     </Table>
@@ -462,14 +462,14 @@ export function downloadOfficialReceiptExcel(
     type: 'application/vnd.ms-excel;charset=utf-8;',
   });
   const safeSerial = serial.replace(/[^a-zA-Z0-9_-]/g, '_');
-  triggerBlobDownload(blob, `Kifayat_Raseed_${safeSerial}.xls`);
+  triggerBlobDownload(blob, `SKI_Raseed_${safeSerial}.xls`);
 }
 
 export function buildWhatsAppReceiptText(receipt: PaymentTransaction): string {
   const serial = receipt.serialNumber || receipt.receiptNumber;
   const tier = resolveReceiptFundTierLabel(receipt);
   return [
-    `✅ *سوئی خیل قومی اتحاد — KIFAYAT CONNECT*`,
+    `✅ *سوئی خیل اتحاد — SUI KHEL ITTEHAD*`,
     `🧾 *رسید وصولی (Official Verified Raseed)*`,
     `🔢 *Serial No:* ${serial}`,
     `📅 *Date:* ${receipt.date}`,
@@ -480,7 +480,7 @@ export function buildWhatsAppReceiptText(receipt: PaymentTransaction): string {
     `🏛️ *Approved By:* ${receipt.verifiedBy || 'Central Leadership'}`,
     ``,
     `محترم جناب ${receipt.userName} صاحب کی جانب سے مبلغ ${receipt.amount.toLocaleString()} روپے سکہ رائج الوقت وصول پائے۔`,
-    `🔏 *VERIFIED BY OFFICIAL SEAL (مہر سوئی خیل قومی اتحاد)*`,
+    `🔏 *VERIFIED BY OFFICIAL SEAL (مہر سوئی خیل اتحاد)*`,
   ]
     .filter(Boolean)
     .join('\n');

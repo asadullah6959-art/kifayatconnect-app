@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Coins,
@@ -122,10 +122,10 @@ export const MemberDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#D4AF37]/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E5E4E2]/25">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-[#F5D061] uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-[#E5E4E2] uppercase tracking-wider">
               {language === 'ur' ? 'ذاتی ممبرشپ پورٹل' : 'Member Self-Service'}
             </span>
             <span className="text-slate-500">·</span>
@@ -136,7 +136,7 @@ export const MemberDashboard: React.FC = () => {
           </h1>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <span className="text-xs text-slate-400">
-              ID: <strong className="font-mono text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</strong>
+              ID: <strong className="font-mono text-[#E5E4E2]">{currentUser.membershipId || 'KC-PENDING'}</strong>
             </span>
             <RoleBadge
               role={currentUser.role}
@@ -151,7 +151,7 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => openTutorial()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#131C31] hover:bg-[#1E293B] border border-[#38BDF8]/45 text-[#38BDF8] text-xs font-bold rounded-xl kc-pressable cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#0D2A1F] hover:bg-[#1E293B] border border-[#059669]/45 text-[#059669] text-xs font-bold rounded-xl kc-pressable cursor-pointer"
           >
             <HelpCircle className="w-4 h-4" />
             <span>{language === 'ur' ? 'ایپ گائیڈ' : 'App Guide'}</span>
@@ -160,18 +160,18 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => openRukniyatForm(ownRukniyatApp || null)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#022C22] hover:bg-[#064E3B] border border-[#D4AF37]/60 text-[#FEF08A] text-xs font-extrabold rounded-xl kc-pressable cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#022C22] hover:bg-[#064E3B] border border-[#E5E4E2]/60 text-[#E5E4E2] text-xs font-extrabold rounded-xl kc-pressable cursor-pointer"
           >
-            <FileCheck2 className="w-4 h-4 text-[#FDE047]" />
+            <FileCheck2 className="w-4 h-4 text-[#CBD5E1]" />
             <span>{language === 'ur' ? 'رکنیت فارم (Rukniyat Form)' : 'Rukniyat Form (رکنیت فارم)'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="flex items-center gap-1.5 px-3.5 py-2 kc-obsidian-card hover:border-[#F5D061]/70 text-white text-xs font-bold rounded-xl kc-pressable cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 kc-obsidian-card hover:border-[#E5E4E2]/70 text-white text-xs font-bold rounded-xl kc-pressable cursor-pointer"
           >
-            <IdCard className="w-4 h-4 text-[#F5D061]" />
+            <IdCard className="w-4 h-4 text-[#E5E4E2]" />
             <span>{translate(language, 'viewDigitalId')}</span>
           </button>
 
@@ -195,20 +195,20 @@ export const MemberDashboard: React.FC = () => {
       </div>
 
       {/* Rukniyat Form Status Banner / Quick Entry */}
-      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#022C22]/85 via-[#0F172A] to-[#131C31] border border-[#D4AF37]/45 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#022C22]/85 via-[#0F172A] to-[#0D2A1F] border border-[#E5E4E2]/45 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-[#070D14] border border-[#D4AF37]/60 flex items-center justify-center shrink-0">
-            <FileCheck2 className="w-5 h-5 text-[#FDE047]" />
+          <div className="w-10 h-10 rounded-xl bg-[#071812] border border-[#E5E4E2]/60 flex items-center justify-center shrink-0">
+            <FileCheck2 className="w-5 h-5 text-[#CBD5E1]" />
           </div>
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-xs sm:text-sm font-extrabold text-[#FEF08A]">
+              <h3 className="text-xs sm:text-sm font-extrabold text-[#E5E4E2]">
                 {language === 'ur'
-                  ? 'رکنیت فارم (سوئی خیل قومی اتحاد)'
+                  ? 'رکنیت فارم (سوئی خیل اتحاد)'
                   : 'Official Rukniyat Form (رکنیت فارم)'}
               </h3>
               {ownRukniyatApp?.serialNumber && (
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#070D14] border border-[#D4AF37]/50 text-[#FDE047]">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#071812] border border-[#E5E4E2]/50 text-[#CBD5E1]">
                   {ownRukniyatApp.serialNumber}
                 </span>
               )}
@@ -257,10 +257,10 @@ export const MemberDashboard: React.FC = () => {
                   setActiveTab('funds');
                 }
               }}
-              className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#F5D061]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+              className="p-3.5 rounded-2xl kc-emerald-panel hover:border-[#E5E4E2]/75 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/40 flex items-center justify-center mb-2">
-                <Coins className="w-4 h-4 text-[#F5D061]" />
+              <div className="w-8 h-8 rounded-xl bg-[#071812] border border-[#E5E4E2]/40 flex items-center justify-center mb-2">
+                <Coins className="w-4 h-4 text-[#E5E4E2]" />
               </div>
               <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'navFunds')}</span>
             </button>
@@ -269,10 +269,10 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCardUser(currentUser)}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
-              <IdCard className="w-4 h-4 text-[#F5D061]" />
+            <div className="w-8 h-8 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 flex items-center justify-center mb-2">
+              <IdCard className="w-4 h-4 text-[#E5E4E2]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionDigitalId')}</span>
           </button>
@@ -280,10 +280,10 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('members')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
-              <Users className="w-4 h-4 text-[#F5D061]" />
+            <div className="w-8 h-8 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 flex items-center justify-center mb-2">
+              <Users className="w-4 h-4 text-[#E5E4E2]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'navMembers')}</span>
           </button>
@@ -291,9 +291,9 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('chat')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-emerald-500/35 flex items-center justify-center mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#071812] border border-emerald-500/35 flex items-center justify-center mb-2">
               <MessageSquare className="w-4 h-4 text-emerald-400" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionOpenChat')}</span>
@@ -302,10 +302,10 @@ export const MemberDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('announcements')}
-            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+            className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-2">
-              <Megaphone className="w-4 h-4 text-[#F5D061]" />
+            <div className="w-8 h-8 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 flex items-center justify-center mb-2">
+              <Megaphone className="w-4 h-4 text-[#E5E4E2]" />
             </div>
             <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionAnnouncements')}</span>
           </button>
@@ -320,9 +320,9 @@ export const MemberDashboard: React.FC = () => {
                   setIsComplaintModalOpen(true);
                 }
               }}
-              className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#F5D061]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
+              className="p-3.5 rounded-2xl kc-obsidian-card hover:border-[#E5E4E2]/65 text-left transition-transform hover:-translate-y-0.5 kc-pressable kc-gold-touch cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#090D16] border border-rose-500/35 flex items-center justify-center mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#071812] border border-rose-500/35 flex items-center justify-center mb-2">
                 <MessageSquareWarning className="w-4 h-4 text-rose-400" />
               </div>
               <span className="text-xs font-extrabold text-white block truncate">{translate(language, 'actionComplaints')}</span>
@@ -337,19 +337,19 @@ export const MemberDashboard: React.FC = () => {
           onClick={() => setSelectedCardUser(currentUser)}
           className={`lg:col-span-5 rounded-2xl p-5 text-[#F8FAFC] shadow-xl cursor-pointer transition-colors flex flex-col justify-between relative overflow-hidden kc-glass-bevel kc-gold-touch ${
             isFaizKhelUser(currentUser)
-              ? 'border-[1.5px] border-[#FDE047] shadow-[0_12px_32px_rgba(212,175,55,0.28)]'
-              : 'hover:border-[#F5D061]/75'
+              ? 'border-[1.5px] border-[#CBD5E1] shadow-[0_12px_32px_rgba(212,175,55,0.28)]'
+              : 'hover:border-[#E5E4E2]/75'
           }`}
           style={{
             background: isFaizKhelUser(currentUser)
               ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
-              : 'linear-gradient(145deg, #131C31 0%, #1E293B 55%, #090D16 100%)'
+              : 'linear-gradient(145deg, #0D2A1F 0%, #1E293B 55%, #071812 100%)'
           }}
         >
           {/* Holographic Gold Foil Light Shimmer */}
           <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 kc-vip-foil-shimmer z-0" />
 
-          {/* Embossed "KIFAYAT CONNECT UNITY" Circular Vector Crest Watermark */}
+          {/* Embossed "SUI KHEL ITTEHAD UNITY" Circular Vector Crest Watermark */}
           <svg
             aria-hidden="true"
             viewBox="0 0 180 180"
@@ -359,13 +359,13 @@ export const MemberDashboard: React.FC = () => {
               <path id="kcDashCrestPath" d="M 90, 90 m -66, 0 a 66,66 0 1,1 132,0 a 66,66 0 1,1 -132,0" />
             </defs>
             <circle cx="90" cy="90" r="82" fill="none" stroke="#F9E29C" strokeWidth="1.5" strokeDasharray="3 3" />
-            <circle cx="90" cy="90" r="52" fill="none" stroke="#D4AF37" strokeWidth="1.5" />
+            <circle cx="90" cy="90" r="52" fill="none" stroke="#E5E4E2" strokeWidth="1.5" />
             <text fill="#F9E29C" fontSize="10.5" fontWeight="800" letterSpacing="3.4">
               <textPath href="#kcDashCrestPath" startOffset="4%">
-                ★ KIFAYAT CONNECT UNITY ★ OFFICIAL VIP
+                ★ SUI KHEL ITTEHAD UNITY ★ OFFICIAL VIP
               </textPath>
             </text>
-            <text x="90" y="96" textAnchor="middle" fill="#D4AF37" fontSize="18" fontWeight="900">
+            <text x="90" y="96" textAnchor="middle" fill="#E5E4E2" fontSize="18" fontWeight="900">
               KC
             </text>
           </svg>
@@ -375,17 +375,17 @@ export const MemberDashboard: React.FC = () => {
               <BrandEmblem3D size="xs" halo />
               <div>
                 <h4 className="font-extrabold text-xs uppercase tracking-wider kc-gold-gradient-text">
-                  KIFAYAT CONNECT 👑
+                  SUI KHEL ITTEHAD 👑
                 </h4>
-                <p className="text-[10px] text-[#38BDF8] font-semibold">{translate(language, 'vipPremiumMember')}</p>
+                <p className="text-[10px] text-[#059669] font-semibold">{translate(language, 'vipPremiumMember')}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
               {isFaizKhelUser(currentUser) && <FaizKhelVipCrownIcon className="w-6 h-6" />}
-              <span className="text-[10px] font-mono font-bold text-[#38BDF8] bg-[#090D16] px-2 py-0.5 rounded-md border border-[#38BDF8]/40 flex items-center gap-1">
+              <span className="text-[10px] font-mono font-bold text-[#059669] bg-[#071812] px-2 py-0.5 rounded-md border border-[#059669]/40 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 kc-live-pulse" />
-                <ShieldCheck className="w-3 h-3 text-[#F5D061]" />
+                <ShieldCheck className="w-3 h-3 text-[#E5E4E2]" />
                 <span>{translate(language, 'activeLabel')}</span>
               </span>
             </div>
@@ -396,19 +396,19 @@ export const MemberDashboard: React.FC = () => {
               <img
                 src={currentUser.avatarUrl || currentUser.avatar}
                 alt={currentUser.name}
-                className="w-16 h-16 rounded-xl object-cover border-2 border-[#F5D061] shadow-md"
+                className="w-16 h-16 rounded-xl object-cover border-2 border-[#E5E4E2] shadow-md"
               />
             ) : (
-              <div className="w-16 h-16 rounded-xl bg-[#0F172A] border-2 border-[#F5D061] flex items-center justify-center text-[#F5D061] font-extrabold text-lg shadow-md shrink-0">
+              <div className="w-16 h-16 rounded-xl bg-[#0F172A] border-2 border-[#E5E4E2] flex items-center justify-center text-[#E5E4E2] font-extrabold text-lg shadow-md shrink-0">
                 {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
             )}
             <div className="min-w-0 space-y-1">
-              <h3 className={`font-extrabold text-base truncate ${isFaizKhelUser(currentUser) ? 'text-[#FEF08A]' : 'text-[#F8FAFC]'}`}>
+              <h3 className={`font-extrabold text-base truncate ${isFaizKhelUser(currentUser) ? 'text-[#E5E4E2]' : 'text-[#F8FAFC]'}`}>
                 {currentUser.name}
               </h3>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-[11px] font-mono tabular-nums text-[#F5D061]">{currentUser.membershipId || 'KC-PENDING'}</p>
+                <p className="text-[11px] font-mono tabular-nums text-[#E5E4E2]">{currentUser.membershipId || 'KC-PENDING'}</p>
                 <TabbarBadge user={currentUser} language={language} compact />
               </div>
               <p className="text-[10px] text-[#94A3B8] truncate">
@@ -420,9 +420,9 @@ export const MemberDashboard: React.FC = () => {
           <div className="relative z-10 pt-2 border-t border-slate-400/20 flex items-center justify-between text-[10px] text-[#94A3B8]">
             <div>
               <span>{language === 'ur' ? 'میعاد:' : 'VALID THRU:'} </span>
-              <span className="font-mono tabular-nums text-[#F5D061] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
+              <span className="font-mono tabular-nums text-[#E5E4E2] font-bold">{currentUser.validUntil || '2028-12-31'}</span>
             </div>
-            <span className="text-[#38BDF8] font-semibold">
+            <span className="text-[#059669] font-semibold">
               {language === 'ur' ? 'وی آئی پی کارڈ اور QR دیکھیں →' : 'Tap for VIP Card & QR →'}
             </span>
           </div>
@@ -436,7 +436,7 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs font-semibold uppercase tracking-wider">
                     {language === 'ur' ? 'کل جمع شدہ فنڈ' : 'Total Contributed'}
                   </span>
-                  <Coins className="w-4 h-4 text-[#F5D061]" />
+                  <Coins className="w-4 h-4 text-[#E5E4E2]" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
@@ -445,7 +445,7 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-emerald-400 font-semibold">{translate(language, 'verifiedLabel')}</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#E5E4E2]/15 pt-2 flex items-center justify-between">
                 <span className="tabular-nums">
                   {language === 'ur'
                     ? `${ownPayments.filter(p => p.status === 'VERIFIED').length} تصدیق شدہ ادائیگیاں`
@@ -470,7 +470,7 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-blue-400 font-semibold">{language === 'ur' ? 'ماہانہ' : 'Recurring'}</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#E5E4E2]/15 pt-2 flex items-center justify-between">
                 <span>{language === 'ur' ? `دورانیہ (${currentMonthLabel})` : `Cycle (${currentMonthLabel})`}</span>
                 <span className="text-blue-400 font-semibold">{translate(language, 'activeLabel')}</span>
               </div>
@@ -491,7 +491,7 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs text-purple-400 font-semibold">{language === 'ur' ? 'سالانہ' : 'Annual'}</span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2 flex items-center justify-between">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#E5E4E2]/15 pt-2 flex items-center justify-between">
                 <span>{language === 'ur' ? 'تعلیم اور صحت' : 'Education & Healthcare'}</span>
                 <span className="text-purple-400 font-semibold">{currentMonthShort}</span>
               </div>
@@ -503,18 +503,18 @@ export const MemberDashboard: React.FC = () => {
                   <span className="text-xs font-semibold uppercase tracking-wider">
                     {language === 'ur' ? 'تصدیق کی حیثیت' : 'Verification Status'}
                   </span>
-                  <Clock className="w-4 h-4 text-[#F5D061]" />
+                  <Clock className="w-4 h-4 text-[#E5E4E2]" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-extrabold text-white font-mono tabular-nums">
                     {pendingPayments.length} {translate(language, 'pendingLabel')}
                   </span>
-                  <span className="text-xs text-[#F5D061] font-semibold">
+                  <span className="text-xs text-[#E5E4E2] font-semibold">
                     {language === 'ur' ? 'زیر جائزہ' : 'In Review'}
                   </span>
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#D4AF37]/15 pt-2">
+              <div className="mt-3 text-[11px] text-slate-400 border-t border-[#E5E4E2]/15 pt-2">
                 {pendingPayments.length > 0
                   ? (language === 'ur' ? 'ایڈمن / قیادت آپ کی رسید کی تصدیق کر رہی ہے۔' : 'Admin / Leadership is cross-verifying transaction slip.')
                   : (language === 'ur' ? 'آپ کی تمام ادائیگیاں تصدیق ہو چکی ہیں!' : 'All submitted payments have been verified!')}
@@ -526,13 +526,13 @@ export const MemberDashboard: React.FC = () => {
 
       {/* Member Payment History */}
       <div className="kc-obsidian-card rounded-2xl p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#D4AF37]/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E4E2]/20">
           <div>
             <h3 className="text-sm font-bold text-white">
               {language === 'ur' ? 'میری ادائیگیوں کا ریکارڈ اور مصدقہ رسیدیں' : 'My Payment Records & Certified Receipts'}
             </h3>
             <p className="text-xs text-slate-400">
-              {language === 'ur' ? 'کفایت کنیکٹ پرائیویسی قوانین کے تحت صرف آپ کی ذاتی ادائیگیاں دکھائی جاتی ہیں' : 'Only your private transactions are shown under Kifayat Connect privacy rules'}
+              {language === 'ur' ? 'سوئی خیل اتحاد پرائیویسی قوانین کے تحت صرف آپ کی ذاتی ادائیگیاں دکھائی جاتی ہیں' : 'Only your private transactions are shown under SUI KHEL ITTEHAD privacy rules'}
             </p>
           </div>
 
@@ -550,7 +550,7 @@ export const MemberDashboard: React.FC = () => {
 
         <div className="mt-3 space-y-2.5">
           {ownPayments.length === 0 ? (
-            <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#D4AF37]/20 bg-[#090D16]">
+            <div className="py-8 px-4 text-center text-xs text-slate-400 rounded-xl border border-[#E5E4E2]/20 bg-[#071812]">
               {language === 'ur'
                 ? 'ابھی کوئی ادائیگی جمع نہیں کروائی گئی۔ ادائیگی کے لیے "فنڈز اور ادائیگیاں" کھولیں۔'
                 : 'No contributions submitted yet. Open "Funds & Payments" to submit your contribution.'}
@@ -559,11 +559,11 @@ export const MemberDashboard: React.FC = () => {
             ownPayments.map(tx => (
               <div
                 key={tx.id}
-                className="p-3.5 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] space-y-2 text-xs"
+                className="p-3.5 rounded-xl border border-[#E5E4E2]/25 bg-[#071812] space-y-2 text-xs"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <span className="font-mono font-bold text-[#F5D061] block truncate">
+                    <span className="font-mono font-bold text-[#E5E4E2] block truncate">
                       {tx.serialNumber || tx.receiptNumber}
                     </span>
                     <span className="text-[11px] font-mono tabular-nums text-slate-400 block mt-0.5">
@@ -572,10 +572,10 @@ export const MemberDashboard: React.FC = () => {
                   </div>
                   <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold shrink-0 ${
                     tx.status === 'VERIFIED'
-                      ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40'
+                      ? 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/40'
                       : tx.status === 'REJECTED'
                       ? 'bg-rose-950/70 text-rose-300 border border-rose-500/40'
-                      : 'bg-[#090D16] text-[#F5D061] border border-[#D4AF37]/40'
+                      : 'bg-[#071812] text-[#E5E4E2] border border-[#E5E4E2]/40'
                   }`}>
                     {tx.status === 'VERIFIED' ? <CheckCircle2 className="w-3 h-3" /> : tx.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                     <span>
@@ -588,13 +588,13 @@ export const MemberDashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#D4AF37]/15">
+                <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#E5E4E2]/15">
                   <div className="min-w-0">
                     <span className="text-emerald-300 font-semibold block truncate">
                       {language === 'ur' ? resolveReceiptFundTierLabel(tx).ur : resolveReceiptFundTierLabel(tx).en}
                     </span>
                     {(tx.periodLabelUr || tx.periodLabelEn) && (
-                      <span className="text-[10px] text-[#F5D061] font-semibold block truncate">
+                      <span className="text-[10px] text-[#E5E4E2] font-semibold block truncate">
                         {language === 'ur' ? tx.periodLabelUr || tx.periodLabelEn : tx.periodLabelEn || tx.periodLabelUr}
                       </span>
                     )}
@@ -609,7 +609,7 @@ export const MemberDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedReceipt(tx)}
-                      className="min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#141B2D] hover:bg-[#1A233A] text-[#F5D061] border border-[#D4AF37]/35 rounded-xl font-semibold kc-pressable cursor-pointer"
+                      className="min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#0D2A1F] hover:bg-[#1A233A] text-[#E5E4E2] border border-[#E5E4E2]/35 rounded-xl font-semibold kc-pressable cursor-pointer"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       <span>{language === 'ur' ? 'رسید' : 'Receipt'}</span>
@@ -625,7 +625,7 @@ export const MemberDashboard: React.FC = () => {
       {/* Grid: My Grievances & Announcements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="kc-obsidian-card rounded-2xl p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5E4E2]/20">
             <div>
               <h3 className="text-sm font-bold text-white">
                 {language === 'ur' ? 'سپورٹ ٹکٹس اور شکایات' : 'Support Tickets & Grievances'}
@@ -635,7 +635,7 @@ export const MemberDashboard: React.FC = () => {
               </p>
             </div>
             {allowComplaints && (
-              <button type="button" onClick={() => setIsComplaintModalOpen(true)} className="text-xs text-[#F5D061] hover:underline font-bold cursor-pointer">
+              <button type="button" onClick={() => setIsComplaintModalOpen(true)} className="text-xs text-[#E5E4E2] hover:underline font-bold cursor-pointer">
                 {language === 'ur' ? '+ شکایت درج کریں' : '+ File Ticket'}
               </button>
             )}
@@ -648,14 +648,14 @@ export const MemberDashboard: React.FC = () => {
               </div>
             ) : (
               ownComplaints.map(cmp => (
-                <div key={cmp.id} className="p-3 rounded-xl border border-[#D4AF37]/25 bg-[#090D16] text-xs">
+                <div key={cmp.id} className="p-3 rounded-xl border border-[#E5E4E2]/25 bg-[#071812] text-xs">
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-bold text-white">{cmp.subject}</span>
                       <p className="text-[10px] text-slate-400 font-mono">{cmp.ticketNumber} · {cmp.category}</p>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                      cmp.status === 'RESOLVED' ? 'bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/35' : 'bg-amber-950/60 text-[#F5D061] border border-[#D4AF37]/35'
+                      cmp.status === 'RESOLVED' ? 'bg-[#0D2A1F] text-[#059669] border border-[#059669]/35' : 'bg-amber-950/60 text-[#E5E4E2] border border-[#E5E4E2]/35'
                     }`}>
                       {cmp.status === 'RESOLVED' ? translate(language, 'resolvedLabel') : translate(language, 'openLabel')}
                     </span>
@@ -663,7 +663,7 @@ export const MemberDashboard: React.FC = () => {
                   <p className="text-[11px] text-slate-300 mt-1.5">{cmp.description}</p>
                   {cmp.responseNote && (
                     <div className="mt-2 text-[11px] text-emerald-100 kc-emerald-panel p-2.5 rounded-lg">
-                      <span className="font-bold text-[#F5D061]">
+                      <span className="font-bold text-[#E5E4E2]">
                         {language === 'ur' ? `جواب (${cmp.assignedOfficerName}):` : `Response (${cmp.assignedOfficerName}):`}
                       </span> {cmp.responseNote}
                     </div>
@@ -676,7 +676,7 @@ export const MemberDashboard: React.FC = () => {
 
         {vis.showAnnouncementsFeed && (
           <div className="kc-obsidian-card rounded-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#D4AF37]/20">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E4E2]/20">
               <div>
                 <h3 className="text-sm font-bold text-white">
                   {language === 'ur' ? 'اعلانات اور آفیشل نوٹس' : 'Announcements & Official Notices'}
@@ -685,7 +685,7 @@ export const MemberDashboard: React.FC = () => {
                   {language === 'ur' ? `تازہ ترین آفیشل ایپ 👑 اور ${memberDistrict} کے اعلانات` : `Latest Official App 👑 & ${memberDistrict} notices`}
                 </p>
               </div>
-              <Megaphone className="w-4 h-4 text-[#F5D061]" />
+              <Megaphone className="w-4 h-4 text-[#E5E4E2]" />
             </div>
 
             <div className="mt-3 space-y-3">
@@ -700,19 +700,19 @@ export const MemberDashboard: React.FC = () => {
                     className={`p-3 rounded-xl border text-xs ${
                       ann.urgency === 'URGENT'
                         ? 'border-rose-500/45 bg-rose-950/25'
-                        : 'border-[#D4AF37]/25 bg-[#090D16]'
+                        : 'border-[#E5E4E2]/25 bg-[#071812]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-bold text-white">{ann.title}</h4>
-                      <span className="text-[9px] font-bold text-[#F5D061] shrink-0">
+                      <span className="text-[9px] font-bold text-[#E5E4E2] shrink-0">
                         {ann.announcementType === 'OFFICIAL_APP'
                           ? (language === 'ur' ? '👑 آفیشل' : '👑 OFFICIAL')
                           : (language === 'ur' ? '📢 کمیونٹی' : '📢 COMMUNITY')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">{ann.content}</p>
-                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-[#D4AF37]/15 pt-1.5">
+                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-[#E5E4E2]/15 pt-1.5">
                       <span>{language === 'ur' ? `از: ${ann.publishedBy}` : `From: ${ann.publishedBy}`}</span>
                       <span className="font-mono tabular-nums">{new Date(ann.publishedAt).toLocaleDateString()}</span>
                     </div>
@@ -731,7 +731,7 @@ export const MemberDashboard: React.FC = () => {
             className="relative w-full max-w-lg kc-luxury-modal kc-modal-panel rounded-2xl p-5 sm:p-6 pb-24 sm:pb-6 my-auto overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#D4AF37]/20">
+            <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[#E5E4E2]/20">
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-bold text-white break-words whitespace-normal leading-snug">
                   {language === 'ur' ? 'سپورٹ ٹکٹ یا شکایت درج کریں' : 'File Support Ticket or Grievance'}
@@ -746,7 +746,7 @@ export const MemberDashboard: React.FC = () => {
                 type="button"
                 onClick={() => setIsComplaintModalOpen(false)}
                 aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#090D16] border border-[#D4AF37]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 text-slate-300 hover:text-white cursor-pointer shrink-0 kc-pressable"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -809,7 +809,7 @@ export const MemberDashboard: React.FC = () => {
                 className="w-full text-xs p-3 rounded-xl kc-luxury-input resize-none"
               />
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D4AF37]/20">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E5E4E2]/20">
                 <button type="button" onClick={() => setIsComplaintModalOpen(false)} className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer">
                   {translate(language, 'cancel')}
                 </button>

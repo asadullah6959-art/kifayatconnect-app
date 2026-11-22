@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -8,17 +8,17 @@
 }
 
 :root {
-  --kc-bg: #070D14;
-  --kc-surface: #131C31;
+  --kc-bg: #071812;
+  --kc-surface: #0D2A1F;
   --kc-surface-elevated: rgba(30, 41, 59, 0.82);
   --kc-border: rgba(148, 163, 184, 0.18);
-  --kc-accent: #38BDF8;
-  --kc-accent-deep: #0EA5E9;
-  --kc-gold: #D4AF37;
-  --kc-gold-bright: #F59E0B;
-  --kc-emerald: #0EA5E9;
-  --kc-emerald-deep: #0F172A;
-  --kc-emerald-elevated: #1E293B;
+  --kc-accent: #059669;
+  --kc-accent-deep: #046307;
+  --kc-silver: #E5E4E2;
+  --kc-silver-bright: #CBD5E1;
+  --kc-emerald: #046307;
+  --kc-emerald-deep: #071812;
+  --kc-emerald-elevated: #0D2A1F;
 }
 
 *,
@@ -76,7 +76,7 @@ body,
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--kc-bg, #070D14);
+  background-color: var(--kc-bg, #071812);
   color: #F8FAFC;
 }
 
@@ -252,9 +252,9 @@ svg {
   background: linear-gradient(
     112deg,
     transparent 24%,
-    rgba(249, 226, 156, 0.1) 42%,
-    rgba(212, 175, 55, 0.24) 50%,
-    rgba(249, 226, 156, 0.12) 58%,
+    rgba(229, 228, 226, 0.1) 42%,
+    rgba(5, 150, 105, 0.24) 50%,
+    rgba(229, 228, 226, 0.12) 58%,
     transparent 76%
   );
   animation: kcFoilSweep 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
@@ -265,9 +265,9 @@ svg {
 .kc-unity-halo {
   background: radial-gradient(
     circle,
-    rgba(249, 226, 156, 0.42) 0%,
-    rgba(212, 175, 55, 0.18) 48%,
-    rgba(212, 175, 55, 0) 74%
+    rgba(229, 228, 226, 0.42) 0%,
+    rgba(5, 150, 105, 0.18) 48%,
+    rgba(5, 150, 105, 0) 74%
   );
   animation: kcHaloGlow 3.6s ease-in-out infinite;
   will-change: transform, opacity;
@@ -298,20 +298,20 @@ svg {
 }
 
 .kc-gold-gradient-text {
-  background: linear-gradient(135deg, #FCE38A 0%, #F59E0B 45%, #D4AF37 78%, #A17419 100%);
+  background: linear-gradient(135deg, #046307 0%, #059669 42%, #CBD5E1 76%, #E5E4E2 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .kc-gold-button {
-  background: linear-gradient(135deg, #FCE38A 0%, #F59E0B 38%, #D4AF37 72%, #A17419 100%);
-  color: #090D16;
-  border: 1px solid rgba(249, 226, 156, 0.85);
+  background: linear-gradient(135deg, #046307 0%, #059669 100%);
+  color: #F8FAFC;
+  border: 1px solid rgba(229, 228, 226, 0.85);
   box-shadow:
-    0 6px 18px rgba(212, 175, 55, 0.28),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.32),
-    inset 0 1px 0 rgba(255, 251, 235, 0.72);
+    0 6px 18px rgba(5, 150, 105, 0.28),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.32),
+    inset 0 1px 0 rgba(229, 228, 226, 0.22);
   transform: translate3d(0, 0, 0);
   transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1), opacity 110ms ease, box-shadow 140ms ease;
   will-change: transform, opacity;
@@ -325,73 +325,74 @@ svg {
 .kc-gold-button:active {
   transform: translate3d(0, 0, 0) scale3d(0.96, 0.96, 1);
   box-shadow:
-    0 0 20px rgba(249, 226, 156, 0.45),
-    0 4px 12px rgba(212, 175, 55, 0.35),
-    inset 0 1px 0 rgba(255, 251, 235, 0.8);
+    0 0 20px rgba(229, 228, 226, 0.35),
+    0 4px 12px rgba(5, 150, 105, 0.35),
+    inset 0 1px 0 rgba(229, 228, 226, 0.42);
 }
 
-/* 3D Glassmorphism & Double-Hairline Metallic Royal Gold Bevel Surfaces (GPU-Composited 60FPS) */
+/* Emerald and platinum glass surfaces */
 .kc-obsidian-card {
   background: linear-gradient(165deg, rgba(28, 39, 60, 0.78) 0%, rgba(16, 25, 45, 0.86) 56%, rgba(10, 16, 30, 0.92) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(212, 175, 55, 0.4);
+  border: 1px solid rgba(229, 228, 226, 0.24);
   box-shadow:
     0 14px 34px -10px rgba(0, 0, 0, 0.8),
     0 4px 12px rgba(0, 0, 0, 0.46),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.18),
-    inset 0 1px 0 rgba(249, 226, 156, 0.38);
+    inset 0 0 0 1px rgba(229, 228, 226, 0.12),
+    inset 0 1px 0 rgba(229, 228, 226, 0.22);
 }
 
 .kc-glass-bevel {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(212, 175, 55, 0.46);
+  border: 1px solid rgba(229, 228, 226, 0.32);
   box-shadow:
     0 14px 34px -10px rgba(0, 0, 0, 0.8),
     0 4px 12px rgba(0, 0, 0, 0.46),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.22),
-    inset 0 1px 0 rgba(249, 226, 156, 0.44);
+    inset 0 0 0 1px rgba(229, 228, 226, 0.16),
+    inset 0 1px 0 rgba(229, 228, 226, 0.28);
 }
 
 .kc-luxury-modal {
-  background: linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, #131C31 48%, #0F172A 100%);
+  background: linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, #0D2A1F 48%, #0F172A 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(212, 175, 55, 0.45);
+  border: 1px solid rgba(229, 228, 226, 0.32);
   box-shadow:
     0 24px 56px -12px rgba(0, 0, 0, 0.88),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.2),
-    inset 0 1px 0 rgba(249, 226, 156, 0.35);
+    inset 0 0 0 1px rgba(229, 228, 226, 0.14),
+    inset 0 1px 0 rgba(229, 228, 226, 0.24);
 }
 
 .kc-emerald-panel {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, rgba(19, 28, 49, 0.85) 58%, rgba(12, 20, 36, 0.92) 100%);
+  background: linear-gradient(135deg, rgba(4, 99, 7, 0.3) 0%, rgba(13, 42, 31, 0.88) 58%, rgba(7, 24, 18, 0.94) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0);
-  border: 1px solid rgba(212, 175, 55, 0.44);
+  border: 1px solid rgba(229, 228, 226, 0.32);
   box-shadow:
     0 14px 32px -8px rgba(0, 0, 0, 0.74),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.2),
-    inset 0 1px 0 rgba(249, 226, 156, 0.4);
+    0 0 18px rgba(5, 150, 105, 0.12),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.12),
+    inset 0 1px 0 rgba(229, 228, 226, 0.2);
 }
 
 .kc-faiz-vip-surface {
-  background: linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%);
-  border: 1.5px solid #FDE047;
+  background: linear-gradient(135deg, #071812 0%, #0D2A1F 52%, #046307 100%);
+  border: 1.5px solid #E5E4E2;
   box-shadow:
-    0 10px 28px rgba(212, 175, 55, 0.28),
-    0 0 16px rgba(253, 224, 71, 0.16),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.28),
-    inset 0 1px 0 rgba(254, 240, 138, 0.4);
+    0 10px 28px rgba(5, 150, 105, 0.28),
+    0 0 16px rgba(229, 228, 226, 0.16),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.18),
+    inset 0 1px 0 rgba(229, 228, 226, 0.28);
 }
 
 /* Subtle 3.5% Opacity Dark Geometric Lattice Watermark */
 .kc-geo-watermark {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23D4AF37' stroke-opacity='0.04' stroke-width='0.9'%3E%3Cpath d='M32 2L62 32L32 62L2 32Z'/%3E%3Cpath d='M12 12H52V52H12Z'/%3E%3Ccircle cx='32' cy='32' r='6' stroke='%23F9E29C' stroke-opacity='0.035'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23059669' stroke-opacity='0.04' stroke-width='0.9'%3E%3Cpath d='M32 2L62 32L32 62L2 32Z'/%3E%3Cpath d='M12 12H52V52H12Z'/%3E%3Ccircle cx='32' cy='32' r='6' stroke='%23E5E4E2' stroke-opacity='0.035'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 64px 64px;
   background-repeat: repeat;
 }
@@ -411,13 +412,13 @@ svg {
 
 .kc-luxury-input:focus {
   outline: none;
-  border-color: #38BDF8;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(56, 189, 248, 0.22);
+  border-color: #059669;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(5, 150, 105, 0.3);
 }
 
 .kc-tab-shell {
-  background-color: #090D16;
-  border: 1px solid rgba(212, 175, 55, 0.24);
+  background-color: #071812;
+  border: 1px solid rgba(229, 228, 226, 0.24);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.48);
 }
 
@@ -430,7 +431,7 @@ svg {
 
 .kc-pressable:active {
   transform: translate3d(0, 0, 0) scale3d(0.96, 0.96, 1);
-  box-shadow: 0 0 18px rgba(249, 226, 156, 0.28);
+  box-shadow: 0 0 18px rgba(5, 150, 105, 0.28);
 }
 
 .kc-gold-touch {
@@ -443,8 +444,8 @@ svg {
 .kc-gold-touch:active {
   transform: translate3d(0, 0, 0) scale3d(0.97, 0.97, 1);
   box-shadow:
-    0 0 22px rgba(249, 226, 156, 0.36),
-    inset 0 0 0 1px rgba(249, 226, 156, 0.45);
+    0 0 22px rgba(5, 150, 105, 0.36),
+    inset 0 0 0 1px rgba(229, 228, 226, 0.32);
 }
 
 /* Lightweight GPU-only Scenic Live Chat & Voice Animations (transform + opacity ONLY) */
@@ -539,11 +540,11 @@ svg {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.32);
+  background: rgba(5, 150, 105, 0.5);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.58);
+  background: rgba(229, 228, 226, 0.7);
 }
 
 /* Print to PDF Brand Formatting */

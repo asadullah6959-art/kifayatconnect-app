@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { CommunityScenicThemeId } from '../../../types';
 
 export interface ScenicThemeOption {
@@ -131,9 +131,9 @@ export const ScenicChatBackground: React.FC<ScenicChatBackgroundProps> = ({
           >
             <path d="M0,180 L0,110 Q140,65 280,120 T560,95 T800,115 L800,180 Z" fill="#043927" />
           </svg>
-          <div className="absolute bottom-28 left-[16%] w-2.5 h-2.5 rounded-full bg-[#F5D061] kc-scenic-twinkle" />
+          <div className="absolute bottom-28 left-[16%] w-2.5 h-2.5 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" />
           <div className="absolute top-32 right-[20%] w-2 h-2 rounded-full bg-emerald-200 kc-scenic-twinkle" style={{ animationDelay: '1.1s' }} />
-          <div className="absolute bottom-44 right-[32%] w-2.5 h-2.5 rounded-full bg-[#F5D061] kc-scenic-twinkle" style={{ animationDelay: '2.2s' }} />
+          <div className="absolute bottom-44 right-[32%] w-2.5 h-2.5 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" style={{ animationDelay: '2.2s' }} />
           <div className="absolute top-1/2 left-[38%] w-1.5 h-1.5 rounded-full bg-emerald-300 kc-scenic-twinkle" style={{ animationDelay: '0.7s' }} />
         </>
       )}
@@ -141,7 +141,7 @@ export const ScenicChatBackground: React.FC<ScenicChatBackgroundProps> = ({
       {themeId === 'SUNSET_DESERT' && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-[#2A1025] via-[#7C2D12] to-[#24130A]" />
-          <div className="absolute top-14 right-12 w-36 h-36 rounded-full bg-gradient-to-br from-[#FDE68A]/70 via-[#F59E0B]/45 to-[#EA580C]/20 kc-scenic-drift" />
+          <div className="absolute top-14 right-12 w-36 h-36 rounded-full bg-gradient-to-br from-[#FDE68A]/70 via-[#CBD5E1]/45 to-[#EA580C]/20 kc-scenic-drift" />
           <svg
             viewBox="0 0 800 280"
             preserveAspectRatio="none"
@@ -159,7 +159,7 @@ export const ScenicChatBackground: React.FC<ScenicChatBackgroundProps> = ({
           <svg viewBox="0 0 120 120" className="absolute top-10 right-10 w-20 h-20 opacity-85 kc-scenic-drift">
             <path
               d="M72 18A38 38 0 1 0 104 82A30 30 0 1 1 72 18Z"
-              fill="#F5D061"
+              fill="#E5E4E2"
             />
           </svg>
           {[
@@ -207,12 +207,12 @@ export const ScenicChatBackground: React.FC<ScenicChatBackgroundProps> = ({
               fill="#059669"
             />
             <rect x="175" y="95" width="26" height="165" fill="#065F46" />
-            <polygon points="188,60 172,95 204,95" fill="#F5D061" />
+            <polygon points="188,60 172,95 204,95" fill="#E5E4E2" />
             <rect x="599" y="95" width="26" height="165" fill="#065F46" />
-            <polygon points="612,60 596,95 628,95" fill="#F5D061" />
+            <polygon points="612,60 596,95 628,95" fill="#E5E4E2" />
           </svg>
-          <div className="absolute top-14 left-[22%] w-2.5 h-2.5 rounded-full bg-[#F5D061] kc-scenic-twinkle" />
-          <div className="absolute top-20 right-[24%] w-2.5 h-2.5 rounded-full bg-[#F5D061] kc-scenic-twinkle" style={{ animationDelay: '1.4s' }} />
+          <div className="absolute top-14 left-[22%] w-2.5 h-2.5 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" />
+          <div className="absolute top-20 right-[24%] w-2.5 h-2.5 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" style={{ animationDelay: '1.4s' }} />
           <div className="absolute top-1/3 left-[50%] w-2 h-2 rounded-full bg-[#FDE68A] kc-scenic-twinkle" style={{ animationDelay: '0.8s' }} />
         </>
       )}
@@ -220,10 +220,10 @@ export const ScenicChatBackground: React.FC<ScenicChatBackgroundProps> = ({
       {(themeId === 'OBSIDIAN_GOLD' || (themeId === 'CUSTOM' && (!customBgUrl || imgError))) && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-[#090D14] via-[#131C2E] to-[#1C1608]" />
-          <div className="absolute top-12 right-10 w-44 h-44 rounded-full bg-[#D4AF37]/20 kc-scenic-drift" />
+          <div className="absolute top-12 right-10 w-44 h-44 rounded-full bg-[#E5E4E2]/20 kc-scenic-drift" />
           <div className="absolute bottom-16 left-8 w-36 h-36 rounded-full bg-[#059669]/25 kc-scenic-drift" style={{ animationDelay: '2.1s' }} />
-          <div className="absolute top-24 left-[20%] w-2 h-2 rounded-full bg-[#F5D061] kc-scenic-twinkle" />
-          <div className="absolute top-44 right-[30%] w-1.5 h-1.5 rounded-full bg-[#F5D061] kc-scenic-twinkle" style={{ animationDelay: '1.3s' }} />
+          <div className="absolute top-24 left-[20%] w-2 h-2 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" />
+          <div className="absolute top-44 right-[30%] w-1.5 h-1.5 rounded-full bg-[#E5E4E2] kc-scenic-twinkle" style={{ animationDelay: '1.3s' }} />
           <div className="absolute bottom-32 right-[18%] w-2 h-2 rounded-full bg-[#FDE68A] kc-scenic-twinkle" style={{ animationDelay: '2.2s' }} />
         </>
       )}

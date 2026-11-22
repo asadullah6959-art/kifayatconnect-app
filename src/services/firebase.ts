@@ -31,6 +31,7 @@ import {
   where,
   orderBy,
   runTransaction,
+  writeBatch,
   serverTimestamp,
   Unsubscribe
 } from 'firebase/firestore';
@@ -122,11 +123,23 @@ export async function testFirestoreConnection(): Promise<boolean> {
 }
 
 // Bridge OTP / Password / New Member sessions into Firebase Auth so Firestore reads & writes succeed
+async function requireFirebaseAuthSession(): Promise<FirebaseUser> {
+  if (auth.currentUser) return auth.currentUser;
+
+  try {
+    const credential = await signInAnonymously(auth);
+    return credential.user;
+  } catch (error) {
+    console.warn('Firebase signup authentication is unavailable:', error);
+    throw new Error(
+      'Secure CNIC verification is unavailable. Enable Anonymous sign-in in Firebase Authentication and try again.'
+    );
+  }
+}
+
 export async function ensureFirebaseAuthSession(): Promise<FirebaseUser | null> {
   try {
-    if (auth.currentUser) return auth.currentUser;
-    const cred = await signInAnonymously(auth);
-    return cred.user;
+    return await requireFirebaseAuthSession();
   } catch (err) {
     console.warn('Firebase anonymous bridge skipped or unavailable:', err);
     return auth.currentUser;
@@ -401,6 +414,109 @@ export async function findExistingFirestoreUserByIdentifier(identifier: string):
   }
 
   return null;
+}
+
+export async function findExistingFirestoreUserByCnic(
+  cnic: string
+): Promise<(Pick<User, 'id'> & Partial<User>) | null> {
+  const digits = cnic.replace(/\D/g, '');
+  if (digits.length !== 13) return null;
+
+  try {
+    await requireFirebaseAuthSession();
+    const claimSnap = await getDoc(doc(db, 'member_identity_claims', `cnic_${digits}`));
+    if (claimSnap.exists()) {
+      const claimUserId = claimSnap.data()?.userId;
+      if (typeof claimUserId === 'string' && claimUserId.length > 0) {
+        const userSnap = await getDoc(doc(db, 'users', claimUserId));
+        if (userSnap.exists()) {
+          const user = userSnap.data() as Partial<User>;
+          return { ...user, id: user.id || userSnap.id };
+        }
+        return { id: claimUserId };
+      }
+    }
+
+    const snap = await getDocs(collection(db, 'users'));
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data() as Partial<User>;
+      const existingDigits = (data.cnic || '').replace(/\D/g, '');
+      if (existingDigits === digits) {
+        return { ...data, id: data.id || docSnap.id } as User;
+      }
+    }
+  } catch (err) {
+    console.warn('Firestore CNIC duplicate lookup warning:', err);
+    throw new Error(
+      err instanceof Error && err.message.includes('Secure CNIC verification')
+        ? err.message
+        : 'Unable to verify CNIC uniqueness. Check your connection and try again; registration was not submitted.'
+    );
+  }
+  return null;
+}
+
+export async function claimMemberIdentity(
+  cnic: string,
+  email: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const normCnic = cnic.replace(/\D/g, '');
+  const normEmail = email.trim().toLowerCase();
+  if (normCnic.length !== 13 || !normEmail || !userId) {
+    return { success: false, error: 'Valid CNIC, email, and member ID are required.' };
+  }
+
+  await requireFirebaseAuthSession();
+  const emailClaimId = `email_${normEmail.replace(/[^a-z0-9]/g, '_').slice(0, 100)}`;
+  const cnicClaimId = `cnic_${normCnic}`;
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const emailRef = doc(db, 'member_identity_claims', emailClaimId);
+      const cnicRef = doc(db, 'member_identity_claims', cnicClaimId);
+      const [emailSnap, cnicSnap] = await Promise.all([
+        transaction.get(emailRef),
+        transaction.get(cnicRef)
+      ]);
+
+      if (emailSnap.exists()) {
+        const claimed = emailSnap.data() as Partial<{ userId: string }>;
+        if (claimed.userId && claimed.userId !== userId) {
+          throw new Error('This email is already registered to another account.');
+        }
+      }
+      if (cnicSnap.exists()) {
+        const claimed = cnicSnap.data() as Partial<{ userId: string }>;
+        if (claimed.userId && claimed.userId !== userId) {
+          throw new Error('This CNIC is already registered to another member.');
+        }
+      }
+
+      if (!emailSnap.exists()) {
+        transaction.set(emailRef, {
+          claimType: 'EMAIL',
+          identity: normEmail,
+          userId,
+          createdAt: serverTimestamp()
+        });
+      }
+      if (!cnicSnap.exists()) {
+        transaction.set(cnicRef, {
+          claimType: 'CNIC',
+          identity: normCnic,
+          userId,
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unable to reserve member identity.'
+    };
+  }
 }
 
 /**
@@ -1417,14 +1533,11 @@ async function tryEnsureSessionBestEffort(): Promise<void> {
   }
 }
 
-export async function saveUserToFirestore(
+function prepareUserCloudPayload(
   user: User,
   options?: { isOnline?: boolean; useServerLastSeen?: boolean }
-): Promise<void> {
-  await tryEnsureSessionBestEffort();
-  const path = `users/${user.id}`;
+): Record<string, unknown> {
   const cloudPayload = normalizeUserForCloud(user, { isOnline: options?.isOnline });
-  // Zero-Overwrite Lock: Never wipe existing cloud values (photo, CNIC, phone, tabbar, passwordHash) with blank strings
   const protectedStringFields = [
     'photoUrl',
     'avatarUrl',
@@ -1440,22 +1553,27 @@ export async function saveUserToFirestore(
     'membershipId',
     'memberId'
   ];
-  protectedStringFields.forEach((field) => {
-    const val = cloudPayload[field];
-    if (val === '' || val === null || val === undefined) {
-      delete cloudPayload[field];
-    }
+  protectedStringFields.forEach(field => {
+    const value = cloudPayload[field];
+    if (value === '' || value === null || value === undefined) delete cloudPayload[field];
   });
-  if (cloudPayload.profileCompleted === false) {
-    delete cloudPayload.profileCompleted;
-  }
-  if (options?.useServerLastSeen !== false) {
-    cloudPayload.lastSeen = serverTimestamp();
-  }
+  if (cloudPayload.profileCompleted === false) delete cloudPayload.profileCompleted;
+  if (options?.useServerLastSeen !== false) cloudPayload.lastSeen = serverTimestamp();
+  return cloudPayload;
+}
+
+export async function saveUserToFirestore(
+  user: User,
+  options?: { isOnline?: boolean; useServerLastSeen?: boolean }
+): Promise<void> {
+  await tryEnsureSessionBestEffort();
+  const path = `users/${user.id}`;
+  const cloudPayload = prepareUserCloudPayload(user, options);
   try {
     await setDoc(doc(db, 'users', user.id), cloudPayload, { merge: true });
   } catch (err) {
-    console.warn(`Firestore user write warning (${path}):`, err);
+    console.error(`Firestore user write failed (${path}):`, err);
+    throw err;
   }
 }
 
@@ -1534,7 +1652,8 @@ export async function deleteUserPermanentlyFromFirestore(
 
 export async function approveOrRejectUserInFirestore(
   user: User,
-  decision: { approved: boolean; actorName: string; reason?: string }
+  decision: { approved: boolean; actorName: string; reason?: string },
+  applications: MembershipApplication[] = []
 ): Promise<void> {
   await tryEnsureSessionBestEffort();
   const nowIso = new Date().toISOString();
@@ -1556,18 +1675,23 @@ export async function approveOrRejectUserInFirestore(
         membershipStatus: 'REJECTED',
         verificationStatus: 'UNVERIFIED'
       };
-  try {
-    await setDoc(
-      doc(db, 'users', user.id),
-      {
-        ...normalizeUserForCloud(user),
-        ...approvalPayload
-      },
+  const batch = writeBatch(db);
+  batch.set(
+    doc(db, 'users', user.id),
+    {
+      ...normalizeUserForCloud(user),
+      ...approvalPayload
+    },
+    { merge: true }
+  );
+  applications.forEach(application => {
+    batch.set(
+      doc(db, 'applications', application.id),
+      stripUndefinedDeep(application),
       { merge: true }
     );
-  } catch (err) {
-    console.warn(`Firestore approval write warning (users/${user.id}):`, err);
-  }
+  });
+  await batch.commit();
 }
 
 export async function updateUserPresenceInFirestore(
@@ -1673,22 +1797,118 @@ export async function generateAtomicSerialNumber(): Promise<string> {
   }
 }
 
+async function stableFirestoreDocumentId(prefix: string, value: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Secure browser hashing is unavailable; cannot safely prevent duplicate submissions.');
+  }
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${prefix}_${hash}`;
+}
+
+export async function createMembershipApplicationToFirestore(
+  application: MembershipApplication
+): Promise<{ created: boolean; id: string }> {
+  await tryEnsureSessionBestEffort();
+  const cnic = application.cnic.replace(/\D/g, '');
+  if (cnic.length !== 13) throw new Error('A valid CNIC is required to submit a membership application.');
+
+  const id = await stableFirestoreDocumentId('app', cnic);
+  const cnicVariants = Array.from(new Set([application.cnic, cnic]));
+  const existingApplications = await Promise.all(cnicVariants.map(value =>
+    getDocs(query(collection(db, 'applications'), where('cnic', '==', value)))
+  ));
+  const duplicate = existingApplications
+    .flatMap(snapshot => snapshot.docs)
+    .find(snapshot =>
+      snapshot.id !== id &&
+      String(snapshot.data().status || '').toUpperCase() !== 'REJECTED'
+    );
+  if (duplicate) return { created: false, id: duplicate.id };
+
+  const applicationRef = doc(db, 'applications', id);
+  const storedApplication = { ...application, id };
+  const created = await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(applicationRef);
+    if (snapshot.exists() && String(snapshot.data().status || '').toUpperCase() !== 'REJECTED') return false;
+    transaction.set(applicationRef, stripUndefinedDeep(storedApplication));
+    return true;
+  });
+  return { created, id };
+}
+
+export async function createPaymentToFirestore(
+  payment: PaymentTransaction
+): Promise<{ created: boolean; id: string }> {
+  await tryEnsureSessionBestEffort();
+  const referenceNumber = payment.referenceNumber.trim().toLowerCase();
+  const periodKey = payment.fundTier === 'MAHANA'
+    ? `monthly:${payment.startYear}:${payment.startMonth}:${payment.startDay}:${payment.monthsCount}`
+    : payment.fundTier === 'SALANA'
+      ? `annual:${payment.startYear}:${payment.startMonth}:${payment.startDay}:${payment.yearsCount}`
+      : `reference:${referenceNumber}`;
+  if (periodKey === 'reference:') {
+    throw new Error('A payment reference number is required to prevent duplicate payments.');
+  }
+
+  const id = await stableFirestoreDocumentId('payment', `${payment.userId}:${periodKey}`);
+  const paymentRef = doc(db, 'payments', id);
+  const storedPayment = { ...payment, id };
+  const created = await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(paymentRef);
+    if (snapshot.exists() && snapshot.data().status !== 'REJECTED') return false;
+    transaction.set(paymentRef, stripUndefinedDeep(storedPayment));
+    return true;
+  });
+  return { created, id };
+}
+
 export async function saveApplicationToFirestore(app: MembershipApplication): Promise<void> {
   await tryEnsureSessionBestEffort();
-  try {
-    await setDoc(doc(db, 'applications', app.id), stripUndefinedDeep(app), { merge: true });
-  } catch (err) {
-    console.warn(`Firestore application write warning (applications/${app.id}):`, err);
-  }
+  await setDoc(doc(db, 'applications', app.id), stripUndefinedDeep(app), { merge: true });
 }
 
 export async function savePaymentToFirestore(payment: PaymentTransaction): Promise<void> {
   await tryEnsureSessionBestEffort();
-  try {
-    await setDoc(doc(db, 'payments', payment.id), stripUndefinedDeep(payment), { merge: true });
-  } catch (err) {
-    console.warn(`Firestore payment write warning (payments/${payment.id}):`, err);
-  }
+  await setDoc(doc(db, 'payments', payment.id), stripUndefinedDeep(payment), { merge: true });
+}
+
+export async function verifyPaymentInFirestore(
+  payment: PaymentTransaction
+): Promise<{ updated: boolean; totalContributed?: number }> {
+  await tryEnsureSessionBestEffort();
+  const paymentRef = doc(db, 'payments', payment.id);
+  const memberRef = doc(db, 'users', payment.userId);
+  return runTransaction(db, async transaction => {
+    const paymentSnapshot = await transaction.get(paymentRef);
+    if (!paymentSnapshot.exists()) throw new Error('Payment record no longer exists in Firestore.');
+    const currentPayment = paymentSnapshot.data() as PaymentTransaction;
+    if (currentPayment.status !== 'PENDING_VERIFICATION') {
+      return { updated: false };
+    }
+
+    let totalContributed: number | undefined;
+    if (payment.status === 'VERIFIED') {
+      const memberSnapshot = await transaction.get(memberRef);
+      if (!memberSnapshot.exists()) throw new Error('Member record no longer exists in Firestore.');
+      totalContributed = (Number(memberSnapshot.data().totalContributed) || 0) + payment.amount;
+    }
+
+    transaction.set(paymentRef, stripUndefinedDeep({
+      status: payment.status,
+      serialNumber: payment.serialNumber || currentPayment.receiptNumber,
+      verifiedBy: payment.verifiedBy,
+      verifiedAt: payment.verifiedAt,
+      rejectionReason: payment.rejectionReason
+    }), { merge: true });
+    if (totalContributed !== undefined) {
+      transaction.set(memberRef, {
+        totalContributed,
+        lastSeen: serverTimestamp()
+      }, { merge: true });
+    }
+    return { updated: true, totalContributed };
+  });
 }
 
 export async function saveComplaintToFirestore(complaint: Complaint): Promise<void> {
@@ -1817,12 +2037,8 @@ export async function saveChatMessageToFirestore(msg: ChatMessage): Promise<void
     serverCreatedAt: serverTimestamp()
   };
   await Promise.all([
-    setDoc(doc(db, 'direct_messages', msg.id), payload, { merge: true }).catch(err => {
-      console.warn(`Firestore direct_messages write warning (direct_messages/${msg.id}):`, err);
-    }),
-    setDoc(doc(db, 'chat_messages', msg.id), payload, { merge: true }).catch(err => {
-      console.warn(`Firestore chat_messages mirror warning (chat_messages/${msg.id}):`, err);
-    })
+    setDoc(doc(db, 'direct_messages', msg.id), payload, { merge: true }),
+    setDoc(doc(db, 'chat_messages', msg.id), payload, { merge: true })
   ]);
 }
 
@@ -1836,12 +2052,8 @@ export async function saveCommunityMessageToFirestore(msg: ChatMessage): Promise
     serverCreatedAt: serverTimestamp()
   };
   await Promise.all([
-    setDoc(doc(db, 'community_messages', msg.id), payload, { merge: true }).catch(err => {
-      console.warn(`Firestore community_messages write warning (community_messages/${msg.id}):`, err);
-    }),
-    setDoc(doc(db, 'community_chat_messages', msg.id), payload, { merge: true }).catch(err => {
-      console.warn(`Firestore community_chat_messages mirror warning:`, err);
-    })
+    setDoc(doc(db, 'community_messages', msg.id), payload, { merge: true }),
+    setDoc(doc(db, 'community_chat_messages', msg.id), payload, { merge: true })
   ]);
 }
 

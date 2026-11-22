@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CheckCheck, 
@@ -104,7 +104,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
       case 'approval_request':
-        return <UserPlus className="w-5 h-5 text-[#F5D061]" />;
+        return <UserPlus className="w-5 h-5 text-[#E5E4E2]" />;
       case 'MEMBERSHIP_APPROVED':
         return <UserCheck className="w-5 h-5 text-emerald-400" />;
       case 'MEMBERSHIP_PENDING_DISTRICT':
@@ -116,17 +116,17 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
       case 'PAYMENT_VERIFIED':
         return <Receipt className="w-5 h-5 text-emerald-400" />;
       case 'PAYMENT_PENDING':
-        return <Clock className="w-5 h-5 text-[#F5D061]" />;
+        return <Clock className="w-5 h-5 text-[#E5E4E2]" />;
       case 'PAYMENT_REJECTED':
         return <AlertCircle className="w-5 h-5 text-rose-400" />;
       case 'COMPLAINT_UPDATE':
-        return <AlertTriangle className="w-5 h-5 text-[#F5D061]" />;
+        return <AlertTriangle className="w-5 h-5 text-[#E5E4E2]" />;
       case 'ANNOUNCEMENT_NEW':
         return <Megaphone className="w-5 h-5 text-indigo-400" />;
       case 'USER_SIGNUP':
         return <UserPlus className="w-5 h-5 text-emerald-400" />;
       case 'USER_LOGIN':
-        return <LogIn className="w-5 h-5 text-[#F5D061]" />;
+        return <LogIn className="w-5 h-5 text-[#E5E4E2]" />;
       default:
         return <Bell className="w-5 h-5 text-slate-300" />;
     }
@@ -135,25 +135,25 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
   const getNotificationBadgeClass = (type: NotificationType) => {
     switch (type) {
       case 'approval_request':
-        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/50';
+        return 'bg-amber-500/15 text-[#E5E4E2] border-[#E5E4E2]/50';
       case 'MEMBERSHIP_APPROVED':
       case 'PAYMENT_VERIFIED':
       case 'USER_SIGNUP':
-        return 'bg-[#131C31] text-[#38BDF8] border-[#38BDF8]/40';
+        return 'bg-[#0D2A1F] text-[#059669] border-[#059669]/40';
       case 'USER_LOGIN':
-        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
+        return 'bg-amber-500/15 text-[#E5E4E2] border-[#E5E4E2]/45';
       case 'MEMBERSHIP_PENDING_DISTRICT':
       case 'MEMBERSHIP_PENDING_REGIONAL':
       case 'MEMBERSHIP_RECOMMENDED':
         return 'bg-sky-950/60 text-sky-300 border-sky-500/45';
       case 'PAYMENT_PENDING':
       case 'COMPLAINT_UPDATE':
-        return 'bg-amber-500/15 text-[#F5D061] border-[#D4AF37]/45';
+        return 'bg-amber-500/15 text-[#E5E4E2] border-[#E5E4E2]/45';
       case 'MEMBERSHIP_REJECTED':
       case 'PAYMENT_REJECTED':
         return 'bg-rose-950/60 text-rose-300 border-rose-500/45';
       default:
-        return 'bg-[#090D16] text-slate-300 border-[#D4AF37]/25';
+        return 'bg-[#071812] text-slate-300 border-[#E5E4E2]/25';
     }
   };
 
@@ -216,13 +216,13 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
       />
 
       <div className="fixed inset-y-0 right-0 w-full sm:w-auto max-w-full flex justify-end pl-0 sm:pl-10">
-        <div className="w-full max-w-[100vw] sm:max-w-md box-border bg-gradient-to-b from-[#141B2D] to-[#0B101C] shadow-[0_24px_70px_rgba(0,0,0,0.92)] flex flex-col border-l border-[#D4AF37]/45 animate-in slide-in-from-right duration-200 ease-out overflow-hidden">
+        <div className="w-full max-w-[100vw] sm:max-w-md box-border bg-gradient-to-b from-[#0D2A1F] to-[#0B101C] shadow-[0_24px_70px_rgba(0,0,0,0.92)] flex flex-col border-l border-[#E5E4E2]/45 animate-in slide-in-from-right duration-200 ease-out overflow-hidden">
           
           {/* Header */}
-          <div className="px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-[#D4AF37]/25 bg-[#070D14] shrink-0">
+          <div className="px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-[#E5E4E2]/25 bg-[#071812] shrink-0">
             <div className="flex items-center justify-between gap-2 min-w-0">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-9 h-9 rounded-xl bg-[#131C31] border border-[#38BDF8]/40 text-[#F5D061] flex items-center justify-center relative shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#0D2A1F] border border-[#059669]/40 text-[#E5E4E2] flex items-center justify-center relative shrink-0">
                   <Bell className="w-5 h-5" />
                   {unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums">
@@ -246,7 +246,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                 <button
                   type="button"
                   onClick={onClose}
-                  className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#131C31] border border-slate-400/20 text-slate-200 hover:text-[#F5D061] hover:bg-[#1E293B] transition-colors cursor-pointer"
+                  className="kc-pressable min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-[#0D2A1F] border border-slate-400/20 text-slate-200 hover:text-[#E5E4E2] hover:bg-[#1E293B] transition-colors cursor-pointer"
                   aria-label="Close notifications"
                 >
                   <X className="w-5 h-5" />
@@ -331,10 +331,10 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-[#D4AF37]/15 pb-6">
+          <div className="flex-1 overflow-y-auto divide-y divide-[#E5E4E2]/15 pb-6">
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center flex flex-col items-center justify-center h-64 text-slate-400">
-                <div className="w-12 h-12 rounded-full bg-[#090D16] border border-[#D4AF37]/30 flex items-center justify-center mb-3 text-[#F5D061]">
+                <div className="w-12 h-12 rounded-full bg-[#071812] border border-[#E5E4E2]/30 flex items-center justify-center mb-3 text-[#E5E4E2]">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <p className="text-sm font-medium text-white">
@@ -356,18 +356,18 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-3.5 sm:p-4 transition-all cursor-pointer relative hover:bg-[#161F33]/80 ${
                       isNotifUnread
-                        ? 'bg-[#131C31]/75'
+                        ? 'bg-[#0D2A1F]/75'
                         : ''
                     }`}
                   >
                     {/* Unread indicator bar */}
                     {isNotifUnread && (
-                      <span className="absolute left-0 top-3 bottom-3 w-1 bg-[#F5D061] rounded-r-md" />
+                      <span className="absolute left-0 top-3 bottom-3 w-1 bg-[#E5E4E2] rounded-r-md" />
                     )}
 
                     <div className="flex items-start gap-2.5 sm:gap-3 pl-1 min-w-0">
                       {/* Icon container */}
-                      <div className="w-9 h-9 rounded-xl bg-[#070D14] border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#071812] border border-[#E5E4E2]/30 flex items-center justify-center shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
 
@@ -396,7 +396,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
                           </span>
 
                           {notification.linkTab && (
-                            <span className="text-[11px] font-semibold text-[#F5D061] hover:text-white flex items-center gap-1 group shrink-0">
+                            <span className="text-[11px] font-semibold text-[#E5E4E2] hover:text-white flex items-center gap-1 group shrink-0">
                               <span>
                                 {notification.type === 'PAYMENT_VERIFIED' 
                                   ? (language === 'ur' ? 'رسید دیکھیں' : 'View Receipt')
@@ -417,7 +417,7 @@ export const NotificationsSlideOver: React.FC<NotificationsSlideOverProps> = ({ 
           </div>
 
           {/* Footer note */}
-          <div className="px-4 py-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t border-[#D4AF37]/25 bg-[#070D14] text-center shrink-0">
+          <div className="px-4 py-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t border-[#E5E4E2]/25 bg-[#071812] text-center shrink-0">
             <p className="text-[11px] text-slate-400">
               {language === 'ur'
                 ? `کردار کی بنیاد پر محفوظ سیکیورٹی: ${currentUser.role}`

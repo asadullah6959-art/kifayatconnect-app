@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import { User } from '../../types';
 import {
@@ -87,8 +87,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
     onClose();
   };
 
-  const handleApproveDecision = (approved: boolean) => {
-    const res = approveMemberAccount(liveUser.id, approved);
+  const handleApproveDecision = async (approved: boolean) => {
+    const res = await approveMemberAccount(liveUser.id, approved);
     setRoleFeedback(res.message);
   };
 
@@ -100,7 +100,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
       <div className="fixed inset-0 z-[10000] kc-modal-backdrop bg-black/85 flex items-start sm:items-center justify-center overflow-y-auto">
         <div
           className={`kc-luxury-modal kc-modal-panel rounded-2xl max-w-lg w-full overflow-y-auto relative my-auto ${
-            isFaizKhel ? '!border-[1.5px] !border-[#FDE047] shadow-[0_18px_50px_rgba(28,20,4,0.88),0_0_28px_rgba(253,224,71,0.26)]' : ''
+            isFaizKhel ? '!border-[1.5px] !border-[#CBD5E1] shadow-[0_18px_50px_rgba(28,20,4,0.88),0_0_28px_rgba(253,224,71,0.26)]' : ''
           }`}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
@@ -109,15 +109,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
             style={{
               background: isFaizKhel
                 ? 'linear-gradient(135deg, #2B1F06 0%, #42300A 52%, #1C1404 100%)'
-                : 'linear-gradient(135deg, #1E293B 0%, #131C31 55%, #090D16 100%)',
+                : 'linear-gradient(135deg, #1E293B 0%, #0D2A1F 55%, #071812 100%)',
             }}
           >
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#FDE047] to-[#38BDF8]" />
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8A6218] via-[#CBD5E1] to-[#059669]" />
             {isFaizKhel && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1404]/95 border-[1.5px] border-[#FDE047] text-[#FEF08A] text-[10px] font-extrabold shadow-[0_2px_12px_rgba(253,224,71,0.28)] pr-12">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1404]/95 border-[1.5px] border-[#CBD5E1] text-[#E5E4E2] text-[10px] font-extrabold shadow-[0_2px_12px_rgba(253,224,71,0.28)] pr-12">
                 <FaizKhelVipCrownIcon className="w-6 h-6" />
                 <span>{language === 'ur' ? 'شاہی وی آئی پی · فیض خیل' : 'ROYAL VIP · FAIZ KHEL'}</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#FEF08A] via-[#FDE047] to-[#D4AF37] text-[#1C1404] text-[9px] font-black uppercase leading-none">
+                <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#E5E4E2] via-[#CBD5E1] to-[#E5E4E2] text-[#1C1404] text-[9px] font-black uppercase leading-none">
                   VIP
                 </span>
               </div>
@@ -126,7 +126,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="kc-pressable absolute top-2.5 right-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#090D16]/90 hover:bg-[#1E293B] border border-slate-400/25 text-slate-200 hover:text-[#38BDF8] transition-colors cursor-pointer"
+              className="kc-pressable absolute top-2.5 right-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#071812]/90 hover:bg-[#1E293B] border border-slate-400/25 text-slate-200 hover:text-[#059669] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -139,18 +139,18 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   <img
                     src={avatarSrc}
                     alt={liveUser.name}
-                    className={`w-24 h-24 rounded-2xl border-4 object-cover shadow-xl bg-[#090D16] ${
+                    className={`w-24 h-24 rounded-2xl border-4 object-cover shadow-xl bg-[#071812] ${
                       isFaizKhel
-                        ? 'border-[#FDE047] ring-2 ring-[#FDE047]/65'
-                        : 'border-[#0F172A] ring-1 ring-[#38BDF8]/45'
+                        ? 'border-[#CBD5E1] ring-2 ring-[#CBD5E1]/65'
+                        : 'border-[#0F172A] ring-1 ring-[#059669]/45'
                     }`}
                   />
                 ) : (
                   <div
                     className={`w-24 h-24 rounded-2xl border-4 flex items-center justify-center font-bold text-3xl shadow-xl ${
                       isFaizKhel
-                        ? 'border-[#FDE047] ring-2 ring-[#FDE047]/65 bg-[#2B1F06] text-[#FEF08A]'
-                        : 'border-[#0F172A] ring-1 ring-[#38BDF8]/45 bg-[#131C31] text-[#38BDF8]'
+                        ? 'border-[#CBD5E1] ring-2 ring-[#CBD5E1]/65 bg-[#2B1F06] text-[#E5E4E2]'
+                        : 'border-[#0F172A] ring-1 ring-[#059669]/45 bg-[#0D2A1F] text-[#059669]'
                     }`}
                   >
                     {liveUser.name.charAt(0).toUpperCase()}
@@ -174,7 +174,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                     className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                       isUserOnline
                         ? 'bg-[#0F172A] text-emerald-300 border-emerald-500/45'
-                        : 'bg-[#090D16] text-[#94A3B8] border-slate-400/20'
+                        : 'bg-[#071812] text-[#94A3B8] border-slate-400/20'
                     }`}
                   >
                     {isUserOnline
@@ -182,7 +182,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                       : `⚫ ${translate(language, 'offline')}`}
                   </span>
                   {approvalState === 'pending' && !targetIsFounder && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-[#D4AF37]/50 text-[#F5D061] text-[10px] font-bold uppercase">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-[#E5E4E2]/50 text-[#E5E4E2] text-[10px] font-bold uppercase">
                       <Clock className="w-2.5 h-2.5" />
                       <span>{translate(language, 'pendingLabel')}</span>
                     </span>
@@ -193,7 +193,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                       <span>{translate(language, 'rejectedLabel')}</span>
                     </span>
                   )}
-                  <span className="text-[11px] font-mono font-semibold text-[#F5D061] tabular-nums">
+                  <span className="text-[11px] font-mono font-semibold text-[#E5E4E2] tabular-nums">
                     {liveUser.membershipId || 'KC-PENDING'}
                   </span>
                 </div>
@@ -229,8 +229,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               </div>
 
               {liveUser.assignedOfficeTitle ? (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#F5D061] text-xs font-medium">
-                  <Award className="w-4 h-4 text-[#F5D061]" />
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#E5E4E2]/15 border border-[#E5E4E2]/40 text-[#E5E4E2] text-xs font-medium">
+                  <Award className="w-4 h-4 text-[#E5E4E2]" />
                   <span>{liveUser.assignedOfficeTitle}</span>
                 </div>
               ) : (
@@ -243,9 +243,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               )}
             </div>
 
-            <div className="mt-4 p-3.5 bg-[#090D16] rounded-xl border border-[#D4AF37]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)] space-y-2 text-xs text-slate-200">
+            <div className="mt-4 p-3.5 bg-[#071812] rounded-xl border border-[#E5E4E2]/30 shadow-[inset_0_1px_0_rgba(252,227,138,0.08)] space-y-2 text-xs text-slate-200">
               <div className="flex items-center gap-2 text-slate-200">
-                <MapPin className="w-4 h-4 text-[#F5D061] shrink-0" />
+                <MapPin className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                 <span>
                   {[liveUser.customCity || liveUser.cityTown || liveUser.tehsil, liveUser.district, liveUser.stateProvince, liveUser.country || 'Pakistan']
                     .filter(Boolean)
@@ -254,11 +254,11 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               </div>
 
               {(liveUser.assignedDistrict || liveUser.assignedStateProvince) && (
-                <div className="flex items-center gap-2 text-slate-300 pt-1.5 border-t border-[#D4AF37]/20">
+                <div className="flex items-center gap-2 text-slate-300 pt-1.5 border-t border-[#E5E4E2]/20">
                   <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
                     {language === 'ur' ? 'دائرہ کار: ' : 'Jurisdiction: '}
-                    <strong className="text-[#F5D061]">
+                    <strong className="text-[#E5E4E2]">
                       {liveUser.assignedDistrict
                         ? (language === 'ur' ? `ضلع ${liveUser.assignedDistrict}` : `${liveUser.assignedDistrict} District`)
                         : (language === 'ur' ? `صوبہ ${liveUser.assignedStateProvince}` : `${liveUser.assignedStateProvince} Province`)}
@@ -268,7 +268,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               )}
 
               <div className="flex items-center gap-2 text-slate-400">
-                <Calendar className="w-4 h-4 text-[#D4AF37]/80 shrink-0" />
+                <Calendar className="w-4 h-4 text-[#E5E4E2]/80 shrink-0" />
                 <span className="tabular-nums">
                   {language === 'ur' ? 'شمولیت:' : 'Joined:'}{' '}
                   {liveUser.joinDate || liveUser.createdAt || (language === 'ur' ? 'رجسٹرڈ ممبر' : 'Registered Member')}
@@ -277,9 +277,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
             </div>
 
             <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/25">
+              <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#071812] border border-[#E5E4E2]/25">
                 <div className="flex items-center gap-2 text-slate-200 min-w-0">
-                  <Mail className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                  <Mail className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                   {showContact ? (
                     <span className="font-mono text-slate-100 truncate">{liveUser.email}</span>
                   ) : (
@@ -290,15 +290,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   )}
                 </div>
                 {!showContact && (
-                  <span className="text-[10px] text-[#F5D061] bg-[#161F33] border border-[#D4AF37]/30 px-1.5 py-0.5 rounded shrink-0">
+                  <span className="text-[10px] text-[#E5E4E2] bg-[#161F33] border border-[#E5E4E2]/30 px-1.5 py-0.5 rounded shrink-0">
                     {language === 'ur' ? 'محفوظ' : 'Protected'}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#090D16] border border-[#D4AF37]/25">
+              <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#071812] border border-[#E5E4E2]/25">
                 <div className="flex items-center gap-2 text-slate-200 min-w-0">
-                  <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                  <Phone className="w-4 h-4 text-[#E5E4E2] shrink-0" />
                   <span className="font-mono tabular-nums text-slate-100">
                     {liveUser.phone || (language === 'ur' ? 'درج نہیں' : 'Not provided')}
                   </span>
@@ -308,15 +308,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
 
             {/* Governance Actions: Approve / Reject & Assign Role */}
             {((canApproveMembers && !targetIsFounder && approvalState !== 'approved') || (currentIsFounder && !targetIsFounder)) && (
-              <div className="mt-4 pt-3 border-t border-[#D4AF37]/20 flex flex-wrap items-center gap-2">
+              <div className="mt-4 pt-3 border-t border-[#E5E4E2]/20 flex flex-wrap items-center gap-2">
                 {canApproveMembers && !targetIsFounder && approvalState !== 'approved' && (
                   <>
                     <button
                       type="button"
                       onClick={() => handleApproveDecision(true)}
-                      className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] hover:brightness-110 border border-[#38BDF8]/60 text-[#090D16] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                      className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#059669] to-[#0284C7] hover:brightness-110 border border-[#059669]/60 text-[#071812] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-[#090D16]" />
+                      <CheckCircle2 className="w-4 h-4 text-[#071812]" />
                       <span>{language === 'ur' ? 'منظور کریں' : 'Approve'}</span>
                     </button>
                     {approvalState !== 'rejected' && (
@@ -336,7 +336,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                   <button
                     type="button"
                     onClick={() => setRoleModalOpen(true)}
-                    className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-[#231D0B] hover:bg-[#332A10] border border-[#F5D061]/55 text-[#F5D061] font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="kc-pressable flex-1 py-2 px-3 rounded-xl bg-[#231D0B] hover:bg-[#332A10] border border-[#E5E4E2]/55 text-[#E5E4E2] font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Crown className="w-4 h-4" />
                     <span>{language === 'ur' ? 'عہدہ تفویض کریں' : 'Assign Role'}</span>
@@ -400,7 +400,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
                     type="button"
                     disabled={deleteBusy}
                     onClick={() => setConfirmDeleteOpen(false)}
-                    className="px-3 py-2 rounded-lg bg-[#090D16] border border-slate-700 text-slate-300 font-semibold cursor-pointer"
+                    className="px-3 py-2 rounded-lg bg-[#071812] border border-slate-700 text-slate-300 font-semibold cursor-pointer"
                   >
                     {translate(language, 'cancel')}
                   </button>
@@ -423,9 +423,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ user, on
               <button
                 type="button"
                 onClick={handleViewDigitalCard}
-                className="kc-pressable py-2.5 px-4 rounded-xl bg-[#090D16] hover:bg-[#161F33] text-slate-100 font-semibold text-xs flex items-center justify-center gap-2 border border-[#D4AF37]/40 transition-colors cursor-pointer"
+                className="kc-pressable py-2.5 px-4 rounded-xl bg-[#071812] hover:bg-[#161F33] text-slate-100 font-semibold text-xs flex items-center justify-center gap-2 border border-[#E5E4E2]/40 transition-colors cursor-pointer"
               >
-                <IdCard className="w-4 h-4 text-[#F5D061]" />
+                <IdCard className="w-4 h-4 text-[#E5E4E2]" />
                 <span>{language === 'ur' ? 'شناختی کارڈ' : 'Digital Card'}</span>
               </button>
             </div>

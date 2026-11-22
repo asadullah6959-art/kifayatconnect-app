@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Crown,
@@ -310,6 +310,21 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
     try {
       const prepared = await prepareImageForAiScan(source, 1800, 0.88);
+      if (prepared.width > 0 && prepared.height > 0 &&
+          (prepared.width < 480 || prepared.height < 480)) {
+        throw new Error(
+          isUr
+            ? 'تصویر کی ریزولیوشن بہت کم ہے۔ واضح، زیادہ ریزولیوشن والی تصویر دوبارہ لیں۔'
+            : 'Image resolution is too low. Please retake a clear, high-resolution photo.'
+        );
+      }
+      if (prepared.sharpnessScore > 0 && prepared.sharpnessScore < 35) {
+        throw new Error(
+          isUr
+            ? 'تصویر دھندلی یا غیر واضح لگتی ہے۔ فارم کو روشنی میں اور مستحکم طور پر دوبارہ اسکین کریں۔'
+            : 'The image appears blurry or unreadable. Retake the form in good light and keep the camera steady.'
+        );
+      }
       setScannedFormPhotoUrl(prepared.dataUrl);
 
       const response = await fetch('/api/scan-paper-form', {
@@ -462,9 +477,17 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
       const rawCnic = pickBilingualField(d, ['cnic', 'nic', 'idCard', 'شناختی کارڈ نمبر', 'شناختی کارڈ']);
       if (rawCnic) {
         const strippedCnic = normalizeDigits(rawCnic).replace(/\D/g, '').slice(0, 13);
-        if (strippedCnic) {
+        if (isValid13DigitCnic(strippedCnic)) {
           setCnic(strippedCnic);
           filledCount += 1;
+        } else {
+          setAiScanStatus('error');
+          setAiScanMessage(
+            isUr
+              ? 'اسکین کردہ CNIC 13 ہندسوں کا درست نمبر نہیں ہے۔ تصویر صاف کر کے دوبارہ لیں یا CNIC دستی درج کریں۔'
+              : 'The scanned CNIC is not a valid 13-digit number. Retake a clear image or enter the CNIC manually.'
+          );
+          return;
         }
       }
       const rawTabar = pickBilingualField(d, [
@@ -599,7 +622,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
     ctx.lineWidth = 2.6;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#FDE047';
+    ctx.strokeStyle = '#CBD5E1';
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -749,23 +772,23 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
   const labelClass = 'block text-xs font-bold text-amber-200/90 mb-1';
   const inputClass =
-    'w-full px-3 py-2.5 bg-[#0A111D] border border-[#D4AF37]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FDE047] focus:ring-1 focus:ring-[#FDE047]/40 transition';
+    'w-full px-3 py-2.5 bg-[#0D2A1F] border border-[#E5E4E2]/30 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#CBD5E1] focus:ring-1 focus:ring-[#CBD5E1]/40 transition';
 
   const outerWrapperClass = embedded
-    ? 'w-full max-w-[100vw] flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-xl overflow-hidden box-border'
-    : 'relative w-full max-w-[calc(100vw-20px)] sm:max-w-4xl kc-modal-panel flex flex-col bg-[#070D14] border border-[#D4AF37]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border my-auto';
+    ? 'w-full max-w-[100vw] flex flex-col bg-[#071812] border border-[#E5E4E2]/50 rounded-3xl shadow-xl overflow-hidden box-border'
+    : 'relative w-full max-w-[calc(100vw-20px)] sm:max-w-4xl kc-modal-panel flex flex-col bg-[#071812] border border-[#E5E4E2]/50 rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden box-border my-auto';
 
   const bodyWrapper = (
       <div className={outerWrapperClass}>
         {/* Top Control Bar */}
-        <div className="flex items-start sm:items-center justify-between gap-2 px-3.5 sm:px-5 py-3 bg-[#0C1524] border-b border-[#D4AF37]/30 shrink-0">
+        <div className="flex items-start sm:items-center justify-between gap-2 px-3.5 sm:px-5 py-3 bg-[#0D2A1F] border-b border-[#E5E4E2]/30 shrink-0">
           <div className="flex items-start sm:items-center gap-2.5 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FDE047] to-[#B45309] flex items-center justify-center text-[#070D14] shadow-md shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#CBD5E1] to-[#B45309] flex items-center justify-center text-[#071812] shadow-md shrink-0">
               <Crown className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-xs sm:text-base font-extrabold text-amber-300 tracking-wide break-words whitespace-normal leading-snug">
-                {isUr ? 'رکنیت فارم — سوئی خیل قومی اتحاد' : 'RUKNIYAT FORM — SUI KHEL QAUMI ITTEHAD'}
+                {isUr ? 'رکنیت فارم — سوئی خیل اتحاد' : 'RUKNIYAT FORM — SUI KHEL ITTEHAD'}
               </h2>
               <p className="text-[11px] text-slate-300 break-words whitespace-normal leading-snug mt-0.5">
                 {isInspectMode
@@ -790,7 +813,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               <button
                 type="button"
                 onClick={handleClose}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800/90 border border-[#D4AF37]/30 text-slate-200 hover:text-white hover:bg-slate-700 transition cursor-pointer shrink-0 kc-pressable"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800/90 border border-[#E5E4E2]/30 text-slate-200 hover:text-white hover:bg-slate-700 transition cursor-pointer shrink-0 kc-pressable"
                 aria-label="Close Rukniyat Form"
               >
                 <X className="w-5 h-5" />
@@ -806,7 +829,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
           dir={isUr ? 'rtl' : 'ltr'}
         >
           {submittedSerial ? (
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#062E22] via-[#0B1F1C] to-[#070D14] border-2 border-[#D4AF37]/60 text-center space-y-5">
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#062E22] via-[#0B1F1C] to-[#071812] border-2 border-[#E5E4E2]/60 text-center space-y-5">
               <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center">
                 <CheckCircle2 className="w-9 h-9 text-emerald-300" />
               </div>
@@ -826,11 +849,11 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                 </p>
               </div>
 
-              <div className="max-w-sm mx-auto p-4 rounded-2xl bg-[#070D14]/90 border border-[#D4AF37]/50">
+              <div className="max-w-sm mx-auto p-4 rounded-2xl bg-[#071812]/90 border border-[#E5E4E2]/50">
                 <p className="text-[11px] uppercase tracking-wider text-amber-300/80 font-bold">
                   {isUr ? 'رکنیت / سیریل نمبر' : 'Assigned Atomic Serial No.'}
                 </p>
-                <p className="text-2xl font-mono font-black text-[#FDE047] mt-1 tracking-wider">
+                <p className="text-2xl font-mono font-black text-[#CBD5E1] mt-1 tracking-wider">
                   {submittedSerial}
                 </p>
               </div>
@@ -845,7 +868,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   setSubmittedSerial(null);
                   if (!embedded) handleClose();
                 }}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] font-extrabold text-sm shadow-lg hover:brightness-110 transition cursor-pointer"
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] font-extrabold text-sm shadow-lg hover:brightness-110 transition cursor-pointer"
               >
                 {embedded
                   ? (isUr ? 'نیا رکنیت فارم پُر کریں' : 'Fill Another Rukniyat Form')
@@ -855,7 +878,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Official Form Header Card with Circular Emblem */}
-              <div className="relative p-4 sm:p-6 rounded-3xl kc-glass-bevel bg-gradient-to-br from-[#0F1B2E]/90 via-[#131C31]/90 to-[#090F1B]/95 shadow-xl">
+              <div className="relative p-4 sm:p-6 rounded-3xl kc-glass-bevel bg-gradient-to-br from-[#0F1B2E]/90 via-[#0D2A1F]/90 to-[#090F1B]/95 shadow-xl">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   {/* Circular Emblem + Organization Title & Motto */}
                   <div className="flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-start flex-1 min-w-0">
@@ -865,12 +888,12 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                         <Sparkles className="w-3.5 h-3.5" />
                         <span className={isUr ? 'kc-font-urdu' : ''}>{isUr ? 'رکنیت فارم' : 'RUKNIYAT FORM · MEMBERSHIP'}</span>
                       </div>
-                      <h1 className="kc-font-urdu text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FEF08A] via-[#D4AF37] to-[#FDE047] py-0.5">
-                        سوئی خیل قومی اتحاد
+                      <h1 className="kc-font-urdu text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#E5E4E2] via-[#E5E4E2] to-[#CBD5E1] py-0.5">
+                        سوئی خیل اتحاد
                       </h1>
                       {!isUr && (
                         <p className="text-xs font-bold tracking-widest uppercase text-amber-200/80">
-                          Sui Khel Qaumi Ittehad · Kifayat Connect
+                          SUI KHEL ITTEHAD · SUI KHEL ITTEHAD
                         </p>
                       )}
                       <p className={`text-xs sm:text-sm font-bold text-emerald-300 ${isUr ? 'kc-font-urdu' : ''}`}>
@@ -884,12 +907,12 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   {/* Meta Row + Dual Camera/Gallery Photo Box */}
                   <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-3.5 shrink-0">
                     <div className="space-y-2 text-xs min-w-0 w-full sm:min-w-[180px]">
-                      <div className="p-2 rounded-xl bg-[#070D14]/80 border border-[#D4AF37]/30 space-y-1">
+                      <div className="p-2 rounded-xl bg-[#071812]/80 border border-[#E5E4E2]/30 space-y-1">
                         <span className="text-[10px] text-slate-400 block">
                           {isUr ? 'رکنیت نمبر / سیریل نمبر' : 'Membership / Serial No.'}
                         </span>
                         {isInspectMode ? (
-                          <span className="font-mono font-extrabold text-[#FDE047] block">
+                          <span className="font-mono font-extrabold text-[#CBD5E1] block">
                             {displaySerial}
                           </span>
                         ) : (
@@ -899,7 +922,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                             onChange={(e) => setPaperSerialNo(e.target.value)}
                             placeholder={displaySerial}
                             dir="ltr"
-                            className="w-full px-2 py-1.5 bg-[#0C1524] border border-slate-700 rounded-lg text-xs font-mono font-bold text-[#FDE047] placeholder-slate-500"
+                            className="w-full px-2 py-1.5 bg-[#0D2A1F] border border-slate-700 rounded-lg text-xs font-mono font-bold text-[#CBD5E1] placeholder-slate-500"
                           />
                         )}
                       </div>
@@ -913,7 +936,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                             value={formDate}
                             disabled={isInspectMode}
                             onChange={(e) => setFormDate(e.target.value)}
-                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
+                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#071812] border border-slate-700 rounded-lg text-[11px] text-white"
                           />
                         </div>
                         <div>
@@ -926,7 +949,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                             disabled={isInspectMode}
                             onChange={(e) => setUnit(e.target.value)}
                             placeholder={isUr ? 'یونٹ' : 'Unit'}
-                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#070D14] border border-slate-700 rounded-lg text-[11px] text-white"
+                            className="w-full min-h-[44px] px-2 py-1.5 bg-[#071812] border border-slate-700 rounded-lg text-[11px] text-white"
                           />
                         </div>
                       </div>
@@ -934,7 +957,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
                     {/* Applicant Photo Frame + Camera / Gallery Buttons */}
                     <div className="flex flex-col items-center gap-2 shrink-0">
-                      <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#D4AF37]/60 bg-[#070D14] flex flex-col items-center justify-center overflow-hidden relative">
+                      <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#E5E4E2]/60 bg-[#071812] flex flex-col items-center justify-center overflow-hidden relative">
                         {applicantPhotoUrl ? (
                           <>
                             <img
@@ -949,7 +972,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                                 aria-label="Remove applicant photo"
                                 title={isUr ? 'تصویر ہٹائیں' : 'Remove photo'}
                                 style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                                className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                               >
                                 <X className="w-3.5 h-3.5 stroke-[2.75]" />
                               </button>
@@ -966,7 +989,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       </div>
                       {!isInspectMode && (
                         <div className="flex items-center gap-1.5">
-                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/60 text-[#FEF08A] text-[11px] font-bold cursor-pointer">
+                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#E5E4E2]/20 border border-[#E5E4E2]/60 text-[#E5E4E2] text-[11px] font-bold cursor-pointer">
                             <Camera className="w-3.5 h-3.5" />
                             <span>{isUr ? 'کیمرہ' : 'Camera'}</span>
                             <input
@@ -978,7 +1001,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                               className="hidden"
                             />
                           </label>
-                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#131C31] border border-[#38BDF8]/50 text-[#38BDF8] text-[11px] font-bold cursor-pointer">
+                          <label className="kc-pressable min-h-[44px] inline-flex items-center gap-1 px-2.5 py-2 rounded-lg bg-[#0D2A1F] border border-[#059669]/50 text-[#059669] text-[11px] font-bold cursor-pointer">
                             <ImageIcon className="w-3.5 h-3.5" />
                             <span>{isUr ? 'گیلری' : 'Gallery'}</span>
                             <input
@@ -998,7 +1021,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
               {/* Instant Auto-Enhance AI Paper Rukniyat Form Scanner */}
               {!isInspectMode && (
-                <div className="p-4 rounded-2xl bg-[#11192C]/90 border border-[#D4AF37]/40 space-y-3">
+                <div className="p-4 rounded-2xl bg-[#0D2A1F]/90 border border-[#E5E4E2]/40 space-y-3">
                   <div className="flex flex-col gap-2.5">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
@@ -1029,8 +1052,8 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                           className="hidden"
                         />
                       </label>
-                      <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#0A111D] hover:bg-[#161F33] border border-[#D4AF37]/40 text-slate-200 text-xs font-bold cursor-pointer">
-                        <ImageIcon className="w-4 h-4 text-[#FDE047] shrink-0" />
+                      <label className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#0D2A1F] hover:bg-[#161F33] border border-[#E5E4E2]/40 text-slate-200 text-xs font-bold cursor-pointer">
+                        <ImageIcon className="w-4 h-4 text-[#CBD5E1] shrink-0" />
                         <span>{isUr ? '🖼️ گیلری' : '🖼️ Choose from Gallery'}</span>
                         <input
                           ref={scanGalleryInputRef}
@@ -1044,7 +1067,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                         type="button"
                         disabled={isAiScanning}
                         onClick={handleAiAutoFormClick}
-                        className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#070D14] text-xs font-black shadow-md hover:brightness-110 disabled:opacity-60 cursor-pointer"
+                        className="kc-pressable min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#E5E4E2] to-[#CBD5E1] text-[#071812] text-xs font-black shadow-md hover:brightness-110 disabled:opacity-60 cursor-pointer"
                       >
                         {isAiScanning ? (
                           <Loader2 className="w-4 h-4 animate-spin shrink-0" />
@@ -1064,7 +1087,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   </div>
 
                   {scannedFormPhotoUrl && (
-                    <div className="relative rounded-xl overflow-hidden bg-[#070D14] border border-[#D4AF37]/40">
+                    <div className="relative rounded-xl overflow-hidden bg-[#071812] border border-[#E5E4E2]/40">
                       <img
                         src={scannedFormPhotoUrl}
                         alt="Scanned Rukniyat paper form"
@@ -1076,7 +1099,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                         aria-label="Remove scanned form photo"
                         title={isUr ? 'اسکین شدہ تصویر ہٹائیں' : 'Remove scanned photo'}
                         style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 999 }}
-                        className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#FDE047] text-white flex items-center justify-center shadow-lg cursor-pointer"
+                        className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 border-2 border-[#CBD5E1] text-white flex items-center justify-center shadow-lg cursor-pointer"
                       >
                         <X className="w-4 h-4 stroke-[2.75]" />
                       </button>
@@ -1127,8 +1150,8 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               </div>
 
               {/* Section 1: Personal Information (ذاتی معلومات) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#11192C]/90 border border-[#D4AF37]/30 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#D4AF37]/25 pb-2.5">
+              <div className="p-4 sm:p-5 rounded-3xl bg-[#0D2A1F]/90 border border-[#E5E4E2]/30 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E5E4E2]/25 pb-2.5">
                   <h3 className="text-base font-extrabold text-amber-300">
                     {isUr ? '۱۔ ذاتی معلومات' : '1. Personal Information (ذاتی معلومات)'}
                   </h3>
@@ -1452,17 +1475,17 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               </div>
 
               {/* Section 2: Oath (عہد نامہ) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#11192C]/90 border border-[#D4AF37]/30 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#D4AF37]/25 pb-2.5">
+              <div className="p-4 sm:p-5 rounded-3xl bg-[#0D2A1F]/90 border border-[#E5E4E2]/30 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E5E4E2]/25 pb-2.5">
                   <h3 className="text-base font-extrabold text-amber-300">
                     {isUr ? '۲۔ عہد نامہ (Oath)' : '2. Pledge & Oath (عہد نامہ)'}
                   </h3>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#070D14]/90 border border-[#D4AF37]/35 space-y-3 leading-loose">
+                <div className="p-4 rounded-2xl bg-[#071812]/90 border border-[#E5E4E2]/35 space-y-3 leading-loose">
                   <p className="text-sm sm:text-base text-amber-50 font-medium" dir="rtl">
-                    میں سوئی خیل قومی اتحاد کے دستور، اس کے اغراض و مقاصد اور اس کے تمام قواعد و ضوابط سے کلی طور پر اتفاق کرتا ہوں۔ میں عہد کرتا ہوں کہ ہر دم تنظیم کا وفادار اور اس کے لیے ہر وقت ہر قسم کی قربانی کے لیے تیار رہوں گا۔ میں یہ بھی عہد کرتا ہوں کہ سوئی قوم کی ترقی و خوشحالی کے لیے اپنی تمام تر لیاقت و قابلیت اور دولت و صلاحیت بروئے کار لاؤں گا۔ تنظیم جو خدمت ذمے لگائے ان شاء اللہ ذوق و شوق سے کروں گا۔ علاوہ ازیں میں وعدہ کرتا ہوں کہ تنظیم کے لیے ہر ماہ کم از کم مبلغ{' '}
-                    <span className="inline-block font-mono font-black text-[#FDE047] px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/40">
+                    میں سوئی خیل اتحاد کے دستور، اس کے اغراض و مقاصد اور اس کے تمام قواعد و ضوابط سے کلی طور پر اتفاق کرتا ہوں۔ میں عہد کرتا ہوں کہ ہر دم تنظیم کا وفادار اور اس کے لیے ہر وقت ہر قسم کی قربانی کے لیے تیار رہوں گا۔ میں یہ بھی عہد کرتا ہوں کہ سوئی قوم کی ترقی و خوشحالی کے لیے اپنی تمام تر لیاقت و قابلیت اور دولت و صلاحیت بروئے کار لاؤں گا۔ تنظیم جو خدمت ذمے لگائے ان شاء اللہ ذوق و شوق سے کروں گا۔ علاوہ ازیں میں وعدہ کرتا ہوں کہ تنظیم کے لیے ہر ماہ کم از کم مبلغ{' '}
+                    <span className="inline-block font-mono font-black text-[#CBD5E1] px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/40">
                       {monthlyPledgeAmount || '100'}
                     </span>{' '}
                     روپے بطور تعاون پیش کروں گا۔
@@ -1470,7 +1493,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
                   {!isUr && (
                     <p className="text-xs text-slate-300 border-t border-slate-800 pt-2.5" dir="ltr">
-                      “I fully agree with the constitution, aims, objectives, and all rules and regulations of Sui Khel Qaumi Ittehad. I solemnly pledge to remain loyal to the organization and ready for every service and sacrifice. I will dedicate my skills, capability, and resources for the progress and prosperity of the Sui nation, fulfill assigned duties diligently InshaAllah, and contribute at least PKR {monthlyPledgeAmount || '100'} monthly.”
+                      “I fully agree with the constitution, aims, objectives, and all rules and regulations of SUI KHEL ITTEHAD. I solemnly pledge to remain loyal to the organization and ready for every service and sacrifice. I will dedicate my skills, capability, and resources for the progress and prosperity of the Sui nation, fulfill assigned duties diligently InshaAllah, and contribute at least PKR {monthlyPledgeAmount || '100'} monthly.”
                     </p>
                   )}
 
@@ -1484,7 +1507,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       disabled={isInspectMode}
                       value={monthlyPledgeAmount}
                       onChange={(e) => setMonthlyPledgeAmount(e.target.value.replace(/\D/g, ''))}
-                      className="w-32 px-3 py-1.5 bg-[#0C1524] border border-[#D4AF37]/40 rounded-xl text-sm font-mono font-bold text-[#FDE047]"
+                      className="w-32 px-3 py-1.5 bg-[#0D2A1F] border border-[#E5E4E2]/40 rounded-xl text-sm font-mono font-bold text-[#CBD5E1]"
                       dir="ltr"
                     />
                     <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-emerald-300">
@@ -1508,12 +1531,12 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       {isUr ? 'دستخط امیدوار (Applicant Signature)' : 'Applicant Digital Signature'}
                     </span>
                     {!isInspectMode && (
-                      <div className="flex items-center gap-1.5 bg-[#070D14] p-1 rounded-xl border border-slate-700">
+                      <div className="flex items-center gap-1.5 bg-[#071812] p-1 rounded-xl border border-slate-700">
                         <button
                           type="button"
                           onClick={() => setSigMode('DRAW')}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
-                            sigMode === 'DRAW' ? 'bg-amber-500 text-[#070D14]' : 'text-slate-300'
+                            sigMode === 'DRAW' ? 'bg-amber-500 text-[#071812]' : 'text-slate-300'
                           }`}
                         >
                           {isUr ? 'ڈرا کریں' : 'Draw'}
@@ -1522,7 +1545,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                           type="button"
                           onClick={() => setSigMode('TYPE')}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
-                            sigMode === 'TYPE' ? 'bg-amber-500 text-[#070D14]' : 'text-slate-300'
+                            sigMode === 'TYPE' ? 'bg-amber-500 text-[#071812]' : 'text-slate-300'
                           }`}
                         >
                           {isUr ? 'ٹائپ کریں' : 'Type'}
@@ -1532,12 +1555,12 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   </div>
 
                   {drawnSignatureDataUrl && isInspectMode ? (
-                    <div className="p-3 rounded-2xl bg-[#070D14] border border-[#D4AF37]/40 inline-block">
+                    <div className="p-3 rounded-2xl bg-[#071812] border border-[#E5E4E2]/40 inline-block">
                       <img src={drawnSignatureDataUrl} alt="Applicant Signature" className="h-20 object-contain" />
                     </div>
                   ) : sigMode === 'DRAW' && !isInspectMode ? (
                     <div className="space-y-1.5">
-                      <div className="relative rounded-2xl bg-[#070D14] border border-[#D4AF37]/40 overflow-hidden">
+                      <div className="relative rounded-2xl bg-[#071812] border border-[#E5E4E2]/40 overflow-hidden">
                         <canvas
                           ref={canvasRef}
                           width={520}
@@ -1575,14 +1598,14 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               </div>
 
               {/* Section 3: Tabar Rep Verification (تصدیق نمائندہ خاندان) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#11192C]/90 border border-[#D4AF37]/30 space-y-3">
-                <h3 className="text-base font-extrabold text-amber-300 border-b border-[#D4AF37]/25 pb-2">
+              <div className="p-4 sm:p-5 rounded-3xl bg-[#0D2A1F]/90 border border-[#E5E4E2]/30 space-y-3">
+                <h3 className="text-base font-extrabold text-amber-300 border-b border-[#E5E4E2]/25 pb-2">
                   {isUr ? '۳۔ تصدیق نمائندہ خاندان' : '3. Tabar Representative Verification (تصدیق نمائندہ خاندان)'}
                 </h3>
                 <p className="text-xs sm:text-sm text-amber-50/90 leading-relaxed font-medium">
                   {isUr
-                    ? 'میں نے مندرجہ بالا اندراجات اچھی طرح ملاحظہ کر لیے ہیں اور میری معلومات کی حد تک وہ بالکل درست ہیں۔ میں یقین دلاتا ہوں کہ موصوف سوئی خیل قومی اتحاد کے وفادار رکن ثابت ہوں گے۔'
-                    : 'I have carefully reviewed the entries above and to the best of my knowledge they are completely accurate. I assure that the applicant will prove to be a loyal member of Sui Khel Qaumi Ittehad.'}
+                    ? 'میں نے مندرجہ بالا اندراجات اچھی طرح ملاحظہ کر لیے ہیں اور میری معلومات کی حد تک وہ بالکل درست ہیں۔ میں یقین دلاتا ہوں کہ موصوف سوئی خیل اتحاد کے وفادار رکن ثابت ہوں گے۔'
+                    : 'I have carefully reviewed the entries above and to the best of my knowledge they are completely accurate. I assure that the applicant will prove to be a loyal member of SUI KHEL ITTEHAD.'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
@@ -1611,8 +1634,8 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
               </div>
 
               {/* Section 4: For Office Use Only (برائے دفتری کارروائی) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#0B1726] to-[#070D14] border-2 border-[#D4AF37]/45 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#D4AF37]/25 pb-2">
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#0B1726] to-[#071812] border-2 border-[#E5E4E2]/45 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E5E4E2]/25 pb-2">
                   <h3 className="text-base font-extrabold text-amber-300 flex items-center gap-2">
                     <FileCheck2 className="w-4 h-4" />
                     {isUr ? '۴۔ برائے دفتری کارروائی' : '4. For Office Use Only (برائے دفتری کارروائی)'}
@@ -1624,7 +1647,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
 
                 <div className="flex flex-col md:flex-row items-center justify-between gap-5">
                   <div className="flex-1 w-full space-y-3">
-                    <div className="p-3 rounded-2xl bg-[#0C1524] border border-slate-700/80 text-xs sm:text-sm text-slate-200 flex flex-wrap items-center gap-2">
+                    <div className="p-3 rounded-2xl bg-[#0D2A1F] border border-slate-700/80 text-xs sm:text-sm text-slate-200 flex flex-wrap items-center gap-2">
                       <span>{isUr ? 'مبلغ' : 'Form Fee Received PKR:'}</span>
                       <input
                         type="text"
@@ -1632,7 +1655,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                         disabled={!canOfficeApprove}
                         value={formFeeAmount}
                         onChange={(e) => setFormFeeAmount(e.target.value.replace(/\D/g, ''))}
-                        className="w-24 px-2.5 py-1 rounded-lg bg-[#070D14] border border-[#D4AF37]/40 font-mono font-bold text-[#FDE047] text-center"
+                        className="w-24 px-2.5 py-1 rounded-lg bg-[#071812] border border-[#E5E4E2]/40 font-mono font-bold text-[#CBD5E1] text-center"
                         dir="ltr"
                       />
                       <span>
@@ -1676,7 +1699,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                       size={118}
                     />
                     <span className="text-[10px] font-bold text-amber-300/80">
-                      {isUr ? 'مہر سوئی خیل قومی اتحاد' : 'Official Organization Mohar'}
+                      {isUr ? 'مہر سوئی خیل اتحاد' : 'Official Organization Mohar'}
                     </span>
                   </div>
                 </div>
@@ -1717,7 +1740,7 @@ export const RukniyatFormContent: React.FC<RukniyatFormContentProps> = ({ embedd
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="min-h-[44px] w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#F59E0B] to-[#EAB308] text-[#070D14] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
+                    className="min-h-[44px] w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#E5E4E2] via-[#CBD5E1] to-[#CBD5E1] text-[#071812] text-xs sm:text-sm font-black shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:brightness-110 disabled:opacity-50 transition cursor-pointer"
                   >
                     {isSubmitting
                       ? isUr

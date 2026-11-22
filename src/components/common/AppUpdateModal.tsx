@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Sparkles, 
@@ -44,13 +44,13 @@ export const AppUpdateModal: React.FC = () => {
 
   const title = hasAdminUpdate && latestPublishedUpdate
     ? latestPublishedUpdate.title
-    : (githubRelease?.releaseTitle || `Kifayat Connect v${activeVersion}`);
+    : (githubRelease?.releaseTitle || `SUI KHEL ITTEHAD v${activeVersion}`);
 
   const description = hasAdminUpdate && latestPublishedUpdate
     ? latestPublishedUpdate.description
     : (language === 'ur'
-        ? 'کفایت کنیکٹ کا نیا مستند ورژن بہتر رفتار اور سیکیورٹی کے ساتھ دستیاب ہے۔'
-        : 'A newer verified release of Kifayat Connect is available with improved stability and performance.');
+        ? 'سوئی خیل اتحاد کا نیا مستند ورژن بہتر رفتار اور سیکیورٹی کے ساتھ دستیاب ہے۔'
+        : 'A newer verified release of SUI KHEL ITTEHAD is available with improved stability and performance.');
 
   const notes = hasAdminUpdate && latestPublishedUpdate?.releaseNotes?.length
     ? latestPublishedUpdate.releaseNotes
@@ -73,17 +73,17 @@ export const AppUpdateModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[95] kc-modal-backdrop bg-black/80 flex items-start sm:items-center justify-center overflow-y-auto">
       <div className="kc-luxury-modal kc-modal-panel rounded-2xl max-w-lg w-full flex flex-col overflow-hidden relative text-white my-auto">
-        <div className="h-1.5 bg-gradient-to-r from-[#FCE38A] via-[#D4AF37] to-[#8A6218] shrink-0" />
+        <div className="h-1.5 bg-gradient-to-r from-[#FCE38A] via-[#E5E4E2] to-[#8A6218] shrink-0" />
 
-        <div className="p-4 sm:p-6 pb-4 bg-[#090D16] border-b border-[#D4AF37]/25 shrink-0">
+        <div className="p-4 sm:p-6 pb-4 bg-[#071812] border-b border-[#E5E4E2]/25 shrink-0">
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FCE38A] via-[#D4AF37] to-[#8A6218] flex items-center justify-center text-[#090D16] shadow-lg border border-[#FCE38A]/60 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FCE38A] via-[#E5E4E2] to-[#8A6218] flex items-center justify-center text-[#071812] shadow-lg border border-[#FCE38A]/60 shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#131C31] text-[#38BDF8] border border-[#38BDF8]/40">
+                  <span className="text-xs font-mono tabular-nums font-bold px-2.5 py-0.5 rounded-full bg-[#0D2A1F] text-[#059669] border border-[#059669]/40">
                     v{activeVersion}
                   </span>
                   {isMandatory && (
@@ -106,7 +106,7 @@ export const AppUpdateModal: React.FC = () => {
                 type="button"
                 onClick={handleDismiss}
                 aria-label={language === 'ur' ? 'بند کریں' : 'Close'}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#141B2D] hover:bg-[#1A233A] border border-[#D4AF37]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-[#0D2A1F] hover:bg-[#1A233A] border border-[#E5E4E2]/30 text-slate-300 hover:text-white kc-pressable cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -120,8 +120,8 @@ export const AppUpdateModal: React.FC = () => {
           </p>
 
           {notes.length > 0 && (
-            <div className="bg-[#090D16] p-4 rounded-xl border border-[#D4AF37]/25 space-y-2">
-              <span className="text-xs font-bold text-[#F5D061] block uppercase tracking-wider">
+            <div className="bg-[#071812] p-4 rounded-xl border border-[#E5E4E2]/25 space-y-2">
+              <span className="text-xs font-bold text-[#E5E4E2] block uppercase tracking-wider">
                 {language === 'ur' ? 'نئی تبدیلیاں:' : "What's New:"}
               </span>
               <ul className="space-y-1.5">
@@ -153,9 +153,9 @@ export const AppUpdateModal: React.FC = () => {
             <button
               type="button"
               onClick={handlePwaUpdate}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#131C31] hover:bg-[#1E293B] text-[#F8FAFC] font-semibold text-xs flex items-center justify-center gap-2 border border-[#38BDF8]/40 kc-pressable cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#0D2A1F] hover:bg-[#1E293B] text-[#F8FAFC] font-semibold text-xs flex items-center justify-center gap-2 border border-[#059669]/40 kc-pressable cursor-pointer"
             >
-              <RefreshCw className="w-4 h-4 text-[#F5D061]" />
+              <RefreshCw className="w-4 h-4 text-[#E5E4E2]" />
               <span>
                 {language === 'ur' ? 'ویب / PWA اپڈیٹ ریفریش کریں' : 'Refresh & Update Web / PWA App'}
               </span>
@@ -165,7 +165,7 @@ export const AppUpdateModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="w-full py-2 text-center text-xs text-slate-400 hover:text-[#F5D061] transition-colors cursor-pointer"
+                className="w-full py-2 text-center text-xs text-slate-400 hover:text-[#E5E4E2] transition-colors cursor-pointer"
               >
                 {language === 'ur' ? 'بعد میں یاد دلائیں' : 'Remind Me Later'}
               </button>

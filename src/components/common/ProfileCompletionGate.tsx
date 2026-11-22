@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ShieldAlert, ArrowRight, UserCheck } from 'lucide-react';
 import { useApp, isFounderUser } from '../../context/AppContext';
 import { User } from '../../types';
@@ -42,10 +42,10 @@ export const ProfileCompletionGate: React.FC<ProfileCompletionGateProps> = ({
       <div className="p-3 sm:p-4 rounded-2xl kc-obsidian-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-start sm:items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg kc-emerald-panel flex items-center justify-center shrink-0">
-            <UserCheck className="w-4 h-4 text-[#F5D061]" />
+            <UserCheck className="w-4 h-4 text-[#E5E4E2]" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-extrabold text-[#F5D061] truncate">{title}</p>
+            <p className="text-xs font-extrabold text-[#E5E4E2] truncate">{title}</p>
             <p className="text-[11px] text-slate-200 leading-snug">{description}</p>
           </div>
         </div>
@@ -65,10 +65,10 @@ export const ProfileCompletionGate: React.FC<ProfileCompletionGateProps> = ({
     <div className="p-5 sm:p-6 rounded-2xl kc-obsidian-card flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex items-start gap-3.5 min-w-0">
         <div className="w-11 h-11 rounded-2xl kc-emerald-panel flex items-center justify-center shrink-0">
-          <ShieldAlert className="w-5 h-5 text-[#F5D061]" />
+          <ShieldAlert className="w-5 h-5 text-[#E5E4E2]" />
         </div>
         <div className="min-w-0 space-y-1">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#090D16] border border-[#D4AF37]/40 text-[#F5D061] text-[10px] font-extrabold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#071812] border border-[#E5E4E2]/40 text-[#E5E4E2] text-[10px] font-extrabold uppercase tracking-wider">
             {language === 'ur' ? 'پروفائل نامکمل' : 'Profile Pending'}
           </span>
           <h3 className="text-sm sm:text-base font-extrabold text-white">{title}</h3>

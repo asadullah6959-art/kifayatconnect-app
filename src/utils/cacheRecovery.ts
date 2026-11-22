@@ -3,21 +3,21 @@
 // user login sessions, credentials, password hashes, and language preferences.
 
 const PROTECTED_SESSION_KEYS = new Set<string>([
-  'kifayat_current_user',
-  'kifayat_current_user_v3',
-  'kifayat_lang_v3',
+  'ski_current_user',
+  'ski_current_user_v3',
+  'ski_lang_v3',
   'kc_saved_credentials',
   'kc_local_pwd_hashes_v1',
   'kc_active_otp',
   'kc_pending_password_reset',
-  'kifayat_migrated_clean_v3'
+  'ski_migrated_clean_v3'
 ]);
 
 const STRING_VALUE_KEYS = new Set<string>([
-  'kifayat_current_user_v3',
-  'kifayat_lang_v3',
-  'kifayat_ack_update_version_v3',
-  'kifayat_migrated_clean_v3'
+  'ski_current_user_v3',
+  'ski_lang_v3',
+  'ski_ack_update_version_v3',
+  'ski_migrated_clean_v3'
 ]);
 
 export function repairCorruptedLocalCachePreserveSession(): string[] {
@@ -30,7 +30,7 @@ export function repairCorruptedLocalCachePreserveSession(): string[] {
     const keysToInspect: string[] = [];
     for (let i = 0; i < localStorage.length; i += 1) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('kifayat_') || k.startsWith('kc_'))) {
+      if (k && (k.startsWith('ski_') || k.startsWith('kc_'))) {
         keysToInspect.push(k);
       }
     }
@@ -38,7 +38,7 @@ export function repairCorruptedLocalCachePreserveSession(): string[] {
     for (const key of keysToInspect) {
       if (PROTECTED_SESSION_KEYS.has(key) || STRING_VALUE_KEYS.has(key)) {
         // Still guard protected JSON keys if somehow truncated to invalid JSON (except raw string keys)
-        if (key === 'kifayat_current_user') {
+        if (key === 'ski_current_user') {
           try {
             const raw = localStorage.getItem(key);
             if (raw) {
